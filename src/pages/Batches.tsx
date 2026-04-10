@@ -91,7 +91,7 @@ export default function Batches() {
   const loadTemplates = async () => {
     if (!siteId) return;
     const { data } = await supabase.from('batch_templates').select('*').eq('site_id', siteId).eq('active', true);
-    setTemplates((data || []) as BatchTemplate[]);
+    setTemplates((data || []) as unknown as BatchTemplate[]);
   };
 
   useEffect(() => { loadBatches(); loadTemplates(); }, [siteId]);
