@@ -58,6 +58,169 @@ export type Database = {
           },
         ]
       }
+      batch_stage_events: {
+        Row: {
+          batch_id: string
+          completed_at: string | null
+          created_at: string
+          evidence_urls: string[] | null
+          id: string
+          notes: string | null
+          performed_by_user_id: string | null
+          stage_key: string
+          stage_name_snapshot: string
+          started_at: string
+        }
+        Insert: {
+          batch_id: string
+          completed_at?: string | null
+          created_at?: string
+          evidence_urls?: string[] | null
+          id?: string
+          notes?: string | null
+          performed_by_user_id?: string | null
+          stage_key: string
+          stage_name_snapshot: string
+          started_at?: string
+        }
+        Update: {
+          batch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          evidence_urls?: string[] | null
+          id?: string
+          notes?: string | null
+          performed_by_user_id?: string | null
+          stage_key?: string
+          stage_name_snapshot?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_stage_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_stage_events_performed_by_user_id_fkey"
+            columns: ["performed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batch_templates: {
+        Row: {
+          active: boolean
+          config_json: Json
+          created_at: string
+          id: string
+          name: string
+          site_id: string
+        }
+        Insert: {
+          active?: boolean
+          config_json?: Json
+          created_at?: string
+          id?: string
+          name: string
+          site_id: string
+        }
+        Update: {
+          active?: boolean
+          config_json?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_templates_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batches: {
+        Row: {
+          batch_code: string
+          completed_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          notes: string | null
+          organisation_id: string
+          product_name: string
+          recipe_ref: string | null
+          site_id: string
+          status: Database["public"]["Enums"]["batch_status"]
+          template_id: string | null
+        }
+        Insert: {
+          batch_code: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          product_name: string
+          recipe_ref?: string | null
+          site_id: string
+          status?: Database["public"]["Enums"]["batch_status"]
+          template_id?: string | null
+        }
+        Update: {
+          batch_code?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          product_name?: string
+          recipe_ref?: string | null
+          site_id?: string
+          status?: Database["public"]["Enums"]["batch_status"]
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batches_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batches_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batches_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batches_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "batch_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           approved: boolean
@@ -321,6 +484,7 @@ export type Database = {
     }
     Enums: {
       auth_type: "email" | "staff_code"
+      batch_status: "in_progress" | "complete" | "quarantined" | "disposed"
       org_role: "org_owner" | "hq_admin" | "hq_auditor"
       site_role: "owner" | "supervisor" | "staff" | "read_only"
       user_status: "active" | "suspended"
@@ -452,6 +616,7 @@ export const Constants = {
   public: {
     Enums: {
       auth_type: ["email", "staff_code"],
+      batch_status: ["in_progress", "complete", "quarantined", "disposed"],
       org_role: ["org_owner", "hq_admin", "hq_auditor"],
       site_role: ["owner", "supervisor", "staff", "read_only"],
       user_status: ["active", "suspended"],

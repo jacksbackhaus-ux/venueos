@@ -18,6 +18,9 @@ import Suppliers from "./pages/Suppliers";
 import PestMaintenance from "./pages/PestMaintenance";
 import Incidents from "./pages/Incidents";
 import Reports from "./pages/Reports";
+import Batches from "./pages/Batches";
+import HQDashboard from "./pages/HQDashboard";
+import Account from "./pages/Account";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -72,6 +75,9 @@ function AppRoutes() {
       <Route path="/pest-maintenance" element={<AuthGuard><AppLayout><PestMaintenance /></AppLayout></AuthGuard>} />
       <Route path="/incidents" element={<AuthGuard><AppLayout><Incidents /></AppLayout></AuthGuard>} />
       <Route path="/reports" element={<AuthGuard><AppLayout><Reports /></AppLayout></AuthGuard>} />
+      <Route path="/batches" element={<AuthGuard><AppLayout><Batches /></AppLayout></AuthGuard>} />
+      <Route path="/hq" element={<AuthGuard><AppLayout><HQDashboard /></AppLayout></AuthGuard>} />
+      <Route path="/account" element={<AuthGuard><AppLayout><Account /></AppLayout></AuthGuard>} />
       <Route path="/settings" element={<AuthGuard><AppLayout><Settings /></AppLayout></AuthGuard>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
