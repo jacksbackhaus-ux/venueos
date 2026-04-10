@@ -21,13 +21,21 @@ interface StaffSession {
   site_id: string;
 }
 
+interface OrgRole {
+  org_role: 'org_owner' | 'hq_admin' | 'hq_auditor';
+  organisation_id: string;
+}
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   appUser: AppUser | null;
   staffSession: StaffSession | null;
+  orgRole: OrgRole | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isHQ: boolean;
+  isReadOnly: boolean;
   signOut: () => Promise<void>;
   setStaffSession: (s: StaffSession | null) => void;
   refreshAppUser: () => Promise<void>;
@@ -39,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [orgRole, setOrgRole] = useState<OrgRole | null>(null);
   const [staffSession, setStaffSession] = useState<StaffSession | null>(() => {
     const stored = localStorage.getItem('staff_session');
     return stored ? JSON.parse(stored) : null;
@@ -52,7 +61,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('auth_user_id', authUserId)
       .eq('status', 'active')
       .maybeSingle();
-    setAppUser(data as AppUser | null);
+
+    const appUserData = data as AppUser | null;
+    setAppUser(appUserData);
+
+    // Fetch org role if user exists
+    if (appUserData) {
+      const { data: orgData } = await supabase
+        .from('org_users')
+        .select('org_role, organisation_id')
+        .eq('user_id', appUserData.id)
+        .eq('active', true)
+        .maybeSingle();
+      setOrgRole(orgData as OrgRole | null);
+    } else {
+      setOrgRole(null);
+    }
+
+    return appUserData;
   }, []);
 
   const refreshAppUser = useCallback(async () => {
@@ -60,29 +86,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchAppUser]);
 
   useEffect(() => {
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchAppUser(session.user.id), 0);
+          // Don't set isLoading false until fetchAppUser completes
+          const result = await fetchAppUser(session.user.id);
+          if (mounted) setIsLoading(false);
         } else {
           setAppUser(null);
+          setOrgRole(null);
+          if (mounted) setIsLoading(false);
         }
-        setIsLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchAppUser(session.user.id);
+        await fetchAppUser(session.user.id);
       }
-      setIsLoading(false);
+      if (mounted) setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [fetchAppUser]);
 
   // Persist staff session
@@ -97,15 +133,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     setStaffSession(null);
     setAppUser(null);
+    setOrgRole(null);
     await supabase.auth.signOut();
   };
 
   const isAuthenticated = !!(session && appUser) || !!staffSession;
+  const isHQ = !!orgRole && ['org_owner', 'hq_admin', 'hq_auditor'].includes(orgRole.org_role);
+  const isReadOnly = orgRole?.org_role === 'hq_auditor' || staffSession?.site_role === 'read_only';
 
   return (
     <AuthContext.Provider value={{
-      session, user, appUser, staffSession, isLoading,
-      isAuthenticated, signOut, setStaffSession, refreshAppUser
+      session, user, appUser, staffSession, orgRole, isLoading,
+      isAuthenticated, isHQ, isReadOnly, signOut, setStaffSession, refreshAppUser
     }}>
       {children}
     </AuthContext.Provider>
