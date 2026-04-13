@@ -221,6 +221,419 @@ export type Database = {
           },
         ]
       }
+      cleaning_logs: {
+        Row: {
+          completed_at: string | null
+          completed_by_name: string | null
+          completed_by_user_id: string | null
+          created_at: string
+          done: boolean
+          id: string
+          log_date: string
+          note: string | null
+          organisation_id: string
+          site_id: string
+          task_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by_name?: string | null
+          completed_by_user_id?: string | null
+          created_at?: string
+          done?: boolean
+          id?: string
+          log_date: string
+          note?: string | null
+          organisation_id: string
+          site_id: string
+          task_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by_name?: string | null
+          completed_by_user_id?: string | null
+          created_at?: string
+          done?: boolean
+          id?: string
+          log_date?: string
+          note?: string | null
+          organisation_id?: string
+          site_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleaning_logs_completed_by_user_id_fkey"
+            columns: ["completed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_logs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "cleaning_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cleaning_tasks: {
+        Row: {
+          active: boolean
+          area: string
+          assigned_to_name: string | null
+          created_at: string
+          due_time: string | null
+          frequency: string
+          id: string
+          organisation_id: string
+          site_id: string
+          sort_order: number
+          task: string
+        }
+        Insert: {
+          active?: boolean
+          area: string
+          assigned_to_name?: string | null
+          created_at?: string
+          due_time?: string | null
+          frequency?: string
+          id?: string
+          organisation_id: string
+          site_id: string
+          sort_order?: number
+          task: string
+        }
+        Update: {
+          active?: boolean
+          area?: string
+          assigned_to_name?: string | null
+          created_at?: string
+          due_time?: string | null
+          frequency?: string
+          id?: string
+          organisation_id?: string
+          site_id?: string
+          sort_order?: number
+          task?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleaning_tasks_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_tasks_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      day_sheet_entries: {
+        Row: {
+          completed_at: string | null
+          completed_by_user_id: string | null
+          created_at: string
+          day_sheet_id: string
+          done: boolean
+          id: string
+          item_id: string
+          note: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by_user_id?: string | null
+          created_at?: string
+          day_sheet_id: string
+          done?: boolean
+          id?: string
+          item_id: string
+          note?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by_user_id?: string | null
+          created_at?: string
+          day_sheet_id?: string
+          done?: boolean
+          id?: string
+          item_id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_sheet_entries_completed_by_user_id_fkey"
+            columns: ["completed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheet_entries_day_sheet_id_fkey"
+            columns: ["day_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "day_sheets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheet_entries_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "day_sheet_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      day_sheet_items: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          label: string
+          section_id: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label: string
+          section_id: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label?: string
+          section_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_sheet_items_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "day_sheet_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      day_sheet_sections: {
+        Row: {
+          active: boolean
+          created_at: string
+          default_time: string
+          icon: string
+          id: string
+          organisation_id: string
+          site_id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          default_time?: string
+          icon?: string
+          id?: string
+          organisation_id: string
+          site_id: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          default_time?: string
+          icon?: string
+          id?: string
+          organisation_id?: string
+          site_id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_sheet_sections_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheet_sections_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      day_sheets: {
+        Row: {
+          created_at: string
+          id: string
+          locked: boolean
+          locked_at: string | null
+          locked_by_user_id: string | null
+          manager_note: string | null
+          organisation_id: string
+          problem_notes: string | null
+          sheet_date: string
+          site_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          locked?: boolean
+          locked_at?: string | null
+          locked_by_user_id?: string | null
+          manager_note?: string | null
+          organisation_id: string
+          problem_notes?: string | null
+          sheet_date: string
+          site_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locked?: boolean
+          locked_at?: string | null
+          locked_by_user_id?: string | null
+          manager_note?: string | null
+          organisation_id?: string
+          problem_notes?: string | null
+          sheet_date?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_sheets_locked_by_user_id_fkey"
+            columns: ["locked_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheets_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheets_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_logs: {
+        Row: {
+          accepted: boolean
+          created_at: string
+          id: string
+          items: string
+          logged_at: string
+          logged_by_name: string
+          logged_by_user_id: string | null
+          note: string | null
+          organisation_id: string
+          packaging: string
+          site_id: string
+          supplier_id: string
+          temp: number | null
+          temp_pass: boolean | null
+          use_by_ok: boolean
+        }
+        Insert: {
+          accepted?: boolean
+          created_at?: string
+          id?: string
+          items: string
+          logged_at?: string
+          logged_by_name?: string
+          logged_by_user_id?: string | null
+          note?: string | null
+          organisation_id: string
+          packaging?: string
+          site_id: string
+          supplier_id: string
+          temp?: number | null
+          temp_pass?: boolean | null
+          use_by_ok?: boolean
+        }
+        Update: {
+          accepted?: boolean
+          created_at?: string
+          id?: string
+          items?: string
+          logged_at?: string
+          logged_by_name?: string
+          logged_by_user_id?: string | null
+          note?: string | null
+          organisation_id?: string
+          packaging?: string
+          site_id?: string
+          supplier_id?: string
+          temp?: number | null
+          temp_pass?: boolean | null
+          use_by_ok?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_logs_logged_by_user_id_fkey"
+            columns: ["logged_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_logs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_logs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           approved: boolean
@@ -252,6 +665,206 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "devices_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incidents: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          immediate_action: string
+          module: string | null
+          organisation_id: string
+          prevention: string | null
+          reported_at: string
+          reported_by_name: string
+          reported_by_user_id: string | null
+          root_cause: string | null
+          site_id: string
+          status: string
+          title: string
+          type: string
+          verified_at: string | null
+          verified_by_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          immediate_action: string
+          module?: string | null
+          organisation_id: string
+          prevention?: string | null
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          root_cause?: string | null
+          site_id: string
+          status?: string
+          title: string
+          type: string
+          verified_at?: string | null
+          verified_by_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          immediate_action?: string
+          module?: string | null
+          organisation_id?: string
+          prevention?: string | null
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          root_cause?: string | null
+          site_id?: string
+          status?: string
+          title?: string
+          type?: string
+          verified_at?: string | null
+          verified_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incidents_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_reported_by_user_id_fkey"
+            columns: ["reported_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingredients: {
+        Row: {
+          active: boolean
+          allergens: string[]
+          created_at: string
+          id: string
+          name: string
+          organisation_id: string
+          site_id: string
+          supplier_name: string | null
+        }
+        Insert: {
+          active?: boolean
+          allergens?: string[]
+          created_at?: string
+          id?: string
+          name: string
+          organisation_id: string
+          site_id: string
+          supplier_name?: string | null
+        }
+        Update: {
+          active?: boolean
+          allergens?: string[]
+          created_at?: string
+          id?: string
+          name?: string
+          organisation_id?: string
+          site_id?: string
+          supplier_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredients_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingredients_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_logs: {
+        Row: {
+          created_at: string
+          id: string
+          issue: string
+          item: string
+          organisation_id: string
+          priority: string
+          reported_at: string
+          reported_by_name: string
+          reported_by_user_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          site_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issue: string
+          item: string
+          organisation_id: string
+          priority?: string
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          site_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issue?: string
+          item?: string
+          organisation_id?: string
+          priority?: string
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          site_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_logs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_logs_reported_by_user_id_fkey"
+            columns: ["reported_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_logs_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
@@ -361,6 +974,439 @@ export type Database = {
         }
         Relationships: []
       }
+      pest_logs: {
+        Row: {
+          action_taken: string
+          created_at: string
+          description: string
+          id: string
+          location: string
+          organisation_id: string
+          reported_at: string
+          reported_by_name: string
+          reported_by_user_id: string | null
+          resolved: boolean
+          resolved_at: string | null
+          site_id: string
+          type: string
+        }
+        Insert: {
+          action_taken: string
+          created_at?: string
+          description: string
+          id?: string
+          location: string
+          organisation_id: string
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          site_id: string
+          type: string
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          description?: string
+          id?: string
+          location?: string
+          organisation_id?: string
+          reported_at?: string
+          reported_by_name?: string
+          reported_by_user_id?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          site_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pest_logs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pest_logs_reported_by_user_id_fkey"
+            columns: ["reported_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pest_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preventative_checks: {
+        Row: {
+          active: boolean
+          created_at: string
+          frequency: string
+          id: string
+          last_done_at: string | null
+          next_due_at: string | null
+          organisation_id: string
+          site_id: string
+          task: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          frequency?: string
+          id?: string
+          last_done_at?: string | null
+          next_due_at?: string | null
+          organisation_id: string
+          site_id: string
+          task: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          frequency?: string
+          id?: string
+          last_done_at?: string | null
+          next_due_at?: string | null
+          organisation_id?: string
+          site_id?: string
+          task?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preventative_checks_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preventative_checks_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          recipe_id: string
+          sort_order: number
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          recipe_id: string
+          sort_order?: number
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          recipe_id?: string
+          sort_order?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          active: boolean
+          approved: boolean
+          category: string
+          created_at: string
+          id: string
+          label_type: string
+          last_reviewed_at: string | null
+          name: string
+          organisation_id: string
+          site_id: string
+        }
+        Insert: {
+          active?: boolean
+          approved?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          label_type?: string
+          last_reviewed_at?: string | null
+          name: string
+          organisation_id: string
+          site_id: string
+        }
+        Update: {
+          active?: boolean
+          approved?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          label_type?: string
+          last_reviewed_at?: string | null
+          name?: string
+          organisation_id?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_staff: {
+        Row: {
+          created_at: string
+          id: string
+          shift_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          shift_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          shift_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_staff_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_staff_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_task_completions: {
+        Row: {
+          completed_at: string
+          completed_by_name: string
+          completed_by_user_id: string | null
+          completion_date: string
+          created_at: string
+          id: string
+          site_id: string
+          task_id: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by_name?: string
+          completed_by_user_id?: string | null
+          completion_date: string
+          created_at?: string
+          id?: string
+          site_id: string
+          task_id: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by_name?: string
+          completed_by_user_id?: string | null
+          completion_date?: string
+          created_at?: string
+          id?: string
+          site_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_task_completions_completed_by_user_id_fkey"
+            columns: ["completed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_task_completions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "shift_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_tasks: {
+        Row: {
+          active: boolean
+          assigned_to_user_id: string | null
+          created_at: string
+          due_time: string
+          id: string
+          module: string
+          organisation_id: string
+          recurring: boolean
+          shift_id: string
+          site_id: string
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          assigned_to_user_id?: string | null
+          created_at?: string
+          due_time: string
+          id?: string
+          module?: string
+          organisation_id: string
+          recurring?: boolean
+          shift_id: string
+          site_id: string
+          title: string
+        }
+        Update: {
+          active?: boolean
+          assigned_to_user_id?: string | null
+          created_at?: string
+          due_time?: string
+          id?: string
+          module?: string
+          organisation_id?: string
+          recurring?: boolean
+          shift_id?: string
+          site_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_tasks_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_tasks_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_tasks_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_tasks_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shifts: {
+        Row: {
+          active: boolean
+          color: string
+          created_at: string
+          days_active: string[]
+          end_time: string
+          id: string
+          name: string
+          organisation_id: string
+          site_id: string
+          start_time: string
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          days_active?: string[]
+          end_time?: string
+          id?: string
+          name: string
+          organisation_id: string
+          site_id: string
+          start_time?: string
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          days_active?: string[]
+          end_time?: string
+          id?: string
+          name?: string
+          organisation_id?: string
+          site_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shifts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sites: {
         Row: {
           active: boolean
@@ -405,6 +1451,194 @@ export type Database = {
             columns: ["owner_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          active: boolean
+          approved: boolean
+          category: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          organisation_id: string
+          site_id: string
+        }
+        Insert: {
+          active?: boolean
+          approved?: boolean
+          category?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          organisation_id: string
+          site_id: string
+        }
+        Update: {
+          active?: boolean
+          approved?: boolean
+          category?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          organisation_id?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suppliers_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      temp_logs: {
+        Row: {
+          corrective_action: string | null
+          created_at: string
+          id: string
+          log_type: string
+          logged_at: string
+          logged_by_name: string
+          logged_by_user_id: string | null
+          organisation_id: string
+          pass: boolean
+          site_id: string
+          unit_id: string
+          value: number
+        }
+        Insert: {
+          corrective_action?: string | null
+          created_at?: string
+          id?: string
+          log_type?: string
+          logged_at?: string
+          logged_by_name?: string
+          logged_by_user_id?: string | null
+          organisation_id: string
+          pass: boolean
+          site_id: string
+          unit_id: string
+          value: number
+        }
+        Update: {
+          corrective_action?: string | null
+          created_at?: string
+          id?: string
+          log_type?: string
+          logged_at?: string
+          logged_by_name?: string
+          logged_by_user_id?: string | null
+          organisation_id?: string
+          pass?: boolean
+          site_id?: string
+          unit_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_logs_logged_by_user_id_fkey"
+            columns: ["logged_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_logs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_logs_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "temp_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      temp_units: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          max_temp: number
+          min_temp: number
+          name: string
+          organisation_id: string
+          site_id: string
+          sort_order: number
+          type: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          max_temp?: number
+          min_temp?: number
+          name: string
+          organisation_id: string
+          site_id: string
+          sort_order?: number
+          type?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          max_temp?: number
+          min_temp?: number
+          name?: string
+          organisation_id?: string
+          site_id?: string
+          sort_order?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_units_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_units_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
