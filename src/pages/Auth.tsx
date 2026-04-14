@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, KeyRound, Building2, Loader2 } from "lucide-react";
+import { Mail, KeyRound, Building2, Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function Auth() {
   const [tab, setTab] = useState<"login" | "signup" | "staff">("login");
@@ -44,62 +44,67 @@ export default function Auth() {
   );
 }
 
+function PasswordInput({ id, placeholder, value, onChange, required = true }: {
+  id: string; placeholder: string; value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; required?: boolean;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input id={id} type={show ? "text" : "password"} placeholder={placeholder}
+        value={value} onChange={onChange} required={required} minLength={6} />
+      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        onClick={() => setShow(!show)} tabIndex={-1}>
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
 function EmailLoginForm() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !password) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
+      password,
     });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
-    } else {
-      setSent(true);
-      toast.success("Check your email for the login link!");
+      if (error.message.includes("Email not confirmed")) {
+        toast.error("Please check your email and confirm your account before logging in.");
+      } else {
+        toast.error(error.message);
+      }
     }
   };
-
-  if (sent) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-center">Check your inbox</CardTitle>
-          <CardDescription className="text-center">
-            We sent a magic link to <strong>{email}</strong>. Click it to log in.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline" className="w-full" onClick={() => setSent(false)}>
-            Try a different email
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Owner / Manager Login</CardTitle>
-        <CardDescription>Sign in with your email via magic link — no password needed.</CardDescription>
+        <CardDescription>Sign in with your email and password.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
-            <Input id="email" type="email" placeholder="you@bakery.co.uk" value={email}
+            <Label htmlFor="login-email">Email address</Label>
+            <Input id="login-email" type="email" placeholder="you@bakery.co.uk" value={email}
               onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="login-password">Password</Label>
+            <PasswordInput id="login-password" placeholder="••••••••" value={password}
+              onChange={e => setPassword(e.target.value)} />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
-            Send Magic Link
+            Log In
           </Button>
         </form>
       </CardContent>
@@ -109,7 +114,7 @@ function EmailLoginForm() {
 
 function SignupForm() {
   const [form, setForm] = useState({
-    email: "", displayName: "", orgName: "", siteName: "", siteAddress: ""
+    email: "", password: "", confirmPassword: "", displayName: "", orgName: "", siteName: "", siteAddress: ""
   });
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"form" | "verify">("form");
@@ -119,15 +124,23 @@ function SignupForm() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.orgName || !form.siteName || !form.displayName) {
+    if (!form.email || !form.password || !form.orgName || !form.siteName || !form.displayName) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+    if (form.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
     setLoading(true);
 
-    // First create auth user via magic link
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signUp({
       email: form.email.trim(),
+      password: form.password,
       options: {
         emailRedirectTo: window.location.origin,
         data: {
@@ -144,7 +157,7 @@ function SignupForm() {
       toast.error(error.message);
     } else {
       setStep("verify");
-      toast.success("Check your email to complete signup!");
+      toast.success("Check your email to verify your account!");
     }
   };
 
@@ -154,9 +167,14 @@ function SignupForm() {
         <CardHeader>
           <CardTitle className="text-center">Verify your email</CardTitle>
           <CardDescription className="text-center">
-            Click the link we sent to <strong>{form.email}</strong> to finish setting up your account.
+            We've sent a confirmation link to <strong>{form.email}</strong>. Click it to activate your account, then come back and log in.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <Button variant="outline" className="w-full" onClick={() => setStep("form")}>
+            Back to sign up
+          </Button>
+        </CardContent>
       </Card>
     );
   }
@@ -165,7 +183,7 @@ function SignupForm() {
     <Card>
       <CardHeader>
         <CardTitle>Create Your Account</CardTitle>
-        <CardDescription>Set up your organisation and first bakery site.</CardDescription>
+        <CardDescription>Set up your organisation and first site.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSignup} className="space-y-3">
@@ -176,6 +194,14 @@ function SignupForm() {
           <div className="space-y-1.5">
             <Label htmlFor="s-email">Email *</Label>
             <Input id="s-email" type="email" placeholder="jane@bakery.co.uk" value={form.email} onChange={update("email")} required />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="s-password">Password *</Label>
+            <PasswordInput id="s-password" placeholder="Min 6 characters" value={form.password} onChange={update("password")} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="s-confirm">Confirm Password *</Label>
+            <PasswordInput id="s-confirm" placeholder="Repeat password" value={form.confirmPassword} onChange={update("confirmPassword")} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="s-org">Organisation Name *</Label>
@@ -211,7 +237,6 @@ function StaffLoginForm() {
     e.preventDefault();
     if (!siteCode || !staffCode) return;
 
-    // Rate limiting
     if (lockedUntil && Date.now() < lockedUntil) {
       const secs = Math.ceil((lockedUntil - Date.now()) / 1000);
       toast.error(`Too many attempts. Try again in ${secs}s.`);
