@@ -42,16 +42,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <header className="hidden md:flex h-12 items-center border-b bg-card px-4 shrink-0">
             <SidebarTrigger className="mr-3" />
             <h1 className="font-heading font-semibold text-sm text-foreground">
-              BackHaus Hygiene HQ
+              VenueOS
             </h1>
           </header>
 
           {/* Mobile header */}
           <header className="md:hidden flex h-14 items-center border-b bg-card px-4 shrink-0">
             <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center mr-2">
-              <span className="text-[10px] font-bold text-primary-foreground">BH</span>
+              <span className="text-[10px] font-bold text-primary-foreground">V</span>
             </div>
-            <h1 className="font-heading font-semibold text-sm text-foreground">Hygiene HQ</h1>
+            <h1 className="font-heading font-semibold text-sm text-foreground">VenueOS</h1>
           </header>
 
           {/* Main content */}

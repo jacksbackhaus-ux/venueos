@@ -106,9 +106,9 @@ type StaffMember = {
 };
 
 const defaultStaff: StaffMember[] = [
-  { id: "u1", name: "Alex Manager", email: "alex@backhaus.co.uk", role: "owner", active: true },
-  { id: "u2", name: "Sarah M.", email: "sarah@backhaus.co.uk", role: "staff", active: true, pin: "1234" },
-  { id: "u3", name: "Tom B.", email: "tom@backhaus.co.uk", role: "staff", active: true, pin: "5678" },
+  { id: "u1", name: "Alex Manager", email: "alex@venue.co.uk", role: "owner", active: true },
+  { id: "u2", name: "Sarah M.", email: "sarah@venue.co.uk", role: "staff", active: true, pin: "1234" },
+  { id: "u3", name: "Tom B.", email: "tom@venue.co.uk", role: "staff", active: true, pin: "5678" },
   { id: "u4", name: "EHO Inspector", email: "", role: "readonly", active: true },
 ];
 
@@ -164,7 +164,7 @@ const Settings = () => {
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "" });
 
   // Account state
-  const [bakeryName, setBakeryName] = useState("BackHaus Bakery");
+  const [bakeryName, setBakeryName] = useState("My Venue");
   const [bakeryAddress, setBakeryAddress] = useState("12 High Street, Cambridge CB2 1AB");
   const [operatingDays, setOperatingDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]);
   const [kioskMode, setKioskMode] = useState(true);
@@ -680,7 +680,7 @@ const Settings = () => {
             <h3 className="font-heading font-semibold text-sm">Export Branding</h3>
             <div>
               <Label className="text-sm">Report header name</Label>
-              <Input defaultValue="BackHaus Bakery" />
+              <Input defaultValue="My Venue" />
             </div>
             <Button variant="outline" size="sm" className="gap-1">
               <Plus className="h-3 w-3" /> Upload Logo for Reports
@@ -700,7 +700,7 @@ const Settings = () => {
                 </div>
                 <div>
                   <p className="font-heading font-semibold">Alex Manager</p>
-                  <p className="text-sm text-muted-foreground">alex@backhaus.co.uk</p>
+                  <p className="text-sm text-muted-foreground">alex@venue.co.uk</p>
                   <Badge className="bg-primary/10 text-primary border-0 text-[10px] mt-1">Owner / Manager</Badge>
                 </div>
               </div>
@@ -911,7 +911,7 @@ const Settings = () => {
             </div>
             <div>
               <Label className="text-sm">Email</Label>
-              <Input type="email" placeholder="jane@backhaus.co.uk" value={staffForm.email} onChange={(e) => setStaffForm((f) => ({ ...f, email: e.target.value }))} />
+              <Input type="email" placeholder="jane@venue.co.uk" value={staffForm.email} onChange={(e) => setStaffForm((f) => ({ ...f, email: e.target.value }))} />
             </div>
             <div>
               <Label className="text-sm">Role</Label>

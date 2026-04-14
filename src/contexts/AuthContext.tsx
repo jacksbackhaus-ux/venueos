@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return stored ? JSON.parse(stored) : null;
   });
   const [isLoading, setIsLoading] = useState(true);
+  const mountedRef = useRef(true);
 
   const fetchAppUser = useCallback(async (authUserId: string) => {
     const { data } = await supabase
@@ -63,9 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
 
     const appUserData = data as AppUser | null;
+    if (!mountedRef.current) return appUserData;
     setAppUser(appUserData);
 
-    // Fetch org role if user exists
     if (appUserData) {
       const { data: orgData } = await supabase
         .from('org_users')
@@ -73,9 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', appUserData.id)
         .eq('active', true)
         .maybeSingle();
-      setOrgRole(orgData as OrgRole | null);
+      if (mountedRef.current) setOrgRole(orgData as OrgRole | null);
     } else {
-      setOrgRole(null);
+      if (mountedRef.current) setOrgRole(null);
     }
 
     return appUserData;
@@ -86,37 +87,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchAppUser]);
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!mounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          // Don't set isLoading false until fetchAppUser completes
-          const result = await fetchAppUser(session.user.id);
-          if (mounted) setIsLoading(false);
-        } else {
-          setAppUser(null);
-          setOrgRole(null);
-          if (mounted) setIsLoading(false);
-        }
-      }
-    );
-
+    // 1. Restore session from storage first (this processes URL tokens too)
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
+      if (!mountedRef.current) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchAppUser(session.user.id);
       }
-      if (mounted) setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     });
 
+    // 2. Listen for subsequent auth changes (sign-in, sign-out, token refresh)
+    // IMPORTANT: Do NOT await async operations in this callback — it causes deadlocks
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!mountedRef.current) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          // Fire-and-forget: fetch app user without blocking the callback
+          fetchAppUser(session.user.id).then(() => {
+            if (mountedRef.current) setIsLoading(false);
+          });
+        } else {
+          setAppUser(null);
+          setOrgRole(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
   }, [fetchAppUser]);
