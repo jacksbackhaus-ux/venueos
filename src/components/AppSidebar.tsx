@@ -74,9 +74,9 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <h2 className="font-heading font-bold text-sm text-sidebar-foreground truncate">
-                BackHaus
+                VenueOS
               </h2>
-              <p className="text-[10px] text-muted-foreground truncate">Hygiene HQ</p>
+              <p className="text-[10px] text-muted-foreground truncate">Food Safety Platform</p>
             </div>
           )}
         </div>
