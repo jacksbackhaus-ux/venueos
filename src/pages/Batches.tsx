@@ -32,6 +32,8 @@ interface Batch {
   created_at: string;
   completed_at: string | null;
   template_id: string | null;
+  date_produced: string | null;
+  use_by_date: string | null;
 }
 
 interface BatchTemplate {
