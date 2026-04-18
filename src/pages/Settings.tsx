@@ -338,10 +338,12 @@ const Settings = () => {
   };
 
   const deactivateCheck = async (id: string) => {
-    const { error } = await supabase.from('day_sheet_items').update({ active: false }).eq('id', id);
+    if (!confirm("Permanently delete this check? This cannot be undone. Logged entries will also be removed.")) return;
+    await supabase.from('day_sheet_entries').delete().eq('item_id', id);
+    const { error } = await supabase.from('day_sheet_items').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Check deactivated (history preserved)");
-    setDaySheetChecks((prev) => prev.map((c) => c.id === id ? { ...c, active: false } : c));
+    toast.success("Check deleted");
+    setDaySheetChecks((prev) => prev.filter((c) => c.id !== id));
   };
 
   // ─── Staff handlers (DB-backed; staff_code rows for kiosk PIN users) ───
