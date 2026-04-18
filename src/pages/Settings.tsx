@@ -248,10 +248,13 @@ const Settings = () => {
   };
 
   const deactivateUnit = async (id: string) => {
-    const { error } = await supabase.from('temp_units').update({ active: false }).eq('id', id);
+    if (!confirm("Permanently delete this unit? This cannot be undone. Logged history for this unit will also be removed.")) return;
+    // Delete logs first (no cascade)
+    await supabase.from('temp_logs').delete().eq('unit_id', id);
+    const { error } = await supabase.from('temp_units').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Unit deactivated (history preserved)");
-    setTempUnits((prev) => prev.map((u) => u.id === id ? { ...u, active: false } : u));
+    toast.success("Unit deleted");
+    setTempUnits((prev) => prev.filter((u) => u.id !== id));
   };
 
   const openEditUnit = (unit: TempUnit) => {
@@ -286,10 +289,12 @@ const Settings = () => {
   };
 
   const deactivateCleaning = async (id: string) => {
-    const { error } = await supabase.from('cleaning_tasks').update({ active: false }).eq('id', id);
+    if (!confirm("Permanently delete this cleaning task? This cannot be undone. Logged history will also be removed.")) return;
+    await supabase.from('cleaning_logs').delete().eq('task_id', id);
+    const { error } = await supabase.from('cleaning_tasks').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Task deactivated (history preserved)");
-    setCleaningTemplates((prev) => prev.map((t) => t.id === id ? { ...t, active: false } : t));
+    toast.success("Task deleted");
+    setCleaningTemplates((prev) => prev.filter((t) => t.id !== id));
   };
 
   // ─── Day sheet check handlers (DB-backed) ───
@@ -333,10 +338,12 @@ const Settings = () => {
   };
 
   const deactivateCheck = async (id: string) => {
-    const { error } = await supabase.from('day_sheet_items').update({ active: false }).eq('id', id);
+    if (!confirm("Permanently delete this check? This cannot be undone. Logged entries will also be removed.")) return;
+    await supabase.from('day_sheet_entries').delete().eq('item_id', id);
+    const { error } = await supabase.from('day_sheet_items').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Check deactivated (history preserved)");
-    setDaySheetChecks((prev) => prev.map((c) => c.id === id ? { ...c, active: false } : c));
+    toast.success("Check deleted");
+    setDaySheetChecks((prev) => prev.filter((c) => c.id !== id));
   };
 
   // ─── Staff handlers (DB-backed; staff_code rows for kiosk PIN users) ───

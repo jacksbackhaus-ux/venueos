@@ -153,6 +153,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by_user_id: string | null
+          date_produced: string | null
           id: string
           notes: string | null
           organisation_id: string
@@ -161,12 +162,14 @@ export type Database = {
           site_id: string
           status: Database["public"]["Enums"]["batch_status"]
           template_id: string | null
+          use_by_date: string | null
         }
         Insert: {
           batch_code: string
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          date_produced?: string | null
           id?: string
           notes?: string | null
           organisation_id: string
@@ -175,12 +178,14 @@ export type Database = {
           site_id: string
           status?: Database["public"]["Enums"]["batch_status"]
           template_id?: string | null
+          use_by_date?: string | null
         }
         Update: {
           batch_code?: string
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          date_produced?: string | null
           id?: string
           notes?: string | null
           organisation_id?: string
@@ -189,6 +194,7 @@ export type Database = {
           site_id?: string
           status?: Database["public"]["Enums"]["batch_status"]
           template_id?: string | null
+          use_by_date?: string | null
         }
         Relationships: [
           {

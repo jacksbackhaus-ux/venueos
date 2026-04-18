@@ -32,6 +32,8 @@ interface Batch {
   created_at: string;
   completed_at: string | null;
   template_id: string | null;
+  date_produced: string | null;
+  use_by_date: string | null;
 }
 
 interface BatchTemplate {
@@ -70,7 +72,7 @@ export default function Batches() {
   const [stageLoading, setStageLoading] = useState(false);
 
   // Create form state
-  const [newBatch, setNewBatch] = useState({ product_name: '', recipe_ref: '', template_id: '', notes: '' });
+  const [newBatch, setNewBatch] = useState({ product_name: '', recipe_ref: '', template_id: '', notes: '', date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '' });
   const [creating, setCreating] = useState(false);
 
   // Stage completion state
@@ -115,13 +117,15 @@ export default function Batches() {
       product_name: newBatch.product_name,
       recipe_ref: newBatch.recipe_ref || null,
       notes: newBatch.notes || null,
+      date_produced: newBatch.date_produced || null,
+      use_by_date: newBatch.use_by_date || null,
       created_by_user_id: appUser.id,
     });
     setCreating(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Batch ${batchCode} created`);
     setShowCreate(false);
-    setNewBatch({ product_name: '', recipe_ref: '', template_id: '', notes: '' });
+    setNewBatch({ product_name: '', recipe_ref: '', template_id: '', notes: '', date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '' });
     loadBatches();
   };
 
@@ -276,6 +280,18 @@ export default function Batches() {
               <Input placeholder="R-001 (optional)" value={newBatch.recipe_ref}
                 onChange={e => setNewBatch({ ...newBatch, recipe_ref: e.target.value })} />
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Date Produced *</Label>
+                <Input type="date" value={newBatch.date_produced}
+                  onChange={e => setNewBatch({ ...newBatch, date_produced: e.target.value })} />
+              </div>
+              <div>
+                <Label>Use By Date</Label>
+                <Input type="date" value={newBatch.use_by_date}
+                  onChange={e => setNewBatch({ ...newBatch, use_by_date: e.target.value })} />
+              </div>
+            </div>
             {templates.length > 0 && (
               <div>
                 <Label>Template</Label>
@@ -326,6 +342,16 @@ export default function Batches() {
                   <div><span className="text-muted-foreground">Created:</span>{' '}
                     {format(new Date(selectedBatch.created_at), 'dd MMM yyyy HH:mm')}
                   </div>
+                  {selectedBatch.date_produced && (
+                    <div><span className="text-muted-foreground">Produced:</span>{' '}
+                      {format(new Date(selectedBatch.date_produced), 'dd MMM yyyy')}
+                    </div>
+                  )}
+                  {selectedBatch.use_by_date && (
+                    <div><span className="text-muted-foreground">Use By:</span>{' '}
+                      {format(new Date(selectedBatch.use_by_date), 'dd MMM yyyy')}
+                    </div>
+                  )}
                 </div>
 
                 {selectedBatch.notes && (
