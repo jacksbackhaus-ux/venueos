@@ -429,9 +429,7 @@ const Settings = () => {
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={unit.active}
-                      onCheckedChange={(checked) =>
-                        setTempUnits((prev) => prev.map((u) => u.id === unit.id ? { ...u, active: checked } : u))
-                      }
+                      onCheckedChange={(checked) => toggleUnitActive(unit.id, checked)}
                     />
                     <Button variant="ghost" size="sm" onClick={() => openEditUnit(unit)}>
                       <Edit2 className="h-3 w-3" />
@@ -440,7 +438,7 @@ const Settings = () => {
                       variant="ghost"
                       size="sm"
                       className="text-breach hover:text-breach"
-                      onClick={() => setTempUnits((prev) => prev.filter((u) => u.id !== unit.id))}
+                      onClick={() => deactivateUnit(unit.id)}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
