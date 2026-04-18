@@ -3,6 +3,7 @@ import {
   Wheat, Truck, Bug, AlertTriangle, FileText, Settings, ShieldCheck,
   Package, Building2, CreditCard,
 } from "lucide-react";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
