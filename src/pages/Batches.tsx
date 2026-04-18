@@ -117,13 +117,15 @@ export default function Batches() {
       product_name: newBatch.product_name,
       recipe_ref: newBatch.recipe_ref || null,
       notes: newBatch.notes || null,
+      date_produced: newBatch.date_produced || null,
+      use_by_date: newBatch.use_by_date || null,
       created_by_user_id: appUser.id,
     });
     setCreating(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Batch ${batchCode} created`);
     setShowCreate(false);
-    setNewBatch({ product_name: '', recipe_ref: '', template_id: '', notes: '' });
+    setNewBatch({ product_name: '', recipe_ref: '', template_id: '', notes: '', date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '' });
     loadBatches();
   };
 
