@@ -72,7 +72,7 @@ export default function Batches() {
   const [stageLoading, setStageLoading] = useState(false);
 
   // Create form state
-  const [newBatch, setNewBatch] = useState({ product_name: '', recipe_ref: '', template_id: '', notes: '' });
+  const [newBatch, setNewBatch] = useState({ product_name: '', recipe_ref: '', template_id: '', notes: '', date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '' });
   const [creating, setCreating] = useState(false);
 
   // Stage completion state
