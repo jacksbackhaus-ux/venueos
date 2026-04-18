@@ -10,16 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
- * Runs after a user signs up or logs in without a profile.
- * - If `signup_pending` metadata exists, runs handle_signup automatically.
- * - Otherwise, shows a manual setup form so the user can finish onboarding.
+ * Shown after a verified user signs in but has no profile yet.
+ * Always starts with empty fields — collects organisation, first site, and display name.
  */
 export default function Onboarding() {
   const { user, refreshAppUser, signOut, appUser, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [autoRunning, setAutoRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [needsManual, setNeedsManual] = useState(false);
   const [form, setForm] = useState({
     displayName: "",
     orgName: "",
@@ -27,7 +24,7 @@ export default function Onboarding() {
     siteAddress: "",
   });
 
-  // If already has a profile, bounce to dashboard
+  // If profile already exists, bounce to dashboard
   useEffect(() => {
     if (!isLoading && appUser) {
       navigate("/", { replace: true });
@@ -41,60 +38,20 @@ export default function Onboarding() {
     }
   }, [user, isLoading, navigate]);
 
-  // Try auto-setup from signup metadata
+  // Pre-fill display name only from the name they entered at signup (not org/site)
   useEffect(() => {
-    if (!user || appUser || autoRunning || needsManual) return;
-
+    if (!user) return;
     const meta = user.user_metadata || {};
-    if (!meta.signup_pending || !meta.org_name || !meta.site_name || !meta.display_name) {
-      // Pre-fill form from any metadata we have
-      setForm(f => ({
-        ...f,
-        displayName: meta.display_name || user.user_metadata?.full_name || "",
-        orgName: meta.org_name || "",
-        siteName: meta.site_name || "",
-        siteAddress: meta.site_address || "",
-      }));
-      setNeedsManual(true);
-      return;
-    }
+    setForm(f => ({
+      ...f,
+      displayName: f.displayName || meta.display_name || meta.full_name || "",
+    }));
+  }, [user]);
 
-    setAutoRunning(true);
-    (async () => {
-      const { error } = await supabase.rpc('handle_signup', {
-        _org_name: meta.org_name,
-        _site_name: meta.site_name,
-        _display_name: meta.display_name,
-        _email: user.email || '',
-        _site_address: meta.site_address || null,
-      });
-
-      if (error) {
-        console.error('Signup error:', error);
-        toast.error("Auto setup failed: " + error.message);
-        setAutoRunning(false);
-        setNeedsManual(true);
-        setForm(f => ({
-          ...f,
-          displayName: meta.display_name || "",
-          orgName: meta.org_name || "",
-          siteName: meta.site_name || "",
-          siteAddress: meta.site_address || "",
-        }));
-        return;
-      }
-
-      await supabase.auth.updateUser({ data: { signup_pending: false } });
-      await refreshAppUser();
-      toast.success("Your account is ready!");
-      navigate("/", { replace: true });
-    })();
-  }, [user, appUser, autoRunning, needsManual, refreshAppUser, navigate]);
-
-  const handleManualSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.displayName.trim() || !form.orgName.trim() || !form.siteName.trim()) {
-      toast.error("Please fill in all required fields");
+      toast.error("Please fill in your name, organisation, and site name");
       return;
     }
     setSubmitting(true);
@@ -106,12 +63,11 @@ export default function Onboarding() {
       _site_address: form.siteAddress.trim() || null,
     });
     if (error) {
-      console.error('Manual signup error:', error);
+      console.error('Onboarding error:', error);
       toast.error("Setup failed: " + error.message);
       setSubmitting(false);
       return;
     }
-    await supabase.auth.updateUser({ data: { signup_pending: false } });
     await refreshAppUser();
     toast.success("Your account is ready!");
     navigate("/", { replace: true });
@@ -122,13 +78,10 @@ export default function Onboarding() {
     navigate("/auth", { replace: true });
   };
 
-  if (isLoading || (!needsManual && !appUser && user)) {
+  if (isLoading || (!user && !appUser)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Setting up your account…</p>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -138,13 +91,13 @@ export default function Onboarding() {
       <div className="w-full max-w-md">
         <Card>
           <CardHeader>
-            <CardTitle>Finish setting up</CardTitle>
+            <CardTitle>Set up your business</CardTitle>
             <CardDescription>
-              Welcome{user?.email ? `, ${user.email}` : ""}. Create your organisation and first site to get started.
+              Welcome{user?.email ? `, ${user.email}` : ""}. Tell us about your organisation and first location to get started. You can add more sites and configure everything else from Settings later.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleManualSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="o-name">Your Name *</Label>
                 <Input id="o-name" value={form.displayName}
@@ -152,17 +105,17 @@ export default function Onboarding() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="o-org">Organisation Name *</Label>
-                <Input id="o-org" placeholder="My Bakery Ltd" value={form.orgName}
+                <Input id="o-org" placeholder="e.g. My Bakery Ltd" value={form.orgName}
                   onChange={e => setForm(f => ({ ...f, orgName: e.target.value }))} required />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="o-site">Site Name *</Label>
-                <Input id="o-site" placeholder="High Street Branch" value={form.siteName}
+                <Label htmlFor="o-site">First Site Name *</Label>
+                <Input id="o-site" placeholder="e.g. High Street Branch" value={form.siteName}
                   onChange={e => setForm(f => ({ ...f, siteName: e.target.value }))} required />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="o-addr">Site Address</Label>
-                <Input id="o-addr" placeholder="123 High St, London" value={form.siteAddress}
+                <Label htmlFor="o-addr">Site Address (optional)</Label>
+                <Input id="o-addr" value={form.siteAddress}
                   onChange={e => setForm(f => ({ ...f, siteAddress: e.target.value }))} />
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>

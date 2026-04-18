@@ -169,7 +169,7 @@ function EmailLoginForm() {
 
 function SignupForm() {
   const [form, setForm] = useState({
-    email: "", password: "", confirmPassword: "", displayName: "", orgName: "", siteName: "", siteAddress: ""
+    email: "", password: "", confirmPassword: "", displayName: ""
   });
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"form" | "verify">("form");
@@ -179,7 +179,7 @@ function SignupForm() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.password || !form.orgName || !form.siteName || !form.displayName) {
+    if (!form.email || !form.password || !form.displayName) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -199,11 +199,7 @@ function SignupForm() {
       options: {
         emailRedirectTo: window.location.origin,
         data: {
-          signup_pending: true,
-          org_name: form.orgName,
-          site_name: form.siteName,
           display_name: form.displayName,
-          site_address: form.siteAddress || null,
         },
       },
     });
@@ -237,17 +233,17 @@ function SignupForm() {
     <Card>
       <CardHeader>
         <CardTitle>Create Your Account</CardTitle>
-        <CardDescription>Set up your organisation and first site.</CardDescription>
+        <CardDescription>You'll set up your organisation and first site after verifying your email.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSignup} className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="s-name">Your Name *</Label>
-            <Input id="s-name" placeholder="Jane Smith" value={form.displayName} onChange={update("displayName")} required />
+            <Input id="s-name" value={form.displayName} onChange={update("displayName")} required />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="s-email">Email *</Label>
-            <Input id="s-email" type="email" placeholder="jane@bakery.co.uk" value={form.email} onChange={update("email")} required />
+            <Input id="s-email" type="email" value={form.email} onChange={update("email")} required />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="s-password">Password *</Label>
@@ -255,19 +251,7 @@ function SignupForm() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="s-confirm">Confirm Password *</Label>
-            <PasswordInput id="s-confirm" placeholder="Repeat password" value={form.confirmPassword} onChange={update("confirmPassword")} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="s-org">Organisation Name *</Label>
-            <Input id="s-org" placeholder="My Bakery Ltd" value={form.orgName} onChange={update("orgName")} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="s-site">Site Name *</Label>
-            <Input id="s-site" placeholder="High Street Branch" value={form.siteName} onChange={update("siteName")} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="s-addr">Site Address</Label>
-            <Input id="s-addr" placeholder="123 High St, London" value={form.siteAddress} onChange={update("siteAddress")} />
+            <PasswordInput id="s-confirm" value={form.confirmPassword} onChange={update("confirmPassword")} />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
