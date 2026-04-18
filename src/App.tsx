@@ -39,8 +39,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // User authenticated via Supabase but no app user yet — needs onboarding
-  if (user && !appUser && user.user_metadata?.signup_pending) {
+  // Authenticated via Supabase but no app profile row yet → finish setup
+  if (user && !appUser) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -49,6 +49,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+function AuthRedirect() {
+  const { isAuthenticated, user, appUser, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (user && !appUser) return <Navigate to="/onboarding" replace />;
+  if (isAuthenticated) return <Navigate to="/" replace />;
+  return <Auth />;
 }
 
 function AppRoutes() {
@@ -64,7 +72,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/auth" element={isAuthenticated ? <Navigate to="/" replace /> : <Auth />} />
+      <Route path="/auth" element={<AuthRedirect />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/" element={<AuthGuard><AppLayout><Dashboard /></AppLayout></AuthGuard>} />
