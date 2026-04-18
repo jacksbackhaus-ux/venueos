@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useSite } from "@/contexts/SiteContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import {
   Settings as SettingsIcon,
@@ -46,13 +49,7 @@ type TempUnit = {
   active: boolean;
 };
 
-const defaultUnits: TempUnit[] = [
-  { id: "f1", name: "Fridge 1", type: "fridge", minTemp: 0, maxTemp: 5, active: true },
-  { id: "f2", name: "Fridge 2", type: "fridge", minTemp: 0, maxTemp: 5, active: true },
-  { id: "fz1", name: "Freezer 1", type: "freezer", minTemp: -25, maxTemp: -18, active: true },
-  { id: "dc1", name: "Display Chiller", type: "display", minTemp: 0, maxTemp: 8, active: true },
-  { id: "amb", name: "Ambient (Bakery)", type: "ambient", minTemp: 10, maxTemp: 25, active: true },
-];
+const defaultUnits: TempUnit[] = [];
 
 // ─── Cleaning Templates ───
 type CleaningTemplate = {
@@ -64,15 +61,7 @@ type CleaningTemplate = {
   active: boolean;
 };
 
-const defaultCleaningTemplates: CleaningTemplate[] = [
-  { id: "ct1", area: "Bakery Floor", task: "Sweep and mop all floor areas", frequency: "daily", dueTime: "12:00", active: true },
-  { id: "ct2", area: "Prep Area", task: "Clean and sanitise all prep surfaces", frequency: "daily", dueTime: "10:00", active: true },
-  { id: "ct3", area: "Display", task: "Clean display counter glass and shelving", frequency: "daily", dueTime: "07:00", active: true },
-  { id: "ct4", area: "Toilets", task: "Clean toilet and restock supplies", frequency: "daily", dueTime: "14:00", active: true },
-  { id: "ct5", area: "Equipment", task: "Deep clean mixer and attachments", frequency: "weekly", dueTime: "Monday", active: true },
-  { id: "ct6", area: "Equipment", task: "Clean and descale oven", frequency: "weekly", dueTime: "Wednesday", active: true },
-  { id: "ct7", area: "Kitchen", task: "Deep clean extraction hood and filters", frequency: "monthly", dueTime: "1st", active: true },
-];
+const defaultCleaningTemplates: CleaningTemplate[] = [];
 
 // ─── Day Sheet Checks ───
 type DaySheetCheck = {
@@ -82,18 +71,7 @@ type DaySheetCheck = {
   active: boolean;
 };
 
-const defaultDaySheetChecks: DaySheetCheck[] = [
-  { id: "ds1", section: "Opening", label: "Premises secure and clean on arrival", active: true },
-  { id: "ds2", section: "Opening", label: "Pest traps checked — no signs of activity", active: true },
-  { id: "ds3", section: "Opening", label: "Hand wash stations stocked", active: true },
-  { id: "ds4", section: "Opening", label: "Food contact surfaces cleaned and sanitised", active: true },
-  { id: "ds5", section: "Opening", label: "Allergen info displayed and up to date", active: true },
-  { id: "ds6", section: "Closing", label: "All food covered, labelled, and dated", active: true },
-  { id: "ds7", section: "Closing", label: "PM fridge/freezer temps logged", active: true },
-  { id: "ds8", section: "Closing", label: "Bins emptied and area clean", active: true },
-  { id: "ds9", section: "Closing", label: "Equipment switched off / cleaned", active: true },
-  { id: "ds10", section: "Closing", label: "Premises secured", active: true },
-];
+const defaultDaySheetChecks: DaySheetCheck[] = [];
 
 // ─── Staff ───
 type StaffMember = {
@@ -105,12 +83,7 @@ type StaffMember = {
   pin?: string;
 };
 
-const defaultStaff: StaffMember[] = [
-  { id: "u1", name: "Alex Manager", email: "alex@venue.co.uk", role: "owner", active: true },
-  { id: "u2", name: "Sarah M.", email: "sarah@venue.co.uk", role: "staff", active: true, pin: "1234" },
-  { id: "u3", name: "Tom B.", email: "tom@venue.co.uk", role: "staff", active: true, pin: "5678" },
-  { id: "u4", name: "EHO Inspector", email: "", role: "readonly", active: true },
-];
+const defaultStaff: StaffMember[] = [];
 
 // ─── Operating days ───
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -140,7 +113,10 @@ const roleBadgeColor: Record<string, string> = {
 };
 
 const Settings = () => {
+  const { currentSite, organisationId } = useSite();
+  const { appUser } = useAuth();
   const [activeTab, setActiveTab] = useState("temperature");
+  const [loading, setLoading] = useState(true);
 
   // Temperature state
   const [tempUnits, setTempUnits] = useState<TempUnit[]>(defaultUnits);
@@ -163,13 +139,66 @@ const Settings = () => {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "" });
 
-  // Account state
-  const [bakeryName, setBakeryName] = useState("My Venue");
-  const [bakeryAddress, setBakeryAddress] = useState("12 High Street, Cambridge CB2 1AB");
+  // Site/business state — populated from currentSite once loaded
+  const [bakeryName, setBakeryName] = useState("");
+  const [bakeryAddress, setBakeryAddress] = useState("");
   const [operatingDays, setOperatingDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]);
   const [kioskMode, setKioskMode] = useState(true);
   const [magicLinkAuth, setMagicLinkAuth] = useState(true);
   const [autoLockTime, setAutoLockTime] = useState("22:00");
+
+  // Load real data from the database for the current site
+  useEffect(() => {
+    if (!currentSite) { setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    setBakeryName(currentSite.name || "");
+    setBakeryAddress(currentSite.address || "");
+
+    (async () => {
+      const [unitsRes, cleaningRes, sectionsRes, usersRes] = await Promise.all([
+        supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
+        supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
+        supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
+        supabase.from('users').select('id, display_name, email, status, auth_type, staff_code').eq('organisation_id', currentSite.organisation_id),
+      ]);
+      if (cancelled) return;
+
+      if (unitsRes.data) {
+        setTempUnits(unitsRes.data.map((u: any) => ({
+          id: u.id, name: u.name, type: u.type, minTemp: Number(u.min_temp), maxTemp: Number(u.max_temp), active: u.active,
+        })));
+      }
+      if (cleaningRes.data) {
+        setCleaningTemplates(cleaningRes.data.map((c: any) => ({
+          id: c.id, area: c.area, task: c.task, frequency: c.frequency, dueTime: c.due_time || '', active: c.active,
+        })));
+      }
+      if (sectionsRes.data) {
+        const checks: DaySheetCheck[] = [];
+        for (const s of sectionsRes.data as any[]) {
+          for (const item of (s.day_sheet_items || [])) {
+            checks.push({ id: item.id, section: s.title, label: item.label, active: item.active });
+          }
+        }
+        setDaySheetChecks(checks);
+      }
+      if (usersRes.data) {
+        setStaff(usersRes.data.map((u: any) => ({
+          id: u.id,
+          name: u.display_name,
+          email: u.email || '',
+          role: u.id === appUser?.id ? 'owner' : (u.auth_type === 'staff_code' ? 'staff' : 'staff'),
+          active: u.status === 'active',
+          pin: u.staff_code || undefined,
+        })));
+      }
+      setLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, [currentSite, organisationId, appUser?.id]);
+
 
   // Allergen config
   const [requireApproval, setRequireApproval] = useState(true);
@@ -696,11 +725,11 @@ const Settings = () => {
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
-                  AM
+                  {(appUser?.display_name || "?").split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-heading font-semibold">Alex Manager</p>
-                  <p className="text-sm text-muted-foreground">alex@venue.co.uk</p>
+                  <p className="font-heading font-semibold">{appUser?.display_name || "—"}</p>
+                  <p className="text-sm text-muted-foreground">{appUser?.email || "—"}</p>
                   <Badge className="bg-primary/10 text-primary border-0 text-[10px] mt-1">Owner / Manager</Badge>
                 </div>
               </div>
