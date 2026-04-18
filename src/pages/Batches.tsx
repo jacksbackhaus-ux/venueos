@@ -280,6 +280,18 @@ export default function Batches() {
               <Input placeholder="R-001 (optional)" value={newBatch.recipe_ref}
                 onChange={e => setNewBatch({ ...newBatch, recipe_ref: e.target.value })} />
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Date Produced *</Label>
+                <Input type="date" value={newBatch.date_produced}
+                  onChange={e => setNewBatch({ ...newBatch, date_produced: e.target.value })} />
+              </div>
+              <div>
+                <Label>Use By Date</Label>
+                <Input type="date" value={newBatch.use_by_date}
+                  onChange={e => setNewBatch({ ...newBatch, use_by_date: e.target.value })} />
+              </div>
+            </div>
             {templates.length > 0 && (
               <div>
                 <Label>Template</Label>
