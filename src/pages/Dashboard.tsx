@@ -17,6 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useSite } from "@/contexts/SiteContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -27,15 +30,6 @@ const fadeUp = {
   }),
 };
 
-// Mock data
-const complianceScore = 78;
-const todayStats = {
-  completed: 14,
-  total: 18,
-  overdue: 2,
-  breaches: 1,
-};
-
 const quickActions = [
   { label: "Log Temp", icon: Thermometer, href: "/temperatures", color: "bg-primary" },
   { label: "Log Delivery", icon: Truck, href: "/suppliers", color: "bg-success" },
@@ -43,27 +37,8 @@ const quickActions = [
   { label: "Report Issue", icon: AlertTriangle, href: "/incidents", color: "bg-breach" },
 ];
 
-const myTasks = [
-  { id: 1, title: "Fridge 1 AM temp", due: "09:00", status: "done", module: "Temps" },
-  { id: 2, title: "Fridge 2 AM temp", due: "09:00", status: "done", module: "Temps" },
-  { id: 3, title: "Freezer 1 AM temp", due: "09:00", status: "overdue", module: "Temps" },
-  { id: 4, title: "Opening checks", due: "07:30", status: "done", module: "Day Sheet" },
-  { id: 5, title: "Prep area wipe-down", due: "10:00", status: "pending", module: "Cleaning" },
-  { id: 6, title: "Delivery: Flour supplier", due: "11:00", status: "pending", module: "Delivery" },
-  { id: 7, title: "Display chiller PM temp", due: "14:00", status: "pending", module: "Temps" },
-  { id: 8, title: "Closing checks", due: "17:00", status: "pending", module: "Day Sheet" },
-];
-
-const alerts = [
-  { type: "breach", message: "Fridge 2 at 9.2°C — action required", time: "08:45" },
-  { type: "overdue", message: "Freezer 1 AM temp overdue", time: "09:15" },
-];
-
-const pillars = [
-  { name: "Hygienic Handling", score: 85, icon: ClipboardCheck },
-  { name: "Premises & Cleanliness", score: 72, icon: SprayCan },
-  { name: "Management Confidence", score: 90, icon: ShieldCheck },
-];
+type TaskRow = { id: string; title: string; due: string; status: "done" | "overdue" | "pending"; module: string };
+type AlertRow = { type: "breach" | "overdue"; message: string; time: string };
 
 const statusIcon = (status: string) => {
   switch (status) {
@@ -77,9 +52,154 @@ const statusIcon = (status: string) => {
 };
 
 const Dashboard = () => {
+  const { currentSite } = useSite();
+  const siteId = currentSite?.id;
+  const today = new Date().toISOString().slice(0, 10);
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
   const dateStr = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard", siteId, today],
+    enabled: !!siteId,
+    queryFn: async () => {
+      const [
+        cleaningTasksRes,
+        cleaningLogsRes,
+        tempUnitsRes,
+        tempLogsRes,
+        daySheetSectionsRes,
+        daySheetRes,
+        incidentsRes,
+      ] = await Promise.all([
+        supabase.from("cleaning_tasks").select("id, task, area, frequency, due_time").eq("site_id", siteId!).eq("active", true),
+        supabase.from("cleaning_logs").select("task_id, done, completed_at").eq("site_id", siteId!).eq("log_date", today),
+        supabase.from("temp_units").select("id, name, min_temp, max_temp").eq("site_id", siteId!).eq("active", true),
+        supabase.from("temp_logs").select("unit_id, value, pass, logged_at, log_type").eq("site_id", siteId!).gte("logged_at", `${today}T00:00:00`),
+        supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, label, active)").eq("site_id", siteId!).eq("active", true),
+        supabase.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", siteId!).eq("sheet_date", today).maybeSingle(),
+        supabase.from("incidents").select("id, title, status, reported_at").eq("site_id", siteId!).eq("status", "open"),
+      ]);
+
+      const cleaningTasks = cleaningTasksRes.data ?? [];
+      const cleaningLogs = cleaningLogsRes.data ?? [];
+      const tempUnits = tempUnitsRes.data ?? [];
+      const tempLogs = tempLogsRes.data ?? [];
+      const daySheetSections = daySheetSectionsRes.data ?? [];
+      const daySheetEntries = (daySheetRes.data as any)?.day_sheet_entries ?? [];
+      const incidents = incidentsRes.data ?? [];
+
+      const tasks: TaskRow[] = [];
+      const alerts: AlertRow[] = [];
+
+      // Daily cleaning tasks
+      const doneCleaningIds = new Set(cleaningLogs.filter((l: any) => l.done).map((l: any) => l.task_id));
+      cleaningTasks
+        .filter((t: any) => t.frequency === "daily")
+        .forEach((t: any) => {
+          tasks.push({
+            id: `cleaning-${t.id}`,
+            title: t.task,
+            due: t.due_time || "—",
+            status: doneCleaningIds.has(t.id) ? "done" : "pending",
+            module: "Cleaning",
+          });
+        });
+
+      // Temperature checks (AM + PM per unit)
+      const amDone = new Set(tempLogs.filter((l: any) => l.log_type === "AM Check").map((l: any) => l.unit_id));
+      const pmDone = new Set(tempLogs.filter((l: any) => l.log_type === "PM Check").map((l: any) => l.unit_id));
+      const hourNow = now.getHours();
+      tempUnits.forEach((u: any) => {
+        tasks.push({
+          id: `temp-am-${u.id}`,
+          title: `${u.name} AM temp`,
+          due: "09:00",
+          status: amDone.has(u.id) ? "done" : hourNow >= 11 ? "overdue" : "pending",
+          module: "Temps",
+        });
+        tasks.push({
+          id: `temp-pm-${u.id}`,
+          title: `${u.name} PM temp`,
+          due: "16:00",
+          status: pmDone.has(u.id) ? "done" : hourNow >= 18 ? "overdue" : "pending",
+          module: "Temps",
+        });
+      });
+
+      // Day sheet items
+      const doneItemIds = new Set(daySheetEntries.filter((e: any) => e.done).map((e: any) => e.item_id));
+      daySheetSections.forEach((s: any) => {
+        (s.day_sheet_items ?? []).filter((i: any) => i.active).forEach((i: any) => {
+          tasks.push({
+            id: `ds-${i.id}`,
+            title: i.label,
+            due: s.default_time,
+            status: doneItemIds.has(i.id) ? "done" : "pending",
+            module: s.title,
+          });
+        });
+      });
+
+      // Temperature breaches today
+      tempLogs.filter((l: any) => !l.pass).forEach((l: any) => {
+        const unit = tempUnits.find((u: any) => u.id === l.unit_id);
+        alerts.push({
+          type: "breach",
+          message: `${unit?.name ?? "Unit"} at ${l.value}°C — action required`,
+          time: new Date(l.logged_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        });
+      });
+      // Overdue temp checks
+      tempUnits.forEach((u: any) => {
+        if (!amDone.has(u.id) && hourNow >= 11) {
+          alerts.push({ type: "overdue", message: `${u.name} AM temp overdue`, time: "09:00" });
+        }
+      });
+      // Open incidents
+      incidents.forEach((inc: any) => {
+        alerts.push({
+          type: "breach",
+          message: inc.title,
+          time: new Date(inc.reported_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        });
+      });
+
+      const total = tasks.length;
+      const completed = tasks.filter((t) => t.status === "done").length;
+      const overdue = tasks.filter((t) => t.status === "overdue").length;
+      const breaches = tempLogs.filter((l: any) => !l.pass).length;
+      const compliance = total > 0 ? Math.round((completed / total) * 100) : 100;
+
+      // Pillars (simple heuristic from real data)
+      const tempCompliance = tempUnits.length > 0
+        ? Math.round(((amDone.size + pmDone.size) / (tempUnits.length * 2)) * 100)
+        : 100;
+      const cleaningCompliance = cleaningTasks.filter((t: any) => t.frequency === "daily").length > 0
+        ? Math.round((doneCleaningIds.size / cleaningTasks.filter((t: any) => t.frequency === "daily").length) * 100)
+        : 100;
+      const dsItems = daySheetSections.flatMap((s: any) => (s.day_sheet_items ?? []).filter((i: any) => i.active));
+      const dsCompliance = dsItems.length > 0 ? Math.round((doneItemIds.size / dsItems.length) * 100) : 100;
+
+      const pillars = [
+        { name: "Hygienic Handling", score: tempCompliance, icon: ClipboardCheck },
+        { name: "Premises & Cleanliness", score: cleaningCompliance, icon: SprayCan },
+        { name: "Management Confidence", score: dsCompliance, icon: ShieldCheck },
+      ];
+
+      return { tasks, alerts, stats: { completed, total, overdue, breaches }, compliance, pillars };
+    },
+  });
+
+  const tasks = data?.tasks ?? [];
+  const alerts = data?.alerts ?? [];
+  const stats = data?.stats ?? { completed: 0, total: 0, overdue: 0, breaches: 0 };
+  const complianceScore = data?.compliance ?? 100;
+  const pillars = data?.pillars ?? [
+    { name: "Hygienic Handling", score: 100, icon: ClipboardCheck },
+    { name: "Premises & Cleanliness", score: 100, icon: SprayCan },
+    { name: "Management Confidence", score: 100, icon: ShieldCheck },
+  ];
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
@@ -151,10 +271,10 @@ const Dashboard = () => {
       <motion.div initial="hidden" animate="visible" custom={3} variants={fadeUp}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Completed", value: todayStats.completed, total: todayStats.total, color: "text-success" },
-            { label: "Remaining", value: todayStats.total - todayStats.completed - todayStats.overdue, color: "text-muted-foreground" },
-            { label: "Overdue", value: todayStats.overdue, color: "text-warning" },
-            { label: "Breaches", value: todayStats.breaches, color: "text-breach" },
+            { label: "Completed", value: stats.completed, total: stats.total, color: "text-success" },
+            { label: "Remaining", value: Math.max(0, stats.total - stats.completed - stats.overdue), color: "text-muted-foreground" },
+            { label: "Overdue", value: stats.overdue, color: "text-warning" },
+            { label: "Breaches", value: stats.breaches, color: "text-breach" },
           ].map((stat) => (
             <Card key={stat.label} className="border">
               <CardContent className="p-3">
@@ -186,46 +306,52 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-heading">My Tasks Today</CardTitle>
                 <Badge variant="secondary" className="text-xs">
-                  {myTasks.filter((t) => t.status === "done").length}/{myTasks.length}
+                  {tasks.filter((t) => t.status === "done").length}/{tasks.length}
                 </Badge>
               </div>
               <Progress
-                value={(myTasks.filter((t) => t.status === "done").length / myTasks.length) * 100}
+                value={tasks.length > 0 ? (tasks.filter((t) => t.status === "done").length / tasks.length) * 100 : 0}
                 className="h-1.5"
               />
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="divide-y">
-                {myTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`flex items-center gap-3 py-2.5 ${
-                      task.status === "done" ? "opacity-60" : ""
-                    }`}
-                  >
-                    {statusIcon(task.status)}
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm font-medium ${
-                          task.status === "done" ? "line-through" : ""
-                        }`}
-                      >
-                        {task.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Due {task.due}</p>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] shrink-0"
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
+              ) : tasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">No tasks set up yet. Configure modules in Settings.</p>
+              ) : (
+                <div className="divide-y">
+                  {tasks.slice(0, 12).map((task) => (
+                    <div
+                      key={task.id}
+                      className={`flex items-center gap-3 py-2.5 ${
+                        task.status === "done" ? "opacity-60" : ""
+                      }`}
                     >
-                      {task.module}
-                    </Badge>
-                    {task.status === "pending" && (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
-                ))}
-              </div>
+                      {statusIcon(task.status)}
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`text-sm font-medium ${
+                            task.status === "done" ? "line-through" : ""
+                          }`}
+                        >
+                          {task.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Due {task.due}</p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] shrink-0"
+                      >
+                        {task.module}
+                      </Badge>
+                      {task.status === "pending" && (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
