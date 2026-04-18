@@ -156,8 +156,7 @@ function SignupForm() {
     if (error) {
       toast.error(error.message);
     } else {
-      setStep("verify");
-      toast.success("Check your email to verify your account!");
+      toast.success("Account created! Setting things up...");
     }
   };
 
