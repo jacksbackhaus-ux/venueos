@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SiteProvider } from "@/contexts/SiteContext";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import ShiftAssignment from "./pages/ShiftAssignment";
@@ -64,6 +65,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={isAuthenticated ? <Navigate to="/" replace /> : <Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/" element={<AuthGuard><AppLayout><Dashboard /></AppLayout></AuthGuard>} />
       <Route path="/shifts" element={<AuthGuard><AppLayout><ShiftAssignment /></AppLayout></AuthGuard>} />
