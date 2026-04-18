@@ -58,12 +58,9 @@ type ShiftTask = {
   completedBy?: string;
 };
 
-// ─── Mock Data ───
-const staffMembers: StaffMember[] = [
-  { id: "u2", name: "Sarah M.", initials: "SM" },
-  { id: "u3", name: "Tom B.", initials: "TB" },
-  { id: "u4", name: "Jane D.", initials: "JD" },
-];
+// ─── Empty defaults — populated from the database at runtime ───
+const defaultShifts: Shift[] = [];
+const defaultTasks: ShiftTask[] = [];
 
 const shiftColors = [
   "bg-primary/10 text-primary border-primary/20",
@@ -82,30 +79,6 @@ const moduleIcons: Record<string, React.ElementType> = {
   Deliveries: Truck,
   General: CalendarClock,
 };
-
-const defaultShifts: Shift[] = [
-  { id: "sh1", name: "AM Prep", startTime: "06:00", endTime: "12:00", color: shiftColors[0], assignedStaff: ["u2", "u4"], daysActive: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] },
-  { id: "sh2", name: "Bake", startTime: "07:00", endTime: "15:00", color: shiftColors[1], assignedStaff: ["u3"], daysActive: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] },
-  { id: "sh3", name: "Close", startTime: "14:00", endTime: "18:00", color: shiftColors[2], assignedStaff: ["u2"], daysActive: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] },
-];
-
-const defaultTasks: ShiftTask[] = [
-  // AM Prep tasks
-  { id: "t1", shiftId: "sh1", title: "Opening checks", dueTime: "06:30", module: "Day Sheet", recurring: true, assignedTo: "u2", status: "done", completedAt: "06:25", completedBy: "Sarah M." },
-  { id: "t2", shiftId: "sh1", title: "Fridge 1 AM temp", dueTime: "07:00", module: "Temperatures", recurring: true, assignedTo: "u2", status: "done", completedAt: "06:55", completedBy: "Sarah M." },
-  { id: "t3", shiftId: "sh1", title: "Fridge 2 AM temp", dueTime: "07:00", module: "Temperatures", recurring: true, assignedTo: "u2", status: "done", completedAt: "06:56", completedBy: "Sarah M." },
-  { id: "t4", shiftId: "sh1", title: "Freezer 1 AM temp", dueTime: "07:00", module: "Temperatures", recurring: true, assignedTo: "u4", status: "overdue" },
-  { id: "t5", shiftId: "sh1", title: "Display chiller AM temp", dueTime: "07:00", module: "Temperatures", recurring: true, assignedTo: "u4", status: "done", completedAt: "07:05", completedBy: "Jane D." },
-  { id: "t6", shiftId: "sh1", title: "Prep area wipe-down", dueTime: "08:00", module: "Cleaning", recurring: true, assignedTo: "u4", status: "pending" },
-  // Bake tasks
-  { id: "t7", shiftId: "sh2", title: "Sausage rolls — core temp check", dueTime: "10:00", module: "Temperatures", recurring: true, assignedTo: "u3", status: "pending" },
-  { id: "t8", shiftId: "sh2", title: "Quiche — core temp check", dueTime: "11:00", module: "Temperatures", recurring: true, assignedTo: "u3", status: "pending" },
-  { id: "t9", shiftId: "sh2", title: "Receive flour delivery", dueTime: "10:30", module: "Deliveries", recurring: false, assignedTo: "u3", status: "pending" },
-  // Close tasks
-  { id: "t10", shiftId: "sh3", title: "PM fridge/freezer temps", dueTime: "16:00", module: "Temperatures", recurring: true, assignedTo: "u2", status: "pending" },
-  { id: "t11", shiftId: "sh3", title: "Floor sweep and mop", dueTime: "17:00", module: "Cleaning", recurring: true, assignedTo: "u2", status: "pending" },
-  { id: "t12", shiftId: "sh3", title: "Closing checks", dueTime: "17:30", module: "Day Sheet", recurring: true, assignedTo: "u2", status: "pending" },
-];
 
 // ─── Component ───
 const ShiftAssignment = () => {
