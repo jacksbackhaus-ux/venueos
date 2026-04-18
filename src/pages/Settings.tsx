@@ -248,10 +248,13 @@ const Settings = () => {
   };
 
   const deactivateUnit = async (id: string) => {
-    const { error } = await supabase.from('temp_units').update({ active: false }).eq('id', id);
+    if (!confirm("Permanently delete this unit? This cannot be undone. Logged history for this unit will also be removed.")) return;
+    // Delete logs first (no cascade)
+    await supabase.from('temp_logs').delete().eq('unit_id', id);
+    const { error } = await supabase.from('temp_units').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Unit deactivated (history preserved)");
-    setTempUnits((prev) => prev.map((u) => u.id === id ? { ...u, active: false } : u));
+    toast.success("Unit deleted");
+    setTempUnits((prev) => prev.filter((u) => u.id !== id));
   };
 
   const openEditUnit = (unit: TempUnit) => {
