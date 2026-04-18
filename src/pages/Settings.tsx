@@ -725,11 +725,11 @@ const Settings = () => {
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
-                  AM
+                  {(appUser?.display_name || "?").split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-heading font-semibold">Alex Manager</p>
-                  <p className="text-sm text-muted-foreground">alex@venue.co.uk</p>
+                  <p className="font-heading font-semibold">{appUser?.display_name || "—"}</p>
+                  <p className="text-sm text-muted-foreground">{appUser?.email || "—"}</p>
                   <Badge className="bg-primary/10 text-primary border-0 text-[10px] mt-1">Owner / Manager</Badge>
                 </div>
               </div>
