@@ -251,7 +251,7 @@ function SignupForm() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="s-confirm">Confirm Password *</Label>
-            <PasswordInput id="s-confirm" value={form.confirmPassword} onChange={update("confirmPassword")} />
+            <PasswordInput id="s-confirm" placeholder="Repeat password" value={form.confirmPassword} onChange={update("confirmPassword")} />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
