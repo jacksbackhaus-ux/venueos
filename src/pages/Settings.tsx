@@ -110,7 +110,10 @@ const roleBadgeColor: Record<string, string> = {
 };
 
 const Settings = () => {
+  const { currentSite, organisationId } = useSite();
+  const { appUser } = useAuth();
   const [activeTab, setActiveTab] = useState("temperature");
+  const [loading, setLoading] = useState(true);
 
   // Temperature state
   const [tempUnits, setTempUnits] = useState<TempUnit[]>(defaultUnits);
@@ -133,13 +136,66 @@ const Settings = () => {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "" });
 
-  // Account state
-  const [bakeryName, setBakeryName] = useState("My Venue");
-  const [bakeryAddress, setBakeryAddress] = useState("12 High Street, Cambridge CB2 1AB");
+  // Site/business state — populated from currentSite once loaded
+  const [bakeryName, setBakeryName] = useState("");
+  const [bakeryAddress, setBakeryAddress] = useState("");
   const [operatingDays, setOperatingDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]);
   const [kioskMode, setKioskMode] = useState(true);
   const [magicLinkAuth, setMagicLinkAuth] = useState(true);
   const [autoLockTime, setAutoLockTime] = useState("22:00");
+
+  // Load real data from the database for the current site
+  useEffect(() => {
+    if (!currentSite) { setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    setBakeryName(currentSite.name || "");
+    setBakeryAddress(currentSite.address || "");
+
+    (async () => {
+      const [unitsRes, cleaningRes, sectionsRes, usersRes] = await Promise.all([
+        supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
+        supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
+        supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
+        supabase.from('users').select('id, display_name, email, status, auth_type, staff_code').eq('organisation_id', currentSite.organisation_id),
+      ]);
+      if (cancelled) return;
+
+      if (unitsRes.data) {
+        setTempUnits(unitsRes.data.map((u: any) => ({
+          id: u.id, name: u.name, type: u.type, minTemp: Number(u.min_temp), maxTemp: Number(u.max_temp), active: u.active,
+        })));
+      }
+      if (cleaningRes.data) {
+        setCleaningTemplates(cleaningRes.data.map((c: any) => ({
+          id: c.id, area: c.area, task: c.task, frequency: c.frequency, dueTime: c.due_time || '', active: c.active,
+        })));
+      }
+      if (sectionsRes.data) {
+        const checks: DaySheetCheck[] = [];
+        for (const s of sectionsRes.data as any[]) {
+          for (const item of (s.day_sheet_items || [])) {
+            checks.push({ id: item.id, section: s.title, label: item.label, active: item.active });
+          }
+        }
+        setDaySheetChecks(checks);
+      }
+      if (usersRes.data) {
+        setStaff(usersRes.data.map((u: any) => ({
+          id: u.id,
+          name: u.display_name,
+          email: u.email || '',
+          role: u.id === appUser?.id ? 'owner' : (u.auth_type === 'staff_code' ? 'staff' : 'staff'),
+          active: u.status === 'active',
+          pin: u.staff_code || undefined,
+        })));
+      }
+      setLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, [currentSite, organisationId, appUser?.id]);
+
 
   // Allergen config
   const [requireApproval, setRequireApproval] = useState(true);
