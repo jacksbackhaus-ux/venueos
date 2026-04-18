@@ -726,6 +726,9 @@ const Settings = () => {
               <Label className="text-sm">Address</Label>
               <Input value={bakeryAddress} onChange={(e) => setBakeryAddress(e.target.value)} />
             </div>
+            <Button size="sm" onClick={saveSiteInfo} className="gap-1">
+              <Save className="h-3 w-3" /> Save site info
+            </Button>
           </div>
 
           <Separator />
