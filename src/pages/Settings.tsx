@@ -208,12 +208,22 @@ const Settings = () => {
 
   // ─── Temperature unit handlers (DB-backed) ───
   const saveUnit = async () => {
-    if (!currentSite || !organisationId) return;
+    if (!currentSite || !organisationId) {
+      toast.error("No site selected. Please refresh the page or contact support.");
+      console.error("saveUnit blocked: currentSite or organisationId missing", { currentSite, organisationId });
+      return;
+    }
+    const minT = parseFloat(unitForm.minTemp);
+    const maxT = parseFloat(unitForm.maxTemp);
+    if (isNaN(minT) || isNaN(maxT)) {
+      toast.error("Please enter valid min and max temperatures.");
+      return;
+    }
     const payload = {
-      name: unitForm.name,
+      name: unitForm.name.trim(),
       type: unitForm.type,
-      min_temp: parseFloat(unitForm.minTemp),
-      max_temp: parseFloat(unitForm.maxTemp),
+      min_temp: minT,
+      max_temp: maxT,
     };
     const { error } = editUnit
       ? await supabase.from('temp_units').update(payload).eq('id', editUnit.id)
@@ -223,7 +233,7 @@ const Settings = () => {
           organisation_id: organisationId,
           sort_order: tempUnits.length + 1,
         });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(error.message); console.error("temp_units insert error", error); return; }
     toast.success(editUnit ? "Unit updated" : "Unit added");
     setShowAddUnit(false);
     setEditUnit(null);
