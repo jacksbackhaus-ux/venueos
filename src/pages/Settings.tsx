@@ -532,11 +532,9 @@ const Settings = () => {
                         <div className="flex items-center gap-2">
                           <Switch
                             checked={t.active}
-                            onCheckedChange={(checked) =>
-                              setCleaningTemplates((prev) => prev.map((ct) => ct.id === t.id ? { ...ct, active: checked } : ct))
-                            }
+                            onCheckedChange={(checked) => toggleCleaningActive(t.id, checked)}
                           />
-                          <Button variant="ghost" size="sm" className="text-breach hover:text-breach" onClick={() => setCleaningTemplates((prev) => prev.filter((ct) => ct.id !== t.id))}>
+                          <Button variant="ghost" size="sm" className="text-breach hover:text-breach" onClick={() => deactivateCleaning(t.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -574,11 +572,9 @@ const Settings = () => {
                         <div className="flex items-center gap-2">
                           <Switch
                             checked={c.active}
-                            onCheckedChange={(checked) =>
-                              setDaySheetChecks((prev) => prev.map((dc) => dc.id === c.id ? { ...dc, active: checked } : dc))
-                            }
+                            onCheckedChange={(checked) => toggleCheckActive(c.id, checked)}
                           />
-                          <Button variant="ghost" size="sm" className="text-breach hover:text-breach" onClick={() => setDaySheetChecks((prev) => prev.filter((dc) => dc.id !== c.id))}>
+                          <Button variant="ghost" size="sm" className="text-breach hover:text-breach" onClick={() => deactivateCheck(c.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -645,9 +641,7 @@ const Settings = () => {
                     )}
                     <Switch
                       checked={s.active}
-                      onCheckedChange={(checked) =>
-                        setStaff((prev) => prev.map((st) => st.id === s.id ? { ...st, active: checked } : st))
-                      }
+                      onCheckedChange={(checked) => toggleStaffActive(s.id, checked)}
                     />
                   </div>
                 </CardContent>
