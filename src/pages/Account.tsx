@@ -1,182 +1,139 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { CreditCard, Building2, Users, Calculator } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-
-interface SiteInfo { id: string; name: string; active: boolean; }
-interface HQUser { id: string; display_name: string; org_role: string; }
+import { useOrgAccess } from "@/hooks/useOrgAccess";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, CreditCard, Sparkles, ExternalLink } from "lucide-react";
+import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { openCustomerPortal } from "@/lib/stripe";
+import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function Account() {
-  const { orgRole, appUser } = useAuth();
-  const [sites, setSites] = useState<SiteInfo[]>([]);
-  const [hqUsers, setHqUsers] = useState<HQUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { orgRole } = useAuth();
+  const { subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft } = useOrgAccess();
+  const [interval, setInterval] = useState<"month" | "year">("month");
+  const [siteQty, setSiteQty] = useState(1);
+  const [hqQty, setHqQty] = useState(0);
+  const [showCheckout, setShowCheckout] = useState(false);
 
-  useEffect(() => {
-    if (!appUser) return;
-    const load = async () => {
-      const [sitesRes, orgUsersRes] = await Promise.all([
-        supabase.from('sites').select('id, name, active'),
-        supabase.from('org_users').select('id, user_id, org_role, active').eq('active', true),
-      ]);
+  const monthly = useMemo(() => 4.99 + Math.max(0, siteQty - 1) * 2 + hqQty * 1, [siteQty, hqQty]);
+  const yearly = useMemo(() => {
+    const softwareMonthly = 4.99 + Math.max(0, siteQty - 1) * 2;
+    return softwareMonthly * 12 * 0.9 + hqQty * 12;
+  }, [siteQty, hqQty]);
 
-      setSites((sitesRes.data || []) as SiteInfo[]);
-
-      // Fetch display names for HQ users (admin + auditor only)
-      const hqOrgUsers = (orgUsersRes.data || []).filter(
-        (ou: any) => ou.org_role === 'hq_admin' || ou.org_role === 'hq_auditor'
-      );
-      const hqUserDetails: HQUser[] = [];
-      for (const ou of hqOrgUsers) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('display_name')
-          .eq('id', ou.user_id)
-          .maybeSingle();
-        if (userData) {
-          hqUserDetails.push({ id: ou.id, display_name: userData.display_name, org_role: ou.org_role });
-        }
-      }
-      setHqUsers(hqUserDetails);
-      setLoading(false);
-    };
-    load();
-  }, [appUser]);
-
-  if (orgRole?.org_role !== 'org_owner') {
+  if (orgRole?.org_role !== "org_owner") {
     return (
-      <div className="p-6 text-center">
-        <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h2 className="font-heading font-bold text-lg">Access Denied</h2>
-        <p className="text-sm text-muted-foreground">Only the organisation owner can view billing.</p>
+      <div className="p-6 max-w-2xl mx-auto">
+        <Card><CardContent className="py-12 text-center text-muted-foreground">
+          Only the organisation owner can manage billing.
+        </CardContent></Card>
       </div>
     );
   }
 
-  const activeSites = sites.filter(s => s.active).length;
-  const hqUserCount = hqUsers.length;
-  const baseCost = 4.99;
-  const additionalSitesCost = 2.0 * Math.max(0, activeSites - 1);
-  const hqLoginsCost = 1.0 * hqUserCount;
-  const monthlyTotal = baseCost + additionalSitesCost + hqLoginsCost;
-
-  const roleLabel = (r: string) => r === 'hq_admin' ? 'HQ Admin' : 'HQ Auditor';
+  if (loading) {
+    return <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  }
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-2xl mx-auto">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-          <CreditCard className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl font-heading font-bold text-foreground">Account & Billing</h1>
-          <p className="text-sm text-muted-foreground">Manage your subscription</p>
-        </div>
+    <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
+      <div>
+        <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
+          <CreditCard className="h-6 w-6" />Account & Billing
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage your VenueOS subscription.</p>
       </div>
 
-      {/* Monthly total */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Monthly Total</p>
-            <p className="text-4xl font-heading font-bold text-foreground">
-              £{monthlyTotal.toFixed(2)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">per month (excl. VAT)</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+            Current plan
+            {compedActive && <Badge className="bg-success/15 text-success border-success/30"><Sparkles className="h-3 w-3 mr-1" />Complimentary</Badge>}
+            {!compedActive && subscription && <Badge variant="outline">{subscription.status}</Badge>}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {compedActive && (
+            <p>You have complimentary access{subscription?.comped_until ? ` until ${format(new Date(subscription.comped_until), "d MMM yyyy")}` : " (no expiry)"}.</p>
+          )}
+          {!compedActive && trialActive && (
+            <p>You're on a free trial — <strong>{trialDaysLeft} day(s) left</strong>.</p>
+          )}
+          {!compedActive && subscription?.status === "active" && (
+            <>
+              <p>Plan: <strong>{subscription.site_quantity} site(s)</strong>{subscription.hq_quantity > 0 ? `, ${subscription.hq_quantity} HQ user(s)` : ""}, billed {subscription.billing_interval}ly.</p>
+              {subscription.current_period_end && <p className="text-muted-foreground">Renews {format(new Date(subscription.current_period_end), "d MMM yyyy")}</p>}
+              {subscription.cancel_at_period_end && <p className="text-warning">Cancels at end of period.</p>}
+            </>
+          )}
+          {!hasAccess && <p className="text-destructive">No active access. Choose a plan below.</p>}
+
+          {subscription?.stripe_customer_id && (
+            <Button variant="outline" size="sm" onClick={() => openCustomerPortal().catch(e => toast.error(e.message))}>
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Manage billing
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {!compedActive && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Choose your plan</CardTitle>
+            <CardDescription>£4.99/mo includes 1 site. +£2/mo per extra site. +£1/mo per HQ user. Annual = 10% off software.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Tabs value={interval} onValueChange={v => setInterval(v as any)}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="month">Monthly</TabsTrigger>
+                <TabsTrigger value="year">Yearly (save 10%)</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <QtyRow label="Active sites" value={siteQty} onChange={setSiteQty} min={1} />
+            <QtyRow label="HQ dashboard users" value={hqQty} onChange={setHqQty} min={0} />
+
+            <div className="rounded-lg border p-4 bg-muted/30 space-y-1">
+              <p className="text-2xl font-bold">
+                £{(interval === "month" ? monthly : yearly).toFixed(2)}
+                <span className="text-sm font-normal text-muted-foreground">/{interval}</span>
+              </p>
+              {interval === "year" && (
+                <p className="text-xs text-muted-foreground">
+                  10% off £{((4.99 + Math.max(0, siteQty - 1) * 2) * 12).toFixed(2)} software, plus £{(hqQty * 12).toFixed(2)} HQ
+                </p>
+              )}
+            </div>
+
+            {!showCheckout ? (
+              <Button className="w-full" onClick={() => setShowCheckout(true)}>
+                {subscription?.status === "active" ? "Update subscription" : "Subscribe"}
+              </Button>
+            ) : (
+              <div className="rounded-lg border overflow-hidden">
+                <StripeEmbeddedCheckout siteQuantity={siteQty} hqQuantity={hqQty} billingInterval={interval} />
+              </div>
+            )}
           </CardContent>
         </Card>
-      </motion.div>
+      )}
+    </div>
+  );
+}
 
-      {/* Breakdown */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-heading flex items-center gap-2">
-            <Calculator className="h-4 w-4" /> Cost Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span>Base plan (includes 1 site)</span>
-            <span className="font-medium">£4.99</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span>Additional sites: £2 × {Math.max(0, activeSites - 1)}</span>
-            <span className="font-medium">£{additionalSitesCost.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span>HQ logins: £1 × {hqUserCount}</span>
-            <span className="font-medium">£{hqLoginsCost.toFixed(2)}</span>
-          </div>
-          <Separator />
-          <div className="flex justify-between text-sm font-bold">
-            <span>Total</span>
-            <span>£{monthlyTotal.toFixed(2)}/month</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Active Sites */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-heading flex items-center gap-2">
-            <Building2 className="h-4 w-4" /> Active Sites ({activeSites})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : (
-            <div className="space-y-2">
-              {sites.map(s => (
-                <div key={s.id} className="flex items-center justify-between text-sm">
-                  <span>{s.name}</span>
-                  <Badge variant={s.active ? "default" : "secondary"} className="text-[10px]">
-                    {s.active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* HQ Users */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-heading flex items-center gap-2">
-            <Users className="h-4 w-4" /> HQ Users ({hqUserCount})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {hqUsers.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No HQ admin or auditor users. Staff logins are unlimited and free.</p>
-          ) : (
-            <div className="space-y-2">
-              {hqUsers.map(u => (
-                <div key={u.id} className="flex items-center justify-between text-sm">
-                  <span>{u.display_name}</span>
-                  <Badge variant="outline" className="text-[10px]">{roleLabel(u.org_role)}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Payments placeholder */}
-      <Card className="border-dashed">
-        <CardContent className="p-6 text-center">
-          <CreditCard className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="font-heading font-semibold text-sm">Payments coming soon</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Stripe integration will be added for automatic billing and invoice management.
-          </p>
-        </CardContent>
-      </Card>
+function QtyRow({ label, value, onChange, min }: { label: string; value: number; onChange: (n: number) => void; min: number }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm">{label}</span>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={() => onChange(Math.max(min, value - 1))}>−</Button>
+        <span className="w-8 text-center font-medium">{value}</span>
+        <Button variant="outline" size="sm" onClick={() => onChange(value + 1)}>+</Button>
+      </div>
     </div>
   );
 }

@@ -22,8 +22,10 @@ import Reports from "./pages/Reports";
 import Batches from "./pages/Batches";
 import HQDashboard from "./pages/HQDashboard";
 import Account from "./pages/Account";
+import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -88,6 +90,7 @@ function AppRoutes() {
       <Route path="/batches" element={<AuthGuard><AppLayout><Batches /></AppLayout></AuthGuard>} />
       <Route path="/hq" element={<AuthGuard><AppLayout><HQDashboard /></AppLayout></AuthGuard>} />
       <Route path="/account" element={<AuthGuard><AppLayout><Account /></AppLayout></AuthGuard>} />
+      <Route path="/admin" element={<AuthGuard><AppLayout><Admin /></AppLayout></AuthGuard>} />
       <Route path="/settings" element={<AuthGuard><AppLayout><Settings /></AppLayout></AuthGuard>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -99,6 +102,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <PaymentTestModeBanner />
       <BrowserRouter>
         <AuthProvider>
           <SiteProvider>

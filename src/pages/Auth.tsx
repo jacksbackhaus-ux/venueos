@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -44,14 +44,14 @@ export default function Auth() {
   );
 }
 
-function PasswordInput({ id, placeholder, value, onChange, required = true }: {
+const PasswordInput = forwardRef<HTMLInputElement, {
   id: string; placeholder: string; value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; required?: boolean;
-}) {
+}>(({ id, placeholder, value, onChange, required = true }, ref) => {
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
-      <Input id={id} type={show ? "text" : "password"} placeholder={placeholder}
+      <Input ref={ref} id={id} type={show ? "text" : "password"} placeholder={placeholder}
         value={value} onChange={onChange} required={required} minLength={6} />
       <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
         onClick={() => setShow(!show)} tabIndex={-1}>
@@ -59,7 +59,8 @@ function PasswordInput({ id, placeholder, value, onChange, required = true }: {
       </button>
     </div>
   );
-}
+});
+PasswordInput.displayName = "PasswordInput";
 
 function EmailLoginForm() {
   const [email, setEmail] = useState("");
