@@ -46,13 +46,7 @@ type TempUnit = {
   active: boolean;
 };
 
-const defaultUnits: TempUnit[] = [
-  { id: "f1", name: "Fridge 1", type: "fridge", minTemp: 0, maxTemp: 5, active: true },
-  { id: "f2", name: "Fridge 2", type: "fridge", minTemp: 0, maxTemp: 5, active: true },
-  { id: "fz1", name: "Freezer 1", type: "freezer", minTemp: -25, maxTemp: -18, active: true },
-  { id: "dc1", name: "Display Chiller", type: "display", minTemp: 0, maxTemp: 8, active: true },
-  { id: "amb", name: "Ambient (Bakery)", type: "ambient", minTemp: 10, maxTemp: 25, active: true },
-];
+const defaultUnits: TempUnit[] = [];
 
 // ─── Cleaning Templates ───
 type CleaningTemplate = {
@@ -64,15 +58,7 @@ type CleaningTemplate = {
   active: boolean;
 };
 
-const defaultCleaningTemplates: CleaningTemplate[] = [
-  { id: "ct1", area: "Bakery Floor", task: "Sweep and mop all floor areas", frequency: "daily", dueTime: "12:00", active: true },
-  { id: "ct2", area: "Prep Area", task: "Clean and sanitise all prep surfaces", frequency: "daily", dueTime: "10:00", active: true },
-  { id: "ct3", area: "Display", task: "Clean display counter glass and shelving", frequency: "daily", dueTime: "07:00", active: true },
-  { id: "ct4", area: "Toilets", task: "Clean toilet and restock supplies", frequency: "daily", dueTime: "14:00", active: true },
-  { id: "ct5", area: "Equipment", task: "Deep clean mixer and attachments", frequency: "weekly", dueTime: "Monday", active: true },
-  { id: "ct6", area: "Equipment", task: "Clean and descale oven", frequency: "weekly", dueTime: "Wednesday", active: true },
-  { id: "ct7", area: "Kitchen", task: "Deep clean extraction hood and filters", frequency: "monthly", dueTime: "1st", active: true },
-];
+const defaultCleaningTemplates: CleaningTemplate[] = [];
 
 // ─── Day Sheet Checks ───
 type DaySheetCheck = {
@@ -82,18 +68,7 @@ type DaySheetCheck = {
   active: boolean;
 };
 
-const defaultDaySheetChecks: DaySheetCheck[] = [
-  { id: "ds1", section: "Opening", label: "Premises secure and clean on arrival", active: true },
-  { id: "ds2", section: "Opening", label: "Pest traps checked — no signs of activity", active: true },
-  { id: "ds3", section: "Opening", label: "Hand wash stations stocked", active: true },
-  { id: "ds4", section: "Opening", label: "Food contact surfaces cleaned and sanitised", active: true },
-  { id: "ds5", section: "Opening", label: "Allergen info displayed and up to date", active: true },
-  { id: "ds6", section: "Closing", label: "All food covered, labelled, and dated", active: true },
-  { id: "ds7", section: "Closing", label: "PM fridge/freezer temps logged", active: true },
-  { id: "ds8", section: "Closing", label: "Bins emptied and area clean", active: true },
-  { id: "ds9", section: "Closing", label: "Equipment switched off / cleaned", active: true },
-  { id: "ds10", section: "Closing", label: "Premises secured", active: true },
-];
+const defaultDaySheetChecks: DaySheetCheck[] = [];
 
 // ─── Staff ───
 type StaffMember = {
@@ -105,12 +80,7 @@ type StaffMember = {
   pin?: string;
 };
 
-const defaultStaff: StaffMember[] = [
-  { id: "u1", name: "Alex Manager", email: "alex@venue.co.uk", role: "owner", active: true },
-  { id: "u2", name: "Sarah M.", email: "sarah@venue.co.uk", role: "staff", active: true, pin: "1234" },
-  { id: "u3", name: "Tom B.", email: "tom@venue.co.uk", role: "staff", active: true, pin: "5678" },
-  { id: "u4", name: "EHO Inspector", email: "", role: "readonly", active: true },
-];
+const defaultStaff: StaffMember[] = [];
 
 // ─── Operating days ───
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
