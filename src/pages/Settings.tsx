@@ -289,10 +289,12 @@ const Settings = () => {
   };
 
   const deactivateCleaning = async (id: string) => {
-    const { error } = await supabase.from('cleaning_tasks').update({ active: false }).eq('id', id);
+    if (!confirm("Permanently delete this cleaning task? This cannot be undone. Logged history will also be removed.")) return;
+    await supabase.from('cleaning_logs').delete().eq('task_id', id);
+    const { error } = await supabase.from('cleaning_tasks').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Task deactivated (history preserved)");
-    setCleaningTemplates((prev) => prev.map((t) => t.id === id ? { ...t, active: false } : t));
+    toast.success("Task deleted");
+    setCleaningTemplates((prev) => prev.filter((t) => t.id !== id));
   };
 
   // ─── Day sheet check handlers (DB-backed) ───
