@@ -24,6 +24,7 @@ import HQDashboard from "./pages/HQDashboard";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
+import More from "./pages/More";
 import NotFound from "./pages/NotFound";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { Loader2 } from "lucide-react";
@@ -92,6 +93,7 @@ function AppRoutes() {
       <Route path="/account" element={<AuthGuard><AppLayout><Account /></AppLayout></AuthGuard>} />
       <Route path="/admin" element={<AuthGuard><AppLayout><Admin /></AppLayout></AuthGuard>} />
       <Route path="/settings" element={<AuthGuard><AppLayout><Settings /></AppLayout></AuthGuard>} />
+      <Route path="/more" element={<AuthGuard><AppLayout><More /></AppLayout></AuthGuard>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

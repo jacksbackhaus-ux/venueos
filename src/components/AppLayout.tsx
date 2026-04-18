@@ -26,9 +26,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   // "More" is active if the current path isn't one of the main 4
   const moreActive =
     !isActive("/") &&
-    !isActive("/temperatures") &&
-    !isActive("/day-sheet") &&
-    !isActive("/cleaning");
+    !(location.pathname === "/temperatures") &&
+    !(location.pathname === "/day-sheet") &&
+    !(location.pathname === "/cleaning");
 
   return (
     <SidebarProvider>
@@ -65,7 +65,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 return (
                   <NavLink
                     key={item.title}
-                    to={item.url === "/more" ? "/shifts" : item.url}
+                    to={item.url}
                     end={item.url === "/"}
                     className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 text-muted-foreground transition-colors"
                     activeClassName="text-primary"
