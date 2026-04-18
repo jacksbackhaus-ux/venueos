@@ -65,6 +65,8 @@ function EmailLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +86,52 @@ function EmailLoginForm() {
     }
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Enter your email address first.");
+      return;
+    }
+    setForgotLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("If an account exists for that email, a reset link has been sent.");
+      setForgotMode(false);
+    }
+  };
+
+  if (forgotMode) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Reset your password</CardTitle>
+          <CardDescription>Enter your email and we'll send you a link to set a new password.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleForgot} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email">Email address</Label>
+              <Input id="forgot-email" type="email" placeholder="you@bakery.co.uk" value={email}
+                onChange={e => setEmail(e.target.value)} required />
+            </div>
+            <Button type="submit" className="w-full" disabled={forgotLoading}>
+              {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+              Send reset link
+            </Button>
+            <Button type="button" variant="ghost" className="w-full" onClick={() => setForgotMode(false)}>
+              Back to login
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -98,7 +146,13 @@ function EmailLoginForm() {
               onChange={e => setEmail(e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="login-password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="login-password">Password</Label>
+              <button type="button" onClick={() => setForgotMode(true)}
+                className="text-xs text-primary hover:underline">
+                Forgot password?
+              </button>
+            </div>
             <PasswordInput id="login-password" placeholder="••••••••" value={password}
               onChange={e => setPassword(e.target.value)} />
           </div>
