@@ -342,6 +342,16 @@ export default function Batches() {
                   <div><span className="text-muted-foreground">Created:</span>{' '}
                     {format(new Date(selectedBatch.created_at), 'dd MMM yyyy HH:mm')}
                   </div>
+                  {selectedBatch.date_produced && (
+                    <div><span className="text-muted-foreground">Produced:</span>{' '}
+                      {format(new Date(selectedBatch.date_produced), 'dd MMM yyyy')}
+                    </div>
+                  )}
+                  {selectedBatch.use_by_date && (
+                    <div><span className="text-muted-foreground">Use By:</span>{' '}
+                      {format(new Date(selectedBatch.use_by_date), 'dd MMM yyyy')}
+                    </div>
+                  )}
                 </div>
 
                 {selectedBatch.notes && (
