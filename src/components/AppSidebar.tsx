@@ -39,14 +39,16 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { isHQ, orgRole, appUser } = useAuth();
+  const { isSuperAdmin } = useSuperAdmin();
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
-  const hqNav = isHQ ? [
-    { title: "HQ Dashboard", url: "/hq", icon: Building2 },
+  const hqNav = [
+    ...(isHQ ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
     ...(orgRole?.org_role === 'org_owner' ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
-  ] : [];
+    ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
+  ];
 
   const renderItems = (items: { title: string; url: string; icon: React.ElementType }[]) =>
     items.map((item) => (
