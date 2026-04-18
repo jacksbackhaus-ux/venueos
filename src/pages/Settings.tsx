@@ -149,56 +149,52 @@ const Settings = () => {
   const [autoLockTime, setAutoLockTime] = useState("22:00");
 
   // Load real data from the database for the current site
-  useEffect(() => {
+  const loadAll = useCallback(async () => {
     if (!currentSite) { setLoading(false); return; }
-    let cancelled = false;
     setLoading(true);
     setBakeryName(currentSite.name || "");
     setBakeryAddress(currentSite.address || "");
 
-    (async () => {
-      const [unitsRes, cleaningRes, sectionsRes, usersRes] = await Promise.all([
-        supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
-        supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
-        supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
-        supabase.from('users').select('id, display_name, email, status, auth_type, staff_code').eq('organisation_id', currentSite.organisation_id),
-      ]);
-      if (cancelled) return;
+    const [unitsRes, cleaningRes, sectionsRes, usersRes] = await Promise.all([
+      supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
+      supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
+      supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
+      supabase.from('users').select('id, display_name, email, status, auth_type, staff_code').eq('organisation_id', currentSite.organisation_id),
+    ]);
 
-      if (unitsRes.data) {
-        setTempUnits(unitsRes.data.map((u: any) => ({
-          id: u.id, name: u.name, type: u.type, minTemp: Number(u.min_temp), maxTemp: Number(u.max_temp), active: u.active,
-        })));
-      }
-      if (cleaningRes.data) {
-        setCleaningTemplates(cleaningRes.data.map((c: any) => ({
-          id: c.id, area: c.area, task: c.task, frequency: c.frequency, dueTime: c.due_time || '', active: c.active,
-        })));
-      }
-      if (sectionsRes.data) {
-        const checks: DaySheetCheck[] = [];
-        for (const s of sectionsRes.data as any[]) {
-          for (const item of (s.day_sheet_items || [])) {
-            checks.push({ id: item.id, section: s.title, label: item.label, active: item.active });
-          }
+    if (unitsRes.data) {
+      setTempUnits(unitsRes.data.map((u: any) => ({
+        id: u.id, name: u.name, type: u.type, minTemp: Number(u.min_temp), maxTemp: Number(u.max_temp), active: u.active,
+      })));
+    }
+    if (cleaningRes.data) {
+      setCleaningTemplates(cleaningRes.data.map((c: any) => ({
+        id: c.id, area: c.area, task: c.task, frequency: c.frequency, dueTime: c.due_time || '', active: c.active,
+      })));
+    }
+    if (sectionsRes.data) {
+      const checks: DaySheetCheck[] = [];
+      for (const s of sectionsRes.data as any[]) {
+        for (const item of (s.day_sheet_items || [])) {
+          checks.push({ id: item.id, section: s.title, label: item.label, active: item.active });
         }
-        setDaySheetChecks(checks);
       }
-      if (usersRes.data) {
-        setStaff(usersRes.data.map((u: any) => ({
-          id: u.id,
-          name: u.display_name,
-          email: u.email || '',
-          role: u.id === appUser?.id ? 'owner' : (u.auth_type === 'staff_code' ? 'staff' : 'staff'),
-          active: u.status === 'active',
-          pin: u.staff_code || undefined,
-        })));
-      }
-      setLoading(false);
-    })();
+      setDaySheetChecks(checks);
+    }
+    if (usersRes.data) {
+      setStaff(usersRes.data.map((u: any) => ({
+        id: u.id,
+        name: u.display_name,
+        email: u.email || '',
+        role: u.id === appUser?.id ? 'owner' : (u.auth_type === 'staff_code' ? 'staff' : 'staff'),
+        active: u.status === 'active',
+        pin: u.staff_code || undefined,
+      })));
+    }
+    setLoading(false);
+  }, [currentSite, appUser?.id]);
 
-    return () => { cancelled = true; };
-  }, [currentSite, organisationId, appUser?.id]);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
 
   // Allergen config
@@ -210,24 +206,42 @@ const Settings = () => {
   const [notifyBreach, setNotifyBreach] = useState(true);
   const [notifyCleaningMissed, setNotifyCleaningMissed] = useState(true);
 
-  // ─── Handlers ───
-  const saveUnit = () => {
-    if (editUnit) {
-      setTempUnits((prev) => prev.map((u) => u.id === editUnit.id ? { ...editUnit, name: unitForm.name, type: unitForm.type, minTemp: parseFloat(unitForm.minTemp), maxTemp: parseFloat(unitForm.maxTemp) } : u));
-      setEditUnit(null);
-    } else {
-      const newUnit: TempUnit = {
-        id: `u-${Date.now()}`,
-        name: unitForm.name,
-        type: unitForm.type,
-        minTemp: parseFloat(unitForm.minTemp),
-        maxTemp: parseFloat(unitForm.maxTemp),
-        active: true,
-      };
-      setTempUnits((prev) => [...prev, newUnit]);
-    }
+  // ─── Temperature unit handlers (DB-backed) ───
+  const saveUnit = async () => {
+    if (!currentSite || !organisationId) return;
+    const payload = {
+      name: unitForm.name,
+      type: unitForm.type,
+      min_temp: parseFloat(unitForm.minTemp),
+      max_temp: parseFloat(unitForm.maxTemp),
+    };
+    const { error } = editUnit
+      ? await supabase.from('temp_units').update(payload).eq('id', editUnit.id)
+      : await supabase.from('temp_units').insert({
+          ...payload,
+          site_id: currentSite.id,
+          organisation_id: organisationId,
+          sort_order: tempUnits.length + 1,
+        });
+    if (error) { toast.error(error.message); return; }
+    toast.success(editUnit ? "Unit updated" : "Unit added");
     setShowAddUnit(false);
+    setEditUnit(null);
     setUnitForm({ name: "", type: "fridge", minTemp: "0", maxTemp: "5" });
+    loadAll();
+  };
+
+  const toggleUnitActive = async (id: string, active: boolean) => {
+    const { error } = await supabase.from('temp_units').update({ active }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setTempUnits((prev) => prev.map((u) => u.id === id ? { ...u, active } : u));
+  };
+
+  const deactivateUnit = async (id: string) => {
+    const { error } = await supabase.from('temp_units').update({ active: false }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Unit deactivated (history preserved)");
+    setTempUnits((prev) => prev.map((u) => u.id === id ? { ...u, active: false } : u));
   };
 
   const openEditUnit = (unit: TempUnit) => {
@@ -236,44 +250,124 @@ const Settings = () => {
     setShowAddUnit(true);
   };
 
-  const saveCleaning = () => {
-    const newTemplate: CleaningTemplate = {
-      id: `ct-${Date.now()}`,
+  // ─── Cleaning task handlers (DB-backed) ───
+  const saveCleaning = async () => {
+    if (!currentSite || !organisationId) return;
+    const { error } = await supabase.from('cleaning_tasks').insert({
+      site_id: currentSite.id,
+      organisation_id: organisationId,
       area: cleaningForm.area,
       task: cleaningForm.task,
       frequency: cleaningForm.frequency,
-      dueTime: cleaningForm.dueTime,
-      active: true,
-    };
-    setCleaningTemplates((prev) => [...prev, newTemplate]);
+      due_time: cleaningForm.dueTime || null,
+      sort_order: cleaningTemplates.length + 1,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cleaning task added");
     setShowAddCleaning(false);
     setCleaningForm({ area: "", task: "", frequency: "daily", dueTime: "" });
+    loadAll();
   };
 
-  const saveDayCheck = () => {
-    const newCheck: DaySheetCheck = {
-      id: `ds-${Date.now()}`,
-      section: checkForm.section,
+  const toggleCleaningActive = async (id: string, active: boolean) => {
+    const { error } = await supabase.from('cleaning_tasks').update({ active }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setCleaningTemplates((prev) => prev.map((t) => t.id === id ? { ...t, active } : t));
+  };
+
+  const deactivateCleaning = async (id: string) => {
+    const { error } = await supabase.from('cleaning_tasks').update({ active: false }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Task deactivated (history preserved)");
+    setCleaningTemplates((prev) => prev.map((t) => t.id === id ? { ...t, active: false } : t));
+  };
+
+  // ─── Day sheet check handlers (DB-backed) ───
+  const saveDayCheck = async () => {
+    if (!currentSite || !organisationId) return;
+    // Find or create the section row for the chosen title
+    const { data: existing } = await supabase.from('day_sheet_sections')
+      .select('id').eq('site_id', currentSite.id).eq('title', checkForm.section).maybeSingle();
+
+    let sectionId = existing?.id;
+    if (!sectionId) {
+      const { data: created, error: secErr } = await supabase.from('day_sheet_sections').insert({
+        site_id: currentSite.id,
+        organisation_id: organisationId,
+        title: checkForm.section,
+        default_time: checkForm.section === 'Opening' ? '07:00' : '18:00',
+        icon: checkForm.section === 'Opening' ? 'Sunrise' : 'Moon',
+        sort_order: checkForm.section === 'Opening' ? 1 : 2,
+      }).select('id').single();
+      if (secErr) { toast.error(secErr.message); return; }
+      sectionId = created!.id;
+    }
+
+    const existingInSection = daySheetChecks.filter((c) => c.section === checkForm.section).length;
+    const { error } = await supabase.from('day_sheet_items').insert({
+      section_id: sectionId,
       label: checkForm.label,
-      active: true,
-    };
-    setDaySheetChecks((prev) => [...prev, newCheck]);
+      sort_order: existingInSection + 1,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Check added");
     setShowAddCheck(false);
     setCheckForm({ section: "Opening", label: "" });
+    loadAll();
   };
 
-  const saveStaff = () => {
-    const newStaff: StaffMember = {
-      id: `s-${Date.now()}`,
-      name: staffForm.name,
-      email: staffForm.email,
-      role: staffForm.role,
-      active: true,
-      pin: staffForm.pin || undefined,
-    };
-    setStaff((prev) => [...prev, newStaff]);
+  const toggleCheckActive = async (id: string, active: boolean) => {
+    const { error } = await supabase.from('day_sheet_items').update({ active }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setDaySheetChecks((prev) => prev.map((c) => c.id === id ? { ...c, active } : c));
+  };
+
+  const deactivateCheck = async (id: string) => {
+    const { error } = await supabase.from('day_sheet_items').update({ active: false }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Check deactivated (history preserved)");
+    setDaySheetChecks((prev) => prev.map((c) => c.id === id ? { ...c, active: false } : c));
+  };
+
+  // ─── Staff handlers (DB-backed; staff_code rows for kiosk PIN users) ───
+  const saveStaff = async () => {
+    if (!organisationId) return;
+    // We can only create staff_code-type users from the client (RLS allows org owner to insert).
+    // Email-auth users must be invited via Supabase auth — flag this for now.
+    if (staffForm.email && !staffForm.pin) {
+      toast.error("Email-only invites coming soon. Add a PIN to create a kiosk staff account, or invite from your email provider.");
+      return;
+    }
+    const { error } = await supabase.from('users').insert({
+      organisation_id: organisationId,
+      display_name: staffForm.name,
+      email: staffForm.email || null,
+      auth_type: 'staff_code',
+      staff_code: staffForm.pin || null,
+      status: 'active',
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Staff member added");
     setShowAddStaff(false);
     setStaffForm({ name: "", email: "", role: "staff", pin: "" });
+    loadAll();
+  };
+
+  const toggleStaffActive = async (id: string, active: boolean) => {
+    const { error } = await supabase.from('users').update({ status: active ? 'active' : 'suspended' }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
+  };
+
+  // ─── Site info save ───
+  const saveSiteInfo = async () => {
+    if (!currentSite) return;
+    const { error } = await supabase.from('sites').update({
+      name: bakeryName,
+      address: bakeryAddress,
+    }).eq('id', currentSite.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Site updated");
   };
 
   const tempLimitDefaults: Record<string, { min: string; max: string }> = {
