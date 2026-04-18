@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useSite } from "@/contexts/SiteContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarClock,
@@ -82,9 +84,31 @@ const moduleIcons: Record<string, React.ElementType> = {
 
 // ─── Component ───
 const ShiftAssignment = () => {
+  const { currentSite } = useSite();
   const [activeTab, setActiveTab] = useState("today");
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [shifts, setShifts] = useState<Shift[]>(defaultShifts);
   const [tasks, setTasks] = useState<ShiftTask[]>(defaultTasks);
+
+  useEffect(() => {
+    if (!currentSite) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('id, display_name')
+        .eq('organisation_id', currentSite.organisation_id)
+        .eq('status', 'active');
+      if (cancelled || !data) return;
+      setStaffMembers(data.map((u: any) => ({
+        id: u.id,
+        name: u.display_name,
+        initials: (u.display_name || '?').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase(),
+      })));
+    })();
+    return () => { cancelled = true; };
+  }, [currentSite]);
+
   const [expandedShifts, setExpandedShifts] = useState<string[]>(["sh1"]);
   const [showAddShift, setShowAddShift] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
