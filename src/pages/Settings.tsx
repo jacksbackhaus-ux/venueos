@@ -154,6 +154,8 @@ const Settings = () => {
   const [staff, setStaff] = useState<StaffMember[]>(defaultStaff);
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "", staffId: "" });
+  const [staffView, setStaffView] = useState<"active" | "deactivated">("active");
+  const [confirmDeactivate, setConfirmDeactivate] = useState<StaffMember | null>(null);
 
   // Site/business state — populated from currentSite once loaded
   const [bakeryName, setBakeryName] = useState("");
