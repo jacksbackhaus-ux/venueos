@@ -108,6 +108,12 @@ type Assignment = {
 
 type AppUser = { id: string; display_name: string; status: string };
 
+type TaskKind = "day_sheet_item" | "cleaning_task";
+type LinkedTask = { task_type: TaskKind; task_id: string };
+type DaySheetSection = { id: string; title: string; day_sheet_items: { id: string; label: string; active: boolean }[] };
+type CleaningTask = { id: string; task: string; area: string };
+type RotaTaskRow = { id: string; rota_assignment_id: string; task_type: TaskKind; task_id: string };
+
 // ---------- Page ----------
 const Shifts = () => {
   const { currentSite, currentMembership, organisationId } = useSite();
