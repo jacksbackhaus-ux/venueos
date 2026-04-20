@@ -93,7 +93,7 @@ const Dashboard = () => {
         supabase.from("cleaning_tasks").select("id, task, area, frequency, due_time").eq("site_id", siteId!).eq("active", true),
         supabase.from("cleaning_logs").select("task_id, done, completed_at").eq("site_id", siteId!).eq("log_date", today),
         supabase.from("temp_units").select("id, name, min_temp, max_temp").eq("site_id", siteId!).eq("active", true),
-        supabase.from("temp_logs").select("unit_id, value, pass, logged_at, log_type").eq("site_id", siteId!).gte("logged_at", `${today}T00:00:00`),
+        supabase.from("temp_logs").select("unit_id, value, pass, logged_at, log_type").eq("site_id", siteId!).gte("logged_at", `${today}T00:00:00`).lt("logged_at", `${today}T23:59:59`),
         supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, label, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", siteId!).eq("sheet_date", today).maybeSingle(),
         supabase.from("incidents").select("id, title, status, reported_at").eq("site_id", siteId!).eq("status", "open"),
