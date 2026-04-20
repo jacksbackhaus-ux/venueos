@@ -78,18 +78,20 @@ const TemperatureTracking = () => {
     enabled: !!siteId,
   });
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const dayStart = new Date(`${selectedDate}T00:00:00`);
+  const dayEnd = new Date(`${selectedDate}T00:00:00`);
+  dayEnd.setDate(dayEnd.getDate() + 1);
 
   const { data: logs = [], isLoading: logsLoading } = useQuery({
-    queryKey: ["temp_logs", siteId, todayStart.toISOString().split("T")[0]],
+    queryKey: ["temp_logs", siteId, selectedDate],
     queryFn: async () => {
       if (!siteId) return [];
       const { data, error } = await supabase
         .from("temp_logs")
         .select("*")
         .eq("site_id", siteId)
-        .gte("logged_at", todayStart.toISOString())
+        .gte("logged_at", dayStart.toISOString())
+        .lt("logged_at", dayEnd.toISOString())
         .order("logged_at", { ascending: false });
       if (error) throw error;
       return data as TempLog[];
