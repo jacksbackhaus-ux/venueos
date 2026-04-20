@@ -472,7 +472,7 @@ const Shifts = () => {
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit shift" : "Add shift"}</DialogTitle>
             <DialogDescription>
@@ -536,6 +536,102 @@ const Shifts = () => {
                 value={form.position}
                 onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
               />
+            </div>
+
+            {/* Optional task linking */}
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Linked compliance tasks (optional)</Label>
+                {linkedTasks.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {linkedTasks.length} linked
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Flag Day Sheet items or Cleaning tasks as this staff member's responsibility for the day.
+                This does not change who can complete them.
+              </p>
+
+              <ScrollArea className="h-56 rounded-md border p-2">
+                <div className="space-y-3">
+                  {/* Day sheet items grouped by section */}
+                  {daySheetSections.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        Day Sheet
+                      </div>
+                      <div className="space-y-2">
+                        {daySheetSections.map((sec) => {
+                          const items = (sec.day_sheet_items || []).filter((i) => i.active);
+                          if (items.length === 0) return null;
+                          return (
+                            <div key={sec.id}>
+                              <div className="text-xs font-medium text-foreground/80 mb-0.5">
+                                {sec.title}
+                              </div>
+                              <div className="space-y-1 pl-1">
+                                {items.map((it) => {
+                                  const checked = isTaskLinked("day_sheet_item", it.id);
+                                  return (
+                                    <label
+                                      key={it.id}
+                                      className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/40 rounded px-1 py-0.5"
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={() =>
+                                          toggleLinkedTask("day_sheet_item", it.id)
+                                        }
+                                      />
+                                      <span className="truncate">{it.label}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cleaning tasks */}
+                  {cleaningTasks.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        Cleaning
+                      </div>
+                      <div className="space-y-1 pl-1">
+                        {cleaningTasks.map((ct) => {
+                          const checked = isTaskLinked("cleaning_task", ct.id);
+                          return (
+                            <label
+                              key={ct.id}
+                              className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/40 rounded px-1 py-0.5"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => toggleLinkedTask("cleaning_task", ct.id)}
+                              />
+                              <span className="truncate">
+                                {ct.task}{" "}
+                                <span className="text-xs text-muted-foreground">· {ct.area}</span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {daySheetSections.length === 0 && cleaningTasks.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      No Day Sheet or Cleaning tasks set up yet.
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
 
