@@ -75,10 +75,10 @@ type AppUser = { id: string; display_name: string; status: string };
 
 // ---------- Page ----------
 const Shifts = () => {
-  const { currentSite } = useSite();
-  const { appUser, staffSession } = useAuth();
+  const { currentSite, currentMembership } = useSite();
+  const { staffSession } = useAuth();
   const siteId = currentSite?.id || staffSession?.site_id;
-  const role = appUser?.site_role || staffSession?.site_role || "staff";
+  const role = currentMembership?.site_role || staffSession?.site_role || "staff";
   const canEdit = role === "owner" || role === "supervisor"; // gate for future actions
 
   const [view, setView] = useState<"week" | "day">("week");
