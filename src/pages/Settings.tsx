@@ -1256,6 +1256,36 @@ const Settings = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Confirm Deactivate Staff ─── */}
+      <AlertDialog open={!!confirmDeactivate} onOpenChange={(o) => !o && setConfirmDeactivate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate {confirmDeactivate?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Their PIN login will be revoked immediately and they'll no longer appear in active staff lists or on the kiosk login screen.
+              <br /><br />
+              All historical records they completed — temperature logs, day sheet sign-offs, cleaning, deliveries, incidents — will be fully preserved with their name attached.
+              <br /><br />
+              You can reactivate them at any time from the Deactivated tab.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (confirmDeactivate) {
+                  await toggleStaffActive(confirmDeactivate.id, false);
+                  setConfirmDeactivate(null);
+                }
+              }}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
