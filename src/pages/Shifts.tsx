@@ -278,6 +278,19 @@ const Shifts = () => {
     end_time: "17:00",
     position: "",
   });
+  const [linkedTasks, setLinkedTasks] = useState<LinkedTask[]>([]);
+
+  const toggleLinkedTask = (task_type: TaskKind, task_id: string) => {
+    setLinkedTasks((prev) => {
+      const exists = prev.some((l) => l.task_type === task_type && l.task_id === task_id);
+      return exists
+        ? prev.filter((l) => !(l.task_type === task_type && l.task_id === task_id))
+        : [...prev, { task_type, task_id }];
+    });
+  };
+
+  const isTaskLinked = (task_type: TaskKind, task_id: string) =>
+    linkedTasks.some((l) => l.task_type === task_type && l.task_id === task_id);
 
   const openCreate = (presetDate?: string, presetUserId?: string) => {
     setEditing(null);
@@ -288,6 +301,7 @@ const Shifts = () => {
       end_time: "17:00",
       position: "",
     });
+    setLinkedTasks([]);
     setDialogOpen(true);
   };
 
@@ -300,6 +314,8 @@ const Shifts = () => {
       end_time: a.end_time,
       position: a.position || "",
     });
+    const existing = linksByAssignment.get(a.id) || [];
+    setLinkedTasks(existing.map((l) => ({ task_type: l.task_type, task_id: l.task_id })));
     setDialogOpen(true);
   };
 
@@ -321,19 +337,44 @@ const Shifts = () => {
         position: form.position.trim() || null,
       };
 
+      let assignmentId: string;
       if (editing) {
         const { error } = await supabase
           .from("rota_assignments")
           .update(payload)
           .eq("id", editing.id);
         if (error) throw error;
+        assignmentId = editing.id;
       } else {
-        const { error } = await supabase.from("rota_assignments").insert(payload);
+        const { data, error } = await supabase
+          .from("rota_assignments")
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw error;
+        assignmentId = data.id;
+      }
+
+      // Sync task links: delete then insert (simple + correct).
+      const { error: delErr } = await supabase
+        .from("rota_assignment_tasks")
+        .delete()
+        .eq("rota_assignment_id", assignmentId);
+      if (delErr) throw delErr;
+
+      if (linkedTasks.length > 0) {
+        const rows = linkedTasks.map((l) => ({
+          rota_assignment_id: assignmentId,
+          task_type: l.task_type,
+          task_id: l.task_id,
+        }));
+        const { error: insErr } = await supabase.from("rota_assignment_tasks").insert(rows);
+        if (insErr) throw insErr;
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["rota-assignments"] });
+      qc.invalidateQueries({ queryKey: ["rota-task-links"] });
       setDialogOpen(false);
       toast.success(editing ? "Shift updated" : "Shift added");
     },
