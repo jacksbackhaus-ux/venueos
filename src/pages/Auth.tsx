@@ -299,7 +299,7 @@ function StaffLoginForm() {
       return;
     }
 
-    const result = data as { valid: boolean; error?: string; user_id?: string; display_name?: string; site_role?: string; organisation_id?: string };
+    const result = data as { valid: boolean; error?: string; user_id?: string; display_name?: string; site_role?: string; organisation_id?: string; site_id?: string };
     if (!result.valid) {
       toast.error(result.error || "Invalid credentials");
       setAttempts(a => a + 1);
@@ -315,7 +315,7 @@ function StaffLoginForm() {
       display_name: result.display_name!,
       site_role: result.site_role!,
       organisation_id: result.organisation_id!,
-      site_id: siteCode.trim(),
+      site_id: result.site_id!,
     });
     toast.success(`Welcome, ${result.display_name}!`);
   };
