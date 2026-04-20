@@ -9,6 +9,7 @@ interface Site {
   address: string | null;
   timezone: string;
   active: boolean;
+  site_code: string;
 }
 
 interface Membership {
