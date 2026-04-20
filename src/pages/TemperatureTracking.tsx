@@ -117,7 +117,8 @@ const TemperatureTracking = () => {
 
   const insertLog = useMutation({
     mutationFn: async (log: {
-      unit_id: string;
+      unit_id: string | null;
+      food_item: string | null;
       value: number;
       pass: boolean;
       log_type: string;
@@ -127,13 +128,14 @@ const TemperatureTracking = () => {
         site_id: siteId!,
         organisation_id: organisationId!,
         unit_id: log.unit_id,
+        food_item: log.food_item,
         value: log.value,
         pass: log.pass,
         log_type: log.log_type,
         corrective_action: log.corrective_action || null,
         logged_by_user_id: appUser?.id || null,
         logged_by_name: userName,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -145,9 +147,16 @@ const TemperatureTracking = () => {
   });
 
   const currentTemp = parseFloat(tempInput);
-  const isOutOfSpec = selectedUnit
-    ? !isNaN(currentTemp) && (currentTemp < selectedUnit.min_temp || currentTemp > selectedUnit.max_temp)
-    : false;
+  const isOutOfSpec = (() => {
+    if (isNaN(currentTemp)) return false;
+    if (processMode && processRange) {
+      return currentTemp < processRange.min || currentTemp > processRange.max;
+    }
+    if (selectedUnit) {
+      return currentTemp < selectedUnit.min_temp || currentTemp > selectedUnit.max_temp;
+    }
+    return false;
+  })();
 
   const handleKeypad = (key: string) => {
     if (key === "backspace") {
@@ -170,20 +179,34 @@ const TemperatureTracking = () => {
   };
 
   const saveLog = () => {
-    if (!selectedUnit) return;
-    insertLog.mutate({
-      unit_id: selectedUnit.id,
-      value: currentTemp,
-      pass: !isOutOfSpec,
-      log_type: logType,
-      corrective_action: correctiveAction || undefined,
-    });
+    if (processMode) {
+      if (!foodItem.trim()) return;
+      insertLog.mutate({
+        unit_id: null,
+        food_item: foodItem.trim(),
+        value: currentTemp,
+        pass: !isOutOfSpec,
+        log_type: logType,
+        corrective_action: correctiveAction || undefined,
+      });
+    } else {
+      if (!selectedUnit) return;
+      insertLog.mutate({
+        unit_id: selectedUnit.id,
+        food_item: null,
+        value: currentTemp,
+        pass: !isOutOfSpec,
+        log_type: logType,
+        corrective_action: correctiveAction || undefined,
+      });
+    }
     setStep("done");
   };
 
   const resetDialog = () => {
     setShowLog(false);
     setSelectedUnit(null);
+    setFoodItem("");
     setTempInput("");
     setStep("select");
     setCorrectiveAction("");
