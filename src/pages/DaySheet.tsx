@@ -12,6 +12,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { DateNavigator } from "@/components/DateNavigator";
 
 const DaySheet = () => {
   const { currentSite, organisationId } = useSite();
@@ -19,7 +20,10 @@ const DaySheet = () => {
   const queryClient = useQueryClient();
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
-  const today = new Date().toISOString().split("T")[0];
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+  const today = selectedDate; // all queries below are scoped to the selected date
 
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [problemNotes, setProblemNotes] = useState("");
