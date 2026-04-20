@@ -70,10 +70,13 @@ const TemperatureTracking = () => {
 
   const [showLog, setShowLog] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<TempUnit | null>(null);
+  const [foodItem, setFoodItem] = useState("");
   const [tempInput, setTempInput] = useState("");
   const [logType, setLogType] = useState("AM Check");
   const [step, setStep] = useState<"select" | "keypad" | "corrective" | "done">("select");
   const [correctiveAction, setCorrectiveAction] = useState("");
+  const processMode = isProcessCheck(logType);
+  const processRange = PROCESS_RANGES[logType];
 
   const { data: units = [], isLoading: unitsLoading } = useQuery({
     queryKey: ["temp_units", siteId],
