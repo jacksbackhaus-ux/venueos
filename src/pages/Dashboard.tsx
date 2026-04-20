@@ -370,7 +370,7 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-heading">My Tasks Today</CardTitle>
+                <CardTitle className="text-base font-heading">{isToday ? "My Tasks Today" : "Tasks for this day"}</CardTitle>
                 <Badge variant="secondary" className="text-xs">
                   {tasks.filter((t) => t.status === "done").length}/{tasks.length}
                 </Badge>
