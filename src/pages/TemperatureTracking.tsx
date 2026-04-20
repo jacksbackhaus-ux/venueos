@@ -365,8 +365,8 @@ const TemperatureTracking = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading">
-              {step === "select" && "Select Unit"}
-              {step === "keypad" && `Log Temp — ${selectedUnit?.name}`}
+              {step === "select" && (processMode ? "Log Food Temperature" : "Select Unit")}
+              {step === "keypad" && `Log Temp — ${processMode ? (foodItem || logType) : selectedUnit?.name}`}
               {step === "corrective" && "⚠️ Out of Spec — Action Required"}
               {step === "done" && "✅ Logged Successfully"}
             </DialogTitle>
