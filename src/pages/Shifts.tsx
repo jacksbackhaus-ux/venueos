@@ -109,20 +109,19 @@ const Shifts = () => {
 
   // Fetch active users in this org (for staff names)
   const { data: users = [], isLoading: loadingUsers } = useQuery({
-    queryKey: ["rota-users", currentSite?.organisation_id || staffSession?.organisation_id],
+    queryKey: ["rota-users", organisationId],
     queryFn: async () => {
-      const orgId = currentSite?.organisation_id || staffSession?.organisation_id;
-      if (!orgId) return [];
+      if (!organisationId) return [];
       const { data, error } = await supabase
         .from("users")
         .select("id, display_name, status")
-        .eq("organisation_id", orgId)
+        .eq("organisation_id", organisationId)
         .eq("status", "active")
         .order("display_name");
       if (error) throw error;
       return (data || []) as AppUser[];
     },
-    enabled: !!(currentSite?.organisation_id || staffSession?.organisation_id),
+    enabled: !!organisationId,
   });
 
   const userById = useMemo(() => {
