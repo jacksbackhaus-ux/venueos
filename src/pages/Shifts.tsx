@@ -905,6 +905,7 @@ function DayView({
           <CardContent className="p-0 divide-y">
             {assignments.map((a) => {
               const user = userById.get(a.user_id);
+              const lc = linkedCount(a.id);
               return (
                 <div key={a.id} className="flex items-center gap-3 p-3">
                   <div className="px-2 py-1 rounded text-xs font-semibold border bg-primary/10 text-primary border-primary/20 shrink-0">
@@ -914,12 +915,20 @@ function DayView({
                     <div className="font-medium truncate">
                       {user?.display_name || "Unknown staff"}
                     </div>
-                    {a.position && (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {a.position}
-                      </div>
-                    )}
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                      {a.position && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {a.position}
+                        </span>
+                      )}
+                      {lc > 0 && (
+                        <span className="flex items-center gap-1">
+                          <ListChecks className="h-3 w-3" />
+                          {lc} task{lc === 1 ? "" : "s"} linked
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {canEdit && (
                     <div className="flex items-center gap-1 shrink-0">
