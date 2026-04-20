@@ -118,7 +118,8 @@ const roleBadgeColor: Record<string, string> = {
 
 const Settings = () => {
   const { currentSite, organisationId } = useSite();
-  const { appUser } = useAuth();
+  const { appUser, staffSession, signOut, setStaffSession } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("temperature");
   const [loading, setLoading] = useState(true);
 
