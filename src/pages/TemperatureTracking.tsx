@@ -287,7 +287,7 @@ const TemperatureTracking = () => {
       {logs.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-heading">Today's Readings</CardTitle>
+            <CardTitle className="text-base font-heading">{isToday ? "Today's Readings" : "Readings for this day"}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="divide-y">
