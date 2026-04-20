@@ -1490,6 +1490,7 @@ export type Database = {
           name: string
           organisation_id: string
           owner_user_id: string | null
+          site_code: string
           timezone: string
         }
         Insert: {
@@ -1500,6 +1501,7 @@ export type Database = {
           name: string
           organisation_id: string
           owner_user_id?: string | null
+          site_code?: string
           timezone?: string
         }
         Update: {
@@ -1510,6 +1512,7 @@ export type Database = {
           name?: string
           organisation_id?: string
           owner_user_id?: string | null
+          site_code?: string
           timezone?: string
         }
         Relationships: [
@@ -1870,6 +1873,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_site_code: { Args: never; Returns: string }
+      generate_staff_code: { Args: { _org_id: string }; Returns: string }
       get_app_user_id: { Args: never; Returns: string }
       get_user_org_id: { Args: never; Returns: string }
       handle_signup: {
@@ -1892,10 +1897,9 @@ export type Database = {
       }
       is_super_admin: { Args: never; Returns: boolean }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
-      validate_staff_code: {
-        Args: { _site_id: string; _staff_code: string }
-        Returns: Json
-      }
+      validate_staff_code:
+        | { Args: { _site_id: string; _staff_code: string }; Returns: Json }
+        | { Args: { _site_id: string; _staff_code: string }; Returns: Json }
     }
     Enums: {
       auth_type: "email" | "staff_code"
