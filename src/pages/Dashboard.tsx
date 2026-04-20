@@ -184,14 +184,16 @@ const Dashboard = () => {
           alerts.push({ type: "overdue", message: `${u.name} AM temp overdue`, time: "09:00" });
         }
       });
-      // Open incidents
-      incidents.forEach((inc: any) => {
-        alerts.push({
-          type: "breach",
-          message: inc.title,
-          time: new Date(inc.reported_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      // Open incidents (only relevant for today)
+      if (isViewingToday) {
+        incidents.forEach((inc: any) => {
+          alerts.push({
+            type: "breach",
+            message: inc.title,
+            time: new Date(inc.reported_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+          });
         });
-      });
+      }
 
       const total = tasks.length;
       const completed = tasks.filter((t) => t.status === "done").length;
