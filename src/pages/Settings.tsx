@@ -128,8 +128,14 @@ const roleBadgeColor: Record<string, string> = {
 };
 
 const Settings = () => {
-  const { currentSite, organisationId } = useSite();
-  const { appUser, staffSession, signOut, setStaffSession } = useAuth();
+  const { currentSite, currentMembership, organisationId } = useSite();
+  const { appUser, staffSession, orgRole, signOut, setStaffSession } = useAuth();
+  const canManageStaff =
+    orgRole?.org_role === 'org_owner' ||
+    currentMembership?.site_role === 'owner' ||
+    currentMembership?.site_role === 'supervisor' ||
+    staffSession?.site_role === 'owner' ||
+    staffSession?.site_role === 'supervisor';
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("temperature");
   const [loading, setLoading] = useState(true);
