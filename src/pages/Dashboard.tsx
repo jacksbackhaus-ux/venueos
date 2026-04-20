@@ -293,19 +293,26 @@ const Dashboard = () => {
             <h1 className="text-2xl font-heading font-bold text-foreground">{greeting} 👋</h1>
             <p className="text-sm text-muted-foreground">{dateStr}</p>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs self-start sm:self-auto ${
-              complianceScore >= 80
-                ? "border-success text-success"
-                : complianceScore >= 60
-                ? "border-warning text-warning"
-                : "border-breach text-breach"
-            }`}
-          >
-            <TrendingUp className="h-3 w-3 mr-1" />
-            {complianceScore}% compliant {isToday ? "today" : "this day"}
-          </Badge>
+          {isClosed ? (
+            <Badge variant="outline" className="text-xs self-start sm:self-auto border-muted-foreground/30 text-muted-foreground">
+              <Lock className="h-3 w-3 mr-1" />
+              Closed day
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className={`text-xs self-start sm:self-auto ${
+                complianceScore >= 80
+                  ? "border-success text-success"
+                  : complianceScore >= 60
+                  ? "border-warning text-warning"
+                  : "border-breach text-breach"
+              }`}
+            >
+              <TrendingUp className="h-3 w-3 mr-1" />
+              {complianceScore}% compliant {isToday ? "today" : "this day"}
+            </Badge>
+          )}
         </div>
 
         {/* Date navigation */}
@@ -343,6 +350,39 @@ const Dashboard = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Closed day banner / action */}
+        {(isClosed || canCloseDay) && (
+          <div
+            className={`mt-3 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
+              isClosed ? "bg-muted/40 border-muted-foreground/20" : "bg-card"
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {isClosed ? (
+                <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+              ) : (
+                <Unlock className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <p className="text-xs sm:text-sm text-foreground truncate">
+                {isClosed
+                  ? `This day is marked as closed${closedDay?.closed_by_name ? ` by ${closedDay.closed_by_name}` : ""}. It won't count toward compliance.`
+                  : "Site closed on this day? Mark it so it doesn't count against compliance."}
+              </p>
+            </div>
+            {canCloseDay && (
+              <Button
+                size="sm"
+                variant={isClosed ? "outline" : "secondary"}
+                onClick={handleToggleClosed}
+                disabled={closeDayMutation.isPending}
+                className="shrink-0"
+              >
+                {isClosed ? "Reopen day" : "Mark as closed"}
+              </Button>
+            )}
+          </div>
+        )}
       </motion.div>
 
       {/* Alerts */}
