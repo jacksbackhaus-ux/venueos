@@ -556,19 +556,25 @@ const Dashboard = () => {
                       <pillar.icon className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs font-medium">{pillar.name}</span>
                     </div>
-                    <span
-                      className={`text-xs font-bold ${
-                        pillar.score >= 80
-                          ? "text-success"
-                          : pillar.score >= 60
-                          ? "text-warning"
-                          : "text-breach"
-                      }`}
-                    >
-                      {pillar.score}%
-                    </span>
+                    {isClosed ? (
+                      <span className="text-xs font-bold text-muted-foreground inline-flex items-center gap-1">
+                        <Lock className="h-3 w-3" /> Closed
+                      </span>
+                    ) : (
+                      <span
+                        className={`text-xs font-bold ${
+                          pillar.score >= 80
+                            ? "text-success"
+                            : pillar.score >= 60
+                            ? "text-warning"
+                            : "text-breach"
+                        }`}
+                      >
+                        {pillar.score}%
+                      </span>
+                    )}
                   </div>
-                  <Progress value={pillar.score} className="h-1.5" />
+                  {!isClosed && <Progress value={pillar.score} className="h-1.5" />}
                 </div>
               ))}
 
