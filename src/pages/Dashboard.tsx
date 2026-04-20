@@ -57,15 +57,30 @@ const statusIcon = (status: string) => {
 const Dashboard = () => {
   const { currentSite } = useSite();
   const siteId = currentSite?.id;
-  const today = new Date().toISOString().slice(0, 10);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+  const viewedDate = new Date(`${selectedDate}T12:00:00`);
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
-  const dateStr = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const dateStr = isToday
+    ? viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
+    : viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const shiftDate = (days: number) => {
+    const d = new Date(`${selectedDate}T12:00:00`);
+    d.setDate(d.getDate() + days);
+    const next = d.toISOString().slice(0, 10);
+    if (next > todayStr) return;
+    setSelectedDate(next);
+  };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard", siteId, today],
+    queryKey: ["dashboard", siteId, selectedDate],
     enabled: !!siteId,
     queryFn: async () => {
+      const today = selectedDate;
+      const isViewingToday = today === todayStr;
       const [
         cleaningTasksRes,
         cleaningLogsRes,
