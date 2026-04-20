@@ -259,7 +259,7 @@ const DaySheet = () => {
         </>
       )}
 
-      {locked && (
+      {isLockedSheet && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center">
           <Lock className="h-6 w-6 text-success mx-auto mb-2" />
           <p className="font-heading font-bold text-success">Day Sheet Locked</p>
