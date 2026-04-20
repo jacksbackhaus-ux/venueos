@@ -39,6 +39,17 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { UserX, UserCheck, RotateCcw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -117,8 +128,14 @@ const roleBadgeColor: Record<string, string> = {
 };
 
 const Settings = () => {
-  const { currentSite, organisationId } = useSite();
-  const { appUser, staffSession, signOut, setStaffSession } = useAuth();
+  const { currentSite, currentMembership, organisationId } = useSite();
+  const { appUser, staffSession, orgRole, signOut, setStaffSession } = useAuth();
+  const canManageStaff =
+    orgRole?.org_role === 'org_owner' ||
+    currentMembership?.site_role === 'owner' ||
+    currentMembership?.site_role === 'supervisor' ||
+    staffSession?.site_role === 'owner' ||
+    staffSession?.site_role === 'supervisor';
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("temperature");
   const [loading, setLoading] = useState(true);
@@ -143,6 +160,8 @@ const Settings = () => {
   const [staff, setStaff] = useState<StaffMember[]>(defaultStaff);
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "", staffId: "" });
+  const [staffView, setStaffView] = useState<"active" | "deactivated">("active");
+  const [confirmDeactivate, setConfirmDeactivate] = useState<StaffMember | null>(null);
 
   // Site/business state — populated from currentSite once loaded
   const [bakeryName, setBakeryName] = useState("");
@@ -390,9 +409,18 @@ const Settings = () => {
   };
 
   const toggleStaffActive = async (id: string, active: boolean) => {
+    if (!canManageStaff) {
+      toast.error("Only Owners and Supervisors can change staff status.");
+      return;
+    }
+    if (!active && id === appUser?.id) {
+      toast.error("You can't deactivate your own account.");
+      return;
+    }
     const { error } = await supabase.from('users').update({ status: active ? 'active' : 'suspended' }).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
+    toast.success(active ? "Staff member reactivated — PIN login restored" : "Staff member deactivated — PIN login revoked. Their historical records are preserved.");
   };
 
   // ─── Site info save ───
@@ -650,40 +678,108 @@ const Settings = () => {
               <h2 className="font-heading font-semibold text-sm">Staff & Roles</h2>
               <p className="text-xs text-muted-foreground">Manage who can access what</p>
             </div>
-            <Button size="sm" className="gap-1" onClick={() => setShowAddStaff(true)}>
+            <Button
+              size="sm"
+              className="gap-1"
+              onClick={() => setShowAddStaff(true)}
+              disabled={!canManageStaff}
+            >
               <Plus className="h-3 w-3" /> Add Staff
             </Button>
           </div>
 
-          <div className="space-y-2">
-            {staff.map((s) => (
-              <Card key={s.id} className={!s.active ? "opacity-50" : ""}>
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                      {s.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">{s.email || "No email"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={`text-[10px] border-0 ${roleBadgeColor[s.role]}`}>{roleLabel[s.role]}</Badge>
-                    {s.pin && (
-                      <Badge variant="outline" className="text-[10px]">
-                        <Key className="h-3 w-3 mr-1" /> PIN
-                      </Badge>
-                    )}
-                    <Switch
-                      checked={s.active}
-                      onCheckedChange={(checked) => toggleStaffActive(s.id, checked)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Active / Deactivated toggle */}
+          <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/30">
+            <button
+              type="button"
+              onClick={() => setStaffView("active")}
+              className={`px-3 py-1.5 text-xs font-medium rounded ${
+                staffView === "active" ? "bg-background shadow-sm" : "text-muted-foreground"
+              }`}
+            >
+              Active ({staff.filter((s) => s.active).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStaffView("deactivated")}
+              className={`px-3 py-1.5 text-xs font-medium rounded ${
+                staffView === "deactivated" ? "bg-background shadow-sm" : "text-muted-foreground"
+              }`}
+            >
+              Deactivated ({staff.filter((s) => !s.active).length})
+            </button>
           </div>
+
+          <div className="space-y-2">
+            {staff.filter((s) => (staffView === "active" ? s.active : !s.active)).length === 0 && (
+              <p className="text-xs text-muted-foreground py-6 text-center">
+                {staffView === "active"
+                  ? "No active staff members."
+                  : "No deactivated staff. Former employees will appear here."}
+              </p>
+            )}
+            {staff
+              .filter((s) => (staffView === "active" ? s.active : !s.active))
+              .map((s) => (
+                <Card key={s.id} className={!s.active ? "bg-muted/30" : ""}>
+                  <CardContent className="p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                        s.active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {s.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{s.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{s.email || "No email"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge className={`text-[10px] border-0 ${roleBadgeColor[s.role]}`}>{roleLabel[s.role]}</Badge>
+                      {s.pin && s.active && (
+                        <Badge variant="outline" className="text-[10px]">
+                          <Key className="h-3 w-3 mr-1" /> {s.pin}
+                        </Badge>
+                      )}
+                      {!s.active && (
+                        <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
+                          Deactivated
+                        </Badge>
+                      )}
+                      {s.active ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={!canManageStaff || s.id === appUser?.id}
+                          onClick={() => setConfirmDeactivate(s)}
+                          title={s.id === appUser?.id ? "You can't deactivate yourself" : "Deactivate"}
+                        >
+                          <UserX className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-success hover:text-success hover:bg-success/10 gap-1"
+                          disabled={!canManageStaff}
+                          onClick={() => toggleStaffActive(s.id, true)}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          <span className="text-xs">Reactivate</span>
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+
+          {!canManageStaff && (
+            <p className="text-xs text-muted-foreground italic">
+              Only Owners and Supervisors can add, deactivate or reactivate staff members.
+            </p>
+          )}
 
           <Separator />
 
@@ -1160,6 +1256,36 @@ const Settings = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Confirm Deactivate Staff ─── */}
+      <AlertDialog open={!!confirmDeactivate} onOpenChange={(o) => !o && setConfirmDeactivate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate {confirmDeactivate?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Their PIN login will be revoked immediately and they'll no longer appear in active staff lists or on the kiosk login screen.
+              <br /><br />
+              All historical records they completed — temperature logs, day sheet sign-offs, cleaning, deliveries, incidents — will be fully preserved with their name attached.
+              <br /><br />
+              You can reactivate them at any time from the Deactivated tab.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (confirmDeactivate) {
+                  await toggleStaffActive(confirmDeactivate.id, false);
+                  setConfirmDeactivate(null);
+                }
+              }}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
