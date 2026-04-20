@@ -138,8 +138,8 @@ const Cleaning = () => {
                         const isDone = doneIds.has(task.id);
                         const log = logs.find((l: any) => l.task_id === task.id);
                         return (
-                          <button key={task.id} onClick={() => toggleTask.mutate(task.id)}
-                            className={`w-full flex items-start gap-3 p-2.5 rounded-md text-left transition-colors hover:bg-muted/50 ${isDone ? "opacity-60" : ""}`}>
+                          <button key={task.id} onClick={() => isToday && toggleTask.mutate(task.id)} disabled={!isToday}
+                            className={`w-full flex items-start gap-3 p-2.5 rounded-md text-left transition-colors ${isToday ? "hover:bg-muted/50 cursor-pointer" : "cursor-default"} ${isDone ? "opacity-60" : ""}`}>
                             {isDone ? <CheckCircle2 className="h-5 w-5 text-success mt-0.5 shrink-0" /> : <Circle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />}
                             <div className="flex-1 min-w-0">
                               <span className={`text-sm ${isDone ? "line-through text-muted-foreground" : "font-medium"}`}>{task.task}</span>
