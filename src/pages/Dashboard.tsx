@@ -128,22 +128,32 @@ const Dashboard = () => {
       const amDone = new Set(tempLogs.filter((l: any) => l.log_type === "AM Check").map((l: any) => l.unit_id));
       const pmDone = new Set(tempLogs.filter((l: any) => l.log_type === "PM Check").map((l: any) => l.unit_id));
       const hourNow = now.getHours();
+      const amOverdue = isViewingToday ? hourNow >= 11 : true;
+      const pmOverdue = isViewingToday ? hourNow >= 18 : true;
+      const cleaningOverdue = !isViewingToday;
       tempUnits.forEach((u: any) => {
         tasks.push({
           id: `temp-am-${u.id}`,
           title: `${u.name} AM temp`,
           due: "09:00",
-          status: amDone.has(u.id) ? "done" : hourNow >= 11 ? "overdue" : "pending",
+          status: amDone.has(u.id) ? "done" : amOverdue ? "overdue" : "pending",
           module: "Temps",
         });
         tasks.push({
           id: `temp-pm-${u.id}`,
           title: `${u.name} PM temp`,
           due: "16:00",
-          status: pmDone.has(u.id) ? "done" : hourNow >= 18 ? "overdue" : "pending",
+          status: pmDone.has(u.id) ? "done" : pmOverdue ? "overdue" : "pending",
           module: "Temps",
         });
       });
+
+      // Mark cleaning overdue for past dates
+      if (cleaningOverdue) {
+        tasks.forEach((t) => {
+          if (t.module === "Cleaning" && t.status === "pending") t.status = "overdue";
+        });
+      }
 
       // Day sheet items
       const doneItemIds = new Set(daySheetEntries.filter((e: any) => e.done).map((e: any) => e.item_id));
@@ -153,13 +163,13 @@ const Dashboard = () => {
             id: `ds-${i.id}`,
             title: i.label,
             due: s.default_time,
-            status: doneItemIds.has(i.id) ? "done" : "pending",
+            status: doneItemIds.has(i.id) ? "done" : cleaningOverdue ? "overdue" : "pending",
             module: s.title,
           });
         });
       });
 
-      // Temperature breaches today
+      // Temperature breaches for the viewed day
       tempLogs.filter((l: any) => !l.pass).forEach((l: any) => {
         const unit = tempUnits.find((u: any) => u.id === l.unit_id);
         alerts.push({
@@ -170,7 +180,7 @@ const Dashboard = () => {
       });
       // Overdue temp checks
       tempUnits.forEach((u: any) => {
-        if (!amDone.has(u.id) && hourNow >= 11) {
+        if (!amDone.has(u.id) && amOverdue) {
           alerts.push({ type: "overdue", message: `${u.name} AM temp overdue`, time: "09:00" });
         }
       });
