@@ -1265,6 +1265,77 @@ export type Database = {
           },
         ]
       }
+      rota_assignments: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          end_time: string
+          id: string
+          organisation_id: string
+          position: string | null
+          shift_date: string
+          site_id: string
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          end_time: string
+          id?: string
+          organisation_id: string
+          position?: string | null
+          shift_date: string
+          site_id: string
+          start_time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          end_time?: string
+          id?: string
+          organisation_id?: string
+          position?: string | null
+          shift_date?: string
+          site_id?: string
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_assignments_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_assignments_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_assignments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shift_staff: {
         Row: {
           created_at: string
