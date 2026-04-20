@@ -59,7 +59,9 @@ const statusIcon = (status: string) => {
 };
 
 const Dashboard = () => {
-  const { currentSite } = useSite();
+  const { currentSite, currentMembership } = useSite();
+  const { staffSession, appUser } = useAuth();
+  const queryClient = useQueryClient();
   const siteId = currentSite?.id;
   const todayStr = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -70,6 +72,9 @@ const Dashboard = () => {
   const dateStr = isToday
     ? viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
     : viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const role = currentMembership?.site_role || staffSession?.site_role;
+  const canCloseDay = role === "owner" || role === "supervisor";
 
   const shiftDate = (days: number) => {
     const d = new Date(`${selectedDate}T12:00:00`);
