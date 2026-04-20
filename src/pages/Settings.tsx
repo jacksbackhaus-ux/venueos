@@ -145,6 +145,7 @@ const Settings = () => {
   // Site/business state — populated from currentSite once loaded
   const [bakeryName, setBakeryName] = useState("");
   const [bakeryAddress, setBakeryAddress] = useState("");
+  const [siteIdCopied, setSiteIdCopied] = useState(false);
   const [operatingDays, setOperatingDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]);
   const [kioskMode, setKioskMode] = useState(true);
   const [magicLinkAuth, setMagicLinkAuth] = useState(true);
