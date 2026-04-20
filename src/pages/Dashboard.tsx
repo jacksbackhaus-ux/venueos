@@ -247,6 +247,65 @@ const Dashboard = () => {
     { name: "Management Confidence", score: 100, icon: ShieldCheck },
   ];
 
+  // Current user id (works for both email auth and staff session)
+  const currentUserId = appUser?.id ?? staffSession?.user_id ?? null;
+
+  // Today's shifts (rota) — only show on the actual current day
+  const { data: todayShifts } = useQuery({
+    queryKey: ["dashboard-today-shifts", siteId, todayStr],
+    enabled: !!siteId && isToday,
+    queryFn: async () => {
+      const { data: assignments } = await supabase
+        .from("rota_assignments")
+        .select("id, user_id, start_time, end_time, position")
+        .eq("site_id", siteId!)
+        .eq("shift_date", todayStr)
+        .order("start_time", { ascending: true });
+
+      const list = (assignments ?? []) as Array<{ id: string; user_id: string; start_time: string; end_time: string; position: string | null }>;
+      if (list.length === 0) return { shifts: [], myLinkedTaskIds: new Set<string>() };
+
+      const userIds = Array.from(new Set(list.map((a) => a.user_id)));
+      const { data: usersData } = await supabase
+        .from("users")
+        .select("id, display_name")
+        .in("id", userIds);
+      const nameById = new Map((usersData ?? []).map((u: any) => [u.id, u.display_name as string]));
+
+      // Linked tasks for the logged-in user's shifts today
+      const myAssignmentIds = currentUserId
+        ? list.filter((a) => a.user_id === currentUserId).map((a) => a.id)
+        : [];
+      let myLinkedTaskIds = new Set<string>();
+      if (myAssignmentIds.length > 0) {
+        const { data: links } = await supabase
+          .from("rota_assignment_tasks")
+          .select("task_id, task_type")
+          .in("rota_assignment_id", myAssignmentIds);
+        myLinkedTaskIds = new Set((links ?? []).map((l: any) => `${l.task_type}:${l.task_id}`));
+      }
+
+      const shifts = list.map((a) => ({
+        id: a.id,
+        user_id: a.user_id,
+        name: nameById.get(a.user_id) ?? "Unknown",
+        start_time: a.start_time,
+        end_time: a.end_time,
+        isMe: currentUserId === a.user_id,
+      }));
+
+      return { shifts, myLinkedTaskIds };
+    },
+  });
+
+  const myLinkedTaskIds = todayShifts?.myLinkedTaskIds ?? new Set<string>();
+  const isTaskLinkedToMe = (task: TaskRow) => {
+    if (myLinkedTaskIds.size === 0) return false;
+    if (task.id.startsWith("ds-")) return myLinkedTaskIds.has(`day_sheet_item:${task.id.slice(3)}`);
+    if (task.id.startsWith("cleaning-")) return myLinkedTaskIds.has(`cleaning_task:${task.id.slice(9)}`);
+    return false;
+  };
+
   const closeDayMutation = useMutation({
     mutationFn: async (close: boolean) => {
       if (!siteId || !currentSite) throw new Error("No site");
