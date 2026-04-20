@@ -229,12 +229,14 @@ const Dashboard = () => {
         { name: "Management Confidence", score: dsCompliance, icon: ShieldCheck },
       ];
 
-      return { tasks, alerts, stats: { completed, total, overdue, breaches }, compliance, pillars };
+      return { tasks, alerts, stats: { completed, total, overdue, breaches }, compliance, pillars, closedDay };
     },
   });
 
+  const closedDay = (data as any)?.closedDay ?? null;
+  const isClosed = !!closedDay;
   const tasks = data?.tasks ?? [];
-  const alerts = data?.alerts ?? [];
+  const alerts = isClosed ? [] : (data?.alerts ?? []);
   const stats = data?.stats ?? { completed: 0, total: 0, overdue: 0, breaches: 0 };
   const complianceScore = data?.compliance ?? 100;
   const pillars = data?.pillars ?? [
@@ -242,6 +244,45 @@ const Dashboard = () => {
     { name: "Premises & Cleanliness", score: 100, icon: SprayCan },
     { name: "Management Confidence", score: 100, icon: ShieldCheck },
   ];
+
+  const closeDayMutation = useMutation({
+    mutationFn: async (close: boolean) => {
+      if (!siteId || !currentSite) throw new Error("No site");
+      if (close) {
+        const { error } = await supabase.from("closed_days" as any).insert({
+          site_id: siteId,
+          organisation_id: currentSite.organisation_id,
+          closed_date: selectedDate,
+          closed_by_user_id: appUser?.id ?? null,
+          closed_by_name: appUser?.display_name ?? (staffSession as any)?.display_name ?? null,
+        } as any);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("closed_days" as any)
+          .delete()
+          .eq("site_id", siteId)
+          .eq("closed_date", selectedDate);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_d, close) => {
+      toast.success(close ? "Day marked as closed" : "Day reopened");
+      queryClient.invalidateQueries({ queryKey: ["dashboard", siteId, selectedDate] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Action failed"),
+  });
+
+  const handleToggleClosed = () => {
+    if (!canCloseDay) return;
+    if (isClosed) {
+      if (!confirm("Reopen this day? Tasks and tracking will resume counting.")) return;
+      closeDayMutation.mutate(false);
+    } else {
+      if (!confirm(`Mark ${isToday ? "today" : dateStr} as a closed day? It won't count toward compliance.`)) return;
+      closeDayMutation.mutate(true);
+    }
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
