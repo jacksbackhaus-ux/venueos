@@ -390,6 +390,39 @@ export type Database = {
           },
         ]
       }
+      closed_days: {
+        Row: {
+          closed_by_name: string | null
+          closed_by_user_id: string | null
+          closed_date: string
+          created_at: string
+          id: string
+          organisation_id: string
+          reason: string | null
+          site_id: string
+        }
+        Insert: {
+          closed_by_name?: string | null
+          closed_by_user_id?: string | null
+          closed_date: string
+          created_at?: string
+          id?: string
+          organisation_id: string
+          reason?: string | null
+          site_id: string
+        }
+        Update: {
+          closed_by_name?: string | null
+          closed_by_user_id?: string | null
+          closed_date?: string
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          reason?: string | null
+          site_id?: string
+        }
+        Relationships: []
+      }
       day_sheet_entries: {
         Row: {
           completed_at: string | null
@@ -1853,6 +1886,10 @@ export type Database = {
       has_site_access: { Args: { _site_id: string }; Returns: boolean }
       has_site_membership: { Args: { _site_id: string }; Returns: boolean }
       is_org_owner: { Args: { _org_id: string }; Returns: boolean }
+      is_site_supervisor_or_owner: {
+        Args: { _site_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: never; Returns: boolean }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
       validate_staff_code: {
