@@ -473,7 +473,9 @@ const TemperatureTracking = () => {
                   <XCircle className="h-8 w-8 text-breach mx-auto mb-2" />
                   <p className="text-2xl font-heading font-bold text-breach">{currentTemp}°C</p>
                   <p className="text-sm text-breach/80">
-                    {selectedUnit?.name} is out of acceptable range ({Number(selectedUnit?.min_temp)}–{Number(selectedUnit?.max_temp)}°C)
+                    {processMode
+                      ? <><span className="font-medium">{foodItem || "Food item"}</span> is outside the safe range for {logType} ({processRange?.label})</>
+                      : <>{selectedUnit?.name} is out of acceptable range ({Number(selectedUnit?.min_temp)}–{Number(selectedUnit?.max_temp)}°C)</>}
                   </p>
                 </div>
                 <div>
