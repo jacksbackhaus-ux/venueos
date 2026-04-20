@@ -235,7 +235,7 @@ const Dashboard = () => {
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
       {/* Header */}
       <motion.div initial="hidden" animate="visible" custom={0} variants={fadeUp}>
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">{greeting} 👋</h1>
             <p className="text-sm text-muted-foreground">{dateStr}</p>
@@ -251,8 +251,44 @@ const Dashboard = () => {
             }`}
           >
             <TrendingUp className="h-3 w-3 mr-1" />
-            {complianceScore}% compliant today
+            {complianceScore}% compliant {isToday ? "today" : "this day"}
           </Badge>
+        </div>
+
+        {/* Date navigation */}
+        <div className="mt-3 flex items-center justify-between rounded-lg border bg-card px-2 py-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => shiftDate(-1)}
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <span>{isToday ? "Today" : dateStr}</span>
+            {!isToday && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate(todayStr)}
+                className="text-xs text-primary underline-offset-2 hover:underline"
+              >
+                Jump to today
+              </button>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => shiftDate(1)}
+            disabled={isToday}
+            aria-label="Next day"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </motion.div>
 
