@@ -861,6 +861,7 @@ function DayView({
   dateIso,
   assignments,
   userById,
+  linkedCount,
   canEdit,
   onAdd,
   onEdit,
@@ -869,6 +870,7 @@ function DayView({
   dateIso: string;
   assignments: Assignment[];
   userById: Map<string, AppUser>;
+  linkedCount: (assignmentId: string) => number;
   canEdit: boolean;
   onAdd: () => void;
   onEdit: (a: Assignment) => void;
