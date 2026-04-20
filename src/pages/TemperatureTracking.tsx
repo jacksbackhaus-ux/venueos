@@ -270,7 +270,7 @@ const TemperatureTracking = () => {
                     ) : (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        <span className="text-sm">No reading today</span>
+                        <span className="text-sm">{isToday ? "No reading today" : "No reading"}</span>
                       </div>
                     )}
                   </div>
