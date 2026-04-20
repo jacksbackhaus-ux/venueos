@@ -468,6 +468,40 @@ const Dashboard = () => {
         </motion.div>
       )}
 
+      {/* Today's Shift (rota) — only on today, only when shifts exist */}
+      {isToday && !isClosed && (todayShifts?.shifts.length ?? 0) > 0 && (
+        <motion.div initial="hidden" animate="visible" custom={2} variants={fadeUp}>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-heading">Today's Shift</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ul className="divide-y">
+                {todayShifts!.shifts.map((s) => (
+                  <li
+                    key={s.id}
+                    className={`flex items-center justify-between py-2 text-sm ${
+                      s.isMe ? "font-semibold text-foreground" : "text-foreground"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0 truncate">
+                      {s.isMe && <Star className="h-3.5 w-3.5 text-primary shrink-0" />}
+                      <span className="truncate">{s.name}{s.isMe ? " (you)" : ""}</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground tabular-nums shrink-0 ml-3">
+                      {s.start_time}–{s.end_time}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Quick Actions */}
       <motion.div initial="hidden" animate="visible" custom={2} variants={fadeUp}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
