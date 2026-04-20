@@ -98,6 +98,7 @@ const Dashboard = () => {
         daySheetSectionsRes,
         daySheetRes,
         incidentsRes,
+        closedDayRes,
       ] = await Promise.all([
         supabase.from("cleaning_tasks").select("id, task, area, frequency, due_time").eq("site_id", siteId!).eq("active", true),
         supabase.from("cleaning_logs").select("task_id, done, completed_at").eq("site_id", siteId!).eq("log_date", today),
@@ -106,8 +107,10 @@ const Dashboard = () => {
         supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, label, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", siteId!).eq("sheet_date", today).maybeSingle(),
         supabase.from("incidents").select("id, title, status, reported_at").eq("site_id", siteId!).eq("status", "open"),
+        supabase.from("closed_days" as any).select("id, reason, closed_by_name, created_at").eq("site_id", siteId!).eq("closed_date", today).maybeSingle(),
       ]);
 
+      const closedDay = (closedDayRes as any)?.data ?? null;
       const cleaningTasks = cleaningTasksRes.data ?? [];
       const cleaningLogs = cleaningLogsRes.data ?? [];
       const tempUnits = tempUnitsRes.data ?? [];
