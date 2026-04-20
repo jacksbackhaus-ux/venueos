@@ -409,9 +409,18 @@ const Settings = () => {
   };
 
   const toggleStaffActive = async (id: string, active: boolean) => {
+    if (!canManageStaff) {
+      toast.error("Only Owners and Supervisors can change staff status.");
+      return;
+    }
+    if (!active && id === appUser?.id) {
+      toast.error("You can't deactivate your own account.");
+      return;
+    }
     const { error } = await supabase.from('users').update({ status: active ? 'active' : 'suspended' }).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
+    toast.success(active ? "Staff member reactivated — PIN login restored" : "Staff member deactivated — PIN login revoked. Their historical records are preserved.");
   };
 
   // ─── Site info save ───
