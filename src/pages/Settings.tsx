@@ -735,6 +735,46 @@ const Settings = () => {
 
         {/* ════════ SITE / BUSINESS ════════ */}
         <TabsContent value="site" className="mt-4 space-y-4">
+          {currentSite && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Key className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-semibold">
+                    Site ID — required for Staff PIN login
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Staff enter this ID on the kiosk login screen along with their PIN.
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <code className="flex-1 px-3 py-3 rounded-md bg-background border border-border font-mono text-base sm:text-lg font-bold tracking-wide break-all select-all">
+                    {currentSite.id}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-12 w-12 shrink-0"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(currentSite.id);
+                        setSiteIdCopied(true);
+                        toast.success("Site ID copied");
+                        setTimeout(() => setSiteIdCopied(false), 2000);
+                      } catch {
+                        toast.error("Could not copy. Select the ID manually.");
+                      }
+                    }}
+                    aria-label="Copy Site ID"
+                  >
+                    {siteIdCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <h2 className="font-heading font-semibold text-sm">Site Information</h2>
 
           <div className="space-y-3">
