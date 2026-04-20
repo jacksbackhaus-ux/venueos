@@ -438,12 +438,16 @@ const Dashboard = () => {
             <Card key={stat.label} className="border">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">{stat.label}</p>
-                <p className={`text-2xl font-heading font-bold ${stat.color}`}>
-                  {stat.value}
-                  {"total" in stat && (
-                    <span className="text-sm font-normal text-muted-foreground">/{stat.total}</span>
-                  )}
-                </p>
+                {isClosed ? (
+                  <p className="text-2xl font-heading font-bold text-muted-foreground">—</p>
+                ) : (
+                  <p className={`text-2xl font-heading font-bold ${stat.color}`}>
+                    {stat.value}
+                    {"total" in stat && (
+                      <span className="text-sm font-normal text-muted-foreground">/{stat.total}</span>
+                    )}
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -464,14 +468,22 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-heading">{isToday ? "My Tasks Today" : "Tasks for this day"}</CardTitle>
-                <Badge variant="secondary" className="text-xs">
-                  {tasks.filter((t) => t.status === "done").length}/{tasks.length}
-                </Badge>
+                {isClosed ? (
+                  <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
+                    <Lock className="h-3 w-3 mr-1" /> Closed
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">
+                    {tasks.filter((t) => t.status === "done").length}/{tasks.length}
+                  </Badge>
+                )}
               </div>
-              <Progress
-                value={tasks.length > 0 ? (tasks.filter((t) => t.status === "done").length / tasks.length) * 100 : 0}
-                className="h-1.5"
-              />
+              {!isClosed && (
+                <Progress
+                  value={tasks.length > 0 ? (tasks.filter((t) => t.status === "done").length / tasks.length) * 100 : 0}
+                  className="h-1.5"
+                />
+              )}
             </CardHeader>
             <CardContent className="pt-0">
               {isLoading ? (
