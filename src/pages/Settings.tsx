@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
@@ -117,7 +118,8 @@ const roleBadgeColor: Record<string, string> = {
 
 const Settings = () => {
   const { currentSite, organisationId } = useSite();
-  const { appUser } = useAuth();
+  const { appUser, staffSession, signOut, setStaffSession } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("temperature");
   const [loading, setLoading] = useState(true);
 
@@ -950,7 +952,24 @@ const Settings = () => {
 
           <Separator />
 
-          <Button variant="outline" className="w-full gap-2 text-breach hover:text-breach border-breach/30">
+          <Button
+            variant="outline"
+            className="w-full gap-2 text-breach hover:text-breach border-breach/30"
+            onClick={async () => {
+              try {
+                if (staffSession) {
+                  setStaffSession(null);
+                } else {
+                  await signOut();
+                }
+                localStorage.removeItem("current_site_id");
+                toast.success("Logged out");
+                navigate("/auth", { replace: true });
+              } catch (e: any) {
+                toast.error(e?.message || "Could not log out");
+              }
+            }}
+          >
             <LogOut className="h-4 w-4" /> Log Out
           </Button>
         </TabsContent>
