@@ -595,35 +595,44 @@ const Dashboard = () => {
                 <p className="text-sm text-muted-foreground py-6 text-center">No tasks set up yet. Configure modules in Settings.</p>
               ) : (
                 <div className="divide-y">
-                  {tasks.slice(0, 12).map((task) => (
-                    <div
-                      key={task.id}
-                      className={`flex items-center gap-3 py-2.5 ${
-                        task.status === "done" ? "opacity-60" : ""
-                      }`}
-                    >
-                      {statusIcon(task.status)}
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`text-sm font-medium ${
-                            task.status === "done" ? "line-through" : ""
-                          }`}
-                        >
-                          {task.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Due {task.due}</p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] shrink-0"
+                  {tasks.slice(0, 12).map((task) => {
+                    const linked = isTaskLinkedToMe(task);
+                    return (
+                      <div
+                        key={task.id}
+                        className={`flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-md ${
+                          task.status === "done" ? "opacity-60" : ""
+                        } ${linked ? "bg-primary/5 ring-1 ring-primary/20" : ""}`}
                       >
-                        {task.module}
-                      </Badge>
-                      {task.status === "pending" && (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
-                  ))}
+                        {statusIcon(task.status)}
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm font-medium ${
+                              task.status === "done" ? "line-through" : ""
+                            }`}
+                          >
+                            {task.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Due {task.due}</p>
+                        </div>
+                        {linked && (
+                          <Badge variant="default" className="text-[10px] shrink-0 bg-primary/15 text-primary hover:bg-primary/15 border-0">
+                            <Star className="h-3 w-3 mr-0.5" />
+                            Yours
+                          </Badge>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] shrink-0"
+                        >
+                          {task.module}
+                        </Badge>
+                        {task.status === "pending" && (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
