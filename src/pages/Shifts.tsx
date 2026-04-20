@@ -1,16 +1,53 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Users, Clock, Loader2 } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  Clock,
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 // ---------- Date helpers (local time, Mon-first week) ----------
-const DAY_KEYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const DAY_LABELS_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const toIsoDate = (d: Date) => {
@@ -20,12 +57,11 @@ const toIsoDate = (d: Date) => {
 };
 
 const todayIso = () => toIsoDate(new Date());
-
 const parseIso = (iso: string) => new Date(`${iso}T12:00:00`);
 
 const startOfWeekMon = (iso: string) => {
   const d = parseIso(iso);
-  const diff = (d.getDay() + 6) % 7; // Mon=0, Sun=6
+  const diff = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - diff);
   return toIsoDate(d);
 };
@@ -35,8 +71,6 @@ const addDays = (iso: string, days: number) => {
   d.setDate(d.getDate() + days);
   return toIsoDate(d);
 };
-
-const dayKeyForIso = (iso: string) => DAY_KEYS[parseIso(iso).getDay()];
 
 const formatLong = (iso: string, withYear = false) =>
   parseIso(iso).toLocaleDateString("en-GB", {
@@ -61,14 +95,13 @@ const formatShortRange = (a: string, b: string) => {
 };
 
 // ---------- Types ----------
-type Shift = {
+type Assignment = {
   id: string;
-  name: string;
+  user_id: string;
+  shift_date: string;
   start_time: string;
   end_time: string;
-  color: string;
-  days_active: string[];
-  shift_staff: { user_id: string }[];
+  position: string | null;
 };
 
 type AppUser = { id: string; display_name: string; status: string };
@@ -79,8 +112,9 @@ const Shifts = () => {
   const { staffSession } = useAuth();
   const siteId = currentSite?.id || staffSession?.site_id;
   const role = currentMembership?.site_role || staffSession?.site_role || "staff";
-  const canEdit = role === "owner" || role === "supervisor"; // gate for future actions
+  const canEdit = role === "owner" || role === "supervisor";
 
+  const qc = useQueryClient();
   const [view, setView] = useState<"week" | "day">("week");
   const [anchorDate, setAnchorDate] = useState<string>(todayIso());
 
@@ -90,24 +124,27 @@ const Shifts = () => {
     [weekStart]
   );
 
-  // Fetch shifts (active) for site
-  const { data: shifts = [], isLoading: loadingShifts } = useQuery({
-    queryKey: ["rota-shifts", siteId],
+  // Fetch range covers either the full week or just the day depending on view.
+  const rangeStart = view === "week" ? weekStart : anchorDate;
+  const rangeEnd = view === "week" ? addDays(weekStart, 6) : anchorDate;
+
+  const { data: assignments = [], isLoading: loadingAssignments } = useQuery({
+    queryKey: ["rota-assignments", siteId, rangeStart, rangeEnd],
     queryFn: async () => {
       if (!siteId) return [];
       const { data, error } = await supabase
-        .from("shifts")
-        .select("id, name, start_time, end_time, color, days_active, shift_staff(user_id)")
+        .from("rota_assignments")
+        .select("id, user_id, shift_date, start_time, end_time, position")
         .eq("site_id", siteId)
-        .eq("active", true)
+        .gte("shift_date", rangeStart)
+        .lte("shift_date", rangeEnd)
         .order("start_time");
       if (error) throw error;
-      return (data || []) as Shift[];
+      return (data || []) as Assignment[];
     },
     enabled: !!siteId,
   });
 
-  // Fetch active users in this org (for staff names)
   const { data: users = [], isLoading: loadingUsers } = useQuery({
     queryKey: ["rota-users", organisationId],
     queryFn: async () => {
@@ -130,59 +167,125 @@ const Shifts = () => {
     return m;
   }, [users]);
 
-  // Build per-day shift assignments. A shift is "on" for a day if its
-  // days_active contains that weekday key (e.g. "Mon").
-  const shiftsForDay = (iso: string) => {
-    const key = dayKeyForIso(iso);
-    return shifts.filter((s) => (s.days_active || []).includes(key));
-  };
-
-  // For a given staff member, list shifts assigned to them on a day
-  const shiftsForStaffOnDay = (userId: string, iso: string) => {
-    const key = dayKeyForIso(iso);
-    return shifts.filter(
-      (s) =>
-        (s.days_active || []).includes(key) &&
-        (s.shift_staff || []).some((ss) => ss.user_id === userId)
-    );
-  };
-
-  // Staff who appear in any shift this week (so we don't render empty rows for everyone)
-  const staffInWeek = useMemo(() => {
-    const ids = new Set<string>();
-    weekDays.forEach((iso) => {
-      shiftsForDay(iso).forEach((s) =>
-        (s.shift_staff || []).forEach((ss) => ids.add(ss.user_id))
-      );
+  // Group assignments by date+user
+  const assignmentsByDateUser = useMemo(() => {
+    const m = new Map<string, Assignment[]>();
+    assignments.forEach((a) => {
+      const key = `${a.shift_date}|${a.user_id}`;
+      const arr = m.get(key) || [];
+      arr.push(a);
+      m.set(key, arr);
     });
+    return m;
+  }, [assignments]);
+
+  const assignmentsForDate = (iso: string) =>
+    assignments
+      .filter((a) => a.shift_date === iso)
+      .sort(
+        (a, b) =>
+          a.start_time.localeCompare(b.start_time) ||
+          (userById.get(a.user_id)?.display_name || "").localeCompare(
+            userById.get(b.user_id)?.display_name || ""
+          )
+      );
+
+  const staffInRange = useMemo(() => {
+    const ids = new Set<string>();
+    assignments.forEach((a) => ids.add(a.user_id));
     return Array.from(ids)
       .map((id) => userById.get(id))
       .filter((u): u is AppUser => !!u)
       .sort((a, b) => a.display_name.localeCompare(b.display_name));
-  }, [weekDays, shifts, userById]);
+  }, [assignments, userById]);
 
-  // Daily view: flat list of (shift × assigned staff) for the day
-  const dayAssignments = useMemo(() => {
-    const list: { shift: Shift; user: AppUser }[] = [];
-    shiftsForDay(anchorDate).forEach((s) => {
-      (s.shift_staff || []).forEach((ss) => {
-        const u = userById.get(ss.user_id);
-        if (u) list.push({ shift: s, user: u });
-      });
+  // ---------- Dialog state ----------
+  const [editing, setEditing] = useState<Assignment | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    user_id: "",
+    shift_date: anchorDate,
+    start_time: "09:00",
+    end_time: "17:00",
+    position: "",
+  });
+
+  const openCreate = (presetDate?: string, presetUserId?: string) => {
+    setEditing(null);
+    setForm({
+      user_id: presetUserId || "",
+      shift_date: presetDate || anchorDate,
+      start_time: "09:00",
+      end_time: "17:00",
+      position: "",
     });
-    return list.sort((a, b) => {
-      if (a.shift.start_time !== b.shift.start_time)
-        return a.shift.start_time.localeCompare(b.shift.start_time);
-      return a.user.display_name.localeCompare(b.user.display_name);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (a: Assignment) => {
+    setEditing(a);
+    setForm({
+      user_id: a.user_id,
+      shift_date: a.shift_date,
+      start_time: a.start_time,
+      end_time: a.end_time,
+      position: a.position || "",
     });
-  }, [shifts, anchorDate, userById]);
+    setDialogOpen(true);
+  };
 
-  const shiftsOnDayUnassigned = useMemo(
-    () => shiftsForDay(anchorDate).filter((s) => (s.shift_staff || []).length === 0),
-    [shifts, anchorDate]
-  );
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!siteId || !organisationId) throw new Error("Missing site");
+      if (!form.user_id) throw new Error("Select a staff member");
+      if (!form.shift_date) throw new Error("Select a date");
+      if (!form.start_time || !form.end_time) throw new Error("Enter start and end times");
+      if (form.end_time <= form.start_time) throw new Error("End time must be after start time");
 
-  const isLoading = loadingShifts || loadingUsers;
+      const payload = {
+        site_id: siteId,
+        organisation_id: organisationId,
+        user_id: form.user_id,
+        shift_date: form.shift_date,
+        start_time: form.start_time,
+        end_time: form.end_time,
+        position: form.position.trim() || null,
+      };
+
+      if (editing) {
+        const { error } = await supabase
+          .from("rota_assignments")
+          .update(payload)
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("rota_assignments").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rota-assignments"] });
+      setDialogOpen(false);
+      toast.success(editing ? "Shift updated" : "Shift added");
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not save shift"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("rota_assignments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rota-assignments"] });
+      setDeleteId(null);
+      toast.success("Shift removed");
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not delete shift"),
+  });
+
+  const isLoading = loadingAssignments || loadingUsers;
 
   if (!siteId) {
     return (
@@ -208,15 +311,21 @@ const Shifts = () => {
           </div>
         </div>
 
-        <Tabs value={view} onValueChange={(v) => setView(v as "week" | "day")}>
-          <TabsList>
-            <TabsTrigger value="week">Weekly</TabsTrigger>
-            <TabsTrigger value="day">Daily</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <Tabs value={view} onValueChange={(v) => setView(v as "week" | "day")}>
+            <TabsList>
+              <TabsTrigger value="week">Weekly</TabsTrigger>
+              <TabsTrigger value="day">Daily</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {canEdit && (
+            <Button size="sm" onClick={() => openCreate()}>
+              <Plus className="h-4 w-4 mr-1" /> Add shift
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Date navigator */}
       <DateBar
         view={view}
         anchorDate={anchorDate}
@@ -233,17 +342,126 @@ const Shifts = () => {
       ) : view === "week" ? (
         <WeekView
           weekDays={weekDays}
-          staff={staffInWeek}
-          shiftsForStaffOnDay={shiftsForStaffOnDay}
-          shiftsForDay={shiftsForDay}
+          staff={staffInRange}
+          getAssignments={(uid, iso) => assignmentsByDateUser.get(`${iso}|${uid}`) || []}
+          assignmentsForDate={assignmentsForDate}
+          canEdit={canEdit}
+          onAdd={(iso) => openCreate(iso)}
+          onEdit={openEdit}
         />
       ) : (
         <DayView
           dateIso={anchorDate}
-          assignments={dayAssignments}
-          unassigned={shiftsOnDayUnassigned}
+          assignments={assignmentsForDate(anchorDate)}
+          userById={userById}
+          canEdit={canEdit}
+          onAdd={() => openCreate(anchorDate)}
+          onEdit={openEdit}
+          onDelete={(id) => setDeleteId(id)}
         />
       )}
+
+      {/* Create/Edit dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit shift" : "Add shift"}</DialogTitle>
+            <DialogDescription>
+              Assign a staff member to a date with start and end times.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Staff member</Label>
+              <Select
+                value={form.user_id}
+                onValueChange={(v) => setForm((f) => ({ ...f, user_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select staff..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={form.shift_date}
+                onChange={(e) => setForm((f) => ({ ...f, shift_date: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Start</Label>
+                <Input
+                  type="time"
+                  value={form.start_time}
+                  onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>End</Label>
+                <Input
+                  type="time"
+                  value={form.end_time}
+                  onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Position (optional)</Label>
+              <Input
+                placeholder="e.g. Morning Baker"
+                maxLength={80}
+                value={form.position}
+                onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {editing ? "Save changes" : "Add shift"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove shift?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete the shift from the rota. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -271,13 +489,7 @@ function DateBar({
 
   return (
     <div className="flex items-center justify-between rounded-lg border bg-card px-2 py-1.5">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 px-2"
-        onClick={onPrev}
-        aria-label={view === "week" ? "Previous week" : "Previous day"}
-      >
+      <Button variant="ghost" size="sm" className="h-8 px-2" onClick={onPrev}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="flex items-center gap-2 text-sm font-medium">
@@ -293,13 +505,7 @@ function DateBar({
           </button>
         )}
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 px-2"
-        onClick={onNext}
-        aria-label={view === "week" ? "Next week" : "Next day"}
-      >
+      <Button variant="ghost" size="sm" className="h-8 px-2" onClick={onNext}>
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
@@ -310,24 +516,32 @@ function DateBar({
 function WeekView({
   weekDays,
   staff,
-  shiftsForStaffOnDay,
-  shiftsForDay,
+  getAssignments,
+  assignmentsForDate,
+  canEdit,
+  onAdd,
+  onEdit,
 }: {
   weekDays: string[];
   staff: AppUser[];
-  shiftsForStaffOnDay: (userId: string, iso: string) => Shift[];
-  shiftsForDay: (iso: string) => Shift[];
+  getAssignments: (userId: string, iso: string) => Assignment[];
+  assignmentsForDate: (iso: string) => Assignment[];
+  canEdit: boolean;
+  onAdd: (iso: string) => void;
+  onEdit: (a: Assignment) => void;
 }) {
   const today = todayIso();
-  const totalShiftsThisWeek = weekDays.reduce((sum, iso) => sum + shiftsForDay(iso).length, 0);
+  const totalThisWeek = weekDays.reduce((sum, iso) => sum + assignmentsForDate(iso).length, 0);
 
-  if (totalShiftsThisWeek === 0) {
+  if (totalThisWeek === 0) {
     return (
       <Card>
         <CardContent className="p-10 text-center text-muted-foreground">
           <CalendarDays className="h-10 w-10 mx-auto mb-3 opacity-30" />
           <p className="font-medium">No shifts scheduled this week</p>
-          <p className="text-sm mt-1">Shifts created in the rota will appear here.</p>
+          <p className="text-sm mt-1">
+            {canEdit ? "Use 'Add shift' to schedule staff." : "Nothing scheduled yet."}
+          </p>
         </CardContent>
       </Card>
     );
@@ -348,63 +562,72 @@ function WeekView({
                 return (
                   <th
                     key={iso}
-                    className={`text-left font-heading font-semibold p-3 min-w-[130px] ${
+                    className={`text-left font-heading font-semibold p-3 min-w-[140px] ${
                       isToday ? "bg-primary/5 text-primary" : ""
                     }`}
                   >
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {DAY_LABELS_LONG[d.getDay()].slice(0, 3)}
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                          {DAY_LABELS_LONG[d.getDay()].slice(0, 3)}
+                        </div>
+                        <div className="text-base">{d.getDate()}</div>
+                      </div>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => onAdd(iso)}
+                          title="Add shift"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
-                    <div className="text-base">{d.getDate()}</div>
                   </th>
                 );
               })}
             </tr>
           </thead>
           <tbody>
-            {staff.length === 0 ? (
-              <tr>
-                <td colSpan={weekDays.length + 1} className="p-6 text-center text-muted-foreground">
-                  No staff assigned to any shift this week.
+            {staff.map((u) => (
+              <tr key={u.id} className="border-b last:border-0 hover:bg-muted/20">
+                <td className="p-3 font-medium sticky left-0 bg-card z-10 border-r">
+                  {u.display_name}
                 </td>
-              </tr>
-            ) : (
-              staff.map((u) => (
-                <tr key={u.id} className="border-b last:border-0 hover:bg-muted/20">
-                  <td className="p-3 font-medium sticky left-0 bg-card z-10 border-r">
-                    {u.display_name}
-                  </td>
-                  {weekDays.map((iso) => {
-                    const sList = shiftsForStaffOnDay(u.id, iso);
-                    const isToday = iso === today;
-                    return (
-                      <td
-                        key={iso}
-                        className={`p-2 align-top ${isToday ? "bg-primary/5" : ""}`}
-                      >
-                        {sList.length === 0 ? (
-                          <span className="text-xs text-muted-foreground/50">—</span>
-                        ) : (
-                          <div className="space-y-1">
-                            {sList.map((s) => (
-                              <div
-                                key={s.id}
-                                className={`rounded px-2 py-1 text-xs border ${s.color}`}
-                              >
-                                <div className="font-semibold truncate">{s.name}</div>
-                                <div className="opacity-80">
-                                  {s.start_time}–{s.end_time}
-                                </div>
+                {weekDays.map((iso) => {
+                  const list = getAssignments(u.id, iso);
+                  const isToday = iso === today;
+                  return (
+                    <td key={iso} className={`p-2 align-top ${isToday ? "bg-primary/5" : ""}`}>
+                      {list.length === 0 ? (
+                        <span className="text-xs text-muted-foreground/40">—</span>
+                      ) : (
+                        <div className="space-y-1">
+                          {list.map((a) => (
+                            <button
+                              key={a.id}
+                              type="button"
+                              onClick={() => canEdit && onEdit(a)}
+                              disabled={!canEdit}
+                              className={`w-full text-left rounded px-2 py-1 text-xs border bg-primary/10 text-primary border-primary/20 ${
+                                canEdit ? "hover:bg-primary/15 cursor-pointer" : "cursor-default"
+                              }`}
+                            >
+                              <div className="font-semibold">
+                                {a.start_time}–{a.end_time}
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))
-            )}
+                              {a.position && <div className="opacity-80 truncate">{a.position}</div>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </CardContent>
@@ -416,73 +639,83 @@ function WeekView({
 function DayView({
   dateIso,
   assignments,
-  unassigned,
+  userById,
+  canEdit,
+  onAdd,
+  onEdit,
+  onDelete,
 }: {
   dateIso: string;
-  assignments: { shift: Shift; user: AppUser }[];
-  unassigned: Shift[];
+  assignments: Assignment[];
+  userById: Map<string, AppUser>;
+  canEdit: boolean;
+  onAdd: () => void;
+  onEdit: (a: Assignment) => void;
+  onDelete: (id: string) => void;
 }) {
   const isToday = dateIso === todayIso();
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Users className="h-4 w-4" />
-        <span>
-          {assignments.length} {assignments.length === 1 ? "assignment" : "assignments"} · {formatLong(dateIso)}
-          {isToday && <Badge variant="outline" className="ml-2 text-[10px]">Today</Badge>}
-        </span>
+      <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          <span>
+            {assignments.length} {assignments.length === 1 ? "shift" : "shifts"} · {formatLong(dateIso)}
+            {isToday && <Badge variant="outline" className="ml-2 text-[10px]">Today</Badge>}
+          </span>
+        </div>
       </div>
 
-      {assignments.length === 0 && unassigned.length === 0 ? (
+      {assignments.length === 0 ? (
         <Card>
           <CardContent className="p-10 text-center text-muted-foreground">
             <CalendarDays className="h-10 w-10 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No shifts scheduled</p>
-            <p className="text-sm mt-1">Nothing planned for this day.</p>
+            <p className="text-sm mt-1">
+              {canEdit ? "Use 'Add shift' to schedule staff." : "Nothing planned for this day."}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardContent className="p-0 divide-y">
-            {assignments.map(({ shift, user }, idx) => (
-              <div
-                key={`${shift.id}-${user.id}-${idx}`}
-                className="flex items-center gap-3 p-3"
-              >
-                <div className={`px-2 py-1 rounded text-xs font-semibold border ${shift.color} shrink-0`}>
-                  {shift.name}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{user.display_name}</div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {shift.start_time} – {shift.end_time}
+            {assignments.map((a) => {
+              const user = userById.get(a.user_id);
+              return (
+                <div key={a.id} className="flex items-center gap-3 p-3">
+                  <div className="px-2 py-1 rounded text-xs font-semibold border bg-primary/10 text-primary border-primary/20 shrink-0">
+                    {a.start_time}–{a.end_time}
                   </div>
-                </div>
-              </div>
-            ))}
-
-            {unassigned.length > 0 && (
-              <div className="p-3 bg-muted/20">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-                  Shifts with no staff assigned
-                </p>
-                <div className="space-y-2">
-                  {unassigned.map((s) => (
-                    <div key={s.id} className="flex items-center gap-3">
-                      <div className={`px-2 py-1 rounded text-xs font-semibold border ${s.color}`}>
-                        {s.name}
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">
+                      {user?.display_name || "Unknown staff"}
+                    </div>
+                    {a.position && (
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {s.start_time} – {s.end_time}
+                        {a.position}
                       </div>
+                    )}
+                  </div>
+                  {canEdit && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onEdit(a)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        onClick={() => onDelete(a.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })}
           </CardContent>
         </Card>
       )}
