@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 import {
   Thermometer,
   Truck,
@@ -11,6 +12,8 @@ import {
   TrendingUp,
   ShieldCheck,
   ChevronRight,
+  ChevronLeft,
+  CalendarDays,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,15 +57,30 @@ const statusIcon = (status: string) => {
 const Dashboard = () => {
   const { currentSite } = useSite();
   const siteId = currentSite?.id;
-  const today = new Date().toISOString().slice(0, 10);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+  const viewedDate = new Date(`${selectedDate}T12:00:00`);
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
-  const dateStr = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const dateStr = isToday
+    ? viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
+    : viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const shiftDate = (days: number) => {
+    const d = new Date(`${selectedDate}T12:00:00`);
+    d.setDate(d.getDate() + days);
+    const next = d.toISOString().slice(0, 10);
+    if (next > todayStr) return;
+    setSelectedDate(next);
+  };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard", siteId, today],
+    queryKey: ["dashboard", siteId, selectedDate],
     enabled: !!siteId,
     queryFn: async () => {
+      const today = selectedDate;
+      const isViewingToday = today === todayStr;
       const [
         cleaningTasksRes,
         cleaningLogsRes,
@@ -75,7 +93,7 @@ const Dashboard = () => {
         supabase.from("cleaning_tasks").select("id, task, area, frequency, due_time").eq("site_id", siteId!).eq("active", true),
         supabase.from("cleaning_logs").select("task_id, done, completed_at").eq("site_id", siteId!).eq("log_date", today),
         supabase.from("temp_units").select("id, name, min_temp, max_temp").eq("site_id", siteId!).eq("active", true),
-        supabase.from("temp_logs").select("unit_id, value, pass, logged_at, log_type").eq("site_id", siteId!).gte("logged_at", `${today}T00:00:00`),
+        supabase.from("temp_logs").select("unit_id, value, pass, logged_at, log_type").eq("site_id", siteId!).gte("logged_at", `${today}T00:00:00`).lt("logged_at", `${today}T23:59:59`),
         supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, label, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", siteId!).eq("sheet_date", today).maybeSingle(),
         supabase.from("incidents").select("id, title, status, reported_at").eq("site_id", siteId!).eq("status", "open"),
@@ -110,22 +128,32 @@ const Dashboard = () => {
       const amDone = new Set(tempLogs.filter((l: any) => l.log_type === "AM Check").map((l: any) => l.unit_id));
       const pmDone = new Set(tempLogs.filter((l: any) => l.log_type === "PM Check").map((l: any) => l.unit_id));
       const hourNow = now.getHours();
+      const amOverdue = isViewingToday ? hourNow >= 11 : true;
+      const pmOverdue = isViewingToday ? hourNow >= 18 : true;
+      const cleaningOverdue = !isViewingToday;
       tempUnits.forEach((u: any) => {
         tasks.push({
           id: `temp-am-${u.id}`,
           title: `${u.name} AM temp`,
           due: "09:00",
-          status: amDone.has(u.id) ? "done" : hourNow >= 11 ? "overdue" : "pending",
+          status: amDone.has(u.id) ? "done" : amOverdue ? "overdue" : "pending",
           module: "Temps",
         });
         tasks.push({
           id: `temp-pm-${u.id}`,
           title: `${u.name} PM temp`,
           due: "16:00",
-          status: pmDone.has(u.id) ? "done" : hourNow >= 18 ? "overdue" : "pending",
+          status: pmDone.has(u.id) ? "done" : pmOverdue ? "overdue" : "pending",
           module: "Temps",
         });
       });
+
+      // Mark cleaning overdue for past dates
+      if (cleaningOverdue) {
+        tasks.forEach((t) => {
+          if (t.module === "Cleaning" && t.status === "pending") t.status = "overdue";
+        });
+      }
 
       // Day sheet items
       const doneItemIds = new Set(daySheetEntries.filter((e: any) => e.done).map((e: any) => e.item_id));
@@ -135,13 +163,13 @@ const Dashboard = () => {
             id: `ds-${i.id}`,
             title: i.label,
             due: s.default_time,
-            status: doneItemIds.has(i.id) ? "done" : "pending",
+            status: doneItemIds.has(i.id) ? "done" : cleaningOverdue ? "overdue" : "pending",
             module: s.title,
           });
         });
       });
 
-      // Temperature breaches today
+      // Temperature breaches for the viewed day
       tempLogs.filter((l: any) => !l.pass).forEach((l: any) => {
         const unit = tempUnits.find((u: any) => u.id === l.unit_id);
         alerts.push({
@@ -152,18 +180,20 @@ const Dashboard = () => {
       });
       // Overdue temp checks
       tempUnits.forEach((u: any) => {
-        if (!amDone.has(u.id) && hourNow >= 11) {
+        if (!amDone.has(u.id) && amOverdue) {
           alerts.push({ type: "overdue", message: `${u.name} AM temp overdue`, time: "09:00" });
         }
       });
-      // Open incidents
-      incidents.forEach((inc: any) => {
-        alerts.push({
-          type: "breach",
-          message: inc.title,
-          time: new Date(inc.reported_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      // Open incidents (only relevant for today)
+      if (isViewingToday) {
+        incidents.forEach((inc: any) => {
+          alerts.push({
+            type: "breach",
+            message: inc.title,
+            time: new Date(inc.reported_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+          });
         });
-      });
+      }
 
       const total = tasks.length;
       const completed = tasks.filter((t) => t.status === "done").length;
@@ -205,7 +235,7 @@ const Dashboard = () => {
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
       {/* Header */}
       <motion.div initial="hidden" animate="visible" custom={0} variants={fadeUp}>
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-heading font-bold text-foreground">{greeting} 👋</h1>
             <p className="text-sm text-muted-foreground">{dateStr}</p>
@@ -221,8 +251,44 @@ const Dashboard = () => {
             }`}
           >
             <TrendingUp className="h-3 w-3 mr-1" />
-            {complianceScore}% compliant today
+            {complianceScore}% compliant {isToday ? "today" : "this day"}
           </Badge>
+        </div>
+
+        {/* Date navigation */}
+        <div className="mt-3 flex items-center justify-between rounded-lg border bg-card px-2 py-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => shiftDate(-1)}
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <span>{isToday ? "Today" : dateStr}</span>
+            {!isToday && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate(todayStr)}
+                className="text-xs text-primary underline-offset-2 hover:underline"
+              >
+                Jump to today
+              </button>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => shiftDate(1)}
+            disabled={isToday}
+            aria-label="Next day"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </motion.div>
 
@@ -304,7 +370,7 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-heading">My Tasks Today</CardTitle>
+                <CardTitle className="text-base font-heading">{isToday ? "My Tasks Today" : "Tasks for this day"}</CardTitle>
                 <Badge variant="secondary" className="text-xs">
                   {tasks.filter((t) => t.status === "done").length}/{tasks.length}
                 </Badge>
