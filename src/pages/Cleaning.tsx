@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { SprayCan, CheckCircle2, Circle, Clock, Camera, Loader2 } from "lucide-react";
+import { SprayCan, CheckCircle2, Circle, Clock, Camera, Loader2, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { DateNavigator } from "@/components/DateNavigator";
 
 const Cleaning = () => {
   const { currentSite, organisationId } = useSite();
@@ -19,7 +20,10 @@ const Cleaning = () => {
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
   const [activeTab, setActiveTab] = useState("daily");
-  const today = new Date().toISOString().split("T")[0];
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+  const today = selectedDate; // queries scoped to selected date
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["cleaning_tasks", siteId],
