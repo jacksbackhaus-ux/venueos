@@ -374,28 +374,59 @@ const TemperatureTracking = () => {
 
           <AnimatePresence mode="wait">
             {step === "select" && (
-              <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
-                <Select value={logType} onValueChange={setLogType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AM Check">AM Check</SelectItem>
-                    <SelectItem value="PM Check">PM Check</SelectItem>
-                    <SelectItem value="Delivery">Delivery Temp</SelectItem>
-                    <SelectItem value="Cooking">Cooking Temp</SelectItem>
-                    <SelectItem value="Cooling">Cooling Temp</SelectItem>
-                    <SelectItem value="Hot Holding">Hot Holding</SelectItem>
-                  </SelectContent>
-                </Select>
-                {units.map((unit) => (
-                  <Button key={unit.id} variant="outline" className="w-full justify-start gap-3 h-14 text-left"
-                    onClick={() => { setSelectedUnit(unit); setStep("keypad"); }}>
-                    <Thermometer className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="font-medium">{unit.name}</span>
-                      <span className="text-xs text-muted-foreground ml-2">({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)</span>
-                    </div>
-                  </Button>
-                ))}
+              <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Check type</Label>
+                  <Select value={logType} onValueChange={(v) => { setLogType(v); setSelectedUnit(null); setFoodItem(""); }}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AM Check">AM Check (fridge/freezer)</SelectItem>
+                      <SelectItem value="PM Check">PM Check (fridge/freezer)</SelectItem>
+                      <SelectItem value="Delivery">Delivery Temp (food)</SelectItem>
+                      <SelectItem value="Cooking">Cooking Temp (food)</SelectItem>
+                      <SelectItem value="Cooling">Cooling Temp (food)</SelectItem>
+                      <SelectItem value="Reheating">Reheating Temp (food)</SelectItem>
+                      <SelectItem value="Hot Holding">Hot Holding (food)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {processMode ? (
+                  <div className="space-y-2 pt-1">
+                    <Label htmlFor="food-item" className="text-xs text-muted-foreground">Food item</Label>
+                    <Input
+                      id="food-item"
+                      placeholder='e.g. "Chicken curry", "Tomato soup"'
+                      value={foodItem}
+                      onChange={(e) => setFoodItem(e.target.value)}
+                      autoFocus
+                    />
+                    {processRange && (
+                      <p className="text-xs text-muted-foreground">Target: {processRange.label}</p>
+                    )}
+                    <Button
+                      className="w-full mt-2"
+                      disabled={!foodItem.trim()}
+                      onClick={() => setStep("keypad")}
+                    >
+                      Continue to temperature
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 pt-1">
+                    <Label className="text-xs text-muted-foreground">Select unit</Label>
+                    {units.map((unit) => (
+                      <Button key={unit.id} variant="outline" className="w-full justify-start gap-3 h-14 text-left"
+                        onClick={() => { setSelectedUnit(unit); setStep("keypad"); }}>
+                        <Thermometer className="h-4 w-4 text-primary" />
+                        <div>
+                          <span className="font-medium">{unit.name}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
 
