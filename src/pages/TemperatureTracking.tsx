@@ -440,11 +440,16 @@ const TemperatureTracking = () => {
                   }`}>
                     {tempInput || "—"}<span className="text-2xl">°C</span>
                   </div>
-                  {selectedUnit && (
+                  {processMode && processRange ? (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {foodItem ? <><span className="font-medium text-foreground">{foodItem}</span> · </> : null}
+                      Target: {processRange.label}
+                    </p>
+                  ) : selectedUnit ? (
                     <p className="text-xs text-muted-foreground mt-1">
                       Acceptable: {Number(selectedUnit.min_temp)}°C to {Number(selectedUnit.max_temp)}°C
                     </p>
-                  )}
+                  ) : null}
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {["1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "0", "."].map((key) => (
