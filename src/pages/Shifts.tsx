@@ -726,6 +726,7 @@ function WeekView({
   staff,
   getAssignments,
   assignmentsForDate,
+  linkedCount,
   canEdit,
   onAdd,
   onEdit,
@@ -734,6 +735,7 @@ function WeekView({
   staff: AppUser[];
   getAssignments: (userId: string, iso: string) => Assignment[];
   assignmentsForDate: (iso: string) => Assignment[];
+  linkedCount: (assignmentId: string) => number;
   canEdit: boolean;
   onAdd: (iso: string) => void;
   onEdit: (a: Assignment) => void;
