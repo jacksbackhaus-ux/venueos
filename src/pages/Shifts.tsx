@@ -75,7 +75,7 @@ type AppUser = { id: string; display_name: string; status: string };
 
 // ---------- Page ----------
 const Shifts = () => {
-  const { currentSite, currentMembership } = useSite();
+  const { currentSite, currentMembership, organisationId } = useSite();
   const { staffSession } = useAuth();
   const siteId = currentSite?.id || staffSession?.site_id;
   const role = currentMembership?.site_role || staffSession?.site_role || "staff";
