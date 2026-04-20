@@ -16,6 +16,8 @@ import {
   CalendarDays,
   Lock,
   Unlock,
+  Users,
+  Star,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -245,6 +247,65 @@ const Dashboard = () => {
     { name: "Management Confidence", score: 100, icon: ShieldCheck },
   ];
 
+  // Current user id (works for both email auth and staff session)
+  const currentUserId = appUser?.id ?? staffSession?.user_id ?? null;
+
+  // Today's shifts (rota) — only show on the actual current day
+  const { data: todayShifts } = useQuery({
+    queryKey: ["dashboard-today-shifts", siteId, todayStr],
+    enabled: !!siteId && isToday,
+    queryFn: async () => {
+      const { data: assignments } = await supabase
+        .from("rota_assignments")
+        .select("id, user_id, start_time, end_time, position")
+        .eq("site_id", siteId!)
+        .eq("shift_date", todayStr)
+        .order("start_time", { ascending: true });
+
+      const list = (assignments ?? []) as Array<{ id: string; user_id: string; start_time: string; end_time: string; position: string | null }>;
+      if (list.length === 0) return { shifts: [], myLinkedTaskIds: new Set<string>() };
+
+      const userIds = Array.from(new Set(list.map((a) => a.user_id)));
+      const { data: usersData } = await supabase
+        .from("users")
+        .select("id, display_name")
+        .in("id", userIds);
+      const nameById = new Map((usersData ?? []).map((u: any) => [u.id, u.display_name as string]));
+
+      // Linked tasks for the logged-in user's shifts today
+      const myAssignmentIds = currentUserId
+        ? list.filter((a) => a.user_id === currentUserId).map((a) => a.id)
+        : [];
+      let myLinkedTaskIds = new Set<string>();
+      if (myAssignmentIds.length > 0) {
+        const { data: links } = await supabase
+          .from("rota_assignment_tasks")
+          .select("task_id, task_type")
+          .in("rota_assignment_id", myAssignmentIds);
+        myLinkedTaskIds = new Set((links ?? []).map((l: any) => `${l.task_type}:${l.task_id}`));
+      }
+
+      const shifts = list.map((a) => ({
+        id: a.id,
+        user_id: a.user_id,
+        name: nameById.get(a.user_id) ?? "Unknown",
+        start_time: a.start_time,
+        end_time: a.end_time,
+        isMe: currentUserId === a.user_id,
+      }));
+
+      return { shifts, myLinkedTaskIds };
+    },
+  });
+
+  const myLinkedTaskIds = todayShifts?.myLinkedTaskIds ?? new Set<string>();
+  const isTaskLinkedToMe = (task: TaskRow) => {
+    if (myLinkedTaskIds.size === 0) return false;
+    if (task.id.startsWith("ds-")) return myLinkedTaskIds.has(`day_sheet_item:${task.id.slice(3)}`);
+    if (task.id.startsWith("cleaning-")) return myLinkedTaskIds.has(`cleaning_task:${task.id.slice(9)}`);
+    return false;
+  };
+
   const closeDayMutation = useMutation({
     mutationFn: async (close: boolean) => {
       if (!siteId || !currentSite) throw new Error("No site");
@@ -407,6 +468,40 @@ const Dashboard = () => {
         </motion.div>
       )}
 
+      {/* Today's Shift (rota) — only on today, only when shifts exist */}
+      {isToday && !isClosed && (todayShifts?.shifts.length ?? 0) > 0 && (
+        <motion.div initial="hidden" animate="visible" custom={2} variants={fadeUp}>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-heading">Today's Shift</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ul className="divide-y">
+                {todayShifts!.shifts.map((s) => (
+                  <li
+                    key={s.id}
+                    className={`flex items-center justify-between py-2 text-sm ${
+                      s.isMe ? "font-semibold text-foreground" : "text-foreground"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0 truncate">
+                      {s.isMe && <Star className="h-3.5 w-3.5 text-primary shrink-0" />}
+                      <span className="truncate">{s.name}{s.isMe ? " (you)" : ""}</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground tabular-nums shrink-0 ml-3">
+                      {s.start_time}–{s.end_time}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Quick Actions */}
       <motion.div initial="hidden" animate="visible" custom={2} variants={fadeUp}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -500,35 +595,44 @@ const Dashboard = () => {
                 <p className="text-sm text-muted-foreground py-6 text-center">No tasks set up yet. Configure modules in Settings.</p>
               ) : (
                 <div className="divide-y">
-                  {tasks.slice(0, 12).map((task) => (
-                    <div
-                      key={task.id}
-                      className={`flex items-center gap-3 py-2.5 ${
-                        task.status === "done" ? "opacity-60" : ""
-                      }`}
-                    >
-                      {statusIcon(task.status)}
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`text-sm font-medium ${
-                            task.status === "done" ? "line-through" : ""
-                          }`}
-                        >
-                          {task.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Due {task.due}</p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] shrink-0"
+                  {tasks.slice(0, 12).map((task) => {
+                    const linked = isTaskLinkedToMe(task);
+                    return (
+                      <div
+                        key={task.id}
+                        className={`flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-md ${
+                          task.status === "done" ? "opacity-60" : ""
+                        } ${linked ? "bg-primary/5 ring-1 ring-primary/20" : ""}`}
                       >
-                        {task.module}
-                      </Badge>
-                      {task.status === "pending" && (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
-                  ))}
+                        {statusIcon(task.status)}
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm font-medium ${
+                              task.status === "done" ? "line-through" : ""
+                            }`}
+                          >
+                            {task.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Due {task.due}</p>
+                        </div>
+                        {linked && (
+                          <Badge variant="default" className="text-[10px] shrink-0 bg-primary/15 text-primary hover:bg-primary/15 border-0">
+                            <Star className="h-3 w-3 mr-0.5" />
+                            Yours
+                          </Badge>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] shrink-0"
+                        >
+                          {task.module}
+                        </Badge>
+                        {task.status === "pending" && (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
