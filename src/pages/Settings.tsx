@@ -142,7 +142,7 @@ const Settings = () => {
   // Staff state
   const [staff, setStaff] = useState<StaffMember[]>(defaultStaff);
   const [showAddStaff, setShowAddStaff] = useState(false);
-  const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "" });
+  const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "", staffId: "" });
 
   // Site/business state — populated from currentSite once loaded
   const [bakeryName, setBakeryName] = useState("");
@@ -354,24 +354,38 @@ const Settings = () => {
   // ─── Staff handlers (DB-backed; staff_code rows for kiosk PIN users) ───
   const saveStaff = async () => {
     if (!organisationId) return;
-    // We can only create staff_code-type users from the client (RLS allows org owner to insert).
-    // Email-auth users must be invited via Supabase auth — flag this for now.
     if (staffForm.email && !staffForm.pin) {
       toast.error("Email-only invites coming soon. Add a PIN to create a kiosk staff account, or invite from your email provider.");
       return;
     }
+
+    // Resolve Staff ID: custom (uppercased, trimmed, alphanumeric) or auto-generated
+    let staffId = staffForm.staffId.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (!staffId) {
+      const { data: gen, error: genErr } = await supabase.rpc('generate_staff_code', { _org_id: organisationId });
+      if (genErr || !gen) { toast.error("Could not generate Staff ID. Try again."); return; }
+      staffId = gen as string;
+    }
+
     const { error } = await supabase.from('users').insert({
       organisation_id: organisationId,
       display_name: staffForm.name,
       email: staffForm.email || null,
       auth_type: 'staff_code',
-      staff_code: staffForm.pin || null,
+      staff_code: staffId,
       status: 'active',
     });
-    if (error) { toast.error(error.message); return; }
-    toast.success("Staff member added");
+    if (error) {
+      if (error.code === '23505') {
+        toast.error(`Staff ID "${staffId}" is already in use. Choose a different one.`);
+      } else {
+        toast.error(error.message);
+      }
+      return;
+    }
+    toast.success(`Staff member added — Staff ID: ${staffId}`);
     setShowAddStaff(false);
-    setStaffForm({ name: "", email: "", role: "staff", pin: "" });
+    setStaffForm({ name: "", email: "", role: "staff", pin: "", staffId: "" });
     loadAll();
   };
 
@@ -747,20 +761,20 @@ const Settings = () => {
                   </Label>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Staff enter this ID on the kiosk login screen along with their PIN.
+                  Staff enter this short code on the kiosk login screen along with their Staff ID.
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <code className="flex-1 px-3 py-3 rounded-md bg-background border border-border font-mono text-base sm:text-lg font-bold tracking-wide break-all select-all">
-                    {currentSite.id}
+                  <code className="flex-1 px-3 py-4 rounded-md bg-background border border-border font-mono text-3xl sm:text-4xl font-bold tracking-[0.25em] text-center select-all">
+                    {currentSite.site_code}
                   </code>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="h-12 w-12 shrink-0"
+                    className="h-14 w-14 shrink-0"
                     onClick={async () => {
                       try {
-                        await navigator.clipboard.writeText(currentSite.id);
+                        await navigator.clipboard.writeText(currentSite.site_code);
                         setSiteIdCopied(true);
                         toast.success("Site ID copied");
                         setTimeout(() => setSiteIdCopied(false), 2000);
@@ -1124,12 +1138,19 @@ const Settings = () => {
                 </SelectContent>
               </Select>
             </div>
-            {kioskMode && (
-              <div>
-                <Label className="text-sm">Kiosk PIN (4 digits)</Label>
-                <Input type="text" maxLength={4} placeholder="e.g. 1234" value={staffForm.pin} onChange={(e) => setStaffForm((f) => ({ ...f, pin: e.target.value.replace(/\D/g, "").slice(0, 4) }))} />
-              </div>
-            )}
+            <div>
+              <Label className="text-sm">Staff ID (kiosk login)</Label>
+              <Input
+                type="text"
+                maxLength={12}
+                placeholder="e.g. J01 — leave blank to auto-generate"
+                value={staffForm.staffId}
+                onChange={(e) => setStaffForm((f) => ({ ...f, staffId: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 12) }))}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Letters, numbers and dashes. Must be unique within your organisation.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddStaff(false)}>Cancel</Button>

@@ -299,7 +299,7 @@ function StaffLoginForm() {
       return;
     }
 
-    const result = data as { valid: boolean; error?: string; user_id?: string; display_name?: string; site_role?: string; organisation_id?: string };
+    const result = data as { valid: boolean; error?: string; user_id?: string; display_name?: string; site_role?: string; organisation_id?: string; site_id?: string };
     if (!result.valid) {
       toast.error(result.error || "Invalid credentials");
       setAttempts(a => a + 1);
@@ -315,7 +315,7 @@ function StaffLoginForm() {
       display_name: result.display_name!,
       site_role: result.site_role!,
       organisation_id: result.organisation_id!,
-      site_id: siteCode.trim(),
+      site_id: result.site_id!,
     });
     toast.success(`Welcome, ${result.display_name}!`);
   };
@@ -324,18 +324,21 @@ function StaffLoginForm() {
     <Card>
       <CardHeader>
         <CardTitle>Staff Login</CardTitle>
-        <CardDescription>Enter your site ID and staff code. Ask your manager if you don't have these.</CardDescription>
+        <CardDescription>Enter your Site ID and Staff ID. Ask your manager if you don't have these.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleStaffLogin} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="site-code">Site ID</Label>
-            <Input id="site-code" placeholder="Site UUID" value={siteCode} onChange={e => setSiteCode(e.target.value)} required />
+            <Input id="site-code" placeholder="e.g. JB4821" value={siteCode}
+              onChange={e => setSiteCode(e.target.value.toUpperCase())}
+              className="font-mono tracking-widest text-center text-lg" required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="staff-code">Staff Code</Label>
-            <Input id="staff-code" placeholder="Your unique code" value={staffCode}
-              onChange={e => setStaffCode(e.target.value)} required />
+            <Label htmlFor="staff-code">Staff ID</Label>
+            <Input id="staff-code" placeholder="e.g. J01" value={staffCode}
+              onChange={e => setStaffCode(e.target.value.toUpperCase())}
+              className="font-mono tracking-widest text-center text-lg" required />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
