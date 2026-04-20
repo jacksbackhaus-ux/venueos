@@ -76,12 +76,24 @@ const Cleaning = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><SprayCan className="h-5 w-5 text-primary" /></div>
-        <div>
-          <h1 className="text-xl font-heading font-bold text-foreground">Cleaning & Sanitation</h1>
-          <p className="text-sm text-muted-foreground">Track cleaning completion by area and frequency</p>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><SprayCan className="h-5 w-5 text-primary" /></div>
+            <div>
+              <h1 className="text-xl font-heading font-bold text-foreground">Cleaning & Sanitation</h1>
+              <p className="text-sm text-muted-foreground">
+                {isToday ? "Track cleaning completion by area and frequency" : "Historical cleaning records"}
+              </p>
+            </div>
+          </div>
+          {!isToday && (
+            <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
+              <Lock className="h-3 w-3" /> Read-only
+            </Badge>
+          )}
         </div>
+        <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} />
       </div>
 
       {tasksLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
