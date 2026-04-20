@@ -188,21 +188,32 @@ const TemperatureTracking = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Thermometer className="h-5 w-5 text-primary" />
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Thermometer className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-heading font-bold text-foreground">Temperature Tracking</h1>
+              <p className="text-sm text-muted-foreground">
+                {breaches.length > 0
+                  ? `${breaches.length} breach${breaches.length > 1 ? "es" : ""} ${isToday ? "today" : "this day"}`
+                  : isToday ? "All units within spec" : "Historical readings"}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-heading font-bold text-foreground">Temperature Tracking</h1>
-            <p className="text-sm text-muted-foreground">
-              {breaches.length > 0 ? `${breaches.length} breach${breaches.length > 1 ? "es" : ""} today` : "All units within spec"}
-            </p>
-          </div>
+          {isToday ? (
+            <Button onClick={() => setShowLog(true)} size="lg" className="gap-2">
+              <Plus className="h-4 w-4" /> Quick Temp Log
+            </Button>
+          ) : (
+            <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
+              <Clock className="h-3 w-3" /> Read-only
+            </Badge>
+          )}
         </div>
-        <Button onClick={() => setShowLog(true)} size="lg" className="gap-2">
-          <Plus className="h-4 w-4" /> Quick Temp Log
-        </Button>
+        <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} />
       </div>
 
       {(unitsLoading || logsLoading) && (
