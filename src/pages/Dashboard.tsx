@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 import {
   Thermometer,
   Truck,
@@ -11,6 +12,8 @@ import {
   TrendingUp,
   ShieldCheck,
   ChevronRight,
+  ChevronLeft,
+  CalendarDays,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
