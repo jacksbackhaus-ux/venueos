@@ -51,6 +51,10 @@ const TemperatureTracking = () => {
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+
   const [showLog, setShowLog] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<TempUnit | null>(null);
   const [tempInput, setTempInput] = useState("");
