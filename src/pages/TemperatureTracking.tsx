@@ -215,7 +215,7 @@ const TemperatureTracking = () => {
     setLogType("AM Check");
   };
 
-  const getUnitName = (unitId: string) => units.find((u) => u.id === unitId)?.name || "Unknown";
+  const getUnitName = (unitId: string | null) => unitId ? (units.find((u) => u.id === unitId)?.name || "Unknown") : "—";
   const getUnitLastReading = (unitId: string) => logs.find((l) => l.unit_id === unitId);
   const breaches = logs.filter((l) => !l.pass);
 
