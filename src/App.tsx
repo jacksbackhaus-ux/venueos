@@ -10,7 +10,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
-import ShiftAssignment from "./pages/ShiftAssignment";
+import Shifts from "./pages/Shifts";
 import TemperatureTracking from "./pages/TemperatureTracking";
 import DaySheet from "./pages/DaySheet";
 import Cleaning from "./pages/Cleaning";
