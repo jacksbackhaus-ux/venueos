@@ -678,40 +678,108 @@ const Settings = () => {
               <h2 className="font-heading font-semibold text-sm">Staff & Roles</h2>
               <p className="text-xs text-muted-foreground">Manage who can access what</p>
             </div>
-            <Button size="sm" className="gap-1" onClick={() => setShowAddStaff(true)}>
+            <Button
+              size="sm"
+              className="gap-1"
+              onClick={() => setShowAddStaff(true)}
+              disabled={!canManageStaff}
+            >
               <Plus className="h-3 w-3" /> Add Staff
             </Button>
           </div>
 
-          <div className="space-y-2">
-            {staff.map((s) => (
-              <Card key={s.id} className={!s.active ? "opacity-50" : ""}>
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                      {s.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">{s.email || "No email"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={`text-[10px] border-0 ${roleBadgeColor[s.role]}`}>{roleLabel[s.role]}</Badge>
-                    {s.pin && (
-                      <Badge variant="outline" className="text-[10px]">
-                        <Key className="h-3 w-3 mr-1" /> PIN
-                      </Badge>
-                    )}
-                    <Switch
-                      checked={s.active}
-                      onCheckedChange={(checked) => toggleStaffActive(s.id, checked)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Active / Deactivated toggle */}
+          <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/30">
+            <button
+              type="button"
+              onClick={() => setStaffView("active")}
+              className={`px-3 py-1.5 text-xs font-medium rounded ${
+                staffView === "active" ? "bg-background shadow-sm" : "text-muted-foreground"
+              }`}
+            >
+              Active ({staff.filter((s) => s.active).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStaffView("deactivated")}
+              className={`px-3 py-1.5 text-xs font-medium rounded ${
+                staffView === "deactivated" ? "bg-background shadow-sm" : "text-muted-foreground"
+              }`}
+            >
+              Deactivated ({staff.filter((s) => !s.active).length})
+            </button>
           </div>
+
+          <div className="space-y-2">
+            {staff.filter((s) => (staffView === "active" ? s.active : !s.active)).length === 0 && (
+              <p className="text-xs text-muted-foreground py-6 text-center">
+                {staffView === "active"
+                  ? "No active staff members."
+                  : "No deactivated staff. Former employees will appear here."}
+              </p>
+            )}
+            {staff
+              .filter((s) => (staffView === "active" ? s.active : !s.active))
+              .map((s) => (
+                <Card key={s.id} className={!s.active ? "bg-muted/30" : ""}>
+                  <CardContent className="p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                        s.active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {s.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{s.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{s.email || "No email"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge className={`text-[10px] border-0 ${roleBadgeColor[s.role]}`}>{roleLabel[s.role]}</Badge>
+                      {s.pin && s.active && (
+                        <Badge variant="outline" className="text-[10px]">
+                          <Key className="h-3 w-3 mr-1" /> {s.pin}
+                        </Badge>
+                      )}
+                      {!s.active && (
+                        <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
+                          Deactivated
+                        </Badge>
+                      )}
+                      {s.active ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={!canManageStaff || s.id === appUser?.id}
+                          onClick={() => setConfirmDeactivate(s)}
+                          title={s.id === appUser?.id ? "You can't deactivate yourself" : "Deactivate"}
+                        >
+                          <UserX className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-success hover:text-success hover:bg-success/10 gap-1"
+                          disabled={!canManageStaff}
+                          onClick={() => toggleStaffActive(s.id, true)}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          <span className="text-xs">Reactivate</span>
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+
+          {!canManageStaff && (
+            <p className="text-xs text-muted-foreground italic">
+              Only Owners and Supervisors can add, deactivate or reactivate staff members.
+            </p>
+          )}
 
           <Separator />
 
