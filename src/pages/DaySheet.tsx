@@ -67,6 +67,7 @@ const DaySheet = () => {
 
   const ensureDaySheet = async () => {
     if (daySheet) return daySheet.id;
+    if (!isToday) throw new Error("Cannot edit a past day sheet");
     const { data, error } = await supabase.from("day_sheets").insert({
       site_id: siteId!, organisation_id: organisationId!, sheet_date: today,
     }).select("id").single();
