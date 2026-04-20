@@ -175,6 +175,66 @@ const Shifts = () => {
     return m;
   }, [users]);
 
+  // Fetch all task links for the visible assignments
+  const assignmentIds = assignments.map((a) => a.id);
+  const { data: taskLinks = [] } = useQuery({
+    queryKey: ["rota-task-links", assignmentIds.join(",")],
+    queryFn: async () => {
+      if (assignmentIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("rota_assignment_tasks")
+        .select("id, rota_assignment_id, task_type, task_id")
+        .in("rota_assignment_id", assignmentIds);
+      if (error) throw error;
+      return (data || []) as RotaTaskRow[];
+    },
+    enabled: assignmentIds.length > 0,
+  });
+
+  const linksByAssignment = useMemo(() => {
+    const m = new Map<string, RotaTaskRow[]>();
+    taskLinks.forEach((l) => {
+      const arr = m.get(l.rota_assignment_id) || [];
+      arr.push(l);
+      m.set(l.rota_assignment_id, arr);
+    });
+    return m;
+  }, [taskLinks]);
+
+  // Day sheet sections + items (active only)
+  const { data: daySheetSections = [] } = useQuery({
+    queryKey: ["rota-daysheet-sections", siteId],
+    queryFn: async () => {
+      if (!siteId) return [];
+      const { data, error } = await supabase
+        .from("day_sheet_sections")
+        .select("id, title, day_sheet_items(id, label, active)")
+        .eq("site_id", siteId)
+        .eq("active", true)
+        .order("sort_order");
+      if (error) throw error;
+      return (data || []) as DaySheetSection[];
+    },
+    enabled: !!siteId && canEdit,
+  });
+
+  // Cleaning tasks
+  const { data: cleaningTasks = [] } = useQuery({
+    queryKey: ["rota-cleaning-tasks", siteId],
+    queryFn: async () => {
+      if (!siteId) return [];
+      const { data, error } = await supabase
+        .from("cleaning_tasks")
+        .select("id, task, area")
+        .eq("site_id", siteId)
+        .eq("active", true)
+        .order("sort_order");
+      if (error) throw error;
+      return (data || []) as CleaningTask[];
+    },
+    enabled: !!siteId && canEdit,
+  });
+
   // Group assignments by date+user
   const assignmentsByDateUser = useMemo(() => {
     const m = new Map<string, Assignment[]>();
