@@ -497,11 +497,11 @@ const TemperatureTracking = () => {
                 <CheckCircle2 className="h-16 w-16 text-success mx-auto" />
                 <div>
                   <p className="font-heading font-bold text-lg">Temperature Logged</p>
-                  <p className="text-sm text-muted-foreground">{selectedUnit?.name} · {currentTemp}°C · {logType}</p>
+                  <p className="text-sm text-muted-foreground">{(processMode ? foodItem : selectedUnit?.name) || "—"} · {currentTemp}°C · {logType}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1" onClick={resetDialog}>Done</Button>
-                  <Button className="flex-1" onClick={() => { setSelectedUnit(null); setTempInput(""); setStep("select"); setCorrectiveAction(""); }}>Log Another</Button>
+                  <Button className="flex-1" onClick={() => { setSelectedUnit(null); setFoodItem(""); setTempInput(""); setStep("select"); setCorrectiveAction(""); }}>Log Another</Button>
                 </div>
               </motion.div>
             )}
