@@ -79,7 +79,7 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/" element={<AuthGuard><AppLayout><Dashboard /></AppLayout></AuthGuard>} />
-      <Route path="/shifts" element={<AuthGuard><AppLayout><ShiftAssignment /></AppLayout></AuthGuard>} />
+      <Route path="/shifts" element={<AuthGuard><AppLayout><Shifts /></AppLayout></AuthGuard>} />
       <Route path="/temperatures" element={<AuthGuard><AppLayout><TemperatureTracking /></AppLayout></AuthGuard>} />
       <Route path="/day-sheet" element={<AuthGuard><AppLayout><DaySheet /></AppLayout></AuthGuard>} />
       <Route path="/cleaning" element={<AuthGuard><AppLayout><Cleaning /></AppLayout></AuthGuard>} />
