@@ -486,7 +486,15 @@ const Dashboard = () => {
               )}
             </CardHeader>
             <CardContent className="pt-0">
-              {isLoading ? (
+              {isClosed ? (
+                <div className="py-8 text-center space-y-1">
+                  <Lock className="h-6 w-6 mx-auto text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">Closed day</p>
+                  <p className="text-xs text-muted-foreground">
+                    {closedDay?.reason || "No tasks expected — this day is excluded from compliance."}
+                  </p>
+                </div>
+              ) : isLoading ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
               ) : tasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">No tasks set up yet. Configure modules in Settings.</p>
