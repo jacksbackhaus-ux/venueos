@@ -454,6 +454,7 @@ const Shifts = () => {
           staff={staffInRange}
           getAssignments={(uid, iso) => assignmentsByDateUser.get(`${iso}|${uid}`) || []}
           assignmentsForDate={assignmentsForDate}
+          linkedCount={(id) => (linksByAssignment.get(id) || []).length}
           canEdit={canEdit}
           onAdd={(iso) => openCreate(iso)}
           onEdit={openEdit}
@@ -463,6 +464,7 @@ const Shifts = () => {
           dateIso={anchorDate}
           assignments={assignmentsForDate(anchorDate)}
           userById={userById}
+          linkedCount={(id) => (linksByAssignment.get(id) || []).length}
           canEdit={canEdit}
           onAdd={() => openCreate(anchorDate)}
           onEdit={openEdit}
