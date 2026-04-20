@@ -28,13 +28,26 @@ type TempUnit = {
 
 type TempLog = {
   id: string;
-  unit_id: string;
+  unit_id: string | null;
+  food_item: string | null;
   value: number;
   pass: boolean;
   log_type: string;
   corrective_action: string | null;
   logged_by_name: string;
   logged_at: string;
+};
+
+const PROCESS_CHECK_TYPES = ["Delivery", "Cooking", "Cooling", "Reheating", "Hot Holding"];
+const isProcessCheck = (t: string) => PROCESS_CHECK_TYPES.includes(t);
+
+// Sensible default ranges for process checks (°C)
+const PROCESS_RANGES: Record<string, { min: number; max: number; label: string }> = {
+  Cooking:       { min: 75,  max: 200, label: "≥ 75°C core" },
+  Reheating:     { min: 75,  max: 200, label: "≥ 75°C core" },
+  "Hot Holding": { min: 63,  max: 200, label: "≥ 63°C" },
+  Cooling:       { min: -5,  max: 8,   label: "≤ 8°C within 90 min" },
+  Delivery:      { min: -25, max: 8,   label: "≤ 8°C chilled / frozen ≤ -15°C" },
 };
 
 const typeColors: Record<string, string> = {
