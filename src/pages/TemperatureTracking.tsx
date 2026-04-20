@@ -341,7 +341,7 @@ const TemperatureTracking = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{getUnitName(log.unit_id)}</span>
+                      <span className="font-medium text-sm">{log.food_item || getUnitName(log.unit_id)}</span>
                       <Badge variant="outline" className="text-[10px]">{log.log_type}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
