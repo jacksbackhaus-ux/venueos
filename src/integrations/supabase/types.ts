@@ -1697,6 +1697,7 @@ export type Database = {
         Row: {
           corrective_action: string | null
           created_at: string
+          food_item: string | null
           id: string
           log_type: string
           logged_at: string
@@ -1705,12 +1706,13 @@ export type Database = {
           organisation_id: string
           pass: boolean
           site_id: string
-          unit_id: string
+          unit_id: string | null
           value: number
         }
         Insert: {
           corrective_action?: string | null
           created_at?: string
+          food_item?: string | null
           id?: string
           log_type?: string
           logged_at?: string
@@ -1719,12 +1721,13 @@ export type Database = {
           organisation_id: string
           pass: boolean
           site_id: string
-          unit_id: string
+          unit_id?: string | null
           value: number
         }
         Update: {
           corrective_action?: string | null
           created_at?: string
+          food_item?: string | null
           id?: string
           log_type?: string
           logged_at?: string
@@ -1733,7 +1736,7 @@ export type Database = {
           organisation_id?: string
           pass?: boolean
           site_id?: string
-          unit_id?: string
+          unit_id?: string | null
           value?: number
         }
         Relationships: [

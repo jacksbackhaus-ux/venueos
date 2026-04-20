@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
@@ -28,13 +30,26 @@ type TempUnit = {
 
 type TempLog = {
   id: string;
-  unit_id: string;
+  unit_id: string | null;
+  food_item: string | null;
   value: number;
   pass: boolean;
   log_type: string;
   corrective_action: string | null;
   logged_by_name: string;
   logged_at: string;
+};
+
+const PROCESS_CHECK_TYPES = ["Delivery", "Cooking", "Cooling", "Reheating", "Hot Holding"];
+const isProcessCheck = (t: string) => PROCESS_CHECK_TYPES.includes(t);
+
+// Sensible default ranges for process checks (°C)
+const PROCESS_RANGES: Record<string, { min: number; max: number; label: string }> = {
+  Cooking:       { min: 75,  max: 200, label: "≥ 75°C core" },
+  Reheating:     { min: 75,  max: 200, label: "≥ 75°C core" },
+  "Hot Holding": { min: 63,  max: 200, label: "≥ 63°C" },
+  Cooling:       { min: -5,  max: 8,   label: "≤ 8°C within 90 min" },
+  Delivery:      { min: -25, max: 8,   label: "≤ 8°C chilled / frozen ≤ -15°C" },
 };
 
 const typeColors: Record<string, string> = {
@@ -57,10 +72,13 @@ const TemperatureTracking = () => {
 
   const [showLog, setShowLog] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<TempUnit | null>(null);
+  const [foodItem, setFoodItem] = useState("");
   const [tempInput, setTempInput] = useState("");
   const [logType, setLogType] = useState("AM Check");
   const [step, setStep] = useState<"select" | "keypad" | "corrective" | "done">("select");
   const [correctiveAction, setCorrectiveAction] = useState("");
+  const processMode = isProcessCheck(logType);
+  const processRange = PROCESS_RANGES[logType];
 
   const { data: units = [], isLoading: unitsLoading } = useQuery({
     queryKey: ["temp_units", siteId],
@@ -101,7 +119,8 @@ const TemperatureTracking = () => {
 
   const insertLog = useMutation({
     mutationFn: async (log: {
-      unit_id: string;
+      unit_id: string | null;
+      food_item: string | null;
       value: number;
       pass: boolean;
       log_type: string;
@@ -111,13 +130,14 @@ const TemperatureTracking = () => {
         site_id: siteId!,
         organisation_id: organisationId!,
         unit_id: log.unit_id,
+        food_item: log.food_item,
         value: log.value,
         pass: log.pass,
         log_type: log.log_type,
         corrective_action: log.corrective_action || null,
         logged_by_user_id: appUser?.id || null,
         logged_by_name: userName,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -129,9 +149,16 @@ const TemperatureTracking = () => {
   });
 
   const currentTemp = parseFloat(tempInput);
-  const isOutOfSpec = selectedUnit
-    ? !isNaN(currentTemp) && (currentTemp < selectedUnit.min_temp || currentTemp > selectedUnit.max_temp)
-    : false;
+  const isOutOfSpec = (() => {
+    if (isNaN(currentTemp)) return false;
+    if (processMode && processRange) {
+      return currentTemp < processRange.min || currentTemp > processRange.max;
+    }
+    if (selectedUnit) {
+      return currentTemp < selectedUnit.min_temp || currentTemp > selectedUnit.max_temp;
+    }
+    return false;
+  })();
 
   const handleKeypad = (key: string) => {
     if (key === "backspace") {
@@ -154,27 +181,41 @@ const TemperatureTracking = () => {
   };
 
   const saveLog = () => {
-    if (!selectedUnit) return;
-    insertLog.mutate({
-      unit_id: selectedUnit.id,
-      value: currentTemp,
-      pass: !isOutOfSpec,
-      log_type: logType,
-      corrective_action: correctiveAction || undefined,
-    });
+    if (processMode) {
+      if (!foodItem.trim()) return;
+      insertLog.mutate({
+        unit_id: null,
+        food_item: foodItem.trim(),
+        value: currentTemp,
+        pass: !isOutOfSpec,
+        log_type: logType,
+        corrective_action: correctiveAction || undefined,
+      });
+    } else {
+      if (!selectedUnit) return;
+      insertLog.mutate({
+        unit_id: selectedUnit.id,
+        food_item: null,
+        value: currentTemp,
+        pass: !isOutOfSpec,
+        log_type: logType,
+        corrective_action: correctiveAction || undefined,
+      });
+    }
     setStep("done");
   };
 
   const resetDialog = () => {
     setShowLog(false);
     setSelectedUnit(null);
+    setFoodItem("");
     setTempInput("");
     setStep("select");
     setCorrectiveAction("");
     setLogType("AM Check");
   };
 
-  const getUnitName = (unitId: string) => units.find((u) => u.id === unitId)?.name || "Unknown";
+  const getUnitName = (unitId: string | null) => unitId ? (units.find((u) => u.id === unitId)?.name || "Unknown") : "—";
   const getUnitLastReading = (unitId: string) => logs.find((l) => l.unit_id === unitId);
   const breaches = logs.filter((l) => !l.pass);
 
@@ -300,7 +341,7 @@ const TemperatureTracking = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{getUnitName(log.unit_id)}</span>
+                      <span className="font-medium text-sm">{log.food_item || getUnitName(log.unit_id)}</span>
                       <Badge variant="outline" className="text-[10px]">{log.log_type}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -324,8 +365,8 @@ const TemperatureTracking = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading">
-              {step === "select" && "Select Unit"}
-              {step === "keypad" && `Log Temp — ${selectedUnit?.name}`}
+              {step === "select" && (processMode ? "Log Food Temperature" : "Select Unit")}
+              {step === "keypad" && `Log Temp — ${processMode ? (foodItem || logType) : selectedUnit?.name}`}
               {step === "corrective" && "⚠️ Out of Spec — Action Required"}
               {step === "done" && "✅ Logged Successfully"}
             </DialogTitle>
@@ -333,28 +374,59 @@ const TemperatureTracking = () => {
 
           <AnimatePresence mode="wait">
             {step === "select" && (
-              <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
-                <Select value={logType} onValueChange={setLogType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AM Check">AM Check</SelectItem>
-                    <SelectItem value="PM Check">PM Check</SelectItem>
-                    <SelectItem value="Delivery">Delivery Temp</SelectItem>
-                    <SelectItem value="Cooking">Cooking Temp</SelectItem>
-                    <SelectItem value="Cooling">Cooling Temp</SelectItem>
-                    <SelectItem value="Hot Holding">Hot Holding</SelectItem>
-                  </SelectContent>
-                </Select>
-                {units.map((unit) => (
-                  <Button key={unit.id} variant="outline" className="w-full justify-start gap-3 h-14 text-left"
-                    onClick={() => { setSelectedUnit(unit); setStep("keypad"); }}>
-                    <Thermometer className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="font-medium">{unit.name}</span>
-                      <span className="text-xs text-muted-foreground ml-2">({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)</span>
-                    </div>
-                  </Button>
-                ))}
+              <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Check type</Label>
+                  <Select value={logType} onValueChange={(v) => { setLogType(v); setSelectedUnit(null); setFoodItem(""); }}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AM Check">AM Check (fridge/freezer)</SelectItem>
+                      <SelectItem value="PM Check">PM Check (fridge/freezer)</SelectItem>
+                      <SelectItem value="Delivery">Delivery Temp (food)</SelectItem>
+                      <SelectItem value="Cooking">Cooking Temp (food)</SelectItem>
+                      <SelectItem value="Cooling">Cooling Temp (food)</SelectItem>
+                      <SelectItem value="Reheating">Reheating Temp (food)</SelectItem>
+                      <SelectItem value="Hot Holding">Hot Holding (food)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {processMode ? (
+                  <div className="space-y-2 pt-1">
+                    <Label htmlFor="food-item" className="text-xs text-muted-foreground">Food item</Label>
+                    <Input
+                      id="food-item"
+                      placeholder='e.g. "Chicken curry", "Tomato soup"'
+                      value={foodItem}
+                      onChange={(e) => setFoodItem(e.target.value)}
+                      autoFocus
+                    />
+                    {processRange && (
+                      <p className="text-xs text-muted-foreground">Target: {processRange.label}</p>
+                    )}
+                    <Button
+                      className="w-full mt-2"
+                      disabled={!foodItem.trim()}
+                      onClick={() => setStep("keypad")}
+                    >
+                      Continue to temperature
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 pt-1">
+                    <Label className="text-xs text-muted-foreground">Select unit</Label>
+                    {units.map((unit) => (
+                      <Button key={unit.id} variant="outline" className="w-full justify-start gap-3 h-14 text-left"
+                        onClick={() => { setSelectedUnit(unit); setStep("keypad"); }}>
+                        <Thermometer className="h-4 w-4 text-primary" />
+                        <div>
+                          <span className="font-medium">{unit.name}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -368,11 +440,16 @@ const TemperatureTracking = () => {
                   }`}>
                     {tempInput || "—"}<span className="text-2xl">°C</span>
                   </div>
-                  {selectedUnit && (
+                  {processMode && processRange ? (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {foodItem ? <><span className="font-medium text-foreground">{foodItem}</span> · </> : null}
+                      Target: {processRange.label}
+                    </p>
+                  ) : selectedUnit ? (
                     <p className="text-xs text-muted-foreground mt-1">
                       Acceptable: {Number(selectedUnit.min_temp)}°C to {Number(selectedUnit.max_temp)}°C
                     </p>
-                  )}
+                  ) : null}
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {["1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "0", "."].map((key) => (
@@ -396,7 +473,9 @@ const TemperatureTracking = () => {
                   <XCircle className="h-8 w-8 text-breach mx-auto mb-2" />
                   <p className="text-2xl font-heading font-bold text-breach">{currentTemp}°C</p>
                   <p className="text-sm text-breach/80">
-                    {selectedUnit?.name} is out of acceptable range ({Number(selectedUnit?.min_temp)}–{Number(selectedUnit?.max_temp)}°C)
+                    {processMode
+                      ? <><span className="font-medium">{foodItem || "Food item"}</span> is outside the safe range for {logType} ({processRange?.label})</>
+                      : <>{selectedUnit?.name} is out of acceptable range ({Number(selectedUnit?.min_temp)}–{Number(selectedUnit?.max_temp)}°C)</>}
                   </p>
                 </div>
                 <div>
@@ -418,11 +497,11 @@ const TemperatureTracking = () => {
                 <CheckCircle2 className="h-16 w-16 text-success mx-auto" />
                 <div>
                   <p className="font-heading font-bold text-lg">Temperature Logged</p>
-                  <p className="text-sm text-muted-foreground">{selectedUnit?.name} · {currentTemp}°C · {logType}</p>
+                  <p className="text-sm text-muted-foreground">{(processMode ? foodItem : selectedUnit?.name) || "—"} · {currentTemp}°C · {logType}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1" onClick={resetDialog}>Done</Button>
-                  <Button className="flex-1" onClick={() => { setSelectedUnit(null); setTempInput(""); setStep("select"); setCorrectiveAction(""); }}>Log Another</Button>
+                  <Button className="flex-1" onClick={() => { setSelectedUnit(null); setFoodItem(""); setTempInput(""); setStep("select"); setCorrectiveAction(""); }}>Log Another</Button>
                 </div>
               </motion.div>
             )}
