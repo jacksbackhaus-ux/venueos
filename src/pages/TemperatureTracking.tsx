@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { DateNavigator } from "@/components/DateNavigator";
 
 type TempUnit = {
   id: string;
@@ -50,6 +51,10 @@ const TemperatureTracking = () => {
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+
   const [showLog, setShowLog] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<TempUnit | null>(null);
   const [tempInput, setTempInput] = useState("");
@@ -73,18 +78,20 @@ const TemperatureTracking = () => {
     enabled: !!siteId,
   });
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const dayStart = new Date(`${selectedDate}T00:00:00`);
+  const dayEnd = new Date(`${selectedDate}T00:00:00`);
+  dayEnd.setDate(dayEnd.getDate() + 1);
 
   const { data: logs = [], isLoading: logsLoading } = useQuery({
-    queryKey: ["temp_logs", siteId, todayStart.toISOString().split("T")[0]],
+    queryKey: ["temp_logs", siteId, selectedDate],
     queryFn: async () => {
       if (!siteId) return [];
       const { data, error } = await supabase
         .from("temp_logs")
         .select("*")
         .eq("site_id", siteId)
-        .gte("logged_at", todayStart.toISOString())
+        .gte("logged_at", dayStart.toISOString())
+        .lt("logged_at", dayEnd.toISOString())
         .order("logged_at", { ascending: false });
       if (error) throw error;
       return data as TempLog[];
@@ -181,21 +188,32 @@ const TemperatureTracking = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Thermometer className="h-5 w-5 text-primary" />
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Thermometer className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-heading font-bold text-foreground">Temperature Tracking</h1>
+              <p className="text-sm text-muted-foreground">
+                {breaches.length > 0
+                  ? `${breaches.length} breach${breaches.length > 1 ? "es" : ""} ${isToday ? "today" : "this day"}`
+                  : isToday ? "All units within spec" : "Historical readings"}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-heading font-bold text-foreground">Temperature Tracking</h1>
-            <p className="text-sm text-muted-foreground">
-              {breaches.length > 0 ? `${breaches.length} breach${breaches.length > 1 ? "es" : ""} today` : "All units within spec"}
-            </p>
-          </div>
+          {isToday ? (
+            <Button onClick={() => setShowLog(true)} size="lg" className="gap-2">
+              <Plus className="h-4 w-4" /> Quick Temp Log
+            </Button>
+          ) : (
+            <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
+              <Clock className="h-3 w-3" /> Read-only
+            </Badge>
+          )}
         </div>
-        <Button onClick={() => setShowLog(true)} size="lg" className="gap-2">
-          <Plus className="h-4 w-4" /> Quick Temp Log
-        </Button>
+        <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} />
       </div>
 
       {(unitsLoading || logsLoading) && (
@@ -221,8 +239,8 @@ const TemperatureTracking = () => {
           return (
             <motion.div key={unit.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <Card
-                className={`cursor-pointer hover:shadow-md transition-shadow ${isBreaching ? "border-breach/50 bg-breach/5" : ""}`}
-                onClick={() => { setSelectedUnit(unit); setShowLog(true); setStep("keypad"); }}
+                className={`transition-shadow ${isToday ? "cursor-pointer hover:shadow-md" : "cursor-default"} ${isBreaching ? "border-breach/50 bg-breach/5" : ""}`}
+                onClick={() => { if (!isToday) return; setSelectedUnit(unit); setShowLog(true); setStep("keypad"); }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -252,7 +270,7 @@ const TemperatureTracking = () => {
                     ) : (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        <span className="text-sm">No reading today</span>
+                        <span className="text-sm">{isToday ? "No reading today" : "No reading"}</span>
                       </div>
                     )}
                   </div>
@@ -269,7 +287,7 @@ const TemperatureTracking = () => {
       {logs.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-heading">Today's Readings</CardTitle>
+            <CardTitle className="text-base font-heading">{isToday ? "Today's Readings" : "Readings for this day"}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="divide-y">

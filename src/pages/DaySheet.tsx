@@ -12,6 +12,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { DateNavigator } from "@/components/DateNavigator";
 
 const DaySheet = () => {
   const { currentSite, organisationId } = useSite();
@@ -19,7 +20,10 @@ const DaySheet = () => {
   const queryClient = useQueryClient();
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
-  const today = new Date().toISOString().split("T")[0];
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+  const today = selectedDate; // all queries below are scoped to the selected date
 
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [problemNotes, setProblemNotes] = useState("");
@@ -63,6 +67,7 @@ const DaySheet = () => {
 
   const ensureDaySheet = async () => {
     if (daySheet) return daySheet.id;
+    if (!isToday) throw new Error("Cannot edit a past day sheet");
     const { data, error } = await supabase.from("day_sheets").insert({
       site_id: siteId!, organisation_id: organisationId!, sheet_date: today,
     }).select("id").single();
@@ -111,7 +116,8 @@ const DaySheet = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
-  const locked = daySheet?.locked || false;
+  const isLockedSheet = daySheet?.locked || false;
+  const locked = isLockedSheet || !isToday; // past days are read-only
   const doneItemIds = new Set(entries.filter((e: any) => e.done).map((e: any) => e.item_id));
   const allItems = sections.flatMap((s: any) => s.day_sheet_items || []);
   const totalItems = allItems.length;
@@ -136,15 +142,28 @@ const DaySheet = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><ClipboardList className="h-5 w-5 text-primary" /></div>
-          <div>
-            <h1 className="text-xl font-heading font-bold text-foreground">Daily Day Sheet</h1>
-            <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><ClipboardList className="h-5 w-5 text-primary" /></div>
+            <div>
+              <h1 className="text-xl font-heading font-bold text-foreground">Daily Day Sheet</h1>
+              <p className="text-sm text-muted-foreground">
+                {isToday
+                  ? new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
+                  : new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              </p>
+            </div>
           </div>
+          {isLockedSheet ? (
+            <Badge className="bg-success text-success-foreground gap-1"><Lock className="h-3 w-3" /> Locked</Badge>
+          ) : !isToday ? (
+            <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
+              <Lock className="h-3 w-3" /> Read-only
+            </Badge>
+          ) : null}
         </div>
-        {locked && <Badge className="bg-success text-success-foreground gap-1"><Lock className="h-3 w-3" /> Locked</Badge>}
+        <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} />
       </div>
 
       {sectionsLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
@@ -240,7 +259,7 @@ const DaySheet = () => {
         </>
       )}
 
-      {locked && (
+      {isLockedSheet && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center">
           <Lock className="h-6 w-6 text-success mx-auto mb-2" />
           <p className="font-heading font-bold text-success">Day Sheet Locked</p>

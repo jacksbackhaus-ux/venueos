@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { SprayCan, CheckCircle2, Circle, Clock, Camera, Loader2 } from "lucide-react";
+import { SprayCan, CheckCircle2, Circle, Clock, Camera, Loader2, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { DateNavigator } from "@/components/DateNavigator";
 
 const Cleaning = () => {
   const { currentSite, organisationId } = useSite();
@@ -19,7 +20,10 @@ const Cleaning = () => {
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
   const [activeTab, setActiveTab] = useState("daily");
-  const today = new Date().toISOString().split("T")[0];
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+  const today = selectedDate; // queries scoped to selected date
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["cleaning_tasks", siteId],
@@ -45,13 +49,12 @@ const Cleaning = () => {
 
   const toggleTask = useMutation({
     mutationFn: async (taskId: string) => {
+      if (!isToday) throw new Error("Past cleaning records are read-only");
       const existing = logs.find((l: any) => l.task_id === taskId);
       if (existing) {
-        // Toggle off — delete the log
         const { error } = await supabase.from("cleaning_logs").delete().eq("id", existing.id);
         if (error) throw error;
       } else {
-        // Toggle on — insert log
         const { error } = await supabase.from("cleaning_logs").insert({
           site_id: siteId!, organisation_id: organisationId!, task_id: taskId, log_date: today,
           done: true, completed_by_user_id: appUser?.id || null, completed_by_name: userName, completed_at: new Date().toISOString(),
@@ -73,12 +76,24 @@ const Cleaning = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><SprayCan className="h-5 w-5 text-primary" /></div>
-        <div>
-          <h1 className="text-xl font-heading font-bold text-foreground">Cleaning & Sanitation</h1>
-          <p className="text-sm text-muted-foreground">Track cleaning completion by area and frequency</p>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><SprayCan className="h-5 w-5 text-primary" /></div>
+            <div>
+              <h1 className="text-xl font-heading font-bold text-foreground">Cleaning & Sanitation</h1>
+              <p className="text-sm text-muted-foreground">
+                {isToday ? "Track cleaning completion by area and frequency" : "Historical cleaning records"}
+              </p>
+            </div>
+          </div>
+          {!isToday && (
+            <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
+              <Lock className="h-3 w-3" /> Read-only
+            </Badge>
+          )}
         </div>
+        <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} />
       </div>
 
       {tasksLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
@@ -123,8 +138,8 @@ const Cleaning = () => {
                         const isDone = doneIds.has(task.id);
                         const log = logs.find((l: any) => l.task_id === task.id);
                         return (
-                          <button key={task.id} onClick={() => toggleTask.mutate(task.id)}
-                            className={`w-full flex items-start gap-3 p-2.5 rounded-md text-left transition-colors hover:bg-muted/50 ${isDone ? "opacity-60" : ""}`}>
+                          <button key={task.id} onClick={() => isToday && toggleTask.mutate(task.id)} disabled={!isToday}
+                            className={`w-full flex items-start gap-3 p-2.5 rounded-md text-left transition-colors ${isToday ? "hover:bg-muted/50 cursor-pointer" : "cursor-default"} ${isDone ? "opacity-60" : ""}`}>
                             {isDone ? <CheckCircle2 className="h-5 w-5 text-success mt-0.5 shrink-0" /> : <Circle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />}
                             <div className="flex-1 min-w-0">
                               <span className={`text-sm ${isDone ? "line-through text-muted-foreground" : "font-medium"}`}>{task.task}</span>
