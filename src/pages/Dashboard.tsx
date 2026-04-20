@@ -14,14 +14,18 @@ import {
   ChevronRight,
   ChevronLeft,
   CalendarDays,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import { useSite } from "@/contexts/SiteContext";
 
 const fadeUp = {
@@ -55,7 +59,9 @@ const statusIcon = (status: string) => {
 };
 
 const Dashboard = () => {
-  const { currentSite } = useSite();
+  const { currentSite, currentMembership } = useSite();
+  const { staffSession, appUser } = useAuth();
+  const queryClient = useQueryClient();
   const siteId = currentSite?.id;
   const todayStr = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -66,6 +72,9 @@ const Dashboard = () => {
   const dateStr = isToday
     ? viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
     : viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const role = currentMembership?.site_role || staffSession?.site_role;
+  const canCloseDay = role === "owner" || role === "supervisor";
 
   const shiftDate = (days: number) => {
     const d = new Date(`${selectedDate}T12:00:00`);
@@ -89,6 +98,7 @@ const Dashboard = () => {
         daySheetSectionsRes,
         daySheetRes,
         incidentsRes,
+        closedDayRes,
       ] = await Promise.all([
         supabase.from("cleaning_tasks").select("id, task, area, frequency, due_time").eq("site_id", siteId!).eq("active", true),
         supabase.from("cleaning_logs").select("task_id, done, completed_at").eq("site_id", siteId!).eq("log_date", today),
@@ -97,8 +107,10 @@ const Dashboard = () => {
         supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, label, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", siteId!).eq("sheet_date", today).maybeSingle(),
         supabase.from("incidents").select("id, title, status, reported_at").eq("site_id", siteId!).eq("status", "open"),
+        supabase.from("closed_days" as any).select("id, reason, closed_by_name, created_at").eq("site_id", siteId!).eq("closed_date", today).maybeSingle(),
       ]);
 
+      const closedDay = (closedDayRes as any)?.data ?? null;
       const cleaningTasks = cleaningTasksRes.data ?? [];
       const cleaningLogs = cleaningLogsRes.data ?? [];
       const tempUnits = tempUnitsRes.data ?? [];
@@ -217,12 +229,14 @@ const Dashboard = () => {
         { name: "Management Confidence", score: dsCompliance, icon: ShieldCheck },
       ];
 
-      return { tasks, alerts, stats: { completed, total, overdue, breaches }, compliance, pillars };
+      return { tasks, alerts, stats: { completed, total, overdue, breaches }, compliance, pillars, closedDay };
     },
   });
 
+  const closedDay = (data as any)?.closedDay ?? null;
+  const isClosed = !!closedDay;
   const tasks = data?.tasks ?? [];
-  const alerts = data?.alerts ?? [];
+  const alerts = isClosed ? [] : (data?.alerts ?? []);
   const stats = data?.stats ?? { completed: 0, total: 0, overdue: 0, breaches: 0 };
   const complianceScore = data?.compliance ?? 100;
   const pillars = data?.pillars ?? [
@@ -230,6 +244,45 @@ const Dashboard = () => {
     { name: "Premises & Cleanliness", score: 100, icon: SprayCan },
     { name: "Management Confidence", score: 100, icon: ShieldCheck },
   ];
+
+  const closeDayMutation = useMutation({
+    mutationFn: async (close: boolean) => {
+      if (!siteId || !currentSite) throw new Error("No site");
+      if (close) {
+        const { error } = await supabase.from("closed_days" as any).insert({
+          site_id: siteId,
+          organisation_id: currentSite.organisation_id,
+          closed_date: selectedDate,
+          closed_by_user_id: appUser?.id ?? null,
+          closed_by_name: appUser?.display_name ?? (staffSession as any)?.display_name ?? null,
+        } as any);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("closed_days" as any)
+          .delete()
+          .eq("site_id", siteId)
+          .eq("closed_date", selectedDate);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_d, close) => {
+      toast.success(close ? "Day marked as closed" : "Day reopened");
+      queryClient.invalidateQueries({ queryKey: ["dashboard", siteId, selectedDate] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Action failed"),
+  });
+
+  const handleToggleClosed = () => {
+    if (!canCloseDay) return;
+    if (isClosed) {
+      if (!confirm("Reopen this day? Tasks and tracking will resume counting.")) return;
+      closeDayMutation.mutate(false);
+    } else {
+      if (!confirm(`Mark ${isToday ? "today" : dateStr} as a closed day? It won't count toward compliance.`)) return;
+      closeDayMutation.mutate(true);
+    }
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
@@ -240,19 +293,26 @@ const Dashboard = () => {
             <h1 className="text-2xl font-heading font-bold text-foreground">{greeting} 👋</h1>
             <p className="text-sm text-muted-foreground">{dateStr}</p>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs self-start sm:self-auto ${
-              complianceScore >= 80
-                ? "border-success text-success"
-                : complianceScore >= 60
-                ? "border-warning text-warning"
-                : "border-breach text-breach"
-            }`}
-          >
-            <TrendingUp className="h-3 w-3 mr-1" />
-            {complianceScore}% compliant {isToday ? "today" : "this day"}
-          </Badge>
+          {isClosed ? (
+            <Badge variant="outline" className="text-xs self-start sm:self-auto border-muted-foreground/30 text-muted-foreground">
+              <Lock className="h-3 w-3 mr-1" />
+              Closed day
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className={`text-xs self-start sm:self-auto ${
+                complianceScore >= 80
+                  ? "border-success text-success"
+                  : complianceScore >= 60
+                  ? "border-warning text-warning"
+                  : "border-breach text-breach"
+              }`}
+            >
+              <TrendingUp className="h-3 w-3 mr-1" />
+              {complianceScore}% compliant {isToday ? "today" : "this day"}
+            </Badge>
+          )}
         </div>
 
         {/* Date navigation */}
@@ -290,6 +350,39 @@ const Dashboard = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Closed day banner / action */}
+        {(isClosed || canCloseDay) && (
+          <div
+            className={`mt-3 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
+              isClosed ? "bg-muted/40 border-muted-foreground/20" : "bg-card"
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {isClosed ? (
+                <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+              ) : (
+                <Unlock className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <p className="text-xs sm:text-sm text-foreground truncate">
+                {isClosed
+                  ? `This day is marked as closed${closedDay?.closed_by_name ? ` by ${closedDay.closed_by_name}` : ""}. It won't count toward compliance.`
+                  : "Site closed on this day? Mark it so it doesn't count against compliance."}
+              </p>
+            </div>
+            {canCloseDay && (
+              <Button
+                size="sm"
+                variant={isClosed ? "outline" : "secondary"}
+                onClick={handleToggleClosed}
+                disabled={closeDayMutation.isPending}
+                className="shrink-0"
+              >
+                {isClosed ? "Reopen day" : "Mark as closed"}
+              </Button>
+            )}
+          </div>
+        )}
       </motion.div>
 
       {/* Alerts */}
@@ -345,12 +438,16 @@ const Dashboard = () => {
             <Card key={stat.label} className="border">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">{stat.label}</p>
-                <p className={`text-2xl font-heading font-bold ${stat.color}`}>
-                  {stat.value}
-                  {"total" in stat && (
-                    <span className="text-sm font-normal text-muted-foreground">/{stat.total}</span>
-                  )}
-                </p>
+                {isClosed ? (
+                  <p className="text-2xl font-heading font-bold text-muted-foreground">—</p>
+                ) : (
+                  <p className={`text-2xl font-heading font-bold ${stat.color}`}>
+                    {stat.value}
+                    {"total" in stat && (
+                      <span className="text-sm font-normal text-muted-foreground">/{stat.total}</span>
+                    )}
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -371,17 +468,33 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-heading">{isToday ? "My Tasks Today" : "Tasks for this day"}</CardTitle>
-                <Badge variant="secondary" className="text-xs">
-                  {tasks.filter((t) => t.status === "done").length}/{tasks.length}
-                </Badge>
+                {isClosed ? (
+                  <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
+                    <Lock className="h-3 w-3 mr-1" /> Closed
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">
+                    {tasks.filter((t) => t.status === "done").length}/{tasks.length}
+                  </Badge>
+                )}
               </div>
-              <Progress
-                value={tasks.length > 0 ? (tasks.filter((t) => t.status === "done").length / tasks.length) * 100 : 0}
-                className="h-1.5"
-              />
+              {!isClosed && (
+                <Progress
+                  value={tasks.length > 0 ? (tasks.filter((t) => t.status === "done").length / tasks.length) * 100 : 0}
+                  className="h-1.5"
+                />
+              )}
             </CardHeader>
             <CardContent className="pt-0">
-              {isLoading ? (
+              {isClosed ? (
+                <div className="py-8 text-center space-y-1">
+                  <Lock className="h-6 w-6 mx-auto text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">Closed day</p>
+                  <p className="text-xs text-muted-foreground">
+                    {closedDay?.reason || "No tasks expected — this day is excluded from compliance."}
+                  </p>
+                </div>
+              ) : isLoading ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
               ) : tasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">No tasks set up yet. Configure modules in Settings.</p>
@@ -443,19 +556,25 @@ const Dashboard = () => {
                       <pillar.icon className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs font-medium">{pillar.name}</span>
                     </div>
-                    <span
-                      className={`text-xs font-bold ${
-                        pillar.score >= 80
-                          ? "text-success"
-                          : pillar.score >= 60
-                          ? "text-warning"
-                          : "text-breach"
-                      }`}
-                    >
-                      {pillar.score}%
-                    </span>
+                    {isClosed ? (
+                      <span className="text-xs font-bold text-muted-foreground inline-flex items-center gap-1">
+                        <Lock className="h-3 w-3" /> Closed
+                      </span>
+                    ) : (
+                      <span
+                        className={`text-xs font-bold ${
+                          pillar.score >= 80
+                            ? "text-success"
+                            : pillar.score >= 60
+                            ? "text-warning"
+                            : "text-breach"
+                        }`}
+                      >
+                        {pillar.score}%
+                      </span>
+                    )}
                   </div>
-                  <Progress value={pillar.score} className="h-1.5" />
+                  {!isClosed && <Progress value={pillar.score} className="h-1.5" />}
                 </div>
               ))}
 
