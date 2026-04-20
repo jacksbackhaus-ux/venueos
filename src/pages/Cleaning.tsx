@@ -49,13 +49,12 @@ const Cleaning = () => {
 
   const toggleTask = useMutation({
     mutationFn: async (taskId: string) => {
+      if (!isToday) throw new Error("Past cleaning records are read-only");
       const existing = logs.find((l: any) => l.task_id === taskId);
       if (existing) {
-        // Toggle off — delete the log
         const { error } = await supabase.from("cleaning_logs").delete().eq("id", existing.id);
         if (error) throw error;
       } else {
-        // Toggle on — insert log
         const { error } = await supabase.from("cleaning_logs").insert({
           site_id: siteId!, organisation_id: organisationId!, task_id: taskId, log_date: today,
           done: true, completed_by_user_id: appUser?.id || null, completed_by_name: userName, completed_at: new Date().toISOString(),
