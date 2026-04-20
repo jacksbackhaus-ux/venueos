@@ -386,22 +386,39 @@ const Settings = () => {
       staffId = gen as string;
     }
 
-    const { error } = await supabase.from('users').insert({
+    if (!currentSite) { toast.error("No site selected."); return; }
+
+    const { data: newUser, error } = await supabase.from('users').insert({
       organisation_id: organisationId,
       display_name: staffForm.name,
       email: staffForm.email || null,
       auth_type: 'staff_code',
       staff_code: staffId,
       status: 'active',
-    });
-    if (error) {
-      if (error.code === '23505') {
+    }).select('id').single();
+    if (error || !newUser) {
+      if (error?.code === '23505') {
         toast.error(`Staff ID "${staffId}" is already in use. Choose a different one.`);
       } else {
-        toast.error(error.message);
+        toast.error(error?.message || "Could not create staff member.");
       }
       return;
     }
+
+    // Create membership so staff can log in via PIN on this site
+    const siteRole = staffForm.role === 'supervisor' ? 'supervisor' : 'staff';
+    const { error: memErr } = await supabase.from('memberships').insert({
+      site_id: currentSite.id,
+      user_id: newUser.id,
+      site_role: siteRole,
+      active: true,
+    });
+    if (memErr) {
+      toast.error(`Staff created but membership failed: ${memErr.message}. They won't be able to log in until this is fixed.`);
+      loadAll();
+      return;
+    }
+
     toast.success(`Staff member added — Staff ID: ${staffId}`);
     setShowAddStaff(false);
     setStaffForm({ name: "", email: "", role: "staff", pin: "", staffId: "" });
