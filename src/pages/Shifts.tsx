@@ -815,22 +815,33 @@ function WeekView({
                         <span className="text-xs text-muted-foreground/40">—</span>
                       ) : (
                         <div className="space-y-1">
-                          {list.map((a) => (
-                            <button
-                              key={a.id}
-                              type="button"
-                              onClick={() => canEdit && onEdit(a)}
-                              disabled={!canEdit}
-                              className={`w-full text-left rounded px-2 py-1 text-xs border bg-primary/10 text-primary border-primary/20 ${
-                                canEdit ? "hover:bg-primary/15 cursor-pointer" : "cursor-default"
-                              }`}
-                            >
-                              <div className="font-semibold">
-                                {a.start_time}–{a.end_time}
-                              </div>
-                              {a.position && <div className="opacity-80 truncate">{a.position}</div>}
-                            </button>
-                          ))}
+                          {list.map((a) => {
+                            const lc = linkedCount(a.id);
+                            return (
+                              <button
+                                key={a.id}
+                                type="button"
+                                onClick={() => canEdit && onEdit(a)}
+                                disabled={!canEdit}
+                                className={`w-full text-left rounded px-2 py-1 text-xs border bg-primary/10 text-primary border-primary/20 ${
+                                  canEdit ? "hover:bg-primary/15 cursor-pointer" : "cursor-default"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <div className="font-semibold">
+                                    {a.start_time}–{a.end_time}
+                                  </div>
+                                  {lc > 0 && (
+                                    <span className="flex items-center gap-0.5 text-[10px] opacity-80">
+                                      <ListChecks className="h-3 w-3" />
+                                      {lc}
+                                    </span>
+                                  )}
+                                </div>
+                                {a.position && <div className="opacity-80 truncate">{a.position}</div>}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </td>
