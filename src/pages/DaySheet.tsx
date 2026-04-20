@@ -116,7 +116,8 @@ const DaySheet = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
-  const locked = daySheet?.locked || false;
+  const isLockedSheet = daySheet?.locked || false;
+  const locked = isLockedSheet || !isToday; // past days are read-only
   const doneItemIds = new Set(entries.filter((e: any) => e.done).map((e: any) => e.item_id));
   const allItems = sections.flatMap((s: any) => s.day_sheet_items || []);
   const totalItems = allItems.length;
