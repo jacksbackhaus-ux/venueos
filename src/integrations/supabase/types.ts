@@ -1265,6 +1265,38 @@ export type Database = {
           },
         ]
       }
+      rota_assignment_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          rota_assignment_id: string
+          task_id: string
+          task_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rota_assignment_id: string
+          task_id: string
+          task_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rota_assignment_id?: string
+          task_id?: string
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_assignment_tasks_rota_assignment_id_fkey"
+            columns: ["rota_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "rota_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rota_assignments: {
         Row: {
           created_at: string

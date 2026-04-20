@@ -9,6 +9,7 @@ import {
   Plus,
   Pencil,
   Trash2,
+  ListChecks,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
@@ -106,6 +109,12 @@ type Assignment = {
 
 type AppUser = { id: string; display_name: string; status: string };
 
+type TaskKind = "day_sheet_item" | "cleaning_task";
+type LinkedTask = { task_type: TaskKind; task_id: string };
+type DaySheetSection = { id: string; title: string; day_sheet_items: { id: string; label: string; active: boolean }[] };
+type CleaningTask = { id: string; task: string; area: string };
+type RotaTaskRow = { id: string; rota_assignment_id: string; task_type: TaskKind; task_id: string };
+
 // ---------- Page ----------
 const Shifts = () => {
   const { currentSite, currentMembership, organisationId } = useSite();
@@ -167,6 +176,66 @@ const Shifts = () => {
     return m;
   }, [users]);
 
+  // Fetch all task links for the visible assignments
+  const assignmentIds = assignments.map((a) => a.id);
+  const { data: taskLinks = [] } = useQuery({
+    queryKey: ["rota-task-links", assignmentIds.join(",")],
+    queryFn: async () => {
+      if (assignmentIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("rota_assignment_tasks")
+        .select("id, rota_assignment_id, task_type, task_id")
+        .in("rota_assignment_id", assignmentIds);
+      if (error) throw error;
+      return (data || []) as RotaTaskRow[];
+    },
+    enabled: assignmentIds.length > 0,
+  });
+
+  const linksByAssignment = useMemo(() => {
+    const m = new Map<string, RotaTaskRow[]>();
+    taskLinks.forEach((l) => {
+      const arr = m.get(l.rota_assignment_id) || [];
+      arr.push(l);
+      m.set(l.rota_assignment_id, arr);
+    });
+    return m;
+  }, [taskLinks]);
+
+  // Day sheet sections + items (active only)
+  const { data: daySheetSections = [] } = useQuery({
+    queryKey: ["rota-daysheet-sections", siteId],
+    queryFn: async () => {
+      if (!siteId) return [];
+      const { data, error } = await supabase
+        .from("day_sheet_sections")
+        .select("id, title, day_sheet_items(id, label, active)")
+        .eq("site_id", siteId)
+        .eq("active", true)
+        .order("sort_order");
+      if (error) throw error;
+      return (data || []) as DaySheetSection[];
+    },
+    enabled: !!siteId && canEdit,
+  });
+
+  // Cleaning tasks
+  const { data: cleaningTasks = [] } = useQuery({
+    queryKey: ["rota-cleaning-tasks", siteId],
+    queryFn: async () => {
+      if (!siteId) return [];
+      const { data, error } = await supabase
+        .from("cleaning_tasks")
+        .select("id, task, area")
+        .eq("site_id", siteId)
+        .eq("active", true)
+        .order("sort_order");
+      if (error) throw error;
+      return (data || []) as CleaningTask[];
+    },
+    enabled: !!siteId && canEdit,
+  });
+
   // Group assignments by date+user
   const assignmentsByDateUser = useMemo(() => {
     const m = new Map<string, Assignment[]>();
@@ -210,6 +279,19 @@ const Shifts = () => {
     end_time: "17:00",
     position: "",
   });
+  const [linkedTasks, setLinkedTasks] = useState<LinkedTask[]>([]);
+
+  const toggleLinkedTask = (task_type: TaskKind, task_id: string) => {
+    setLinkedTasks((prev) => {
+      const exists = prev.some((l) => l.task_type === task_type && l.task_id === task_id);
+      return exists
+        ? prev.filter((l) => !(l.task_type === task_type && l.task_id === task_id))
+        : [...prev, { task_type, task_id }];
+    });
+  };
+
+  const isTaskLinked = (task_type: TaskKind, task_id: string) =>
+    linkedTasks.some((l) => l.task_type === task_type && l.task_id === task_id);
 
   const openCreate = (presetDate?: string, presetUserId?: string) => {
     setEditing(null);
@@ -220,6 +302,7 @@ const Shifts = () => {
       end_time: "17:00",
       position: "",
     });
+    setLinkedTasks([]);
     setDialogOpen(true);
   };
 
@@ -232,6 +315,8 @@ const Shifts = () => {
       end_time: a.end_time,
       position: a.position || "",
     });
+    const existing = linksByAssignment.get(a.id) || [];
+    setLinkedTasks(existing.map((l) => ({ task_type: l.task_type, task_id: l.task_id })));
     setDialogOpen(true);
   };
 
@@ -253,19 +338,44 @@ const Shifts = () => {
         position: form.position.trim() || null,
       };
 
+      let assignmentId: string;
       if (editing) {
         const { error } = await supabase
           .from("rota_assignments")
           .update(payload)
           .eq("id", editing.id);
         if (error) throw error;
+        assignmentId = editing.id;
       } else {
-        const { error } = await supabase.from("rota_assignments").insert(payload);
+        const { data, error } = await supabase
+          .from("rota_assignments")
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw error;
+        assignmentId = data.id;
+      }
+
+      // Sync task links: delete then insert (simple + correct).
+      const { error: delErr } = await supabase
+        .from("rota_assignment_tasks")
+        .delete()
+        .eq("rota_assignment_id", assignmentId);
+      if (delErr) throw delErr;
+
+      if (linkedTasks.length > 0) {
+        const rows = linkedTasks.map((l) => ({
+          rota_assignment_id: assignmentId,
+          task_type: l.task_type,
+          task_id: l.task_id,
+        }));
+        const { error: insErr } = await supabase.from("rota_assignment_tasks").insert(rows);
+        if (insErr) throw insErr;
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["rota-assignments"] });
+      qc.invalidateQueries({ queryKey: ["rota-task-links"] });
       setDialogOpen(false);
       toast.success(editing ? "Shift updated" : "Shift added");
     },
@@ -345,6 +455,7 @@ const Shifts = () => {
           staff={staffInRange}
           getAssignments={(uid, iso) => assignmentsByDateUser.get(`${iso}|${uid}`) || []}
           assignmentsForDate={assignmentsForDate}
+          linkedCount={(id) => (linksByAssignment.get(id) || []).length}
           canEdit={canEdit}
           onAdd={(iso) => openCreate(iso)}
           onEdit={openEdit}
@@ -354,6 +465,7 @@ const Shifts = () => {
           dateIso={anchorDate}
           assignments={assignmentsForDate(anchorDate)}
           userById={userById}
+          linkedCount={(id) => (linksByAssignment.get(id) || []).length}
           canEdit={canEdit}
           onAdd={() => openCreate(anchorDate)}
           onEdit={openEdit}
@@ -363,7 +475,7 @@ const Shifts = () => {
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit shift" : "Add shift"}</DialogTitle>
             <DialogDescription>
@@ -427,6 +539,102 @@ const Shifts = () => {
                 value={form.position}
                 onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
               />
+            </div>
+
+            {/* Optional task linking */}
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Linked compliance tasks (optional)</Label>
+                {linkedTasks.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {linkedTasks.length} linked
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Flag Day Sheet items or Cleaning tasks as this staff member's responsibility for the day.
+                This does not change who can complete them.
+              </p>
+
+              <ScrollArea className="h-56 rounded-md border p-2">
+                <div className="space-y-3">
+                  {/* Day sheet items grouped by section */}
+                  {daySheetSections.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        Day Sheet
+                      </div>
+                      <div className="space-y-2">
+                        {daySheetSections.map((sec) => {
+                          const items = (sec.day_sheet_items || []).filter((i) => i.active);
+                          if (items.length === 0) return null;
+                          return (
+                            <div key={sec.id}>
+                              <div className="text-xs font-medium text-foreground/80 mb-0.5">
+                                {sec.title}
+                              </div>
+                              <div className="space-y-1 pl-1">
+                                {items.map((it) => {
+                                  const checked = isTaskLinked("day_sheet_item", it.id);
+                                  return (
+                                    <label
+                                      key={it.id}
+                                      className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/40 rounded px-1 py-0.5"
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={() =>
+                                          toggleLinkedTask("day_sheet_item", it.id)
+                                        }
+                                      />
+                                      <span className="truncate">{it.label}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cleaning tasks */}
+                  {cleaningTasks.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        Cleaning
+                      </div>
+                      <div className="space-y-1 pl-1">
+                        {cleaningTasks.map((ct) => {
+                          const checked = isTaskLinked("cleaning_task", ct.id);
+                          return (
+                            <label
+                              key={ct.id}
+                              className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/40 rounded px-1 py-0.5"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => toggleLinkedTask("cleaning_task", ct.id)}
+                              />
+                              <span className="truncate">
+                                {ct.task}{" "}
+                                <span className="text-xs text-muted-foreground">· {ct.area}</span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {daySheetSections.length === 0 && cleaningTasks.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      No Day Sheet or Cleaning tasks set up yet.
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
 
@@ -518,6 +726,7 @@ function WeekView({
   staff,
   getAssignments,
   assignmentsForDate,
+  linkedCount,
   canEdit,
   onAdd,
   onEdit,
@@ -526,6 +735,7 @@ function WeekView({
   staff: AppUser[];
   getAssignments: (userId: string, iso: string) => Assignment[];
   assignmentsForDate: (iso: string) => Assignment[];
+  linkedCount: (assignmentId: string) => number;
   canEdit: boolean;
   onAdd: (iso: string) => void;
   onEdit: (a: Assignment) => void;
@@ -605,22 +815,33 @@ function WeekView({
                         <span className="text-xs text-muted-foreground/40">—</span>
                       ) : (
                         <div className="space-y-1">
-                          {list.map((a) => (
-                            <button
-                              key={a.id}
-                              type="button"
-                              onClick={() => canEdit && onEdit(a)}
-                              disabled={!canEdit}
-                              className={`w-full text-left rounded px-2 py-1 text-xs border bg-primary/10 text-primary border-primary/20 ${
-                                canEdit ? "hover:bg-primary/15 cursor-pointer" : "cursor-default"
-                              }`}
-                            >
-                              <div className="font-semibold">
-                                {a.start_time}–{a.end_time}
-                              </div>
-                              {a.position && <div className="opacity-80 truncate">{a.position}</div>}
-                            </button>
-                          ))}
+                          {list.map((a) => {
+                            const lc = linkedCount(a.id);
+                            return (
+                              <button
+                                key={a.id}
+                                type="button"
+                                onClick={() => canEdit && onEdit(a)}
+                                disabled={!canEdit}
+                                className={`w-full text-left rounded px-2 py-1 text-xs border bg-primary/10 text-primary border-primary/20 ${
+                                  canEdit ? "hover:bg-primary/15 cursor-pointer" : "cursor-default"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <div className="font-semibold">
+                                    {a.start_time}–{a.end_time}
+                                  </div>
+                                  {lc > 0 && (
+                                    <span className="flex items-center gap-0.5 text-[10px] opacity-80">
+                                      <ListChecks className="h-3 w-3" />
+                                      {lc}
+                                    </span>
+                                  )}
+                                </div>
+                                {a.position && <div className="opacity-80 truncate">{a.position}</div>}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </td>
@@ -640,6 +861,7 @@ function DayView({
   dateIso,
   assignments,
   userById,
+  linkedCount,
   canEdit,
   onAdd,
   onEdit,
@@ -648,6 +870,7 @@ function DayView({
   dateIso: string;
   assignments: Assignment[];
   userById: Map<string, AppUser>;
+  linkedCount: (assignmentId: string) => number;
   canEdit: boolean;
   onAdd: () => void;
   onEdit: (a: Assignment) => void;
@@ -682,6 +905,7 @@ function DayView({
           <CardContent className="p-0 divide-y">
             {assignments.map((a) => {
               const user = userById.get(a.user_id);
+              const lc = linkedCount(a.id);
               return (
                 <div key={a.id} className="flex items-center gap-3 p-3">
                   <div className="px-2 py-1 rounded text-xs font-semibold border bg-primary/10 text-primary border-primary/20 shrink-0">
@@ -691,12 +915,20 @@ function DayView({
                     <div className="font-medium truncate">
                       {user?.display_name || "Unknown staff"}
                     </div>
-                    {a.position && (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {a.position}
-                      </div>
-                    )}
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                      {a.position && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {a.position}
+                        </span>
+                      )}
+                      {lc > 0 && (
+                        <span className="flex items-center gap-1">
+                          <ListChecks className="h-3 w-3" />
+                          {lc} task{lc === 1 ? "" : "s"} linked
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {canEdit && (
                     <div className="flex items-center gap-1 shrink-0">
