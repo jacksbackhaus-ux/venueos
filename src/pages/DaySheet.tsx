@@ -29,8 +29,8 @@ const DaySheet = () => {
   const [problemNotes, setProblemNotes] = useState("");
   const [managerNote, setManagerNote] = useState("");
 
-  // Fetch sections with items
-  const { data: sections = [], isLoading: sectionsLoading } = useQuery({
+  // Fetch sections with items (include inactive so we can detect "never seeded" vs "user removed all")
+  const { data: sections = [], isLoading: sectionsLoading, refetch: refetchSections } = useQuery({
     queryKey: ["day_sheet_sections", siteId],
     queryFn: async () => {
       if (!siteId) return [];
@@ -40,6 +40,65 @@ const DaySheet = () => {
     },
     enabled: !!siteId,
   });
+
+  // Seed standard FSA Opening & Closing checks once per site (only if NO sections exist at all — active or inactive).
+  // This way, users who delete/disable defaults won't have them re-appear.
+  useEffect(() => {
+    const seed = async () => {
+      if (!siteId || !organisationId) return;
+      const { count, error: countErr } = await supabase
+        .from("day_sheet_sections")
+        .select("id", { count: "exact", head: true })
+        .eq("site_id", siteId);
+      if (countErr || (count ?? 0) > 0) return;
+
+      const { data: opening, error: e1 } = await supabase.from("day_sheet_sections").insert({
+        site_id: siteId, organisation_id: organisationId, title: "Opening Checks",
+        default_time: "Start of day", sort_order: 1, icon: "sun",
+      }).select("id").single();
+      if (e1 || !opening) return;
+
+      const { data: closing, error: e2 } = await supabase.from("day_sheet_sections").insert({
+        site_id: siteId, organisation_id: organisationId, title: "Closing Checks",
+        default_time: "End of day", sort_order: 2, icon: "moon",
+      }).select("id").single();
+      if (e2 || !closing) return;
+
+      const openingItems = [
+        "Fridges, chilled display equipment and freezers are working properly",
+        "Other equipment (e.g. oven) is working properly",
+        "Staff are fit for work and wearing clean work clothes",
+        "Food preparation areas are clean and disinfected (work surfaces, equipment, utensils, etc.)",
+        "All areas are free from evidence of pest activity",
+        "Plenty of handwashing and cleaning materials available (soap, paper towels, sanitiser, etc.)",
+        "Hot running water is available at all sinks and hand wash basins",
+        "Probe thermometer is working and probe wipes are available",
+        "Allergen information is accurate for all items on sale",
+        "Cleaning has been carried out according to the cleaning schedule",
+      ];
+      const closingItems = [
+        "All food is covered, labelled and put in the fridge/freezer (where appropriate)",
+        "Food on its Use By date has been thrown away",
+        "Dirty cleaning equipment has been cleaned or thrown away",
+        "Waste has been removed and new bags put into the bins",
+        "Food preparation areas are clean and disinfected (work surfaces, equipment, utensils, etc.)",
+        "All washing up has been finished",
+        "Floors are swept and clean",
+        "'Prove it' checks have been recorded",
+        "Cleaning has been carried out according to the cleaning schedule",
+      ];
+
+      await supabase.from("day_sheet_items").insert([
+        ...openingItems.map((label, i) => ({ section_id: opening.id, label, sort_order: i + 1 })),
+        ...closingItems.map((label, i) => ({ section_id: closing.id, label, sort_order: i + 1 })),
+      ]);
+
+      refetchSections();
+      queryClient.invalidateQueries({ queryKey: ["day_sheet_sections"] });
+    };
+    seed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteId, organisationId]);
 
   // Fetch or create today's day sheet
   const { data: daySheet } = useQuery({
