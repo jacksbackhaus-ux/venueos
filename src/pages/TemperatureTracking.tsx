@@ -254,7 +254,7 @@ const TemperatureTracking = () => {
             </Badge>
           )}
         </div>
-        <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} />
+        <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} minDate={currentSite?.created_at?.slice(0, 10)} />
       </div>
 
       {(unitsLoading || logsLoading) && (

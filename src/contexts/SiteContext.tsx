@@ -10,6 +10,7 @@ interface Site {
   timezone: string;
   active: boolean;
   site_code: string;
+  created_at: string;
 }
 
 interface Membership {
