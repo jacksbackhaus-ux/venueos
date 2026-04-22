@@ -32,7 +32,7 @@ import { Loader2 } from "lucide-react";
 const queryClient = new QueryClient();
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, user, appUser } = useAuth();
+  const { isAuthenticated, isLoading, user, appUser, staffSession } = useAuth();
 
   if (isLoading) {
     return (
@@ -42,8 +42,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Authenticated via Supabase but no app profile row yet → finish setup
-  if (user && !appUser) {
+  // Staff kiosk session → always allowed, never sent to onboarding
+  if (staffSession) {
+    return <>{children}</>;
+  }
+
+  // Email-authenticated user with no app profile row yet → finish setup
+  // (Anonymous sessions used for staff PIN login are excluded above.)
+  if (user && !user.is_anonymous && !appUser) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -55,9 +61,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AuthRedirect() {
-  const { isAuthenticated, user, appUser, isLoading } = useAuth();
+  const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
   if (isLoading) return null;
-  if (user && !appUser) return <Navigate to="/onboarding" replace />;
+  if (staffSession) return <Navigate to="/" replace />;
+  if (user && !user.is_anonymous && !appUser) return <Navigate to="/onboarding" replace />;
   if (isAuthenticated) return <Navigate to="/" replace />;
   return <Auth />;
 }
