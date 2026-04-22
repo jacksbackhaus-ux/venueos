@@ -18,6 +18,10 @@ export interface OrgSubscription {
   tier: Tier | null;
 }
 
+function isTier(value: string | null | undefined): value is Tier {
+  return value === "starter" || value === "pro" || value === "multisite";
+}
+
 export function useOrgAccess() {
   const { appUser, staffSession } = useAuth();
   const orgId = appUser?.organisation_id || staffSession?.organisation_id || null;
@@ -40,7 +44,15 @@ export function useOrgAccess() {
         .maybeSingle();
 
       if (error) throw error;
-      setSubscription(data as OrgSubscription | null);
+
+      const normalized = data
+        ? ({
+            ...data,
+            tier: isTier(data.tier) ? data.tier : null,
+          } as OrgSubscription)
+        : null;
+
+      setSubscription(normalized);
     } catch (error) {
       console.error("Failed to load subscription state.", error);
       setSubscription(null);
@@ -92,7 +104,7 @@ export function useOrgAccess() {
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - now) / 86400000))
     : null;
 
-  const tier: Tier | null = subscription?.tier ?? null;
+  const tier: Tier | null = isTier(subscription?.tier) ? subscription.tier : null;
   const tierDef = tier ? TIERS[tier] : null;
 
   return {
