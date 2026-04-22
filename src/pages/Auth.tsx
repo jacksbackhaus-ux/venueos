@@ -136,7 +136,7 @@ function EmailLoginForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Owner / Manager Login</CardTitle>
+        <CardTitle>Manager Login</CardTitle>
         <CardDescription>Sign in with your email and password.</CardDescription>
       </CardHeader>
       <CardContent>

@@ -127,7 +127,7 @@ export function AppSidebar() {
                 {appUser?.display_name || 'Manager'}
               </p>
               <p className="text-[10px] text-muted-foreground truncate">
-                {orgRole?.org_role === 'org_owner' ? 'Owner' :
+                {orgRole?.org_role === 'org_owner' ? 'Manager' :
                  orgRole?.org_role === 'hq_admin' ? 'HQ Admin' :
                  orgRole?.org_role === 'hq_auditor' ? 'HQ Auditor' : 'Site Manager'}
               </p>
