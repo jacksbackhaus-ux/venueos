@@ -4,6 +4,7 @@ import {
   Package, Building2, CreditCard,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useRole } from "@/hooks/useRole";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,13 +22,13 @@ const mainNav = [
   { title: "Cleaning", url: "/cleaning", icon: SprayCan },
 ];
 
-const complianceNav = [
+const complianceNavAll: { title: string; url: string; icon: React.ElementType; requiresReports?: boolean }[] = [
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat },
   { title: "Suppliers", url: "/suppliers", icon: Truck },
   { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle },
   { title: "Batch Tracking", url: "/batches", icon: Package },
-  { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Reports", url: "/reports", icon: FileText, requiresReports: true },
 ];
 
 const settingsNav = [
