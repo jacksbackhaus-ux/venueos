@@ -44,6 +44,7 @@ export function AppSidebar() {
   const { isHQ, orgRole, appUser } = useAuth();
   const { isSuperAdmin } = useSuperAdmin();
   const role = useRole();
+  const { currentSite, hasSelectedSite, clearSelectedSite } = useSite();
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
@@ -59,6 +60,9 @@ export function AppSidebar() {
   );
 
   const visibleSettingsNav = role.canViewSettings ? settingsNav : [];
+
+  // HQ users without an explicitly selected site only see HQ Dashboard + Account.
+  const showSiteSections = hasSelectedSite;
 
   const renderItems = (items: { title: string; url: string; icon: React.ElementType }[]) =>
     items.map((item) => (
