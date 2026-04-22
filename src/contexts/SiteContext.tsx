@@ -41,24 +41,43 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   );
   const [isLoading, setIsLoading] = useState(true);
 
-  // For staff sessions, site is fixed
   useEffect(() => {
-    if (staffSession) {
-      setCurrentSiteId(staffSession.site_id);
-      setSites([]);
-      setMemberships([]);
-      setIsLoading(false);
-      return;
-    }
+    const fetchContext = async () => {
+      // Staff kiosk sessions are locked to one site, but they still need the
+      // actual site row so the rest of the app can resolve shared site-scoped
+      // settings/config exactly like the working temperature flow does.
+      if (staffSession) {
+        setIsLoading(true);
+        setCurrentSiteId(staffSession.site_id);
 
-    if (!appUser) {
-      setSites([]);
-      setMemberships([]);
-      setIsLoading(false);
-      return;
-    }
+        const { data: siteData } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id', staffSession.site_id)
+          .maybeSingle();
 
-    const fetchSitesAndMemberships = async () => {
+        setSites(siteData ? [siteData as Site] : []);
+        setMemberships([
+          {
+            id: `staff-session-${staffSession.user_id}`,
+            site_id: staffSession.site_id,
+            user_id: staffSession.user_id,
+            site_role: staffSession.site_role as Membership['site_role'],
+            active: true,
+          },
+        ]);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!appUser || !isAuthenticated) {
+        setSites([]);
+        setMemberships([]);
+        setCurrentSiteId(null);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       const [sitesRes, membershipsRes] = await Promise.all([
         supabase.from('sites').select('*').eq('active', true),
@@ -67,25 +86,30 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
 
       const fetchedSites = (sitesRes.data || []) as Site[];
       const fetchedMemberships = (membershipsRes.data || []) as Membership[];
+      const accessibleSiteIds = new Set(fetchedSites.map((site) => site.id));
+
       setSites(fetchedSites);
       setMemberships(fetchedMemberships);
 
-      // Auto-select site if only one
-      if (!currentSiteId && fetchedSites.length === 1) {
-        setCurrentSiteId(fetchedSites[0].id);
-      } else if (!currentSiteId && fetchedMemberships.length === 1) {
-        setCurrentSiteId(fetchedMemberships[0].site_id);
+      // If the stored site belongs to a previous user/session, reset it to a
+      // site this user can actually access so shared site-scoped data loads.
+      if (!currentSiteId || !accessibleSiteIds.has(currentSiteId)) {
+        const fallbackSiteId = fetchedMemberships[0]?.site_id || fetchedSites[0]?.id || null;
+        setCurrentSiteId(fallbackSiteId);
       }
+
       setIsLoading(false);
     };
 
-    fetchSitesAndMemberships();
-  }, [appUser, staffSession]);
+    fetchContext();
+  }, [appUser, staffSession, isAuthenticated, currentSiteId]);
 
   // Persist current site
   useEffect(() => {
     if (currentSiteId) {
       localStorage.setItem('current_site_id', currentSiteId);
+    } else {
+      localStorage.removeItem('current_site_id');
     }
   }, [currentSiteId]);
 
