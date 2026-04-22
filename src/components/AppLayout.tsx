@@ -7,8 +7,12 @@ import {
   ClipboardList,
   SprayCan,
   MoreHorizontal,
+  MapPin,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useSite } from "@/contexts/SiteContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 const mobileNav = [
   { title: "Home", url: "/", icon: LayoutDashboard },
