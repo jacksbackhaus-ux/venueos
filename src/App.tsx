@@ -111,10 +111,10 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <PaymentTestModeBanner />
       <BrowserRouter>
         <AuthProvider>
           <SiteProvider>
+            <PaymentTestModeBanner />
             <AppRoutes />
           </SiteProvider>
         </AuthProvider>
