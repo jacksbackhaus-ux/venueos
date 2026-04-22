@@ -109,24 +109,60 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Daily Operations</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>{renderItems(mainNav)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {showSiteSections && currentSite && !collapsed && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Viewing Site</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <div className="mx-2 rounded-md border border-primary/20 bg-primary/5 p-2 flex items-start gap-2">
+                <MapPin className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-foreground truncate">{currentSite.name}</p>
+                  {isHQ && (
+                    <button
+                      onClick={clearSelectedSite}
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline mt-0.5"
+                    >
+                      Switch site
+                    </button>
+                  )}
+                </div>
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Compliance</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>{renderItems(complianceNav)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {showSiteSections && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel>Daily Operations</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>{renderItems(mainNav)}</SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-        {visibleSettingsNav.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Compliance</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>{renderItems(complianceNav)}</SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            {visibleSettingsNav.length > 0 && (
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>{renderItems(visibleSettingsNav)}</SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </>
+        )}
+
+        {!showSiteSections && isHQ && (
           <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu>{renderItems(visibleSettingsNav)}</SidebarMenu>
+              <p className="text-[11px] text-muted-foreground px-3 py-2 leading-relaxed">
+                Select a site from the HQ Dashboard to view daily operations and compliance.
+              </p>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
