@@ -47,19 +47,25 @@ export function AppSidebar() {
   const { isSuperAdmin } = useSuperAdmin();
   const role = useRole();
   const { currentSite, hasSelectedSite, clearSelectedSite } = useSite();
+  const { tier } = useOrgAccess();
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
+  // Hide nav items the current tier doesn't include. (No tier yet during trial = show all.)
+  const allowed = (mod: string) => !tier || TIERS[tier].allowedModules.has(mod);
+
+  const mainNav = mainNavAll.filter((i) => allowed(i.mod));
+
   const hqNav = [
-    ...(isHQ && role.isManager ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
+    ...(isHQ && role.isManager && allowed("hq") ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
     ...(orgRole?.org_role === 'org_owner' ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
   ];
 
-  const complianceNav = complianceNavAll.filter(
-    (item) => !item.requiresReports || role.canViewReports
-  );
+  const complianceNav = complianceNavAll
+    .filter((item) => !item.requiresReports || role.canViewReports)
+    .filter((item) => allowed(item.mod));
 
   const visibleSettingsNav = role.canViewSettings ? settingsNav : [];
 
