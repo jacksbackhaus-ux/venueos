@@ -857,16 +857,28 @@ const Settings = () => {
                         </Badge>
                       )}
                       {s.active ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          disabled={!canManageStaff || s.id === appUser?.id}
-                          onClick={() => setConfirmDeactivate(s)}
-                          title={s.id === appUser?.id ? "You can't deactivate yourself" : "Deactivate"}
-                        >
-                          <UserX className="h-3.5 w-3.5" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            disabled={!canManageStaff}
+                            onClick={() => openEditStaff(s)}
+                            title="Edit staff member"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={!canManageStaff || s.id === appUser?.id}
+                            onClick={() => setConfirmDeactivate(s)}
+                            title={s.id === appUser?.id ? "You can't deactivate yourself" : "Deactivate"}
+                          >
+                            <UserX className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           variant="ghost"
