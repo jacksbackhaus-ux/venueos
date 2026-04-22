@@ -1379,6 +1379,78 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
 
+      {/* ─── Edit Staff Dialog ─── */}
+      <Dialog open={!!editStaff} onOpenChange={(o) => !o && setEditStaff(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Edit Staff Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm">Full name</Label>
+              <Input
+                placeholder="e.g. Jane Smith"
+                value={editStaffForm.name}
+                onChange={(e) => setEditStaffForm((f) => ({ ...f, name: e.target.value }))}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Historical records keep the previous name attached.
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm">Employee ID / PIN (kiosk login)</Label>
+              <Input
+                type="text"
+                maxLength={12}
+                placeholder="e.g. J01"
+                value={editStaffForm.staffId}
+                onChange={(e) =>
+                  setEditStaffForm((f) => ({
+                    ...f,
+                    staffId: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 12),
+                  }))
+                }
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Letters, numbers and dashes. Used as their PIN to sign in on the kiosk. Must be unique within your organisation.
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm">Role / access level</Label>
+              <Select
+                value={editStaffForm.role}
+                onValueChange={(v: StaffMember["role"]) => setEditStaffForm((f) => ({ ...f, role: v }))}
+                disabled={!isOwner}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="readonly">Read-only (EHO)</SelectItem>
+                </SelectContent>
+              </Select>
+              {!isOwner && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Only the Owner can change a staff member's access level.
+                </p>
+              )}
+              {isOwner && editStaff && editStaffForm.role !== editStaff.role && (
+                <p className="text-[11px] text-warning mt-1">
+                  New permissions take effect at their next login.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditStaff(null)} disabled={savingStaffEdit}>Cancel</Button>
+            <Button onClick={saveStaffEdit} disabled={savingStaffEdit || !editStaffForm.name.trim()}>
+              <Save className="h-3 w-3 mr-1" /> {savingStaffEdit ? "Saving…" : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ─── Confirm Deactivate Staff ─── */}
       <AlertDialog open={!!confirmDeactivate} onOpenChange={(o) => !o && setConfirmDeactivate(null)}>
         <AlertDialogContent>
