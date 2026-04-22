@@ -56,11 +56,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(true);
 
   const fetchAppUser = useCallback(async (authUserId: string) => {
+    // Only email-auth users count as "app users". Staff PIN logins are also
+    // backed by an anonymous Supabase session linked to a staff_code row, but
+    // those should remain as staffSession only — not be promoted to appUser.
     const { data } = await supabase
       .from('users')
       .select('*')
       .eq('auth_user_id', authUserId)
       .eq('status', 'active')
+      .eq('auth_type', 'email')
       .maybeSingle();
 
     const appUserData = data as AppUser | null;

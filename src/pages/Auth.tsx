@@ -282,31 +282,46 @@ function StaffLoginForm() {
     }
 
     setLoading(true);
-    const { data, error } = await supabase.rpc('validate_staff_code', {
-      _site_id: siteCode.trim(),
-      _staff_code: staffCode.trim(),
-    });
-    setLoading(false);
 
-    if (error) {
-      toast.error("Login failed. Check your codes.");
+    const failAttempt = (msg: string) => {
+      toast.error(msg);
       setAttempts(a => a + 1);
       if (attempts >= 4) {
         setLockedUntil(Date.now() + 30000);
         setAttempts(0);
         toast.error("Too many failed attempts. Locked for 30 seconds.");
       }
+    };
+
+    // Step 1: ensure we have a Supabase auth session (anonymous) so RLS works.
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      const { error: anonErr } = await supabase.auth.signInAnonymously();
+      if (anonErr) {
+        setLoading(false);
+        failAttempt("Could not start session. Please try again.");
+        return;
+      }
+    }
+
+    // Step 2: validate the PIN AND link this anon session to the staff user row.
+    const { data, error } = await supabase.rpc('link_staff_session', {
+      _site_id: siteCode.trim(),
+      _staff_code: staffCode.trim(),
+    });
+    setLoading(false);
+
+    if (error) {
+      // Roll back the anon session so we don't leave a half-logged-in user.
+      await supabase.auth.signOut();
+      failAttempt("Login failed. Check your codes.");
       return;
     }
 
     const result = data as { valid: boolean; error?: string; user_id?: string; display_name?: string; site_role?: string; organisation_id?: string; site_id?: string };
     if (!result.valid) {
-      toast.error(result.error || "Invalid credentials");
-      setAttempts(a => a + 1);
-      if (attempts >= 4) {
-        setLockedUntil(Date.now() + 30000);
-        setAttempts(0);
-      }
+      await supabase.auth.signOut();
+      failAttempt(result.error || "Invalid credentials");
       return;
     }
 
