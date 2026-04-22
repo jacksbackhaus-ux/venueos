@@ -28,6 +28,13 @@ interface SiteContextType {
   setCurrentSiteId: (id: string) => void;
   isLoading: boolean;
   organisationId: string | null;
+  /**
+   * True when the current user has a site context to operate in:
+   * - Site-membership users: always true once their membership loads
+   * - HQ users (no site membership): only true after they explicitly pick a site
+   */
+  hasSelectedSite: boolean;
+  clearSelectedSite: () => void;
 }
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
