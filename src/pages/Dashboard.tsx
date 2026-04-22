@@ -78,11 +78,15 @@ const Dashboard = () => {
   const role = currentMembership?.site_role || staffSession?.site_role;
   const canCloseDay = role === "owner" || role === "supervisor";
 
+  const minDate = currentSite?.created_at?.slice(0, 10);
+  const isAtFloor = !!minDate && selectedDate <= minDate;
+
   const shiftDate = (days: number) => {
     const d = new Date(`${selectedDate}T12:00:00`);
     d.setDate(d.getDate() + days);
     const next = d.toISOString().slice(0, 10);
     if (next > todayStr) return;
+    if (minDate && next < minDate) return;
     setSelectedDate(next);
   };
 
@@ -383,6 +387,7 @@ const Dashboard = () => {
             size="sm"
             className="h-8 px-2"
             onClick={() => shiftDate(-1)}
+            disabled={isAtFloor}
             aria-label="Previous day"
           >
             <ChevronLeft className="h-4 w-4" />
