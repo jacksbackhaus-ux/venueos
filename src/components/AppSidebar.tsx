@@ -4,6 +4,7 @@ import {
   Package, Building2, CreditCard,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useRole } from "@/hooks/useRole";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,13 +22,13 @@ const mainNav = [
   { title: "Cleaning", url: "/cleaning", icon: SprayCan },
 ];
 
-const complianceNav = [
+const complianceNavAll: { title: string; url: string; icon: React.ElementType; requiresReports?: boolean }[] = [
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat },
   { title: "Suppliers", url: "/suppliers", icon: Truck },
   { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle },
   { title: "Batch Tracking", url: "/batches", icon: Package },
-  { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Reports", url: "/reports", icon: FileText, requiresReports: true },
 ];
 
 const settingsNav = [
@@ -40,15 +41,22 @@ export function AppSidebar() {
   const location = useLocation();
   const { isHQ, orgRole, appUser } = useAuth();
   const { isSuperAdmin } = useSuperAdmin();
+  const role = useRole();
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
   const hqNav = [
-    ...(isHQ ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
+    ...(isHQ && role.isManager ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
     ...(orgRole?.org_role === 'org_owner' ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
   ];
+
+  const complianceNav = complianceNavAll.filter(
+    (item) => !item.requiresReports || role.canViewReports
+  );
+
+  const visibleSettingsNav = role.canViewSettings ? settingsNav : [];
 
   const renderItems = (items: { title: string; url: string; icon: React.ElementType }[]) =>
     items.map((item) => (
@@ -109,11 +117,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>{renderItems(settingsNav)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleSettingsNav.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderItems(visibleSettingsNav)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">

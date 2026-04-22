@@ -1996,6 +1996,7 @@ export type Database = {
       has_hq_access: { Args: { _org_id: string }; Returns: boolean }
       has_site_access: { Args: { _site_id: string }; Returns: boolean }
       has_site_membership: { Args: { _site_id: string }; Returns: boolean }
+      has_site_write_access: { Args: { _site_id: string }; Returns: boolean }
       is_org_owner: { Args: { _org_id: string }; Returns: boolean }
       is_site_supervisor_or_owner: {
         Args: { _site_id: string }
