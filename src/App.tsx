@@ -27,6 +27,7 @@ import Settings from "./pages/Settings";
 import More from "./pages/More";
 import NotFound from "./pages/NotFound";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { RoleGuard } from "@/components/RoleGuard";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -94,12 +95,12 @@ function AppRoutes() {
       <Route path="/suppliers" element={<AuthGuard><AppLayout><Suppliers /></AppLayout></AuthGuard>} />
       <Route path="/pest-maintenance" element={<AuthGuard><AppLayout><PestMaintenance /></AppLayout></AuthGuard>} />
       <Route path="/incidents" element={<AuthGuard><AppLayout><Incidents /></AppLayout></AuthGuard>} />
-      <Route path="/reports" element={<AuthGuard><AppLayout><Reports /></AppLayout></AuthGuard>} />
+      <Route path="/reports" element={<AuthGuard><AppLayout><RoleGuard require="viewReports" inline><Reports /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/batches" element={<AuthGuard><AppLayout><Batches /></AppLayout></AuthGuard>} />
-      <Route path="/hq" element={<AuthGuard><AppLayout><HQDashboard /></AppLayout></AuthGuard>} />
-      <Route path="/account" element={<AuthGuard><AppLayout><Account /></AppLayout></AuthGuard>} />
-      <Route path="/admin" element={<AuthGuard><AppLayout><Admin /></AppLayout></AuthGuard>} />
-      <Route path="/settings" element={<AuthGuard><AppLayout><Settings /></AppLayout></AuthGuard>} />
+      <Route path="/hq" element={<AuthGuard><AppLayout><RoleGuard require="manager" inline><HQDashboard /></RoleGuard></AppLayout></AuthGuard>} />
+      <Route path="/account" element={<AuthGuard><AppLayout><RoleGuard require="manageBilling" inline><Account /></RoleGuard></AppLayout></AuthGuard>} />
+      <Route path="/admin" element={<AuthGuard><AppLayout><RoleGuard require="viewAdmin" inline><Admin /></RoleGuard></AppLayout></AuthGuard>} />
+      <Route path="/settings" element={<AuthGuard><AppLayout><RoleGuard require="viewSettings" inline><Settings /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/more" element={<AuthGuard><AppLayout><More /></AppLayout></AuthGuard>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
