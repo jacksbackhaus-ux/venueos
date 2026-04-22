@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSite } from "@/contexts/SiteContext";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
 
@@ -37,6 +38,7 @@ const accountItems: NavItem[] = [
 
 export default function More() {
   const { isHQ, orgRole } = useAuth();
+  const { hasSelectedSite } = useSite();
   const { isSuperAdmin } = useSuperAdmin();
   const role = useRole();
 
@@ -48,8 +50,12 @@ export default function More() {
     return false;
   };
 
-  const visibleItems = items.filter((i) => allowed(i.requires));
-  const visibleAccount = accountItems.filter((i) => allowed(i.requires));
+  // HQ users without a selected site should not see site-scoped modules/settings.
+  const visibleItems = hasSelectedSite ? items.filter((i) => allowed(i.requires)) : [];
+  const visibleAccount = accountItems.filter((i) => {
+    if (i.requires === 'settings' && !hasSelectedSite) return false;
+    return allowed(i.requires);
+  });
 
   return (
     <div className="p-4 space-y-5 max-w-2xl mx-auto">
