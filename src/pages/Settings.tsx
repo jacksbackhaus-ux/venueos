@@ -188,11 +188,12 @@ const Settings = () => {
     setBakeryName(currentSite.name || "");
     setBakeryAddress(currentSite.address || "");
 
-    const [unitsRes, cleaningRes, sectionsRes, usersRes] = await Promise.all([
+    const [unitsRes, cleaningRes, sectionsRes, usersRes, membershipsRes] = await Promise.all([
       supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('users').select('id, display_name, email, status, auth_type, staff_code').eq('organisation_id', currentSite.organisation_id),
+      supabase.from('memberships').select('user_id, site_role, active').eq('site_id', currentSite.id),
     ]);
 
     if (unitsRes.data) {
@@ -215,11 +216,24 @@ const Settings = () => {
       setDaySheetChecks(checks);
     }
     if (usersRes.data) {
+      const memMap = new Map<string, string>();
+      (membershipsRes.data || []).forEach((m: any) => {
+        if (m.active) memMap.set(m.user_id, m.site_role);
+      });
+      const mapSiteRoleToStaffRole = (sr: string | undefined): StaffMember["role"] => {
+        switch (sr) {
+          case 'owner': return 'owner';
+          case 'supervisor': return 'supervisor';
+          case 'read_only': return 'readonly';
+          case 'staff':
+          default: return 'staff';
+        }
+      };
       setStaff(usersRes.data.map((u: any) => ({
         id: u.id,
         name: u.display_name,
         email: u.email || '',
-        role: u.id === appUser?.id ? 'owner' : (u.auth_type === 'staff_code' ? 'staff' : 'staff'),
+        role: mapSiteRoleToStaffRole(memMap.get(u.id)),
         active: u.status === 'active',
         pin: u.staff_code || undefined,
       })));
