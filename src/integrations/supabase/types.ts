@@ -1654,6 +1654,7 @@ export type Database = {
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"] | null
           trial_end: string | null
           updated_at: string
         }
@@ -1675,6 +1676,7 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"] | null
           trial_end?: string | null
           updated_at?: string
         }
@@ -1696,6 +1698,7 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"] | null
           trial_end?: string | null
           updated_at?: string
         }
@@ -2018,6 +2021,7 @@ export type Database = {
       batch_status: "in_progress" | "complete" | "quarantined" | "disposed"
       org_role: "org_owner" | "hq_admin" | "hq_auditor"
       site_role: "owner" | "supervisor" | "staff" | "read_only"
+      subscription_tier: "starter" | "pro" | "multisite"
       user_status: "active" | "suspended"
     }
     CompositeTypes: {
@@ -2150,6 +2154,7 @@ export const Constants = {
       batch_status: ["in_progress", "complete", "quarantined", "disposed"],
       org_role: ["org_owner", "hq_admin", "hq_auditor"],
       site_role: ["owner", "supervisor", "staff", "read_only"],
+      subscription_tier: ["starter", "pro", "multisite"],
       user_status: ["active", "suspended"],
     },
   },

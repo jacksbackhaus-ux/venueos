@@ -51,15 +51,25 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     console.error("no organisation_id in subscription metadata");
     return;
   }
-  // Tally quantities from items
+  // Tier comes from subscription metadata (set during checkout creation).
+  // Fall back to deriving from the price lookup_keys if not set.
+  let tier: string | null = sub.metadata?.tier || null;
   let siteQty = 1;
-  let hqQty = 0;
   let interval = "month";
   for (const item of sub.items?.data || []) {
     const lookup = item.price?.lookup_key || "";
     interval = item.price?.recurring?.interval || interval;
-    if (lookup.startsWith("site_")) siteQty = 1 + Number(item.quantity || 0);
-    if (lookup.startsWith("hq_")) hqQty = Number(item.quantity || 0);
+    if (!tier) {
+      if (lookup === "venueos_starter_monthly") tier = "starter";
+      else if (lookup === "venueos_pro_monthly") tier = "pro";
+      else if (lookup === "venueos_multisite_base") tier = "multisite";
+    }
+    if (lookup === "venueos_multisite_base") {
+      siteQty = Math.max(siteQty, 1 + Number(item.quantity || 1) - 1);
+    }
+    if (lookup === "venueos_multisite_extra_site") {
+      siteQty = 1 + Number(item.quantity || 0);
+    }
   }
 
   const periodStart = sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null;
@@ -75,8 +85,8 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     current_period_end: periodEnd,
     cancel_at_period_end: sub.cancel_at_period_end || false,
     site_quantity: siteQty,
-    hq_quantity: hqQty,
     environment: env,
+    ...(tier ? { tier } : {}),
     updated_at: new Date().toISOString(),
   }, { onConflict: "organisation_id" });
 }

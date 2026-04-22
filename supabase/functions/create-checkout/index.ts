@@ -3,6 +3,13 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { createStripeClient, type StripeEnv } from "../_shared/stripe.ts";
 
+// Tier → price lookup_keys
+const TIER_PRICES: Record<string, { base: string; extra?: string }> = {
+  starter:   { base: "venueos_starter_monthly" },
+  pro:       { base: "venueos_pro_monthly" },
+  multisite: { base: "venueos_multisite_base", extra: "venueos_multisite_extra_site" },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -26,11 +33,16 @@ serve(async (req) => {
     }
     const userEmail = claimsData.claims.email as string | undefined;
 
-    const { siteQuantity = 1, hqQuantity = 0, billingInterval = "month", returnUrl, environment } = await req.json();
+    const { tier, siteQuantity = 1, returnUrl, environment } = await req.json();
+    if (!tier || !TIER_PRICES[tier]) {
+      return new Response(JSON.stringify({ error: "Invalid tier" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const env = (environment || "sandbox") as StripeEnv;
     const stripe = createStripeClient(env);
 
-    // Resolve our org for this user via the app's users table
+    // Resolve org for this user
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: appUser } = await service
       .from("users")
@@ -45,23 +57,20 @@ serve(async (req) => {
     }
     const organisationId = appUser.organisation_id;
 
-    // Resolve price IDs
-    const baseKey = billingInterval === "year" ? "base_yearly" : "base_monthly";
-    const siteKey = billingInterval === "year" ? "site_yearly" : "site_monthly";
-    const hqKey = billingInterval === "year" ? "hq_yearly" : "hq_monthly";
-
-    const lookupKeys = [baseKey];
+    const lookupKeys = [TIER_PRICES[tier].base];
     const extraSites = Math.max(0, Number(siteQuantity) - 1);
-    if (extraSites > 0) lookupKeys.push(siteKey);
-    if (hqQuantity > 0) lookupKeys.push(hqKey);
+    if (tier === "multisite" && extraSites > 0 && TIER_PRICES[tier].extra) {
+      lookupKeys.push(TIER_PRICES[tier].extra!);
+    }
 
     const priceList = await stripe.prices.list({ lookup_keys: lookupKeys });
     const priceMap: Record<string, string> = {};
-    priceList.data.forEach(p => { if (p.lookup_key) priceMap[p.lookup_key] = p.id; });
+    priceList.data.forEach((p) => { if (p.lookup_key) priceMap[p.lookup_key] = p.id; });
 
-    const lineItems: any[] = [{ price: priceMap[baseKey], quantity: 1 }];
-    if (extraSites > 0) lineItems.push({ price: priceMap[siteKey], quantity: extraSites });
-    if (hqQuantity > 0) lineItems.push({ price: priceMap[hqKey], quantity: Number(hqQuantity) });
+    const lineItems: any[] = [{ price: priceMap[TIER_PRICES[tier].base], quantity: 1 }];
+    if (tier === "multisite" && extraSites > 0 && TIER_PRICES[tier].extra) {
+      lineItems.push({ price: priceMap[TIER_PRICES[tier].extra!], quantity: extraSites });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -69,8 +78,10 @@ serve(async (req) => {
       line_items: lineItems,
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       ...(userEmail && { customer_email: userEmail }),
-      metadata: { organisation_id: organisationId, billing_interval: billingInterval },
-      subscription_data: { metadata: { organisation_id: organisationId, billing_interval: billingInterval } },
+      metadata: { organisation_id: organisationId, tier },
+      subscription_data: {
+        metadata: { organisation_id: organisationId, tier },
+      },
     });
 
     return new Response(JSON.stringify({ clientSecret: session.client_secret }), {
