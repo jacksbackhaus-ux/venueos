@@ -16,25 +16,40 @@ import {
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useRole } from "@/hooks/useRole";
 
-const items = [
+type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; requires?: 'reports' | 'settings' | 'billing' };
+
+const items: NavItem[] = [
   { to: "/shifts", label: "Shifts", desc: "Assign staff & shift tasks", icon: Calendar },
   { to: "/allergens", label: "Allergens & Recipes", desc: "Recipes, ingredients, PPDS labels", icon: Wheat },
   { to: "/suppliers", label: "Suppliers & Deliveries", desc: "Approved suppliers and delivery logs", icon: Truck },
   { to: "/pest-maintenance", label: "Pest & Maintenance", desc: "Pest sightings and maintenance jobs", icon: Bug },
   { to: "/incidents", label: "Incidents", desc: "Report and investigate non-conformances", icon: AlertTriangle },
   { to: "/batches", label: "Batches", desc: "Production batch traceability", icon: Package },
-  { to: "/reports", label: "Reports", desc: "Inspection-ready exports", icon: FileBarChart },
+  { to: "/reports", label: "Reports", desc: "Inspection-ready exports", icon: FileBarChart, requires: 'reports' },
 ];
 
-const accountItems = [
-  { to: "/account", label: "Account", desc: "Subscription & billing", icon: User },
-  { to: "/settings", label: "Settings", desc: "Site, users, modules", icon: SettingsIcon },
+const accountItems: NavItem[] = [
+  { to: "/account", label: "Account", desc: "Subscription & billing", icon: User, requires: 'billing' },
+  { to: "/settings", label: "Settings", desc: "Site, users, modules", icon: SettingsIcon, requires: 'settings' },
 ];
 
 export default function More() {
   const { isHQ, orgRole } = useAuth();
   const { isSuperAdmin } = useSuperAdmin();
+  const role = useRole();
+
+  const allowed = (req?: NavItem['requires']) => {
+    if (!req) return true;
+    if (req === 'reports') return role.canViewReports;
+    if (req === 'settings') return role.canViewSettings;
+    if (req === 'billing') return role.canManageBilling;
+    return false;
+  };
+
+  const visibleItems = items.filter((i) => allowed(i.requires));
+  const visibleAccount = accountItems.filter((i) => allowed(i.requires));
 
   return (
     <div className="p-4 space-y-5 max-w-2xl mx-auto">
@@ -43,16 +58,16 @@ export default function More() {
         <p className="text-sm text-muted-foreground">All modules and settings</p>
       </div>
 
-      <Section title="Modules" items={items} />
+      {visibleItems.length > 0 && <Section title="Modules" items={visibleItems} />}
 
-      {(isHQ || orgRole) && (
+      {(isHQ || orgRole) && role.isManager && (
         <Section
           title="Organisation"
           items={[{ to: "/hq", label: "HQ Dashboard", desc: "Multi-site overview", icon: Building2 }]}
         />
       )}
 
-      <Section title="Account & Settings" items={accountItems} />
+      {visibleAccount.length > 0 && <Section title="Account & Settings" items={visibleAccount} />}
 
       {isSuperAdmin && (
         <Section
