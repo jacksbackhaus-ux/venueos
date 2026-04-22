@@ -1309,8 +1309,8 @@ const Settings = () => {
               <Select value={checkForm.section} onValueChange={(v) => setCheckForm((f) => ({ ...f, section: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Opening">Opening</SelectItem>
-                  <SelectItem value="Closing">Closing</SelectItem>
+                  <SelectItem value="Opening Checks">Opening Checks</SelectItem>
+                  <SelectItem value="Closing Checks">Closing Checks</SelectItem>
                 </SelectContent>
               </Select>
             </div>
