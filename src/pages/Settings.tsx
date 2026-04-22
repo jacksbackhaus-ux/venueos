@@ -162,6 +162,15 @@ const Settings = () => {
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "", staffId: "" });
   const [staffView, setStaffView] = useState<"active" | "deactivated">("active");
   const [confirmDeactivate, setConfirmDeactivate] = useState<StaffMember | null>(null);
+  const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
+  const [editStaffForm, setEditStaffForm] = useState({ name: "", staffId: "", pin: "", role: "staff" as StaffMember["role"] });
+  const [savingStaffEdit, setSavingStaffEdit] = useState(false);
+
+  // Owner-only ability to change role/access level
+  const isOwner =
+    orgRole?.org_role === 'org_owner' ||
+    currentMembership?.site_role === 'owner' ||
+    staffSession?.site_role === 'owner';
 
   // Site/business state — populated from currentSite once loaded
   const [bakeryName, setBakeryName] = useState("");
@@ -179,11 +188,12 @@ const Settings = () => {
     setBakeryName(currentSite.name || "");
     setBakeryAddress(currentSite.address || "");
 
-    const [unitsRes, cleaningRes, sectionsRes, usersRes] = await Promise.all([
+    const [unitsRes, cleaningRes, sectionsRes, usersRes, membershipsRes] = await Promise.all([
       supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('users').select('id, display_name, email, status, auth_type, staff_code').eq('organisation_id', currentSite.organisation_id),
+      supabase.from('memberships').select('user_id, site_role, active').eq('site_id', currentSite.id),
     ]);
 
     if (unitsRes.data) {
@@ -206,11 +216,24 @@ const Settings = () => {
       setDaySheetChecks(checks);
     }
     if (usersRes.data) {
+      const memMap = new Map<string, string>();
+      (membershipsRes.data || []).forEach((m: any) => {
+        if (m.active) memMap.set(m.user_id, m.site_role);
+      });
+      const mapSiteRoleToStaffRole = (sr: string | undefined): StaffMember["role"] => {
+        switch (sr) {
+          case 'owner': return 'owner';
+          case 'supervisor': return 'supervisor';
+          case 'read_only': return 'readonly';
+          case 'staff':
+          default: return 'staff';
+        }
+      };
       setStaff(usersRes.data.map((u: any) => ({
         id: u.id,
         name: u.display_name,
         email: u.email || '',
-        role: u.id === appUser?.id ? 'owner' : (u.auth_type === 'staff_code' ? 'staff' : 'staff'),
+        role: mapSiteRoleToStaffRole(memMap.get(u.id)),
         active: u.status === 'active',
         pin: u.staff_code || undefined,
       })));
@@ -438,6 +461,76 @@ const Settings = () => {
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
     toast.success(active ? "Staff member reactivated — PIN login restored" : "Staff member deactivated — PIN login revoked. Their historical records are preserved.");
+  };
+
+  const openEditStaff = (s: StaffMember) => {
+    setEditStaff(s);
+    setEditStaffForm({ name: s.name, staffId: s.pin || "", pin: s.pin || "", role: s.role });
+  };
+
+  const saveStaffEdit = async () => {
+    if (!editStaff || !currentSite) return;
+    if (!canManageStaff) { toast.error("You don't have permission to edit staff."); return; }
+
+    const newName = editStaffForm.name.trim();
+    if (!newName) { toast.error("Name is required."); return; }
+
+    const newStaffId = editStaffForm.staffId.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (!newStaffId) { toast.error("Staff ID / PIN cannot be empty."); return; }
+
+    setSavingStaffEdit(true);
+    try {
+      const { error: userErr } = await supabase
+        .from('users')
+        .update({ display_name: newName, staff_code: newStaffId })
+        .eq('id', editStaff.id);
+      if (userErr) {
+        if ((userErr as any).code === '23505') {
+          toast.error(`Staff ID "${newStaffId}" is already in use. Choose a different one.`);
+        } else {
+          toast.error(userErr.message);
+        }
+        setSavingStaffEdit(false);
+        return;
+      }
+
+      // Role/access level — Owner only
+      if (isOwner && editStaffForm.role !== editStaff.role) {
+        const newSiteRole =
+          editStaffForm.role === 'owner' ? 'owner' :
+          editStaffForm.role === 'supervisor' ? 'supervisor' :
+          editStaffForm.role === 'readonly' ? 'read_only' :
+          'staff';
+
+        const { data: existingMem } = await supabase
+          .from('memberships')
+          .select('id')
+          .eq('site_id', currentSite.id)
+          .eq('user_id', editStaff.id)
+          .maybeSingle();
+
+        if (existingMem?.id) {
+          const { error: memErr } = await supabase
+            .from('memberships')
+            .update({ site_role: newSiteRole as any, active: true })
+            .eq('id', existingMem.id);
+          if (memErr) { toast.error(`Role update failed: ${memErr.message}`); setSavingStaffEdit(false); return; }
+        } else {
+          const { error: memErr } = await supabase
+            .from('memberships')
+            .insert({ site_id: currentSite.id, user_id: editStaff.id, site_role: newSiteRole as any, active: true });
+          if (memErr) { toast.error(`Role assignment failed: ${memErr.message}`); setSavingStaffEdit(false); return; }
+        }
+      }
+
+      toast.success("Staff member updated. Changes apply on their next login. Historical records keep their previous name.");
+      setEditStaff(null);
+      setSavingStaffEdit(false);
+      loadAll();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update staff member.");
+      setSavingStaffEdit(false);
+    }
   };
 
   // ─── Site info save ───
@@ -764,16 +857,28 @@ const Settings = () => {
                         </Badge>
                       )}
                       {s.active ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          disabled={!canManageStaff || s.id === appUser?.id}
-                          onClick={() => setConfirmDeactivate(s)}
-                          title={s.id === appUser?.id ? "You can't deactivate yourself" : "Deactivate"}
-                        >
-                          <UserX className="h-3.5 w-3.5" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            disabled={!canManageStaff}
+                            onClick={() => openEditStaff(s)}
+                            title="Edit staff member"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={!canManageStaff || s.id === appUser?.id}
+                            onClick={() => setConfirmDeactivate(s)}
+                            title={s.id === appUser?.id ? "You can't deactivate yourself" : "Deactivate"}
+                          >
+                            <UserX className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           variant="ghost"
@@ -1269,6 +1374,78 @@ const Settings = () => {
             <Button variant="outline" onClick={() => setShowAddStaff(false)}>Cancel</Button>
             <Button disabled={!staffForm.name} onClick={saveStaff}>
               <Save className="h-3 w-3 mr-1" /> Add Staff
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Edit Staff Dialog ─── */}
+      <Dialog open={!!editStaff} onOpenChange={(o) => !o && setEditStaff(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Edit Staff Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm">Full name</Label>
+              <Input
+                placeholder="e.g. Jane Smith"
+                value={editStaffForm.name}
+                onChange={(e) => setEditStaffForm((f) => ({ ...f, name: e.target.value }))}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Historical records keep the previous name attached.
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm">Employee ID / PIN (kiosk login)</Label>
+              <Input
+                type="text"
+                maxLength={12}
+                placeholder="e.g. J01"
+                value={editStaffForm.staffId}
+                onChange={(e) =>
+                  setEditStaffForm((f) => ({
+                    ...f,
+                    staffId: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 12),
+                  }))
+                }
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Letters, numbers and dashes. Used as their PIN to sign in on the kiosk. Must be unique within your organisation.
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm">Role / access level</Label>
+              <Select
+                value={editStaffForm.role}
+                onValueChange={(v: StaffMember["role"]) => setEditStaffForm((f) => ({ ...f, role: v }))}
+                disabled={!isOwner}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="readonly">Read-only (EHO)</SelectItem>
+                </SelectContent>
+              </Select>
+              {!isOwner && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Only the Owner can change a staff member's access level.
+                </p>
+              )}
+              {isOwner && editStaff && editStaffForm.role !== editStaff.role && (
+                <p className="text-[11px] text-warning mt-1">
+                  New permissions take effect at their next login.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditStaff(null)} disabled={savingStaffEdit}>Cancel</Button>
+            <Button onClick={saveStaffEdit} disabled={savingStaffEdit || !editStaffForm.name.trim()}>
+              <Save className="h-3 w-3 mr-1" /> {savingStaffEdit ? "Saving…" : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
