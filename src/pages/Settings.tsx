@@ -162,6 +162,15 @@ const Settings = () => {
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "", staffId: "" });
   const [staffView, setStaffView] = useState<"active" | "deactivated">("active");
   const [confirmDeactivate, setConfirmDeactivate] = useState<StaffMember | null>(null);
+  const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
+  const [editStaffForm, setEditStaffForm] = useState({ name: "", staffId: "", pin: "", role: "staff" as StaffMember["role"] });
+  const [savingStaffEdit, setSavingStaffEdit] = useState(false);
+
+  // Owner-only ability to change role/access level
+  const isOwner =
+    orgRole?.org_role === 'org_owner' ||
+    currentMembership?.site_role === 'owner' ||
+    staffSession?.site_role === 'owner';
 
   // Site/business state — populated from currentSite once loaded
   const [bakeryName, setBakeryName] = useState("");
