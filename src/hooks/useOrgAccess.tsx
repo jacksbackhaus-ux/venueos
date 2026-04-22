@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { TIERS, type Tier } from "@/lib/tiers";
 
 export interface OrgSubscription {
   id: string;
@@ -14,6 +15,7 @@ export interface OrgSubscription {
   site_quantity: number;
   hq_quantity: number;
   stripe_customer_id: string | null;
+  tier: Tier | null;
 }
 
 /** Returns the org's subscription row + a derived hasAccess flag. */
@@ -51,13 +53,23 @@ export function useOrgAccess() {
     (!subscription.comped_until || new Date(subscription.comped_until).getTime() > now);
   const trialActive = subscription?.status === "trialing" &&
     !!subscription.trial_end && new Date(subscription.trial_end).getTime() > now;
+  const trialExpired = subscription?.status === "trialing" &&
+    !!subscription.trial_end && new Date(subscription.trial_end).getTime() <= now;
   const paidActive = ["active", "trialing"].includes(subscription?.status || "") &&
+    !trialExpired &&
     (!subscription?.current_period_end || new Date(subscription.current_period_end).getTime() > now);
 
-  const hasAccess = compedActive || trialActive || paidActive;
+  const hasAccess = compedActive || (trialActive && !trialExpired) || (paidActive && subscription?.status === "active");
   const trialDaysLeft = subscription?.trial_end
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - now) / 86400000))
     : null;
 
-  return { subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft, refresh };
+  // Tier — null until the user picks one.
+  const tier: Tier | null = subscription?.tier ?? null;
+  const tierDef = tier ? TIERS[tier] : null;
+
+  return {
+    subscription, loading, hasAccess, compedActive, trialActive, trialExpired,
+    trialDaysLeft, refresh, tier, tierDef,
+  };
 }
