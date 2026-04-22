@@ -154,7 +154,7 @@ const Settings = () => {
   // Day Sheet state
   const [daySheetChecks, setDaySheetChecks] = useState<DaySheetCheck[]>(defaultDaySheetChecks);
   const [showAddCheck, setShowAddCheck] = useState(false);
-  const [checkForm, setCheckForm] = useState({ section: "Opening", label: "" });
+  const [checkForm, setCheckForm] = useState({ section: "Opening Checks", label: "" });
 
   // Staff state
   const [staff, setStaff] = useState<StaffMember[]>(defaultStaff);
@@ -357,9 +357,9 @@ const Settings = () => {
         site_id: currentSite.id,
         organisation_id: organisationId,
         title: checkForm.section,
-        default_time: checkForm.section === 'Opening' ? '07:00' : '18:00',
-        icon: checkForm.section === 'Opening' ? 'Sunrise' : 'Moon',
-        sort_order: checkForm.section === 'Opening' ? 1 : 2,
+        default_time: checkForm.section.startsWith('Opening') ? '07:00' : '18:00',
+        icon: checkForm.section.startsWith('Opening') ? 'Sunrise' : 'Moon',
+        sort_order: checkForm.section.startsWith('Opening') ? 1 : 2,
       }).select('id').single();
       if (secErr) { toast.error(secErr.message); return; }
       sectionId = created!.id;
@@ -374,7 +374,7 @@ const Settings = () => {
     if (error) { toast.error(error.message); return; }
     toast.success("Check added");
     setShowAddCheck(false);
-    setCheckForm({ section: "Opening", label: "" });
+    setCheckForm({ section: "Opening Checks", label: "" });
     loadAll();
   };
 
