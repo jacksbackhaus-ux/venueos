@@ -2003,9 +2003,10 @@ export type Database = {
       }
       is_super_admin: { Args: never; Returns: boolean }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
-      validate_staff_code:
-        | { Args: { _site_id: string; _staff_code: string }; Returns: Json }
-        | { Args: { _site_id: string; _staff_code: string }; Returns: Json }
+      validate_staff_code: {
+        Args: { _site_id: string; _staff_code: string }
+        Returns: Json
+      }
     }
     Enums: {
       auth_type: "email" | "staff_code"
