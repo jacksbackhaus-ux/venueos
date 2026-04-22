@@ -1,13 +1,15 @@
 import {
   LayoutDashboard, CalendarClock, Thermometer, ClipboardList, SprayCan,
   Wheat, Truck, Bug, AlertTriangle, FileText, Settings, ShieldCheck,
-  Package, Building2, CreditCard,
+  Package, Building2, CreditCard, MapPin, X,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSite } from "@/contexts/SiteContext";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
