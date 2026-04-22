@@ -733,11 +733,11 @@ const Settings = () => {
             </Button>
           </div>
 
-          {["Opening", "Closing"].map((section) => {
+          {Array.from(new Set(daySheetChecks.map((c) => c.section))).map((section) => {
             const checks = daySheetChecks.filter((c) => c.section === section);
             return (
               <div key={section}>
-                <h3 className="font-heading font-semibold text-xs uppercase text-muted-foreground mb-2">{section} Checks</h3>
+                <h3 className="font-heading font-semibold text-xs uppercase text-muted-foreground mb-2">{section}</h3>
                 <div className="space-y-2">
                   {checks.map((c) => (
                     <Card key={c.id} className={!c.active ? "opacity-50" : ""}>
