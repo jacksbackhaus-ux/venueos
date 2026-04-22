@@ -463,6 +463,76 @@ const Settings = () => {
     toast.success(active ? "Staff member reactivated — PIN login restored" : "Staff member deactivated — PIN login revoked. Their historical records are preserved.");
   };
 
+  const openEditStaff = (s: StaffMember) => {
+    setEditStaff(s);
+    setEditStaffForm({ name: s.name, staffId: s.pin || "", pin: s.pin || "", role: s.role });
+  };
+
+  const saveStaffEdit = async () => {
+    if (!editStaff || !currentSite) return;
+    if (!canManageStaff) { toast.error("You don't have permission to edit staff."); return; }
+
+    const newName = editStaffForm.name.trim();
+    if (!newName) { toast.error("Name is required."); return; }
+
+    const newStaffId = editStaffForm.staffId.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (!newStaffId) { toast.error("Staff ID / PIN cannot be empty."); return; }
+
+    setSavingStaffEdit(true);
+    try {
+      const { error: userErr } = await supabase
+        .from('users')
+        .update({ display_name: newName, staff_code: newStaffId })
+        .eq('id', editStaff.id);
+      if (userErr) {
+        if ((userErr as any).code === '23505') {
+          toast.error(`Staff ID "${newStaffId}" is already in use. Choose a different one.`);
+        } else {
+          toast.error(userErr.message);
+        }
+        setSavingStaffEdit(false);
+        return;
+      }
+
+      // Role/access level — Owner only
+      if (isOwner && editStaffForm.role !== editStaff.role) {
+        const newSiteRole =
+          editStaffForm.role === 'owner' ? 'owner' :
+          editStaffForm.role === 'supervisor' ? 'supervisor' :
+          editStaffForm.role === 'readonly' ? 'read_only' :
+          'staff';
+
+        const { data: existingMem } = await supabase
+          .from('memberships')
+          .select('id')
+          .eq('site_id', currentSite.id)
+          .eq('user_id', editStaff.id)
+          .maybeSingle();
+
+        if (existingMem?.id) {
+          const { error: memErr } = await supabase
+            .from('memberships')
+            .update({ site_role: newSiteRole as any, active: true })
+            .eq('id', existingMem.id);
+          if (memErr) { toast.error(`Role update failed: ${memErr.message}`); setSavingStaffEdit(false); return; }
+        } else {
+          const { error: memErr } = await supabase
+            .from('memberships')
+            .insert({ site_id: currentSite.id, user_id: editStaff.id, site_role: newSiteRole as any, active: true });
+          if (memErr) { toast.error(`Role assignment failed: ${memErr.message}`); setSavingStaffEdit(false); return; }
+        }
+      }
+
+      toast.success("Staff member updated. Changes apply on their next login. Historical records keep their previous name.");
+      setEditStaff(null);
+      setSavingStaffEdit(false);
+      loadAll();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update staff member.");
+      setSavingStaffEdit(false);
+    }
+  };
+
   // ─── Site info save ───
   const saveSiteInfo = async () => {
     if (!currentSite) return;
