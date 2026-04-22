@@ -28,6 +28,13 @@ interface SiteContextType {
   setCurrentSiteId: (id: string) => void;
   isLoading: boolean;
   organisationId: string | null;
+  /**
+   * True when the current user has a site context to operate in:
+   * - Site-membership users: always true once their membership loads
+   * - HQ users (no site membership): only true after they explicitly pick a site
+   */
+  hasSelectedSite: boolean;
+  clearSelectedSite: () => void;
 }
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
@@ -36,8 +43,11 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   const { appUser, staffSession, isAuthenticated } = useAuth();
   const [sites, setSites] = useState<Site[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
-  const [currentSiteId, setCurrentSiteId] = useState<string | null>(() =>
+  const [currentSiteId, setCurrentSiteIdState] = useState<string | null>(() =>
     localStorage.getItem('current_site_id')
+  );
+  const [hqExplicitSelection, setHqExplicitSelection] = useState<boolean>(
+    () => localStorage.getItem('hq_site_selected') === 'true'
   );
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,7 +58,7 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
       // settings/config exactly like the working temperature flow does.
       if (staffSession) {
         setIsLoading(true);
-        setCurrentSiteId(staffSession.site_id);
+        setCurrentSiteIdState(staffSession.site_id);
 
         const { data: siteData } = await supabase
           .from('sites')
@@ -73,7 +83,7 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
       if (!appUser || !isAuthenticated) {
         setSites([]);
         setMemberships([]);
-        setCurrentSiteId(null);
+        setCurrentSiteIdState(null);
         setIsLoading(false);
         return;
       }
@@ -94,8 +104,8 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
       // If the stored site belongs to a previous user/session, reset it to a
       // site this user can actually access so shared site-scoped data loads.
       if (!currentSiteId || !accessibleSiteIds.has(currentSiteId)) {
-        const fallbackSiteId = fetchedMemberships[0]?.site_id || fetchedSites[0]?.id || null;
-        setCurrentSiteId(fallbackSiteId);
+        const fallbackSiteId = fetchedMemberships[0]?.site_id || null;
+        setCurrentSiteIdState(fallbackSiteId);
       }
 
       setIsLoading(false);
@@ -113,15 +123,38 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentSiteId]);
 
+  // Persist HQ explicit selection flag
+  useEffect(() => {
+    if (hqExplicitSelection) {
+      localStorage.setItem('hq_site_selected', 'true');
+    } else {
+      localStorage.removeItem('hq_site_selected');
+    }
+  }, [hqExplicitSelection]);
+
+  const setCurrentSiteId = (id: string) => {
+    setCurrentSiteIdState(id);
+    setHqExplicitSelection(true);
+  };
+
+  const clearSelectedSite = () => {
+    setHqExplicitSelection(false);
+    setCurrentSiteIdState(null);
+  };
+
   const currentSite = sites.find(s => s.id === currentSiteId) || null;
   const currentMembership = memberships.find(m => m.site_id === currentSiteId) || null;
 
   const organisationId = appUser?.organisation_id || staffSession?.organisation_id || null;
 
+  // HQ users have no site membership → require explicit selection.
+  // Site-membership users (incl. staff kiosk) always have a selected site once loaded.
+  const hasSelectedSite = !!currentMembership || (hqExplicitSelection && !!currentSite);
+
   return (
     <SiteContext.Provider value={{
       currentSite, currentMembership, sites, setCurrentSiteId,
-      isLoading, organisationId
+      isLoading, organisationId, hasSelectedSite, clearSelectedSite,
     }}>
       {children}
     </SiteContext.Provider>

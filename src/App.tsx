@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { SiteProvider } from "@/contexts/SiteContext";
+import { SiteProvider, useSite } from "@/contexts/SiteContext";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -61,6 +61,20 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * For HQ users (org_owner / hq_admin / hq_auditor) without an explicitly
+ * selected site, redirect site-scoped routes to the HQ Dashboard.
+ */
+function RequireSite({ children }: { children: React.ReactNode }) {
+  const { hasSelectedSite, isLoading } = useSite();
+  const { isHQ } = useAuth();
+  if (isLoading) return null;
+  if (isHQ && !hasSelectedSite) {
+    return <Navigate to="/hq" replace />;
+  }
+  return <>{children}</>;
+}
+
 function AuthRedirect() {
   const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
   if (isLoading) return null;
@@ -81,26 +95,30 @@ function AppRoutes() {
     );
   }
 
+  const siteRoute = (el: React.ReactNode) => (
+    <AuthGuard><AppLayout><RequireSite>{el}</RequireSite></AppLayout></AuthGuard>
+  );
+
   return (
     <Routes>
       <Route path="/auth" element={<AuthRedirect />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/" element={<AuthGuard><AppLayout><Dashboard /></AppLayout></AuthGuard>} />
-      <Route path="/shifts" element={<AuthGuard><AppLayout><Shifts /></AppLayout></AuthGuard>} />
-      <Route path="/temperatures" element={<AuthGuard><AppLayout><TemperatureTracking /></AppLayout></AuthGuard>} />
-      <Route path="/day-sheet" element={<AuthGuard><AppLayout><DaySheet /></AppLayout></AuthGuard>} />
-      <Route path="/cleaning" element={<AuthGuard><AppLayout><Cleaning /></AppLayout></AuthGuard>} />
-      <Route path="/allergens" element={<AuthGuard><AppLayout><Allergens /></AppLayout></AuthGuard>} />
-      <Route path="/suppliers" element={<AuthGuard><AppLayout><Suppliers /></AppLayout></AuthGuard>} />
-      <Route path="/pest-maintenance" element={<AuthGuard><AppLayout><PestMaintenance /></AppLayout></AuthGuard>} />
-      <Route path="/incidents" element={<AuthGuard><AppLayout><Incidents /></AppLayout></AuthGuard>} />
-      <Route path="/reports" element={<AuthGuard><AppLayout><RoleGuard require="viewReports" inline><Reports /></RoleGuard></AppLayout></AuthGuard>} />
-      <Route path="/batches" element={<AuthGuard><AppLayout><Batches /></AppLayout></AuthGuard>} />
+      <Route path="/" element={siteRoute(<Dashboard />)} />
+      <Route path="/shifts" element={siteRoute(<Shifts />)} />
+      <Route path="/temperatures" element={siteRoute(<TemperatureTracking />)} />
+      <Route path="/day-sheet" element={siteRoute(<DaySheet />)} />
+      <Route path="/cleaning" element={siteRoute(<Cleaning />)} />
+      <Route path="/allergens" element={siteRoute(<Allergens />)} />
+      <Route path="/suppliers" element={siteRoute(<Suppliers />)} />
+      <Route path="/pest-maintenance" element={siteRoute(<PestMaintenance />)} />
+      <Route path="/incidents" element={siteRoute(<Incidents />)} />
+      <Route path="/reports" element={siteRoute(<RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
+      <Route path="/batches" element={siteRoute(<Batches />)} />
       <Route path="/hq" element={<AuthGuard><AppLayout><RoleGuard require="manager" inline><HQDashboard /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/account" element={<AuthGuard><AppLayout><RoleGuard require="manageBilling" inline><Account /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/admin" element={<AuthGuard><AppLayout><RoleGuard require="viewAdmin" inline><Admin /></RoleGuard></AppLayout></AuthGuard>} />
-      <Route path="/settings" element={<AuthGuard><AppLayout><RoleGuard require="viewSettings" inline><Settings /></RoleGuard></AppLayout></AuthGuard>} />
+      <Route path="/settings" element={siteRoute(<RoleGuard require="viewSettings" inline><Settings /></RoleGuard>)} />
       <Route path="/more" element={<AuthGuard><AppLayout><More /></AppLayout></AuthGuard>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
