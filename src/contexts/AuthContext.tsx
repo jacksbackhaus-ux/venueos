@@ -43,47 +43,77 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function readStoredStaffSession(): StaffSession | null {
+  try {
+    const stored = localStorage.getItem('staff_session');
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    if (
+      parsed &&
+      typeof parsed.user_id === 'string' &&
+      typeof parsed.display_name === 'string' &&
+      typeof parsed.site_role === 'string' &&
+      typeof parsed.organisation_id === 'string' &&
+      typeof parsed.site_id === 'string'
+    ) {
+      return parsed as StaffSession;
+    }
+  } catch (error) {
+    console.error('Invalid stored staff session, clearing it.', error);
+  }
+
+  localStorage.removeItem('staff_session');
+  return null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [orgRole, setOrgRole] = useState<OrgRole | null>(null);
-  const [staffSession, setStaffSession] = useState<StaffSession | null>(() => {
-    const stored = localStorage.getItem('staff_session');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [staffSession, setStaffSession] = useState<StaffSession | null>(() => readStoredStaffSession());
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
 
   const fetchAppUser = useCallback(async (authUserId: string) => {
-    // Only email-auth users count as "app users". Staff PIN logins are also
-    // backed by an anonymous Supabase session linked to a staff_code row, but
-    // those should remain as staffSession only — not be promoted to appUser.
-    const { data } = await supabase
-      .from('users')
-      .select('*')
-      .eq('auth_user_id', authUserId)
-      .eq('status', 'active')
-      .eq('auth_type', 'email')
-      .maybeSingle();
-
-    const appUserData = data as AppUser | null;
-    if (!mountedRef.current) return appUserData;
-    setAppUser(appUserData);
-
-    if (appUserData) {
-      const { data: orgData } = await supabase
-        .from('org_users')
-        .select('org_role, organisation_id')
-        .eq('user_id', appUserData.id)
-        .eq('active', true)
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authUserId)
+        .eq('status', 'active')
+        .eq('auth_type', 'email')
         .maybeSingle();
-      if (mountedRef.current) setOrgRole(orgData as OrgRole | null);
-    } else {
-      if (mountedRef.current) setOrgRole(null);
-    }
 
-    return appUserData;
+      if (error) throw error;
+
+      const appUserData = data as AppUser | null;
+      if (!mountedRef.current) return appUserData;
+      setAppUser(appUserData);
+
+      if (appUserData) {
+        const { data: orgData, error: orgError } = await supabase
+          .from('org_users')
+          .select('org_role, organisation_id')
+          .eq('user_id', appUserData.id)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (orgError) throw orgError;
+        if (mountedRef.current) setOrgRole(orgData as OrgRole | null);
+      } else if (mountedRef.current) {
+        setOrgRole(null);
+      }
+
+      return appUserData;
+    } catch (error) {
+      console.error('Failed to hydrate authenticated app user.', error);
+      if (mountedRef.current) {
+        setAppUser(null);
+        setOrgRole(null);
+      }
+      return null;
+    }
   }, []);
 
   const refreshAppUser = useCallback(async () => {
@@ -93,34 +123,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     mountedRef.current = true;
 
-    // 1. Restore session from storage first (this processes URL tokens too)
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mountedRef.current) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchAppUser(session.user.id);
-      }
-      if (mountedRef.current) setIsLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(async ({ data: { session }, error }) => {
+        if (!mountedRef.current) return;
+        if (error) throw error;
 
-    // 2. Listen for subsequent auth changes (sign-in, sign-out, token refresh)
-    // IMPORTANT: Do NOT await async operations in this callback — it causes deadlocks
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          await fetchAppUser(session.user.id);
+        } else {
+          setAppUser(null);
+          setOrgRole(null);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to restore auth session.', error);
+        if (!mountedRef.current) return;
+        setSession(null);
+        setUser(null);
+        setAppUser(null);
+        setOrgRole(null);
+      })
+      .finally(() => {
+        if (mountedRef.current) setIsLoading(false);
+      });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (!mountedRef.current) return;
         setSession(session);
         setUser(session?.user ?? null);
+        setIsLoading(false);
 
         if (session?.user) {
-          // Fire-and-forget: fetch app user without blocking the callback
-          fetchAppUser(session.user.id).then(() => {
-            if (mountedRef.current) setIsLoading(false);
+          fetchAppUser(session.user.id).catch((error) => {
+            console.error('Failed to refresh auth state after change.', error);
           });
         } else {
           setAppUser(null);
           setOrgRole(null);
-          setIsLoading(false);
         }
       }
     );
@@ -131,7 +174,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchAppUser]);
 
-  // Persist staff session
   useEffect(() => {
     if (staffSession) {
       localStorage.setItem('staff_session', JSON.stringify(staffSession));

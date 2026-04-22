@@ -122,7 +122,15 @@ function RequireSite({ children }: { children: React.ReactNode }) {
 
 function AuthRedirect() {
   const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
-  if (isLoading) return null;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (staffSession) return <Navigate to="/" replace />;
   if (user && !user.is_anonymous && !appUser) return <Navigate to="/onboarding" replace />;
   if (isAuthenticated) return <Navigate to="/" replace />;

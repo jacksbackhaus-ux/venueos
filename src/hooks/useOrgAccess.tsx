@@ -18,7 +18,6 @@ export interface OrgSubscription {
   tier: Tier | null;
 }
 
-/** Returns the org's subscription row + a derived hasAccess flag. */
 export function useOrgAccess() {
   const { appUser, staffSession } = useAuth();
   const orgId = appUser?.organisation_id || staffSession?.organisation_id || null;
@@ -26,26 +25,55 @@ export function useOrgAccess() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!orgId) { setLoading(false); return; }
-    setLoading(true);
-    const { data } = await supabase.from("subscriptions")
-      .select("*").eq("organisation_id", orgId).maybeSingle();
-    setSubscription(data as OrgSubscription | null);
-    setLoading(false);
+    if (!orgId) {
+      setSubscription(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("organisation_id", orgId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setSubscription(data as OrgSubscription | null);
+    } catch (error) {
+      console.error("Failed to load subscription state.", error);
+      setSubscription(null);
+    } finally {
+      setLoading(false);
+    }
   }, [orgId]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
-  // Realtime updates
   useEffect(() => {
     if (!orgId) return;
-    const channel = supabase.channel(`sub-${orgId}`)
-      .on("postgres_changes", {
-        event: "*", schema: "public", table: "subscriptions",
-        filter: `organisation_id=eq.${orgId}`,
-      }, () => refresh())
+    const channel = supabase
+      .channel(`sub-${orgId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "subscriptions",
+          filter: `organisation_id=eq.${orgId}`,
+        },
+        () => {
+          void refresh();
+        }
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [orgId, refresh]);
 
   const now = Date.now();
@@ -64,12 +92,19 @@ export function useOrgAccess() {
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - now) / 86400000))
     : null;
 
-  // Tier — null until the user picks one.
   const tier: Tier | null = subscription?.tier ?? null;
   const tierDef = tier ? TIERS[tier] : null;
 
   return {
-    subscription, loading, hasAccess, compedActive, trialActive, trialExpired,
-    trialDaysLeft, refresh, tier, tierDef,
+    subscription,
+    loading,
+    hasAccess,
+    compedActive,
+    trialActive,
+    trialExpired,
+    trialDaysLeft,
+    refresh,
+    tier,
+    tierDef,
   };
 }

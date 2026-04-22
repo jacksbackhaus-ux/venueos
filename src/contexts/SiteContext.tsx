@@ -28,93 +28,95 @@ interface SiteContextType {
   setCurrentSiteId: (id: string) => void;
   isLoading: boolean;
   organisationId: string | null;
-  /**
-   * True when the current user has a site context to operate in:
-   * - Site-membership users: always true once their membership loads
-   * - HQ users (no site membership): only true after they explicitly pick a site
-   */
   hasSelectedSite: boolean;
   clearSelectedSite: () => void;
 }
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
+function readStoredSiteId() {
+  return localStorage.getItem('current_site_id');
+}
+
+function readStoredHqSelection() {
+  return localStorage.getItem('hq_site_selected') === 'true';
+}
+
 export function SiteProvider({ children }: { children: React.ReactNode }) {
   const { appUser, staffSession, isAuthenticated } = useAuth();
   const [sites, setSites] = useState<Site[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
-  const [currentSiteId, setCurrentSiteIdState] = useState<string | null>(() =>
-    localStorage.getItem('current_site_id')
-  );
-  const [hqExplicitSelection, setHqExplicitSelection] = useState<boolean>(
-    () => localStorage.getItem('hq_site_selected') === 'true'
-  );
+  const [currentSiteId, setCurrentSiteIdState] = useState<string | null>(() => readStoredSiteId());
+  const [hqExplicitSelection, setHqExplicitSelection] = useState<boolean>(() => readStoredHqSelection());
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchContext = async () => {
-      // Staff kiosk sessions are locked to one site, but they still need the
-      // actual site row so the rest of the app can resolve shared site-scoped
-      // settings/config exactly like the working temperature flow does.
-      if (staffSession) {
+      try {
+        if (staffSession) {
+          setIsLoading(true);
+          setCurrentSiteIdState(staffSession.site_id);
+
+          const { data: siteData, error } = await supabase
+            .from('sites')
+            .select('*')
+            .eq('id', staffSession.site_id)
+            .maybeSingle();
+
+          if (error) throw error;
+
+          setSites(siteData ? [siteData as Site] : []);
+          setMemberships([
+            {
+              id: `staff-session-${staffSession.user_id}`,
+              site_id: staffSession.site_id,
+              user_id: staffSession.user_id,
+              site_role: staffSession.site_role as Membership['site_role'],
+              active: true,
+            },
+          ]);
+          return;
+        }
+
+        if (!appUser || !isAuthenticated) {
+          setSites([]);
+          setMemberships([]);
+          setCurrentSiteIdState(null);
+          return;
+        }
+
         setIsLoading(true);
-        setCurrentSiteIdState(staffSession.site_id);
-
-        const { data: siteData } = await supabase
-          .from('sites')
-          .select('*')
-          .eq('id', staffSession.site_id)
-          .maybeSingle();
-
-        setSites(siteData ? [siteData as Site] : []);
-        setMemberships([
-          {
-            id: `staff-session-${staffSession.user_id}`,
-            site_id: staffSession.site_id,
-            user_id: staffSession.user_id,
-            site_role: staffSession.site_role as Membership['site_role'],
-            active: true,
-          },
+        const [sitesRes, membershipsRes] = await Promise.all([
+          supabase.from('sites').select('*').eq('active', true),
+          supabase.from('memberships').select('*').eq('user_id', appUser.id).eq('active', true),
         ]);
-        setIsLoading(false);
-        return;
-      }
 
-      if (!appUser || !isAuthenticated) {
+        if (sitesRes.error) throw sitesRes.error;
+        if (membershipsRes.error) throw membershipsRes.error;
+
+        const fetchedSites = (sitesRes.data || []) as Site[];
+        const fetchedMemberships = (membershipsRes.data || []) as Membership[];
+        const accessibleSiteIds = new Set(fetchedSites.map((site) => site.id));
+
+        setSites(fetchedSites);
+        setMemberships(fetchedMemberships);
+
+        if (!currentSiteId || !accessibleSiteIds.has(currentSiteId)) {
+          const fallbackSiteId = fetchedMemberships[0]?.site_id || null;
+          setCurrentSiteIdState(fallbackSiteId);
+        }
+      } catch (error) {
+        console.error('Failed to load site context.', error);
         setSites([]);
         setMemberships([]);
-        setCurrentSiteIdState(null);
+      } finally {
         setIsLoading(false);
-        return;
       }
-
-      setIsLoading(true);
-      const [sitesRes, membershipsRes] = await Promise.all([
-        supabase.from('sites').select('*').eq('active', true),
-        supabase.from('memberships').select('*').eq('user_id', appUser.id).eq('active', true),
-      ]);
-
-      const fetchedSites = (sitesRes.data || []) as Site[];
-      const fetchedMemberships = (membershipsRes.data || []) as Membership[];
-      const accessibleSiteIds = new Set(fetchedSites.map((site) => site.id));
-
-      setSites(fetchedSites);
-      setMemberships(fetchedMemberships);
-
-      // If the stored site belongs to a previous user/session, reset it to a
-      // site this user can actually access so shared site-scoped data loads.
-      if (!currentSiteId || !accessibleSiteIds.has(currentSiteId)) {
-        const fallbackSiteId = fetchedMemberships[0]?.site_id || null;
-        setCurrentSiteIdState(fallbackSiteId);
-      }
-
-      setIsLoading(false);
     };
 
-    fetchContext();
+    void fetchContext();
   }, [appUser, staffSession, isAuthenticated, currentSiteId]);
 
-  // Persist current site
   useEffect(() => {
     if (currentSiteId) {
       localStorage.setItem('current_site_id', currentSiteId);
@@ -123,7 +125,6 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentSiteId]);
 
-  // Persist HQ explicit selection flag
   useEffect(() => {
     if (hqExplicitSelection) {
       localStorage.setItem('hq_site_selected', 'true');
@@ -142,13 +143,9 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
     setCurrentSiteIdState(null);
   };
 
-  const currentSite = sites.find(s => s.id === currentSiteId) || null;
-  const currentMembership = memberships.find(m => m.site_id === currentSiteId) || null;
-
+  const currentSite = sites.find((s) => s.id === currentSiteId) || null;
+  const currentMembership = memberships.find((m) => m.site_id === currentSiteId) || null;
   const organisationId = appUser?.organisation_id || staffSession?.organisation_id || null;
-
-  // HQ users have no site membership → require explicit selection.
-  // Site-membership users (incl. staff kiosk) always have a selected site once loaded.
   const hasSelectedSite = !!currentMembership || (hqExplicitSelection && !!currentSite);
 
   return (
