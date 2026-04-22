@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -32,9 +33,9 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { RoleGuard } from "@/components/RoleGuard";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { TIERS } from "@/lib/tiers";
-import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lock } from "lucide-react";
+import { FullScreenLoader } from "@/components/FullScreenLoader";
 
 const queryClient = new QueryClient();
 
@@ -42,11 +43,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user, appUser, staffSession } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   if (staffSession) return <>{children}</>;
@@ -124,11 +121,7 @@ function AuthRedirect() {
   const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   if (staffSession) return <Navigate to="/" replace />;
@@ -141,11 +134,7 @@ function AppRoutes() {
   const { isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   // Wraps a site-scoped page with auth + access (trial/sub) + site selection + tier check.
@@ -207,7 +196,9 @@ const App = () => (
         <AuthProvider>
           <SiteProvider>
             <PaymentTestModeBanner />
-            <AppRoutes />
+            <Suspense fallback={<FullScreenLoader />}>
+              <AppRoutes />
+            </Suspense>
           </SiteProvider>
         </AuthProvider>
       </BrowserRouter>
