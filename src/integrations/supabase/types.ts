@@ -2002,6 +2002,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      link_staff_session: {
+        Args: { _site_id: string; _staff_code: string }
+        Returns: Json
+      }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
       validate_staff_code: {
         Args: { _site_id: string; _staff_code: string }
