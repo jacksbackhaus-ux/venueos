@@ -5,6 +5,8 @@ import {
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
+import { useOrgAccess } from "@/hooks/useOrgAccess";
+import { TIERS } from "@/lib/tiers";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,21 +18,21 @@ import {
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 
-const mainNav = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Shifts & Tasks", url: "/shifts", icon: CalendarClock },
-  { title: "Temperatures", url: "/temperatures", icon: Thermometer },
-  { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList },
-  { title: "Cleaning", url: "/cleaning", icon: SprayCan },
+const mainNavAll = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, mod: "dashboard" },
+  { title: "Shifts & Tasks", url: "/shifts", icon: CalendarClock, mod: "shifts" },
+  { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures" },
+  { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day-sheet" },
+  { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
 ];
 
-const complianceNavAll: { title: string; url: string; icon: React.ElementType; requiresReports?: boolean }[] = [
-  { title: "Allergens & Labels", url: "/allergens", icon: Wheat },
-  { title: "Suppliers", url: "/suppliers", icon: Truck },
-  { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug },
-  { title: "Incidents", url: "/incidents", icon: AlertTriangle },
-  { title: "Batch Tracking", url: "/batches", icon: Package },
-  { title: "Reports", url: "/reports", icon: FileText, requiresReports: true },
+const complianceNavAll: { title: string; url: string; icon: React.ElementType; mod: string; requiresReports?: boolean }[] = [
+  { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens" },
+  { title: "Suppliers", url: "/suppliers", icon: Truck, mod: "suppliers" },
+  { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest-maintenance" },
+  { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
+  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batches" },
+  { title: "Reports", url: "/reports", icon: FileText, mod: "reports", requiresReports: true },
 ];
 
 const settingsNav = [

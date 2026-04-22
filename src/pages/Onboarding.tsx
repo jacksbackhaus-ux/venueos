@@ -70,7 +70,7 @@ export default function Onboarding() {
     }
     await refreshAppUser();
     toast.success("Your account is ready!");
-    navigate("/", { replace: true });
+    navigate("/pricing", { replace: true });
   };
 
   const handleSignOut = async () => {
