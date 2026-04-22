@@ -5,6 +5,8 @@ interface DateNavigatorProps {
   selectedDate: string; // YYYY-MM-DD
   onChange: (next: string) => void;
   className?: string;
+  /** Earliest navigable date (YYYY-MM-DD). Typically the venue creation date. */
+  minDate?: string;
 }
 
 const todayString = () => new Date().toISOString().slice(0, 10);
@@ -18,14 +20,16 @@ const formatLong = (dateStr: string, withYear: boolean) =>
   });
 
 /**
- * Reusable date navigator: ◀ [date] ▶  Used on Dashboard, Day Sheet,
- * Temperature Tracking, and Cleaning to scope a view to a chosen day.
+ * Reusable date navigator: ◀ [date] ▶
  * - Right arrow disabled when viewing today (no future navigation).
+ * - Left arrow disabled when viewing the venue creation date (no pre-creation history).
  * - "Jump to today" link appears when viewing a past day.
  */
-export function DateNavigator({ selectedDate, onChange, className = "" }: DateNavigatorProps) {
+export function DateNavigator({ selectedDate, onChange, className = "", minDate }: DateNavigatorProps) {
   const todayStr = todayString();
+  const floor = minDate && minDate <= todayStr ? minDate : undefined;
   const isToday = selectedDate === todayStr;
+  const isAtFloor = floor ? selectedDate <= floor : false;
   const dateStr = formatLong(selectedDate, !isToday);
 
   const shift = (days: number) => {
@@ -33,6 +37,7 @@ export function DateNavigator({ selectedDate, onChange, className = "" }: DateNa
     d.setDate(d.getDate() + days);
     const next = d.toISOString().slice(0, 10);
     if (next > todayStr) return;
+    if (floor && next < floor) return;
     onChange(next);
   };
 
@@ -45,6 +50,7 @@ export function DateNavigator({ selectedDate, onChange, className = "" }: DateNa
         size="sm"
         className="h-8 px-2"
         onClick={() => shift(-1)}
+        disabled={isAtFloor}
         aria-label="Previous day"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -60,6 +66,9 @@ export function DateNavigator({ selectedDate, onChange, className = "" }: DateNa
           >
             Jump to today
           </button>
+        )}
+        {isAtFloor && !isToday && (
+          <span className="text-[10px] text-muted-foreground">(venue start)</span>
         )}
       </div>
       <Button
