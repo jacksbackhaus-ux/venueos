@@ -29,7 +29,7 @@ export default function Account() {
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <Card><CardContent className="py-12 text-center text-muted-foreground">
-          Only the organisation owner can manage billing.
+          Only the organisation manager can manage billing.
         </CardContent></Card>
       </div>
     );

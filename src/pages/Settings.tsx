@@ -112,7 +112,7 @@ const unitTypeLabel: Record<string, string> = {
 };
 
 const roleLabel: Record<string, string> = {
-  owner: "Owner / Manager",
+  owner: "Manager",
   manager: "Manager",
   supervisor: "Supervisor",
   staff: "Staff",
@@ -450,7 +450,7 @@ const Settings = () => {
 
   const toggleStaffActive = async (id: string, active: boolean) => {
     if (!canManageStaff) {
-      toast.error("Only Owners and Supervisors can change staff status.");
+      toast.error("Only Managers and Supervisors can change staff status.");
       return;
     }
     if (!active && id === appUser?.id) {
@@ -899,7 +899,7 @@ const Settings = () => {
 
           {!canManageStaff && (
             <p className="text-xs text-muted-foreground italic">
-              Only Owners and Supervisors can add, deactivate or reactivate staff members.
+              Only Managers and Supervisors can add, deactivate or reactivate staff members.
             </p>
           )}
 
@@ -934,7 +934,7 @@ const Settings = () => {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left p-2 font-semibold">Permission</th>
-                        <th className="p-2 text-center font-semibold">Owner</th>
+                        <th className="p-2 text-center font-semibold">Manager</th>
                         <th className="p-2 text-center font-semibold">Supervisor</th>
                         <th className="p-2 text-center font-semibold">Staff</th>
                         <th className="p-2 text-center font-semibold">Read-only</th>
@@ -1114,7 +1114,7 @@ const Settings = () => {
                 <div>
                   <p className="font-heading font-semibold">{appUser?.display_name || "—"}</p>
                   <p className="text-sm text-muted-foreground">{appUser?.email || "—"}</p>
-                  <Badge className="bg-primary/10 text-primary border-0 text-[10px] mt-1">Owner / Manager</Badge>
+                  <Badge className="bg-primary/10 text-primary border-0 text-[10px] mt-1">Manager</Badge>
                 </div>
               </div>
             </CardContent>
@@ -1426,13 +1426,13 @@ const Settings = () => {
                 <SelectContent>
                   <SelectItem value="staff">Staff</SelectItem>
                   <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="owner">Manager</SelectItem>
                   <SelectItem value="readonly">Read-only (EHO)</SelectItem>
                 </SelectContent>
               </Select>
               {!isOwner && (
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Only the Owner can change a staff member's access level.
+                  Only the Manager can change a staff member's access level.
                 </p>
               )}
               {isOwner && editStaff && editStaffForm.role !== editStaff.role && (
