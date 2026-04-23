@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } from "date-fns";
+import {
+  format, subDays, startOfDay, endOfDay, parseISO, differenceInDays,
+  startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addWeeks, addMonths,
+} from "date-fns";
 
 export type DateRangeKey = "7days" | "4weeks" | "3months" | "12months";
 
