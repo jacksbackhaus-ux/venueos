@@ -102,7 +102,7 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
     daySheetsRes, daySheetSectionsRes,
     incidentsRes, deliveriesRes, suppliersRes,
     pestRes, maintRes, ingredientsRes, recipesRes,
-    membershipsRes,
+    membershipsRes, closedDaysRes,
   ] = await Promise.all([
     supabase.from("sites").select("name").eq("id", siteId).maybeSingle(),
     supabase.from("organisations").select("name").eq("id", orgId).maybeSingle(),
@@ -119,6 +119,7 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
     supabase.from("ingredients").select("*").eq("site_id", siteId).eq("active", true),
     supabase.from("recipes").select("*").eq("site_id", siteId).eq("active", true),
     supabase.from("memberships").select("id").eq("active", true).in("site_id", [siteId]),
+    supabase.from("closed_days").select("closed_date").eq("site_id", siteId).gte("closed_date", fromDate).lte("closed_date", toDate),
   ]);
 
   const tempLogs = tempRes.data || [];
