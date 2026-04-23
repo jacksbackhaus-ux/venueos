@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TIERS, type Tier } from "@/lib/tiers";
@@ -65,32 +65,36 @@ export function useOrgAccess() {
     void refresh();
   }, [refresh]);
 
+  const refreshRef = useRef(refresh);
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
+
   useEffect(() => {
     if (!orgId) return;
 
-    const channel = supabase.channel(
-      `org-access-${orgId}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`
-    );
-
-    channel.on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "subscriptions",
-        filter: `organisation_id=eq.${orgId}`,
-      },
-      () => {
-        void refresh();
-      }
-    );
-
-    channel.subscribe();
+    const channel = supabase
+      .channel(
+        `org-access-${orgId}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`
+      )
+      .on(
+        "postgres_changes" as never,
+        {
+          event: "*",
+          schema: "public",
+          table: "subscriptions",
+          filter: `organisation_id=eq.${orgId}`,
+        },
+        () => {
+          void refreshRef.current();
+        }
+      )
+      .subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [orgId, refresh]);
+  }, [orgId]);
 
   const now = Date.now();
   const compedActive = !!subscription?.is_comped &&
