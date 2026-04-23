@@ -238,7 +238,7 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
   ];
 
   const premisesDetails: PillarDetail[] = [
-    { label: "Cleaning task completion", value: `${cleaningCompletionPct}% (${cleaningDone}/${expectedCleaning})`, status: status(cleaningCompletionPct), drilldown: "/cleaning", weight: 0.4, score: cleaningCompletionPct },
+    { label: "Cleaning task completion", value: `${cleaningCompletionPct}% (${cleaningDone}/${expectedCleaning}${cleaningExempt > 0 ? ` · ${cleaningExempt} exempt` : ""})`, status: status(cleaningCompletionPct), drilldown: "/cleaning", weight: 0.4, score: cleaningCompletionPct },
     { label: "Open pest issues", value: `${openPestLogs}`, status: openPestLogs === 0 ? "good" : openPestLogs <= 1 ? "warning" : "bad", drilldown: "/pest-maintenance", weight: 0.25, score: openPestLogs === 0 ? 100 : Math.max(0, 100 - openPestLogs * 25) },
     { label: "Open maintenance issues", value: `${openMaintenance}`, status: openMaintenance === 0 ? "good" : openMaintenance <= 2 ? "warning" : "bad", drilldown: "/pest-maintenance", weight: 0.2, score: openMaintenance === 0 ? 100 : Math.max(0, 100 - openMaintenance * 15) },
     { label: "Active cleaning tasks defined", value: `${cleaningTasks.length}`, status: cleaningTasks.length >= 5 ? "good" : cleaningTasks.length >= 1 ? "ok" : "bad", drilldown: "/cleaning", weight: 0.15, score: cleaningTasks.length >= 5 ? 100 : cleaningTasks.length * 20 },
