@@ -68,6 +68,7 @@ export function AppSidebar() {
     .filter((item) => allowed(item.mod));
 
   const visibleSettingsNav = role.canViewSettings ? settingsNav : [];
+  const userInitials = appUser?.display_name?.trim().slice(0, 2).toUpperCase() || "MG";
 
   // HQ users without an explicitly selected site only see HQ Dashboard + Account.
   const showSiteSections = hasSelectedSite;
@@ -180,7 +181,7 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-              {appUser?.display_name?.substring(0, 2).toUpperCase() || 'MG'}
+              {userInitials}
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-sidebar-foreground truncate">
