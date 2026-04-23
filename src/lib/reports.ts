@@ -146,14 +146,65 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
   const daySheetCompletionPct = pct(daySheetsCreated, expectedSheets);
   const daySheetsLockedPct = daySheetsCreated === 0 ? 0 : pct(daySheetsLocked, daySheetsCreated);
 
-  // === Cleaning completion ===
-  // For daily tasks, expected = tasks * days. For weekly = tasks * (days/7), monthly = tasks * (days/30)
-  const expectedCleaning = cleaningTasks.reduce((sum, t: any) => {
-    const f = (t.frequency || "daily").toLowerCase();
-    const mult = f === "daily" ? range.days : f === "weekly" ? Math.max(1, Math.round(range.days / 7)) : f === "monthly" ? Math.max(1, Math.round(range.days / 30)) : range.days;
-    return sum + mult;
-  }, 0);
-  const cleaningDone = cleaningLogs.filter(l => l.done).length;
+  const closedDays = closedDaysRes.data || [];
+  const closedSet = new Set((closedDays as any[]).map((c) => c.closed_date));
+
+  // === Cleaning completion (period-aware with closed-day exemption) ===
+  // Build expected occurrences per task by walking through period buckets:
+  // - daily: every day in the range
+  // - weekly: every Mon-Sun week intersecting the range
+  // - monthly: every calendar month intersecting the range
+  // A bucket is "exempt" if every day inside it (within range) is in closedSet.
+  // A bucket is "done" if there's at least one cleaning_log marking it done within the bucket.
+  const inRange = (d: Date) => d >= range.from && d <= range.to;
+  const buildBuckets = (freq: string): { start: Date; end: Date }[] => {
+    const buckets: { start: Date; end: Date }[] = [];
+    if (freq === "weekly") {
+      let cur = startOfWeek(range.from, { weekStartsOn: 1 });
+      while (cur <= range.to) {
+        buckets.push({ start: cur, end: endOfWeek(cur, { weekStartsOn: 1 }) });
+        cur = addWeeks(cur, 1);
+      }
+    } else if (freq === "monthly") {
+      let cur = startOfMonth(range.from);
+      while (cur <= range.to) {
+        buckets.push({ start: cur, end: endOfMonth(cur) });
+        cur = addMonths(cur, 1);
+      }
+    } else {
+      // daily
+      eachDayOfInterval({ start: range.from, end: range.to }).forEach((d) => {
+        buckets.push({ start: startOfDay(d), end: endOfDay(d) });
+      });
+    }
+    return buckets;
+  };
+
+  let expectedCleaning = 0;
+  let cleaningDone = 0;
+  let cleaningExempt = 0;
+  for (const t of cleaningTasks as any[]) {
+    const freq = (t.frequency || "daily").toLowerCase();
+    const buckets = buildBuckets(freq);
+    for (const b of buckets) {
+      // Days in the bucket that fall within the report range.
+      const daysInBucket = eachDayOfInterval({ start: b.start, end: b.end }).filter(inRange);
+      if (daysInBucket.length === 0) continue;
+      const allClosed = daysInBucket.every((d) => closedSet.has(format(d, "yyyy-MM-dd")));
+      if (allClosed) {
+        cleaningExempt += 1;
+        continue; // exempt — does not count toward expected
+      }
+      expectedCleaning += 1;
+      const done = (cleaningLogs as any[]).some((l) =>
+        l.task_id === t.id && l.done && (() => {
+          const ld = parseISO(l.log_date);
+          return ld >= b.start && ld <= b.end;
+        })()
+      );
+      if (done) cleaningDone += 1;
+    }
+  }
   const cleaningCompletionPct = expectedCleaning === 0 ? 100 : pct(cleaningDone, expectedCleaning);
 
   // === Temperature compliance ===
