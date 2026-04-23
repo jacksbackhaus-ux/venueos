@@ -67,24 +67,28 @@ export function useOrgAccess() {
 
   useEffect(() => {
     if (!orgId) return;
-    const channel = supabase
-      .channel(`sub-${orgId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "subscriptions",
-          filter: `organisation_id=eq.${orgId}`,
-        },
-        () => {
-          void refresh();
-        }
-      )
-      .subscribe();
+
+    const channel = supabase.channel(
+      `org-access-${orgId}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`
+    );
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "subscriptions",
+        filter: `organisation_id=eq.${orgId}`,
+      },
+      () => {
+        void refresh();
+      }
+    );
+
+    channel.subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [orgId, refresh]);
 
