@@ -93,7 +93,7 @@ const Cleaning = () => {
 
   // For daily view, exemption = today is closed.
   // For weekly/monthly = every day in period (up to today, capped at period end) is closed.
-  const periodDays = eachDayOfInterval({ from: period.from, to: period.to });
+  const periodDays = eachDayOfInterval({ start: period.from, end: period.to });
   const closedSet = new Set((closedDays as any[]).map((c) => c.closed_date));
   const todayDate = parseISO(todayStr);
   const relevantDays = periodDays.filter((d) => d <= todayDate || activeTab !== "daily" ? true : isSameDay(d, todayDate));
