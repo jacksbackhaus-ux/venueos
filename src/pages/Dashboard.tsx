@@ -473,6 +473,88 @@ const Dashboard = () => {
         </motion.div>
       )}
 
+      {/* Outstanding Tasks (grouped by module) — hidden on closed days */}
+      {!isClosed && !isLoading && (() => {
+        const outstanding = tasks.filter((t) => t.status !== "done");
+        if (tasks.length === 0) return null;
+        if (outstanding.length === 0) {
+          return (
+            <motion.div initial="hidden" animate="visible" custom={1.5} variants={fadeUp}>
+              <Card>
+                <CardContent className="py-4 flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">All done {isToday ? "today" : "for this day"}</p>
+                    <p className="text-xs text-muted-foreground">Every task has been completed.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        }
+
+        const moduleHref = (module: string, taskId: string) => {
+          if (taskId.startsWith("temp-")) return "/temperatures";
+          if (taskId.startsWith("cleaning-")) return "/cleaning";
+          if (taskId.startsWith("ds-")) return "/day-sheet";
+          if (module === "Cleaning") return "/cleaning";
+          if (module === "Temps") return "/temperatures";
+          return "/day-sheet";
+        };
+
+        const grouped = outstanding.reduce<Record<string, TaskRow[]>>((acc, t) => {
+          (acc[t.module] ||= []).push(t);
+          return acc;
+        }, {});
+
+        return (
+          <motion.div initial="hidden" animate="visible" custom={1.5} variants={fadeUp}>
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-heading">Outstanding Tasks</CardTitle>
+                  <Badge variant="secondary" className="text-xs">{outstanding.length} to do</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-4">
+                {Object.entries(grouped).map(([module, items]) => (
+                  <div key={module} className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{module}</p>
+                    <div className="divide-y">
+                      {items.map((task) => {
+                        const linked = isTaskLinkedToMe(task);
+                        return (
+                          <Link
+                            key={task.id}
+                            to={moduleHref(task.module, task.id)}
+                            className={`flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors ${
+                              linked ? "bg-primary/5 ring-1 ring-primary/20" : ""
+                            }`}
+                          >
+                            {statusIcon(task.status)}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{task.title}</p>
+                              <p className="text-xs text-muted-foreground">Due {task.due}</p>
+                            </div>
+                            {linked && (
+                              <Badge variant="default" className="text-[10px] shrink-0 bg-primary/15 text-primary hover:bg-primary/15 border-0">
+                                <Star className="h-3 w-3 mr-0.5" />
+                                Yours
+                              </Badge>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        );
+      })()}
+
       {/* Today's Shift (rota) — only on today, only when shifts exist */}
       {isToday && !isClosed && (todayShifts?.shifts.length ?? 0) > 0 && (
         <motion.div initial="hidden" animate="visible" custom={2} variants={fadeUp}>
