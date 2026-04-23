@@ -66,9 +66,7 @@ export function useOrgAccess() {
   }, [refresh]);
 
   const refreshRef = useRef(refresh);
-  useEffect(() => {
-    refreshRef.current = refresh;
-  }, [refresh]);
+  refreshRef.current = refresh;
 
   useEffect(() => {
     if (!orgId) return;
