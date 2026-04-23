@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } from "date-fns";
+import {
+  format, subDays, startOfDay, endOfDay, parseISO, differenceInDays,
+  startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addWeeks, addMonths,
+} from "date-fns";
 
 export type DateRangeKey = "7days" | "4weeks" | "3months" | "12months";
 
@@ -99,7 +102,7 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
     daySheetsRes, daySheetSectionsRes,
     incidentsRes, deliveriesRes, suppliersRes,
     pestRes, maintRes, ingredientsRes, recipesRes,
-    membershipsRes,
+    membershipsRes, closedDaysRes,
   ] = await Promise.all([
     supabase.from("sites").select("name").eq("id", siteId).maybeSingle(),
     supabase.from("organisations").select("name").eq("id", orgId).maybeSingle(),
@@ -116,6 +119,7 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
     supabase.from("ingredients").select("*").eq("site_id", siteId).eq("active", true),
     supabase.from("recipes").select("*").eq("site_id", siteId).eq("active", true),
     supabase.from("memberships").select("id").eq("active", true).in("site_id", [siteId]),
+    supabase.from("closed_days").select("closed_date").eq("site_id", siteId).gte("closed_date", fromDate).lte("closed_date", toDate),
   ]);
 
   const tempLogs = tempRes.data || [];
@@ -142,14 +146,65 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
   const daySheetCompletionPct = pct(daySheetsCreated, expectedSheets);
   const daySheetsLockedPct = daySheetsCreated === 0 ? 0 : pct(daySheetsLocked, daySheetsCreated);
 
-  // === Cleaning completion ===
-  // For daily tasks, expected = tasks * days. For weekly = tasks * (days/7), monthly = tasks * (days/30)
-  const expectedCleaning = cleaningTasks.reduce((sum, t: any) => {
-    const f = (t.frequency || "daily").toLowerCase();
-    const mult = f === "daily" ? range.days : f === "weekly" ? Math.max(1, Math.round(range.days / 7)) : f === "monthly" ? Math.max(1, Math.round(range.days / 30)) : range.days;
-    return sum + mult;
-  }, 0);
-  const cleaningDone = cleaningLogs.filter(l => l.done).length;
+  const closedDays = closedDaysRes.data || [];
+  const closedSet = new Set((closedDays as any[]).map((c) => c.closed_date));
+
+  // === Cleaning completion (period-aware with closed-day exemption) ===
+  // Build expected occurrences per task by walking through period buckets:
+  // - daily: every day in the range
+  // - weekly: every Mon-Sun week intersecting the range
+  // - monthly: every calendar month intersecting the range
+  // A bucket is "exempt" if every day inside it (within range) is in closedSet.
+  // A bucket is "done" if there's at least one cleaning_log marking it done within the bucket.
+  const inRange = (d: Date) => d >= range.from && d <= range.to;
+  const buildBuckets = (freq: string): { start: Date; end: Date }[] => {
+    const buckets: { start: Date; end: Date }[] = [];
+    if (freq === "weekly") {
+      let cur = startOfWeek(range.from, { weekStartsOn: 1 });
+      while (cur <= range.to) {
+        buckets.push({ start: cur, end: endOfWeek(cur, { weekStartsOn: 1 }) });
+        cur = addWeeks(cur, 1);
+      }
+    } else if (freq === "monthly") {
+      let cur = startOfMonth(range.from);
+      while (cur <= range.to) {
+        buckets.push({ start: cur, end: endOfMonth(cur) });
+        cur = addMonths(cur, 1);
+      }
+    } else {
+      // daily
+      eachDayOfInterval({ start: range.from, end: range.to }).forEach((d) => {
+        buckets.push({ start: startOfDay(d), end: endOfDay(d) });
+      });
+    }
+    return buckets;
+  };
+
+  let expectedCleaning = 0;
+  let cleaningDone = 0;
+  let cleaningExempt = 0;
+  for (const t of cleaningTasks as any[]) {
+    const freq = (t.frequency || "daily").toLowerCase();
+    const buckets = buildBuckets(freq);
+    for (const b of buckets) {
+      // Days in the bucket that fall within the report range.
+      const daysInBucket = eachDayOfInterval({ start: b.start, end: b.end }).filter(inRange);
+      if (daysInBucket.length === 0) continue;
+      const allClosed = daysInBucket.every((d) => closedSet.has(format(d, "yyyy-MM-dd")));
+      if (allClosed) {
+        cleaningExempt += 1;
+        continue; // exempt — does not count toward expected
+      }
+      expectedCleaning += 1;
+      const done = (cleaningLogs as any[]).some((l) =>
+        l.task_id === t.id && l.done && (() => {
+          const ld = parseISO(l.log_date);
+          return ld >= b.start && ld <= b.end;
+        })()
+      );
+      if (done) cleaningDone += 1;
+    }
+  }
   const cleaningCompletionPct = expectedCleaning === 0 ? 100 : pct(cleaningDone, expectedCleaning);
 
   // === Temperature compliance ===
@@ -183,7 +238,7 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
   ];
 
   const premisesDetails: PillarDetail[] = [
-    { label: "Cleaning task completion", value: `${cleaningCompletionPct}% (${cleaningDone}/${expectedCleaning})`, status: status(cleaningCompletionPct), drilldown: "/cleaning", weight: 0.4, score: cleaningCompletionPct },
+    { label: "Cleaning task completion", value: `${cleaningCompletionPct}% (${cleaningDone}/${expectedCleaning}${cleaningExempt > 0 ? ` · ${cleaningExempt} exempt` : ""})`, status: status(cleaningCompletionPct), drilldown: "/cleaning", weight: 0.4, score: cleaningCompletionPct },
     { label: "Open pest issues", value: `${openPestLogs}`, status: openPestLogs === 0 ? "good" : openPestLogs <= 1 ? "warning" : "bad", drilldown: "/pest-maintenance", weight: 0.25, score: openPestLogs === 0 ? 100 : Math.max(0, 100 - openPestLogs * 25) },
     { label: "Open maintenance issues", value: `${openMaintenance}`, status: openMaintenance === 0 ? "good" : openMaintenance <= 2 ? "warning" : "bad", drilldown: "/pest-maintenance", weight: 0.2, score: openMaintenance === 0 ? 100 : Math.max(0, 100 - openMaintenance * 15) },
     { label: "Active cleaning tasks defined", value: `${cleaningTasks.length}`, status: cleaningTasks.length >= 5 ? "good" : cleaningTasks.length >= 1 ? "ok" : "bad", drilldown: "/cleaning", weight: 0.15, score: cleaningTasks.length >= 5 ? 100 : cleaningTasks.length * 20 },
