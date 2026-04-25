@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Package,
   FileBarChart,
+  Calculator,
   Building2,
   User,
   Settings as SettingsIcon,
@@ -19,7 +20,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
 
-type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; requires?: 'reports' | 'settings' | 'billing' };
+type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; requires?: 'reports' | 'settings' | 'billing' | 'costMargin' };
 
 const items: NavItem[] = [
   { to: "/shifts", label: "Shifts", desc: "Assign staff & shift tasks", icon: Calendar },
@@ -29,6 +30,7 @@ const items: NavItem[] = [
   { to: "/incidents", label: "Incidents", desc: "Report and investigate non-conformances", icon: AlertTriangle },
   { to: "/batches", label: "Batches", desc: "Production batch traceability", icon: Package },
   { to: "/reports", label: "Reports", desc: "Inspection-ready exports", icon: FileBarChart, requires: 'reports' },
+  { to: "/cost-margin", label: "Cost & Margin", desc: "Recipe costing and margin analysis", icon: Calculator, requires: 'costMargin' },
 ];
 
 const accountItems: NavItem[] = [
@@ -42,11 +44,14 @@ export default function More() {
   const { isSuperAdmin } = useSuperAdmin();
   const role = useRole();
 
+  const canSeeCostMargin = orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
+
   const allowed = (req?: NavItem['requires']) => {
     if (!req) return true;
     if (req === 'reports') return role.canViewReports;
     if (req === 'settings') return role.canViewSettings;
     if (req === 'billing') return role.canManageBilling;
+    if (req === 'costMargin') return canSeeCostMargin;
     return false;
   };
 
