@@ -325,6 +325,57 @@ export default function Batches() {
             <DialogTitle>Create New Batch</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {hasCostAccess && costRecipes.length > 0 && (
+              <div className="rounded-md border bg-primary/5 p-3 space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Cost & Margin
+                </div>
+                <div>
+                  <Label className="text-xs">Recipe (links cost data)</Label>
+                  <Select
+                    value={newBatch.recipe_id || "__none__"}
+                    onValueChange={(v) => {
+                      const rid = v === "__none__" ? "" : v;
+                      const r = costRecipes.find(x => x.id === rid);
+                      setNewBatch({
+                        ...newBatch,
+                        recipe_id: rid,
+                        product_name: newBatch.product_name || r?.name || '',
+                        recipe_ref: newBatch.recipe_ref || r?.name || '',
+                      });
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="No recipe" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">No recipe</SelectItem>
+                      {costRecipes.map(r => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name} — £{r.breakdown.totalCostPerUnit.toFixed(3)}/unit
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Quantity produced</Label>
+                  <Input type="number" step="1" min="0" placeholder="e.g. 24"
+                    value={newBatch.quantity_produced}
+                    onChange={e => setNewBatch({ ...newBatch, quantity_produced: e.target.value })} />
+                </div>
+                {(() => {
+                  const r = costRecipes.find(x => x.id === newBatch.recipe_id);
+                  const qty = Number(newBatch.quantity_produced) || 0;
+                  if (!r || !qty) return null;
+                  const total = r.breakdown.totalCostPerUnit * qty;
+                  return (
+                    <div className="text-xs text-muted-foreground">
+                      Estimated total cost: <span className="font-semibold text-foreground tabular-nums">£{total.toFixed(2)}</span>
+                      {' '}({qty} × £{r.breakdown.totalCostPerUnit.toFixed(3)})
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
             <div>
               <Label>Product Name *</Label>
               <Input placeholder="Sourdough Loaf" value={newBatch.product_name}
