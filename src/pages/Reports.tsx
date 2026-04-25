@@ -13,10 +13,13 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSite } from "@/contexts/SiteContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { toast } from "@/hooks/use-toast";
 import { buildRange, fetchReportData, type DateRangeKey, type ReportData } from "@/lib/reports";
 import { generateInspectionPackPdf } from "@/lib/reportPdf";
 import { format } from "date-fns";
+import { Calculator } from "lucide-react";
 
 const statusColor = (s: string) => {
   switch (s) {
