@@ -46,16 +46,22 @@ const reportSections = [
 const Reports = () => {
   const navigate = useNavigate();
   const { currentSite, organisationId } = useSite();
+  const { orgRole } = useAuth();
+  const { tier, trialActive, compedActive } = useOrgAccess();
   const [dateRange, setDateRange] = useState<DateRangeKey>("4weeks");
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
+  const isCostManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
+  const hasCostAccess =
+    isCostManager && (tier === "pro" || tier === "multisite" || trialActive || compedActive);
+
   useEffect(() => {
     if (!currentSite || !organisationId) return;
     let cancelled = false;
     setLoading(true);
-    fetchReportData(currentSite.id, organisationId, buildRange(dateRange))
+    fetchReportData(currentSite.id, organisationId, buildRange(dateRange), { includeCostMargin: hasCostAccess })
       .then(d => { if (!cancelled) setData(d); })
       .catch(err => {
         console.error(err);
@@ -63,7 +69,7 @@ const Reports = () => {
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [currentSite, organisationId, dateRange]);
+  }, [currentSite, organisationId, dateRange, hasCostAccess]);
 
   const handleExport = async () => {
     if (!data) return;
