@@ -32,7 +32,6 @@ const complianceNavAll: { title: string; url: string; icon: React.ElementType; m
   { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest-maintenance" },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
   { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batches" },
-  { title: "Cost & Margin", url: "/cost-margin", icon: Calculator, mod: "cost-margin", managerOnly: true },
   { title: "Reports", url: "/reports", icon: FileText, mod: "reports", requiresReports: true },
 ];
 
@@ -58,13 +57,15 @@ export function AppSidebar() {
 
   const mainNav = mainNavAll.filter((i) => allowed(i.mod));
 
+  const isManager = orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
+
   const hqNav = [
     ...(isHQ && role.isManager && allowed("hq") ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
+    ...(isManager && allowed("cost-margin") ? [{ title: "Cost & Margin", url: "/cost-margin", icon: Calculator }] : []),
     ...(orgRole?.org_role === 'org_owner' ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
   ];
 
-  const isManager = orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
   const complianceNav = complianceNavAll
     .filter((item) => !item.requiresReports || role.canViewReports)
     .filter((item) => !item.managerOnly || isManager)
