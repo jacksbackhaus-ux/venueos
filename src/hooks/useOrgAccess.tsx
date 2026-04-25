@@ -110,7 +110,12 @@ export function useOrgAccess() {
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - now) / 86400000))
     : null;
 
-  const tier: Tier | null = isTier(subscription?.tier) ? subscription.tier : null;
+  const storedTier: Tier | null = isTier(subscription?.tier) ? subscription.tier : null;
+  // During an active trial (or comp) without an explicit tier selection, treat
+  // the org as Pro so they can preview all Pro-tier modules. Once the trial
+  // expires or converts, the real tier from the subscription is used.
+  const tier: Tier | null = storedTier
+    ?? ((trialActive || compedActive) ? "pro" : null);
   const tierDef = tier ? TIERS[tier] : null;
 
   return {
