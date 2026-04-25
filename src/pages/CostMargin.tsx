@@ -479,6 +479,73 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
   );
 }
 
+function RecipeIngredientRow({ line, onSaved }: { line: RecipeIng; onSaved: () => void }) {
+  const lineUnit = line.unit || line.ingredients?.unit || "—";
+  const effectiveCpu = line.cost_per_unit_override ?? line.ingredients?.cost_per_unit;
+  const initialOverride = line.cost_per_unit_override != null ? String(line.cost_per_unit_override) : "";
+  const [override, setOverride] = useState<string>(initialOverride);
+  const [saving, setSaving] = useState(false);
+  const dirty = override !== initialOverride;
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("recipe_ingredients")
+        .update({ cost_per_unit_override: override === "" ? null : Number(override) })
+        .eq("id", line.id);
+      if (error) throw error;
+      toast.success("Override saved");
+      onSaved();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="font-medium">{line.ingredients?.name || "—"}</div>
+        {effectiveCpu == null && (
+          <Badge variant="outline" className="mt-1 text-[10px]">No cost set</Badge>
+        )}
+        {line.cost_per_unit_override != null && (
+          <Badge variant="secondary" className="mt-1 text-[10px]">Override active</Badge>
+        )}
+      </TableCell>
+      <TableCell className="text-right tabular-nums">
+        {Number(line.weight || 0)} {lineUnit}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-1">
+          <Input
+            type="number"
+            step="0.01"
+            placeholder={
+              line.ingredients?.cost_per_unit != null
+                ? String(line.ingredients.cost_per_unit)
+                : "—"
+            }
+            value={override}
+            onChange={(e) => setOverride(e.target.value)}
+            className="h-8 w-24 text-right tabular-nums"
+          />
+          {dirty && (
+            <Button size="sm" variant="outline" className="h-8 px-2" onClick={save} disabled={saving}>
+              {saving ? "…" : "Save"}
+            </Button>
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="text-right tabular-nums">
+        £{ingredientLineCost(line).toFixed(3)}
+      </TableCell>
+    </TableRow>
+  );
+}
+
 /* ----------------------------- Ingredients Tab ---------------------------- */
 
 function IngredientsTab({ ingredients, onChange }: { ingredients: Ingredient[]; onChange: () => void }) {
