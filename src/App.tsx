@@ -172,17 +172,20 @@ function AppRoutes() {
       <Route path="/batches" element={siteRoute("batches", <Batches />)} />
       <Route path="/cost-margin" element={siteRoute("cost-margin", <CostMargin />)} />
 
+      {/* HQ Dashboard, Account, Admin, and Settings are core navigation —
+          never tier-gated. Only role checks apply. */}
       <Route path="/hq" element={
         <AuthGuard><AccessGuard><AppLayout>
-          <TierGuard module="hq">
-            <RoleGuard require="manager" inline><HQDashboard /></RoleGuard>
-          </TierGuard>
+          <RoleGuard require="manager" inline><HQDashboard /></RoleGuard>
         </AppLayout></AccessGuard></AuthGuard>
       } />
-      {/* Account is always accessible — never blocked by access/tier guard */}
       <Route path="/account" element={<AuthGuard><AppLayout><RoleGuard require="manageBilling" inline><Account /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/admin" element={<AuthGuard><AppLayout><RoleGuard require="viewAdmin" inline><Admin /></RoleGuard></AppLayout></AuthGuard>} />
-      <Route path="/settings" element={siteRoute("settings", <RoleGuard require="viewSettings" inline><Settings /></RoleGuard>)} />
+      <Route path="/settings" element={
+        <AuthGuard><AccessGuard><AppLayout><RequireSite>
+          <RoleGuard require="viewSettings" inline><Settings /></RoleGuard>
+        </RequireSite></AppLayout></AccessGuard></AuthGuard>
+      } />
       <Route path="/more" element={<AuthGuard><AppLayout><More /></AppLayout></AuthGuard>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
