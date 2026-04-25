@@ -297,6 +297,24 @@ export function generateInspectionPackPdf(data: ReportData) {
     `${data.recipes.length} active recipes • ${data.ingredients.length} ingredients tracked.`
   );
 
+  // Cost & Margin (only when authorised caller passed includeCostMargin)
+  if (data.costMargin && data.costMargin.recipes.length > 0) {
+    const cm = data.costMargin;
+    addEvidence(
+      "Cost & Margin Summary",
+      [["Recipe", "Cost/unit", "Recommended", "Current", "Margin %", "Target %"]],
+      cm.recipes.map(r => [
+        r.name,
+        `£${r.costPerUnit.toFixed(3)}`,
+        `£${r.recommendedSellExVat.toFixed(2)}`,
+        r.currentSellExVat != null ? `£${r.currentSellExVat.toFixed(2)}` : "—",
+        r.marginPct != null ? `${r.marginPct.toFixed(1)}%` : "—",
+        `${r.targetMarginPct.toFixed(0)}%`,
+      ]),
+      `${cm.recipes.length} recipes • Avg margin ${cm.averageMarginPct != null ? cm.averageMarginPct.toFixed(1) + "%" : "—"} • ${cm.recipesBelowTarget} below target • ${cm.recipesMissingPrice} without a sell price.`
+    );
+  }
+
   footer(doc, data);
   doc.save(`Inspection-Pack_${data.siteName.replace(/\s+/g, "-")}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
 }
