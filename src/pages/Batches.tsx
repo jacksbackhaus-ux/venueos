@@ -66,10 +66,12 @@ const statusConfig: Record<BatchStatus, { label: string; color: string; icon: Re
 };
 
 export default function Batches() {
-  const { appUser, isReadOnly } = useAuth();
+  const { appUser, isReadOnly, orgRole } = useAuth();
   const { currentSite, organisationId } = useSite();
+  const { tier, trialActive, compedActive } = useOrgAccess();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [templates, setTemplates] = useState<BatchTemplate[]>([]);
+  const [costRecipes, setCostRecipes] = useState<RecipeWithCost[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -77,8 +79,17 @@ export default function Batches() {
   const [stageEvents, setStageEvents] = useState<StageEvent[]>([]);
   const [stageLoading, setStageLoading] = useState(false);
 
-  // Create form state
-  const [newBatch, setNewBatch] = useState({ product_name: '', recipe_ref: '', template_id: '', notes: '', date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '' });
+  // Cost & Margin gating: only org_owner / hq_admin AND on Pro / Multi-site / active trial / comped.
+  const isCostManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
+  const hasCostAccess =
+    isCostManager && (tier === "pro" || tier === "multisite" || trialActive || compedActive);
+
+  // Create form state (recipe_id + quantity_produced are cost-only fields)
+  const [newBatch, setNewBatch] = useState({
+    product_name: '', recipe_ref: '', recipe_id: '', quantity_produced: '',
+    template_id: '', notes: '',
+    date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
+  });
   const [creating, setCreating] = useState(false);
 
   // Stage completion state
