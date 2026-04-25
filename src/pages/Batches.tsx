@@ -16,9 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
+import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { calcBatchProductionCost, loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
 
 type BatchStatus = 'in_progress' | 'complete' | 'quarantined' | 'disposed';
 
@@ -27,6 +29,10 @@ interface Batch {
   batch_code: string;
   product_name: string;
   recipe_ref: string | null;
+  recipe_id: string | null;
+  quantity_produced: number | null;
+  unit_cost_snapshot: number | null;
+  total_production_cost: number | null;
   status: BatchStatus;
   notes: string | null;
   created_at: string;
