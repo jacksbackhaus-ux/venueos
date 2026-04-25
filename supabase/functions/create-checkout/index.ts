@@ -65,7 +65,7 @@ serve(async (req) => {
 
     const priceList = await stripe.prices.list({ lookup_keys: lookupKeys });
     const priceMap: Record<string, string> = {};
-    priceList.data.forEach((p) => { if (p.lookup_key) priceMap[p.lookup_key] = p.id; });
+    priceList.data.forEach((p: { id: string; lookup_key: string | null }) => { if (p.lookup_key) priceMap[p.lookup_key] = p.id; });
 
     const lineItems: any[] = [{ price: priceMap[TIER_PRICES[tier].base], quantity: 1 }];
     if (tier === "multisite" && extraSites > 0 && TIER_PRICES[tier].extra) {
