@@ -113,7 +113,23 @@ export default function Batches() {
     setTemplates((data || []) as unknown as BatchTemplate[]);
   };
 
+  // Load recipes (with cost breakdowns) only when the user can see Cost & Margin.
+  const loadCostRecipes = async () => {
+    if (!siteId || !organisationId || !hasCostAccess) {
+      setCostRecipes([]);
+      return;
+    }
+    try {
+      const { recipes } = await loadCostContextForOrg(siteId, organisationId);
+      setCostRecipes(recipes);
+    } catch (e) {
+      console.error("Failed to load recipe costs", e);
+      setCostRecipes([]);
+    }
+  };
+
   useEffect(() => { loadBatches(); loadTemplates(); }, [siteId]);
+  useEffect(() => { loadCostRecipes(); }, [siteId, organisationId, hasCostAccess]);
 
   const generateBatchCode = () => {
     const date = format(new Date(), 'yyyyMMdd');
@@ -126,13 +142,31 @@ export default function Batches() {
     if (!siteId || !organisationId || !appUser) return;
     setCreating(true);
     const batchCode = generateBatchCode();
+
+    // If a recipe is selected and we can compute cost, snapshot it now.
+    let unitCost: number | null = null;
+    let totalCost: number | null = null;
+    const qty = newBatch.quantity_produced ? Number(newBatch.quantity_produced) : null;
+    if (hasCostAccess && newBatch.recipe_id && qty && qty > 0) {
+      const calc = await calcBatchProductionCost(
+        newBatch.recipe_id, qty, organisationId, siteId
+      );
+      if (calc) { unitCost = calc.unitCost; totalCost = calc.totalCost; }
+    }
+
+    const selectedRecipe = costRecipes.find(r => r.id === newBatch.recipe_id);
+
     const { error } = await supabase.from('batches').insert({
       site_id: siteId,
       organisation_id: organisationId,
       template_id: newBatch.template_id || null,
       batch_code: batchCode,
-      product_name: newBatch.product_name,
-      recipe_ref: newBatch.recipe_ref || null,
+      product_name: newBatch.product_name || selectedRecipe?.name || 'Untitled',
+      recipe_ref: newBatch.recipe_ref || selectedRecipe?.name || null,
+      recipe_id: newBatch.recipe_id || null,
+      quantity_produced: qty,
+      unit_cost_snapshot: unitCost,
+      total_production_cost: totalCost,
       notes: newBatch.notes || null,
       date_produced: newBatch.date_produced || null,
       use_by_date: newBatch.use_by_date || null,
@@ -142,7 +176,11 @@ export default function Batches() {
     if (error) { toast.error(error.message); return; }
     toast.success(`Batch ${batchCode} created`);
     setShowCreate(false);
-    setNewBatch({ product_name: '', recipe_ref: '', template_id: '', notes: '', date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '' });
+    setNewBatch({
+      product_name: '', recipe_ref: '', recipe_id: '', quantity_produced: '',
+      template_id: '', notes: '',
+      date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
+    });
     loadBatches();
   };
 
