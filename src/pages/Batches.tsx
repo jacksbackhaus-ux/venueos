@@ -16,9 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
+import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { calcBatchProductionCost, loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
 
 type BatchStatus = 'in_progress' | 'complete' | 'quarantined' | 'disposed';
 
@@ -27,6 +29,10 @@ interface Batch {
   batch_code: string;
   product_name: string;
   recipe_ref: string | null;
+  recipe_id: string | null;
+  quantity_produced: number | null;
+  unit_cost_snapshot: number | null;
+  total_production_cost: number | null;
   status: BatchStatus;
   notes: string | null;
   created_at: string;
@@ -60,10 +66,12 @@ const statusConfig: Record<BatchStatus, { label: string; color: string; icon: Re
 };
 
 export default function Batches() {
-  const { appUser, isReadOnly } = useAuth();
+  const { appUser, isReadOnly, orgRole } = useAuth();
   const { currentSite, organisationId } = useSite();
+  const { tier, trialActive, compedActive } = useOrgAccess();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [templates, setTemplates] = useState<BatchTemplate[]>([]);
+  const [costRecipes, setCostRecipes] = useState<RecipeWithCost[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -71,8 +79,17 @@ export default function Batches() {
   const [stageEvents, setStageEvents] = useState<StageEvent[]>([]);
   const [stageLoading, setStageLoading] = useState(false);
 
-  // Create form state
-  const [newBatch, setNewBatch] = useState({ product_name: '', recipe_ref: '', template_id: '', notes: '', date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '' });
+  // Cost & Margin gating: only org_owner / hq_admin AND on Pro / Multi-site / active trial / comped.
+  const isCostManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
+  const hasCostAccess =
+    isCostManager && (tier === "pro" || tier === "multisite" || trialActive || compedActive);
+
+  // Create form state (recipe_id + quantity_produced are cost-only fields)
+  const [newBatch, setNewBatch] = useState({
+    product_name: '', recipe_ref: '', recipe_id: '', quantity_produced: '',
+    template_id: '', notes: '',
+    date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
+  });
   const [creating, setCreating] = useState(false);
 
   // Stage completion state
@@ -96,7 +113,23 @@ export default function Batches() {
     setTemplates((data || []) as unknown as BatchTemplate[]);
   };
 
+  // Load recipes (with cost breakdowns) only when the user can see Cost & Margin.
+  const loadCostRecipes = async () => {
+    if (!siteId || !organisationId || !hasCostAccess) {
+      setCostRecipes([]);
+      return;
+    }
+    try {
+      const { recipes } = await loadCostContextForOrg(siteId, organisationId);
+      setCostRecipes(recipes);
+    } catch (e) {
+      console.error("Failed to load recipe costs", e);
+      setCostRecipes([]);
+    }
+  };
+
   useEffect(() => { loadBatches(); loadTemplates(); }, [siteId]);
+  useEffect(() => { loadCostRecipes(); }, [siteId, organisationId, hasCostAccess]);
 
   const generateBatchCode = () => {
     const date = format(new Date(), 'yyyyMMdd');
@@ -109,13 +142,31 @@ export default function Batches() {
     if (!siteId || !organisationId || !appUser) return;
     setCreating(true);
     const batchCode = generateBatchCode();
+
+    // If a recipe is selected and we can compute cost, snapshot it now.
+    let unitCost: number | null = null;
+    let totalCost: number | null = null;
+    const qty = newBatch.quantity_produced ? Number(newBatch.quantity_produced) : null;
+    if (hasCostAccess && newBatch.recipe_id && qty && qty > 0) {
+      const calc = await calcBatchProductionCost(
+        newBatch.recipe_id, qty, organisationId, siteId
+      );
+      if (calc) { unitCost = calc.unitCost; totalCost = calc.totalCost; }
+    }
+
+    const selectedRecipe = costRecipes.find(r => r.id === newBatch.recipe_id);
+
     const { error } = await supabase.from('batches').insert({
       site_id: siteId,
       organisation_id: organisationId,
       template_id: newBatch.template_id || null,
       batch_code: batchCode,
-      product_name: newBatch.product_name,
-      recipe_ref: newBatch.recipe_ref || null,
+      product_name: newBatch.product_name || selectedRecipe?.name || 'Untitled',
+      recipe_ref: newBatch.recipe_ref || selectedRecipe?.name || null,
+      recipe_id: newBatch.recipe_id || null,
+      quantity_produced: qty,
+      unit_cost_snapshot: unitCost,
+      total_production_cost: totalCost,
       notes: newBatch.notes || null,
       date_produced: newBatch.date_produced || null,
       use_by_date: newBatch.use_by_date || null,
@@ -125,7 +176,11 @@ export default function Batches() {
     if (error) { toast.error(error.message); return; }
     toast.success(`Batch ${batchCode} created`);
     setShowCreate(false);
-    setNewBatch({ product_name: '', recipe_ref: '', template_id: '', notes: '', date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '' });
+    setNewBatch({
+      product_name: '', recipe_ref: '', recipe_id: '', quantity_produced: '',
+      template_id: '', notes: '',
+      date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
+    });
     loadBatches();
   };
 
@@ -270,6 +325,57 @@ export default function Batches() {
             <DialogTitle>Create New Batch</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {hasCostAccess && costRecipes.length > 0 && (
+              <div className="rounded-md border bg-primary/5 p-3 space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Cost & Margin
+                </div>
+                <div>
+                  <Label className="text-xs">Recipe (links cost data)</Label>
+                  <Select
+                    value={newBatch.recipe_id || "__none__"}
+                    onValueChange={(v) => {
+                      const rid = v === "__none__" ? "" : v;
+                      const r = costRecipes.find(x => x.id === rid);
+                      setNewBatch({
+                        ...newBatch,
+                        recipe_id: rid,
+                        product_name: newBatch.product_name || r?.name || '',
+                        recipe_ref: newBatch.recipe_ref || r?.name || '',
+                      });
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="No recipe" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">No recipe</SelectItem>
+                      {costRecipes.map(r => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name} — £{r.breakdown.totalCostPerUnit.toFixed(3)}/unit
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Quantity produced</Label>
+                  <Input type="number" step="1" min="0" placeholder="e.g. 24"
+                    value={newBatch.quantity_produced}
+                    onChange={e => setNewBatch({ ...newBatch, quantity_produced: e.target.value })} />
+                </div>
+                {(() => {
+                  const r = costRecipes.find(x => x.id === newBatch.recipe_id);
+                  const qty = Number(newBatch.quantity_produced) || 0;
+                  if (!r || !qty) return null;
+                  const total = r.breakdown.totalCostPerUnit * qty;
+                  return (
+                    <div className="text-xs text-muted-foreground">
+                      Estimated total cost: <span className="font-semibold text-foreground tabular-nums">£{total.toFixed(2)}</span>
+                      {' '}({qty} × £{r.breakdown.totalCostPerUnit.toFixed(3)})
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
             <div>
               <Label>Product Name *</Label>
               <Input placeholder="Sourdough Loaf" value={newBatch.product_name}
@@ -353,6 +459,33 @@ export default function Batches() {
                     </div>
                   )}
                 </div>
+
+                {/* Cost & Margin snapshot — only for org_owner / hq_admin on Pro / Multi-site / trial */}
+                {hasCostAccess && (selectedBatch.total_production_cost != null || selectedBatch.quantity_produced != null) && (
+                  <div className="rounded-md border bg-primary/5 p-3 space-y-1.5 text-sm">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">
+                      Production Cost
+                    </div>
+                    {selectedBatch.quantity_produced != null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Quantity produced</span>
+                        <span className="tabular-nums">{Number(selectedBatch.quantity_produced)}</span>
+                      </div>
+                    )}
+                    {selectedBatch.unit_cost_snapshot != null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cost per unit (snapshot)</span>
+                        <span className="tabular-nums">£{Number(selectedBatch.unit_cost_snapshot).toFixed(3)}</span>
+                      </div>
+                    )}
+                    {selectedBatch.total_production_cost != null && (
+                      <div className="flex justify-between font-semibold border-t pt-1.5">
+                        <span>Total production cost</span>
+                        <span className="tabular-nums">£{Number(selectedBatch.total_production_cost).toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {selectedBatch.notes && (
                   <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">{selectedBatch.notes}</div>

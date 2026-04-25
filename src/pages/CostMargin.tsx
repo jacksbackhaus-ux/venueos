@@ -60,34 +60,8 @@ const VAT_OPTIONS = [
   { value: "exempt", label: "Exempt", rate: 0 },
 ];
 
-// Convert a quantity from one unit to a base unit (kg or l or each).
-// Returns null if units aren't compatible.
-function toBase(qty: number, unit: string): { base: number; baseUnit: "kg" | "l" | "each" } | null {
-  switch (unit) {
-    case "g": return { base: qty / 1000, baseUnit: "kg" };
-    case "kg": return { base: qty, baseUnit: "kg" };
-    case "ml": return { base: qty / 1000, baseUnit: "l" };
-    case "l": return { base: qty, baseUnit: "l" };
-    case "each": return { base: qty, baseUnit: "each" };
-    default: return null;
-  }
-}
-
-function ingredientLineCost(line: RecipeIng): number {
-  const ing = line.ingredients;
-  if (!ing) return 0;
-  const cpu = line.cost_per_unit_override ?? ing.cost_per_unit;
-  if (cpu == null) return 0;
-  const lineUnit = line.unit || ing.unit;
-  const ingUnit = ing.unit;
-  const lineBase = toBase(Number(line.weight) || 0, lineUnit);
-  // cost is in £ per ing.unit. Convert ingredient unit to base too.
-  const costBase = toBase(1, ingUnit);
-  if (!lineBase || !costBase || lineBase.baseUnit !== costBase.baseUnit) return 0;
-  // cost per base unit = cpu / costBase.base
-  const costPerBase = cpu / costBase.base;
-  return lineBase.base * costPerBase;
-}
+// Cost calculations live in @/lib/recipeCost (shared with Batches & Reports).
+import { ingredientLineCost } from "@/lib/recipeCost";
 
 export default function CostMargin() {
   const { appUser, orgRole } = useAuth();

@@ -3,6 +3,7 @@ import {
   format, subDays, startOfDay, endOfDay, parseISO, differenceInDays,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addWeeks, addMonths,
 } from "date-fns";
+import { loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
 
 export type DateRangeKey = "7days" | "4weeks" | "3months" | "12months";
 
@@ -74,13 +75,38 @@ export interface ReportData {
   ingredients: any[];
   recipes: any[];
   staffCount: number;
+  // Cost & Margin summary (only populated when caller has access)
+  costMargin?: CostMarginSummary;
+}
+
+export interface CostMarginRecipeRow {
+  id: string;
+  name: string;
+  category: string;
+  costPerUnit: number;
+  recommendedSellExVat: number;
+  currentSellExVat: number | null;
+  marginPct: number | null;
+  targetMarginPct: number;
+}
+
+export interface CostMarginSummary {
+  recipes: CostMarginRecipeRow[];
+  averageMarginPct: number | null;
+  recipesBelowTarget: number;
+  recipesMissingPrice: number;
 }
 
 const pct = (n: number, d: number) => (d === 0 ? 100 : Math.round((n / d) * 100));
 const status = (score: number): PillarDetail["status"] =>
   score >= 90 ? "good" : score >= 75 ? "ok" : score >= 50 ? "warning" : "bad";
 
-export async function fetchReportData(siteId: string, orgId: string, range: ReportRange): Promise<ReportData> {
+export async function fetchReportData(
+  siteId: string,
+  orgId: string,
+  range: ReportRange,
+  options: { includeCostMargin?: boolean } = {}
+): Promise<ReportData> {
   // Clamp the range to the venue's creation date — pre-creation days don't exist.
   const siteMetaRes = await supabase.from("sites").select("name, created_at").eq("id", siteId).maybeSingle();
   const siteCreatedAt = siteMetaRes.data?.created_at ? new Date(siteMetaRes.data.created_at) : null;
@@ -289,6 +315,38 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
       severity: (d.status === "bad" ? "high" : d.score < 60 ? "medium" : "low") as "high" | "medium" | "low",
     }));
 
+  // === Cost & Margin summary (only when caller is authorised) ===
+  let costMargin: CostMarginSummary | undefined;
+  if (options.includeCostMargin) {
+    try {
+      const { recipes: cmRecipes } = await loadCostContextForOrg(siteId, orgId);
+      const rows: CostMarginRecipeRow[] = cmRecipes.map((r) => ({
+        id: r.id,
+        name: r.name,
+        category: r.category,
+        costPerUnit: r.breakdown.totalCostPerUnit,
+        recommendedSellExVat: r.breakdown.recommendedSellExVat,
+        currentSellExVat: r.breakdown.sellPrice,
+        marginPct: r.breakdown.marginPct,
+        targetMarginPct: r.breakdown.targetMarginPct,
+      }));
+      const priced = rows.filter((r) => r.marginPct != null);
+      const avg = priced.length === 0
+        ? null
+        : priced.reduce((s, r) => s + (r.marginPct as number), 0) / priced.length;
+      costMargin = {
+        recipes: rows,
+        averageMarginPct: avg,
+        recipesBelowTarget: rows.filter(
+          (r) => r.marginPct != null && r.marginPct < r.targetMarginPct
+        ).length,
+        recipesMissingPrice: rows.filter((r) => r.currentSellExVat == null).length,
+      };
+    } catch (e) {
+      console.error("Failed to load cost & margin summary", e);
+    }
+  }
+
   return {
     range,
     siteName: siteRes.data?.name || "Site",
@@ -319,5 +377,6 @@ export async function fetchReportData(siteId: string, orgId: string, range: Repo
     ingredients,
     recipes,
     staffCount: memberships.length,
+    costMargin,
   };
 }
