@@ -66,7 +66,6 @@ export function AppSidebar() {
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
   ];
 
-  const isManager = orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
   const complianceNav = complianceNavAll
     .filter((item) => !item.requiresReports || role.canViewReports)
     .filter((item) => !item.managerOnly || isManager)
