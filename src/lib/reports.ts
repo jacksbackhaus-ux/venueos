@@ -101,7 +101,12 @@ const pct = (n: number, d: number) => (d === 0 ? 100 : Math.round((n / d) * 100)
 const status = (score: number): PillarDetail["status"] =>
   score >= 90 ? "good" : score >= 75 ? "ok" : score >= 50 ? "warning" : "bad";
 
-export async function fetchReportData(siteId: string, orgId: string, range: ReportRange): Promise<ReportData> {
+export async function fetchReportData(
+  siteId: string,
+  orgId: string,
+  range: ReportRange,
+  options: { includeCostMargin?: boolean } = {}
+): Promise<ReportData> {
   // Clamp the range to the venue's creation date — pre-creation days don't exist.
   const siteMetaRes = await supabase.from("sites").select("name, created_at").eq("id", siteId).maybeSingle();
   const siteCreatedAt = siteMetaRes.data?.created_at ? new Date(siteMetaRes.data.created_at) : null;
