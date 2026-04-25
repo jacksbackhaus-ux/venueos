@@ -158,10 +158,14 @@ export type Database = {
           notes: string | null
           organisation_id: string
           product_name: string
+          quantity_produced: number | null
+          recipe_id: string | null
           recipe_ref: string | null
           site_id: string
           status: Database["public"]["Enums"]["batch_status"]
           template_id: string | null
+          total_production_cost: number | null
+          unit_cost_snapshot: number | null
           use_by_date: string | null
         }
         Insert: {
@@ -174,10 +178,14 @@ export type Database = {
           notes?: string | null
           organisation_id: string
           product_name: string
+          quantity_produced?: number | null
+          recipe_id?: string | null
           recipe_ref?: string | null
           site_id: string
           status?: Database["public"]["Enums"]["batch_status"]
           template_id?: string | null
+          total_production_cost?: number | null
+          unit_cost_snapshot?: number | null
           use_by_date?: string | null
         }
         Update: {
@@ -190,10 +198,14 @@ export type Database = {
           notes?: string | null
           organisation_id?: string
           product_name?: string
+          quantity_produced?: number | null
+          recipe_id?: string | null
           recipe_ref?: string | null
           site_id?: string
           status?: Database["public"]["Enums"]["batch_status"]
           template_id?: string | null
+          total_production_cost?: number | null
+          unit_cost_snapshot?: number | null
           use_by_date?: string | null
         }
         Relationships: [
@@ -209,6 +221,13 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batches_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
             referencedColumns: ["id"]
           },
           {
