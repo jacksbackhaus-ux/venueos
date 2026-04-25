@@ -2,39 +2,44 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Thermometer,
-  ClipboardList,
-  SprayCan,
-  MoreHorizontal,
-  MapPin,
+  LayoutDashboard, Thermometer, ClipboardList, SprayCan,
+  MoreHorizontal, MapPin,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { Badge } from "@/components/ui/badge";
+import type { ModuleName } from "@/lib/plans";
 
-const mobileNav = [
-  { title: "Home", url: "/", icon: LayoutDashboard },
-  { title: "Temps", url: "/temperatures", icon: Thermometer },
-  { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList },
-  { title: "Cleaning", url: "/cleaning", icon: SprayCan },
-  { title: "More", url: "/more", icon: MoreHorizontal },
+// Mobile bottom nav: 4 module slots + More.
+// Each item is shown only if the module is active. If a slot is hidden, the
+// remaining ones still render — the "More" tab always appears.
+type MobileNavItem = { title: string; url: string; icon: React.ElementType; mod?: ModuleName };
+const mobileNavCandidates: MobileNavItem[] = [
+  { title: "Home", url: "/", icon: LayoutDashboard }, // always
+  { title: "Temps", url: "/temperatures", icon: Thermometer, mod: "temperatures" },
+  { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet" },
+  { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { currentSite, hasSelectedSite } = useSite();
   const { isHQ } = useAuth();
+  const { isActive: isModuleActive } = useModuleAccess();
+
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
-  // "More" is active if the current path isn't one of the main 4
+  const visibleMobile = mobileNavCandidates.filter(i => !i.mod || isModuleActive(i.mod));
+  const mobileNav: MobileNavItem[] = [
+    ...visibleMobile,
+    { title: "More", url: "/more", icon: MoreHorizontal },
+  ];
+
   const moreActive =
-    !isActive("/") &&
-    !(location.pathname === "/temperatures") &&
-    !(location.pathname === "/day-sheet") &&
-    !(location.pathname === "/cleaning");
+    !mobileNav.some(i => i.url !== "/more" && isActive(i.url));
 
   const showSiteIndicator = hasSelectedSite && currentSite;
 
@@ -49,9 +54,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Desktop header */}
           <header className="hidden md:flex h-12 items-center border-b bg-card px-4 shrink-0 gap-3">
             <SidebarTrigger />
-            <h1 className="font-heading font-semibold text-sm text-foreground">
-              VenueOS
-            </h1>
+            <h1 className="font-heading font-semibold text-sm text-foreground">VenueOS</h1>
             {showSiteIndicator && (
               <Badge variant="outline" className="ml-auto gap-1.5 border-primary/30 bg-primary/5 text-foreground">
                 <MapPin className="h-3 w-3 text-primary" />
@@ -75,7 +78,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </header>
 
-          {/* Main content */}
           <main className="flex-1 overflow-y-auto pb-20 md:pb-0">{children}</main>
 
           {/* Mobile bottom tabs */}

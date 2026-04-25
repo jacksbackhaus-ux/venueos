@@ -1,40 +1,41 @@
 import { Link } from "react-router-dom";
 import {
-  Calendar,
-  Wheat,
-  Truck,
-  Bug,
-  AlertTriangle,
-  Package,
-  FileBarChart,
-  Calculator,
-  Building2,
-  User,
-  Settings as SettingsIcon,
-  Shield,
-  ChevronRight,
+  Calendar, Wheat, Truck, Bug, AlertTriangle, Package, FileBarChart,
+  Calculator, Building2, User, Settings as SettingsIcon, Shield,
+  ChevronRight, Clock, MessageSquare, Thermometer, ClipboardList,
+  SprayCan, PoundSterling,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import type { ModuleName } from "@/lib/plans";
 
-type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; requires?: 'reports' | 'settings' | 'billing' | 'costMargin' };
+type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; mod?: ModuleName };
 
-const items: NavItem[] = [
-  { to: "/shifts", label: "Shifts", desc: "Assign staff & shift tasks", icon: Calendar },
-  { to: "/allergens", label: "Allergens & Recipes", desc: "Recipes, ingredients, PPDS labels", icon: Wheat },
-  { to: "/suppliers", label: "Suppliers & Deliveries", desc: "Approved suppliers and delivery logs", icon: Truck },
-  { to: "/pest-maintenance", label: "Pest & Maintenance", desc: "Pest sightings and maintenance jobs", icon: Bug },
-  { to: "/incidents", label: "Incidents", desc: "Report and investigate non-conformances", icon: AlertTriangle },
-  { to: "/batches", label: "Batches", desc: "Production batch traceability", icon: Package },
-  { to: "/reports", label: "Reports", desc: "Inspection-ready exports", icon: FileBarChart, requires: 'reports' },
+const dailyOps: NavItem[] = [
+  { to: "/shifts", label: "Shifts", desc: "Assign staff & shift tasks", icon: Calendar, mod: "shifts" },
+  { to: "/timesheets", label: "Timesheets", desc: "Hours & payroll prep", icon: Clock, mod: "timesheets" },
+  { to: "/messenger", label: "Messenger", desc: "Team chat", icon: MessageSquare, mod: "messenger" },
+  { to: "/day-sheet", label: "Day Sheet", desc: "Opening & closing checks", icon: ClipboardList, mod: "day_sheet" },
+  { to: "/temperatures", label: "Temperatures", desc: "Fridge/freezer logs", icon: Thermometer, mod: "temperatures" },
+  { to: "/cleaning", label: "Cleaning", desc: "Daily cleaning schedule", icon: SprayCan, mod: "cleaning" },
 ];
 
-const accountItems: NavItem[] = [
-  { to: "/account", label: "Account", desc: "Subscription & billing", icon: User, requires: 'billing' },
-  { to: "/settings", label: "Settings", desc: "Site, users, modules", icon: SettingsIcon, requires: 'settings' },
+const compliance: NavItem[] = [
+  { to: "/allergens", label: "Allergens & Labels", desc: "Recipes, ingredients, PPDS labels", icon: Wheat, mod: "allergens" },
+  { to: "/suppliers", label: "Suppliers & Deliveries", desc: "Approved suppliers and delivery logs", icon: Truck, mod: "suppliers" },
+  { to: "/pest-maintenance", label: "Pest & Maintenance", desc: "Pest sightings and maintenance jobs", icon: Bug, mod: "pest_maintenance" },
+  { to: "/incidents", label: "Incidents", desc: "Report and investigate non-conformances", icon: AlertTriangle, mod: "incidents" },
+  { to: "/batches", label: "Batch Tracking", desc: "Production batch traceability", icon: Package, mod: "batch_tracking" },
+];
+
+const business: NavItem[] = [
+  { to: "/cost-margin", label: "Cost & Margin", desc: "Recipe costing and margin analysis", icon: Calculator, mod: "cost_margin" },
+  { to: "/tip-tracker", label: "Tip Tracker", desc: "Track and split staff tips", icon: PoundSterling, mod: "tip_tracker" },
+  { to: "/reports", label: "Reports", desc: "Inspection-ready exports", icon: FileBarChart, mod: "reports" },
 ];
 
 export default function More() {
@@ -42,24 +43,27 @@ export default function More() {
   const { hasSelectedSite } = useSite();
   const { isSuperAdmin } = useSuperAdmin();
   const role = useRole();
+  const { isActive: isModuleActive } = useModuleAccess();
 
-  const canSeeCostMargin = orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
+  const filterByModule = (items: NavItem[]) =>
+    items.filter(i => !i.mod || isModuleActive(i.mod));
 
-  const allowed = (req?: NavItem['requires']) => {
-    if (!req) return true;
-    if (req === 'reports') return role.canViewReports;
-    if (req === 'settings') return role.canViewSettings;
-    if (req === 'billing') return role.canManageBilling;
-    if (req === 'costMargin') return canSeeCostMargin;
-    return false;
-  };
+  const visibleDaily = hasSelectedSite ? filterByModule(dailyOps) : [];
+  const visibleCompliance = hasSelectedSite ? filterByModule(compliance) : [];
+  const visibleBusiness = hasSelectedSite ? filterByModule(business) : [];
 
-  // HQ users without a selected site should not see site-scoped modules/settings.
-  const visibleItems = hasSelectedSite ? items.filter((i) => allowed(i.requires)) : [];
-  const visibleAccount = accountItems.filter((i) => {
-    if (i.requires === 'settings' && !hasSelectedSite) return false;
-    return allowed(i.requires);
-  });
+  const isOrgOwner = orgRole?.org_role === "org_owner";
+  const orgItems: NavItem[] = [
+    ...((isHQ && role.isManager)
+      ? [{ to: "/hq", label: "HQ Dashboard", desc: "Multi-site overview", icon: Building2 }]
+      : []),
+    ...(isOrgOwner
+      ? [{ to: "/account", label: "Account & Billing", desc: "Subscription & invoices", icon: User }]
+      : []),
+    ...(role.canViewSettings && hasSelectedSite
+      ? [{ to: "/settings", label: "Settings", desc: "Site, users, modules", icon: SettingsIcon }]
+      : []),
+  ];
 
   return (
     <div className="p-4 space-y-5 max-w-2xl mx-auto">
@@ -68,23 +72,10 @@ export default function More() {
         <p className="text-sm text-muted-foreground">All modules and settings</p>
       </div>
 
-      {visibleItems.length > 0 && <Section title="Modules" items={visibleItems} />}
-
-      {((isHQ || orgRole) && role.isManager) || canSeeCostMargin ? (
-        <Section
-          title="Organisation"
-          items={[
-            ...((isHQ || orgRole) && role.isManager
-              ? [{ to: "/hq", label: "HQ Dashboard", desc: "Multi-site overview", icon: Building2 }]
-              : []),
-            ...(canSeeCostMargin
-              ? [{ to: "/cost-margin", label: "Cost & Margin", desc: "Recipe costing and margin analysis", icon: Calculator }]
-              : []),
-          ]}
-        />
-      ) : null}
-
-      {visibleAccount.length > 0 && <Section title="Account & Settings" items={visibleAccount} />}
+      {visibleDaily.length > 0 && <Section title="Daily Operations" items={visibleDaily} />}
+      {visibleCompliance.length > 0 && <Section title="Compliance" items={visibleCompliance} />}
+      {visibleBusiness.length > 0 && <Section title="Business" items={visibleBusiness} />}
+      {orgItems.length > 0 && <Section title="Organisation" items={orgItems} />}
 
       {isSuperAdmin && (
         <Section
@@ -97,8 +88,7 @@ export default function More() {
 }
 
 function Section({
-  title,
-  items,
+  title, items,
 }: {
   title: string;
   items: { to: string; label: string; desc: string; icon: React.ElementType }[];
