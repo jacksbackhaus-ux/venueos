@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Package,
   FileBarChart,
+  Calculator,
   Building2,
   User,
   Settings as SettingsIcon,
@@ -19,7 +20,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
 
-type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; requires?: 'reports' | 'settings' | 'billing' };
+type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; requires?: 'reports' | 'settings' | 'billing' | 'costMargin' };
 
 const items: NavItem[] = [
   { to: "/shifts", label: "Shifts", desc: "Assign staff & shift tasks", icon: Calendar },
@@ -42,11 +43,14 @@ export default function More() {
   const { isSuperAdmin } = useSuperAdmin();
   const role = useRole();
 
+  const canSeeCostMargin = orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
+
   const allowed = (req?: NavItem['requires']) => {
     if (!req) return true;
     if (req === 'reports') return role.canViewReports;
     if (req === 'settings') return role.canViewSettings;
     if (req === 'billing') return role.canManageBilling;
+    if (req === 'costMargin') return canSeeCostMargin;
     return false;
   };
 
@@ -66,12 +70,19 @@ export default function More() {
 
       {visibleItems.length > 0 && <Section title="Modules" items={visibleItems} />}
 
-      {(isHQ || orgRole) && role.isManager && (
+      {((isHQ || orgRole) && role.isManager) || canSeeCostMargin ? (
         <Section
           title="Organisation"
-          items={[{ to: "/hq", label: "HQ Dashboard", desc: "Multi-site overview", icon: Building2 }]}
+          items={[
+            ...((isHQ || orgRole) && role.isManager
+              ? [{ to: "/hq", label: "HQ Dashboard", desc: "Multi-site overview", icon: Building2 }]
+              : []),
+            ...(canSeeCostMargin
+              ? [{ to: "/cost-margin", label: "Cost & Margin", desc: "Recipe costing and margin analysis", icon: Calculator }]
+              : []),
+          ]}
         />
-      )}
+      ) : null}
 
       {visibleAccount.length > 0 && <Section title="Account & Settings" items={visibleAccount} />}
 
