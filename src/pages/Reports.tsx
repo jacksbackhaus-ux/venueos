@@ -261,6 +261,64 @@ const Reports = () => {
             </CardContent></Card>
           </div>
 
+          {/* Cost & Margin summary — gated to org_owner/hq_admin on Pro/Multi-site/trial */}
+          {hasCostAccess && data.costMargin && data.costMargin.recipes.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-heading flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-primary" /> Cost & Margin Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-md border p-2">
+                    <p className="text-[10px] text-muted-foreground uppercase">Avg margin</p>
+                    <p className="text-lg font-heading font-bold tabular-nums">
+                      {data.costMargin.averageMarginPct != null ? `${data.costMargin.averageMarginPct.toFixed(1)}%` : "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-md border p-2">
+                    <p className="text-[10px] text-muted-foreground uppercase">Below target</p>
+                    <p className="text-lg font-heading font-bold tabular-nums text-warning">{data.costMargin.recipesBelowTarget}</p>
+                  </div>
+                  <div className="rounded-md border p-2">
+                    <p className="text-[10px] text-muted-foreground uppercase">No price set</p>
+                    <p className="text-lg font-heading font-bold tabular-nums text-muted-foreground">{data.costMargin.recipesMissingPrice}</p>
+                  </div>
+                </div>
+                <div className="rounded-md border overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-2 font-semibold">Recipe</th>
+                        <th className="text-right p-2 font-semibold">Cost / unit</th>
+                        <th className="text-right p-2 font-semibold">Recommended</th>
+                        <th className="text-right p-2 font-semibold">Current</th>
+                        <th className="text-right p-2 font-semibold">Margin</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.costMargin.recipes.map(r => (
+                        <tr key={r.id} className="border-t">
+                          <td className="p-2">{r.name}</td>
+                          <td className="p-2 text-right tabular-nums">£{r.costPerUnit.toFixed(3)}</td>
+                          <td className="p-2 text-right tabular-nums">£{r.recommendedSellExVat.toFixed(2)}</td>
+                          <td className="p-2 text-right tabular-nums">{r.currentSellExVat != null ? `£${r.currentSellExVat.toFixed(2)}` : "—"}</td>
+                          <td className={`p-2 text-right tabular-nums font-semibold ${r.marginPct == null ? "text-muted-foreground" : r.marginPct < r.targetMarginPct ? "text-warning" : "text-success"}`}>
+                            {r.marginPct != null ? `${r.marginPct.toFixed(1)}%` : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Included in the exported PDF for org owners and HQ admins on Pro / Multi-site plans.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Export Section */}
           <Card>
             <CardHeader className="pb-2">
