@@ -22,7 +22,7 @@ const STARTER_MODULES = [
 ];
 const PRO_MODULES = [
   ...STARTER_MODULES,
-  "reports", "batches", "suppliers", "pest-maintenance",
+  "reports", "batches", "suppliers", "pest-maintenance", "cost-margin",
 ];
 const MULTISITE_MODULES = [...PRO_MODULES, "hq"];
 
@@ -53,6 +53,7 @@ export const TIERS: Record<Tier, TierDef> = {
       "Batch Tracking",
       "Suppliers & Deliveries",
       "Pest & Maintenance",
+      "Cost & Margin",
       "Unlimited staff",
     ],
     allowedModules: new Set(PRO_MODULES),
