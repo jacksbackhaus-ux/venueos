@@ -315,6 +315,38 @@ export async function fetchReportData(
       severity: (d.status === "bad" ? "high" : d.score < 60 ? "medium" : "low") as "high" | "medium" | "low",
     }));
 
+  // === Cost & Margin summary (only when caller is authorised) ===
+  let costMargin: CostMarginSummary | undefined;
+  if (options.includeCostMargin) {
+    try {
+      const { recipes: cmRecipes } = await loadCostContextForOrg(siteId, orgId);
+      const rows: CostMarginRecipeRow[] = cmRecipes.map((r) => ({
+        id: r.id,
+        name: r.name,
+        category: r.category,
+        costPerUnit: r.breakdown.totalCostPerUnit,
+        recommendedSellExVat: r.breakdown.recommendedSellExVat,
+        currentSellExVat: r.breakdown.sellPrice,
+        marginPct: r.breakdown.marginPct,
+        targetMarginPct: r.breakdown.targetMarginPct,
+      }));
+      const priced = rows.filter((r) => r.marginPct != null);
+      const avg = priced.length === 0
+        ? null
+        : priced.reduce((s, r) => s + (r.marginPct as number), 0) / priced.length;
+      costMargin = {
+        recipes: rows,
+        averageMarginPct: avg,
+        recipesBelowTarget: rows.filter(
+          (r) => r.marginPct != null && r.marginPct < r.targetMarginPct
+        ).length,
+        recipesMissingPrice: rows.filter((r) => r.currentSellExVat == null).length,
+      };
+    } catch (e) {
+      console.error("Failed to load cost & margin summary", e);
+    }
+  }
+
   return {
     range,
     siteName: siteRes.data?.name || "Site",
@@ -345,5 +377,6 @@ export async function fetchReportData(
     ingredients,
     recipes,
     staffCount: memberships.length,
+    costMargin,
   };
 }
