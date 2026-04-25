@@ -30,7 +30,6 @@ const items: NavItem[] = [
   { to: "/incidents", label: "Incidents", desc: "Report and investigate non-conformances", icon: AlertTriangle },
   { to: "/batches", label: "Batches", desc: "Production batch traceability", icon: Package },
   { to: "/reports", label: "Reports", desc: "Inspection-ready exports", icon: FileBarChart, requires: 'reports' },
-  { to: "/cost-margin", label: "Cost & Margin", desc: "Recipe costing and margin analysis", icon: Calculator, requires: 'costMargin' },
 ];
 
 const accountItems: NavItem[] = [
@@ -71,12 +70,19 @@ export default function More() {
 
       {visibleItems.length > 0 && <Section title="Modules" items={visibleItems} />}
 
-      {(isHQ || orgRole) && role.isManager && (
+      {((isHQ || orgRole) && role.isManager) || canSeeCostMargin ? (
         <Section
           title="Organisation"
-          items={[{ to: "/hq", label: "HQ Dashboard", desc: "Multi-site overview", icon: Building2 }]}
+          items={[
+            ...((isHQ || orgRole) && role.isManager
+              ? [{ to: "/hq", label: "HQ Dashboard", desc: "Multi-site overview", icon: Building2 }]
+              : []),
+            ...(canSeeCostMargin
+              ? [{ to: "/cost-margin", label: "Cost & Margin", desc: "Recipe costing and margin analysis", icon: Calculator }]
+              : []),
+          ]}
         />
-      )}
+      ) : null}
 
       {visibleAccount.length > 0 && <Section title="Account & Settings" items={visibleAccount} />}
 
