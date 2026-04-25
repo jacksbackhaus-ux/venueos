@@ -33,76 +33,53 @@ import NotFound from "./pages/NotFound";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { RoleGuard } from "@/components/RoleGuard";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
-import { TIERS } from "@/lib/tiers";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lock } from "lucide-react";
 import { FullScreenLoader } from "@/components/FullScreenLoader";
+import type { ModuleName } from "@/lib/plans";
 
 const queryClient = new QueryClient();
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user, appUser, staffSession } = useAuth();
-
-  if (isLoading) {
-    return <FullScreenLoader />;
-  }
-
+  if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <>{children}</>;
-
-  if (user && !user.is_anonymous && !appUser) {
-    return <Navigate to="/onboarding" replace />;
-  }
-
+  if (user && !user.is_anonymous && !appUser) return <Navigate to="/onboarding" replace />;
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
-
   return <>{children}</>;
 }
 
-/**
- * Blocks site-scoped routes when the trial has ended without a paid plan.
- * Owner is sent to /locked (which links to /pricing); others see /locked too.
- * Account, pricing, and locked pages are exempt.
- */
+/** Trial expired & no paid plan → /locked. Pricing & locked are exempt. */
 function AccessGuard({ children }: { children: React.ReactNode }) {
   const { staffSession } = useAuth();
-  const { loading, hasAccess, trialActive, subscription } = useOrgAccess();
+  const { loading, hasAccess, trialActive, subscription, plan, isLocked } = useOrgAccess();
 
   if (staffSession) return <>{children}</>;
   if (loading) return null;
-
-  // No subscription row yet (just signing up) — let them through; pricing page handles next step.
   if (!subscription) return <>{children}</>;
-
-  // Active access (paid, trialing, or comped) — allow.
+  if (isLocked) return <Navigate to="/locked" replace />;
   if (hasAccess) return <>{children}</>;
 
-  // Trial active with no tier picked — push to pricing.
-  if (trialActive && !subscription.tier) {
-    return <Navigate to="/pricing" replace />;
-  }
+  // Trialing but no plan flags chosen → push to pricing.
+  if (trialActive && !plan.hasAnyPlan) return <Navigate to="/pricing" replace />;
 
-  // Otherwise: locked.
   return <Navigate to="/locked" replace />;
 }
 
-/**
- * Tier-based gate. Hides modules the user's plan doesn't include.
- */
-function TierGuard({ module, children }: { module: string; children: React.ReactNode }) {
-  const { tier } = useOrgAccess();
-  const { staffSession } = useAuth();
-  if (staffSession) return <>{children}</>;
-  // No tier yet (still trialing without selection) → allow everything.
-  if (!tier) return <>{children}</>;
-  if (TIERS[tier].allowedModules.has(module)) return <>{children}</>;
+/** Module-based gate. Hides modules not active for the current site. */
+function ModuleGuard({ module, children }: { module: ModuleName; children: React.ReactNode }) {
+  const { loading, isActive } = useModuleAccess();
+  if (loading) return null;
+  if (isActive(module)) return <>{children}</>;
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
       <Card>
         <CardContent className="py-12 text-center space-y-3">
           <Lock className="h-8 w-8 mx-auto text-muted-foreground" />
-          <h2 className="font-heading font-semibold text-lg">Not included in your plan</h2>
+          <h2 className="font-heading font-semibold text-lg">Module not active</h2>
           <p className="text-sm text-muted-foreground">
-            This feature isn't included in the {TIERS[tier].name} plan. Upgrade to unlock it.
+            This module isn't enabled for your current site. Visit Account & Billing or Settings to enable it.
           </p>
         </CardContent>
       </Card>
@@ -120,11 +97,7 @@ function RequireSite({ children }: { children: React.ReactNode }) {
 
 function AuthRedirect() {
   const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
-
-  if (isLoading) {
-    return <FullScreenLoader />;
-  }
-
+  if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <Navigate to="/" replace />;
   if (user && !user.is_anonymous && !appUser) return <Navigate to="/onboarding" replace />;
   if (isAuthenticated) return <Navigate to="/" replace />;
@@ -133,19 +106,27 @@ function AuthRedirect() {
 
 function AppRoutes() {
   const { isLoading } = useAuth();
+  if (isLoading) return <FullScreenLoader />;
 
-  if (isLoading) {
-    return <FullScreenLoader />;
-  }
-
-  // Wraps a site-scoped page with auth + access (trial/sub) + site selection + tier check.
-  const siteRoute = (mod: string, el: React.ReactNode) => (
+  // Module-gated site route.
+  const moduleRoute = (mod: ModuleName, el: React.ReactNode) => (
     <AuthGuard>
       <AccessGuard>
         <AppLayout>
           <RequireSite>
-            <TierGuard module={mod}>{el}</TierGuard>
+            <ModuleGuard module={mod}>{el}</ModuleGuard>
           </RequireSite>
+        </AppLayout>
+      </AccessGuard>
+    </AuthGuard>
+  );
+
+  // Site route with no module gate (e.g. Dashboard — always available).
+  const siteRoute = (el: React.ReactNode) => (
+    <AuthGuard>
+      <AccessGuard>
+        <AppLayout>
+          <RequireSite>{el}</RequireSite>
         </AppLayout>
       </AccessGuard>
     </AuthGuard>
@@ -159,21 +140,20 @@ function AppRoutes() {
       <Route path="/pricing" element={<AuthGuard><Pricing /></AuthGuard>} />
       <Route path="/locked" element={<AuthGuard><LockedAccount /></AuthGuard>} />
 
-      <Route path="/" element={siteRoute("dashboard", <Dashboard />)} />
-      <Route path="/shifts" element={siteRoute("shifts", <Shifts />)} />
-      <Route path="/temperatures" element={siteRoute("temperatures", <TemperatureTracking />)} />
-      <Route path="/day-sheet" element={siteRoute("day-sheet", <DaySheet />)} />
-      <Route path="/cleaning" element={siteRoute("cleaning", <Cleaning />)} />
-      <Route path="/allergens" element={siteRoute("allergens", <Allergens />)} />
-      <Route path="/suppliers" element={siteRoute("suppliers", <Suppliers />)} />
-      <Route path="/pest-maintenance" element={siteRoute("pest-maintenance", <PestMaintenance />)} />
-      <Route path="/incidents" element={siteRoute("incidents", <Incidents />)} />
-      <Route path="/reports" element={siteRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
-      <Route path="/batches" element={siteRoute("batches", <Batches />)} />
-      <Route path="/cost-margin" element={siteRoute("cost-margin", <CostMargin />)} />
+      <Route path="/" element={siteRoute(<Dashboard />)} />
+      <Route path="/shifts" element={moduleRoute("shifts", <Shifts />)} />
+      <Route path="/temperatures" element={moduleRoute("temperatures", <TemperatureTracking />)} />
+      <Route path="/day-sheet" element={moduleRoute("day_sheet", <DaySheet />)} />
+      <Route path="/cleaning" element={moduleRoute("cleaning", <Cleaning />)} />
+      <Route path="/allergens" element={moduleRoute("allergens", <Allergens />)} />
+      <Route path="/suppliers" element={moduleRoute("suppliers", <Suppliers />)} />
+      <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <PestMaintenance />)} />
+      <Route path="/incidents" element={moduleRoute("incidents", <Incidents />)} />
+      <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
+      <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
+      <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
 
-      {/* HQ Dashboard, Account, Admin, and Settings are core navigation —
-          never tier-gated. Only role checks apply. */}
+      {/* HQ Dashboard, Account, Admin, Settings — always accessible to authorised roles, never module-gated */}
       <Route path="/hq" element={
         <AuthGuard><AccessGuard><AppLayout>
           <RoleGuard require="manager" inline><HQDashboard /></RoleGuard>
