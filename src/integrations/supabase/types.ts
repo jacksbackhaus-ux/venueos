@@ -832,32 +832,38 @@ export type Database = {
         Row: {
           active: boolean
           allergens: string[]
+          cost_per_unit: number | null
           created_at: string
           id: string
           name: string
           organisation_id: string
           site_id: string
           supplier_name: string | null
+          unit: string
         }
         Insert: {
           active?: boolean
           allergens?: string[]
+          cost_per_unit?: number | null
           created_at?: string
           id?: string
           name: string
           organisation_id: string
           site_id: string
           supplier_name?: string | null
+          unit?: string
         }
         Update: {
           active?: boolean
           allergens?: string[]
+          cost_per_unit?: number | null
           created_at?: string
           id?: string
           name?: string
           organisation_id?: string
           site_id?: string
           supplier_name?: string | null
+          unit?: string
         }
         Relationships: [
           {
@@ -984,6 +990,38 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_cost_settings: {
+        Row: {
+          labour_hourly_rate: number
+          monthly_overhead: number
+          organisation_id: string
+          target_margin_pct: number
+          updated_at: string
+        }
+        Insert: {
+          labour_hourly_rate?: number
+          monthly_overhead?: number
+          organisation_id: string
+          target_margin_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          labour_hourly_rate?: number
+          monthly_overhead?: number
+          organisation_id?: string
+          target_margin_pct?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_cost_settings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
         ]
@@ -1171,27 +1209,33 @@ export type Database = {
       }
       recipe_ingredients: {
         Row: {
+          cost_per_unit_override: number | null
           created_at: string
           id: string
           ingredient_id: string
           recipe_id: string
           sort_order: number
+          unit: string | null
           weight: number | null
         }
         Insert: {
+          cost_per_unit_override?: number | null
           created_at?: string
           id?: string
           ingredient_id: string
           recipe_id: string
           sort_order?: number
+          unit?: string | null
           weight?: number | null
         }
         Update: {
+          cost_per_unit_override?: number | null
           created_at?: string
           id?: string
           ingredient_id?: string
           recipe_id?: string
           sort_order?: number
+          unit?: string | null
           weight?: number | null
         }
         Relationships: [
@@ -1219,10 +1263,16 @@ export type Database = {
           created_at: string
           id: string
           label_type: string
+          labour_minutes: number
           last_reviewed_at: string | null
+          monthly_volume: number
           name: string
           organisation_id: string
+          packaging_cost: number
+          sell_price_ex_vat: number | null
           site_id: string
+          target_margin_override: number | null
+          vat_rate: string
         }
         Insert: {
           active?: boolean
@@ -1231,10 +1281,16 @@ export type Database = {
           created_at?: string
           id?: string
           label_type?: string
+          labour_minutes?: number
           last_reviewed_at?: string | null
+          monthly_volume?: number
           name: string
           organisation_id: string
+          packaging_cost?: number
+          sell_price_ex_vat?: number | null
           site_id: string
+          target_margin_override?: number | null
+          vat_rate?: string
         }
         Update: {
           active?: boolean
@@ -1243,10 +1299,16 @@ export type Database = {
           created_at?: string
           id?: string
           label_type?: string
+          labour_minutes?: number
           last_reviewed_at?: string | null
+          monthly_volume?: number
           name?: string
           organisation_id?: string
+          packaging_cost?: number
+          sell_price_ex_vat?: number | null
           site_id?: string
+          target_margin_override?: number | null
+          vat_rate?: string
         }
         Relationships: [
           {

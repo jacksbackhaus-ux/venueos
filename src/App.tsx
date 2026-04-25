@@ -23,6 +23,7 @@ import PestMaintenance from "./pages/PestMaintenance";
 import Incidents from "./pages/Incidents";
 import Reports from "./pages/Reports";
 import Batches from "./pages/Batches";
+import CostMargin from "./pages/CostMargin";
 import HQDashboard from "./pages/HQDashboard";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
@@ -169,6 +170,7 @@ function AppRoutes() {
       <Route path="/incidents" element={siteRoute("incidents", <Incidents />)} />
       <Route path="/reports" element={siteRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={siteRoute("batches", <Batches />)} />
+      <Route path="/cost-margin" element={siteRoute("cost-margin", <CostMargin />)} />
 
       <Route path="/hq" element={
         <AuthGuard><AccessGuard><AppLayout>

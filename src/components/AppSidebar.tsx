@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, CalendarClock, Thermometer, ClipboardList, SprayCan,
   Wheat, Truck, Bug, AlertTriangle, FileText, Settings, ShieldCheck,
-  Package, Building2, CreditCard, MapPin, X,
+  Package, Building2, CreditCard, MapPin, Calculator,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
@@ -26,12 +26,13 @@ const mainNavAll = [
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
 ];
 
-const complianceNavAll: { title: string; url: string; icon: React.ElementType; mod: string; requiresReports?: boolean }[] = [
+const complianceNavAll: { title: string; url: string; icon: React.ElementType; mod: string; requiresReports?: boolean; managerOnly?: boolean }[] = [
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens" },
   { title: "Suppliers", url: "/suppliers", icon: Truck, mod: "suppliers" },
   { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest-maintenance" },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
   { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batches" },
+  { title: "Cost & Margin", url: "/cost-margin", icon: Calculator, mod: "cost-margin", managerOnly: true },
   { title: "Reports", url: "/reports", icon: FileText, mod: "reports", requiresReports: true },
 ];
 
@@ -63,8 +64,10 @@ export function AppSidebar() {
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
   ];
 
+  const isManager = orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
   const complianceNav = complianceNavAll
     .filter((item) => !item.requiresReports || role.canViewReports)
+    .filter((item) => !item.managerOnly || isManager)
     .filter((item) => allowed(item.mod));
 
   const visibleSettingsNav = role.canViewSettings ? settingsNav : [];
