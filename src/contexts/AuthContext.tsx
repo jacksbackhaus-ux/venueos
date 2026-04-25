@@ -155,15 +155,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mountedRef.current) return;
         setSession(session);
         setUser(session?.user ?? null);
-        setIsLoading(false);
 
         if (session?.user) {
-          fetchAppUser(session.user.id).catch((error) => {
-            console.error('Failed to refresh auth state after change.', error);
-          });
+          // Keep isLoading=true until appUser hydration finishes, otherwise
+          // guards see (user && !appUser) for a brief window and incorrectly
+          // redirect a fully onboarded user to /onboarding.
+          setIsLoading(true);
+          fetchAppUser(session.user.id)
+            .catch((error) => {
+              console.error('Failed to refresh auth state after change.', error);
+            })
+            .finally(() => {
+              if (mountedRef.current) setIsLoading(false);
+            });
         } else {
           setAppUser(null);
           setOrgRole(null);
+          setIsLoading(false);
         }
       }
     );
