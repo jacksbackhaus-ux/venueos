@@ -24,6 +24,9 @@ import Incidents from "./pages/Incidents";
 import Reports from "./pages/Reports";
 import Batches from "./pages/Batches";
 import CostMargin from "./pages/CostMargin";
+import Timesheets from "./pages/Timesheets";
+import Messenger from "./pages/Messenger";
+import TipTracker from "./pages/TipTracker";
 import HQDashboard from "./pages/HQDashboard";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
@@ -152,6 +155,9 @@ function AppRoutes() {
       <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
       <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
+      <Route path="/timesheets" element={moduleRoute("timesheets", <Timesheets />)} />
+      <Route path="/messenger" element={moduleRoute("messenger", <Messenger />)} />
+      <Route path="/tip-tracker" element={moduleRoute("tip_tracker", <TipTracker />)} />
 
       {/* HQ Dashboard, Account, Admin, Settings — always accessible to authorised roles, never module-gated */}
       <Route path="/hq" element={
