@@ -68,7 +68,7 @@ const statusConfig: Record<BatchStatus, { label: string; color: string; icon: Re
 export default function Batches() {
   const { appUser, isReadOnly, orgRole } = useAuth();
   const { currentSite, organisationId } = useSite();
-  const { tier, trialActive, compedActive } = useOrgAccess();
+  const { plan, trialActive, compedActive } = useOrgAccess();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [templates, setTemplates] = useState<BatchTemplate[]>([]);
   const [costRecipes, setCostRecipes] = useState<RecipeWithCost[]>([]);
@@ -79,10 +79,10 @@ export default function Batches() {
   const [stageEvents, setStageEvents] = useState<StageEvent[]>([]);
   const [stageLoading, setStageLoading] = useState(false);
 
-  // Cost & Margin gating: only org_owner / hq_admin AND on Pro / Multi-site / active trial / comped.
+  // Cost & Margin gating: only org_owner / hq_admin AND has Business add-on or Bundle (or trial/comp).
   const isCostManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
   const hasCostAccess =
-    isCostManager && (tier === "pro" || tier === "multisite" || trialActive || compedActive);
+    isCostManager && (plan.business || plan.bundle || trialActive || compedActive);
 
   // Create form state (recipe_id + quantity_produced are cost-only fields)
   const [newBatch, setNewBatch] = useState({

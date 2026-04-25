@@ -47,7 +47,7 @@ const Reports = () => {
   const navigate = useNavigate();
   const { currentSite, organisationId } = useSite();
   const { orgRole } = useAuth();
-  const { tier, trialActive, compedActive } = useOrgAccess();
+  const { plan, trialActive, compedActive } = useOrgAccess();
   const [dateRange, setDateRange] = useState<DateRangeKey>("4weeks");
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +55,7 @@ const Reports = () => {
 
   const isCostManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
   const hasCostAccess =
-    isCostManager && (tier === "pro" || tier === "multisite" || trialActive || compedActive);
+    isCostManager && (plan.business || plan.bundle || trialActive || compedActive);
 
   useEffect(() => {
     if (!currentSite || !organisationId) return;
