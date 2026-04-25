@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { TIERS, type Tier } from "@/lib/tiers";
+import type { BillingCycle, PlanId } from "@/lib/plans";
 
 export interface OrgSubscription {
   id: string;
@@ -11,15 +11,28 @@ export interface OrgSubscription {
   trial_end: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
-  billing_interval: string | null;
+  billing_interval: BillingCycle | null;
   site_quantity: number;
   hq_quantity: number;
   stripe_customer_id: string | null;
-  tier: Tier | null;
+  base_active: boolean;
+  compliance_active: boolean;
+  business_active: boolean;
+  bundle_active: boolean;
+  locked_at: string | null;
 }
 
-function isTier(value: string | null | undefined): value is Tier {
-  return value === "starter" || value === "pro" || value === "multisite";
+/** Snapshot of plan state for the org. */
+export interface PlanState {
+  base: boolean;
+  compliance: boolean;
+  business: boolean;
+  bundle: boolean;
+  /** Convenience: which named plans are "owned" */
+  hasAnyPlan: boolean;
+  /** Best label for current selection. */
+  label: string;
+  primary: PlanId | null;
 }
 
 export function useOrgAccess() {
@@ -34,7 +47,6 @@ export function useOrgAccess() {
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -42,17 +54,8 @@ export function useOrgAccess() {
         .select("*")
         .eq("organisation_id", orgId)
         .maybeSingle();
-
       if (error) throw error;
-
-      const normalized = data
-        ? ({
-            ...data,
-            tier: isTier(data.tier) ? data.tier : null,
-          } as OrgSubscription)
-        : null;
-
-      setSubscription(normalized);
+      setSubscription((data as unknown as OrgSubscription) ?? null);
     } catch (error) {
       console.error("Failed to load subscription state.", error);
       setSubscription(null);
@@ -61,37 +64,22 @@ export function useOrgAccess() {
     }
   }, [orgId]);
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
 
   useEffect(() => {
     if (!orgId) return;
-
     const channel = supabase
-      .channel(
-        `org-access-${orgId}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`
-      )
+      .channel(`org-access-${orgId}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes" as never,
-        {
-          event: "*",
-          schema: "public",
-          table: "subscriptions",
-          filter: `organisation_id=eq.${orgId}`,
-        },
-        () => {
-          void refreshRef.current();
-        }
+        { event: "*", schema: "public", table: "subscriptions", filter: `organisation_id=eq.${orgId}` },
+        () => { void refreshRef.current(); }
       )
       .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return () => { void supabase.removeChannel(channel); };
   }, [orgId]);
 
   const now = Date.now();
@@ -101,22 +89,36 @@ export function useOrgAccess() {
     !!subscription.trial_end && new Date(subscription.trial_end).getTime() > now;
   const trialExpired = subscription?.status === "trialing" &&
     !!subscription.trial_end && new Date(subscription.trial_end).getTime() <= now;
-  const paidActive = ["active", "trialing"].includes(subscription?.status || "") &&
-    !trialExpired &&
+  const paidActive = ["active"].includes(subscription?.status || "") &&
     (!subscription?.current_period_end || new Date(subscription.current_period_end).getTime() > now);
+  const canceledWithGrace =
+    subscription?.status === "canceled" &&
+    !!subscription.current_period_end &&
+    new Date(subscription.current_period_end).getTime() > now;
+  const isLocked = !!subscription?.locked_at || (trialExpired && !paidActive && !compedActive);
 
-  const hasAccess = compedActive || (trialActive && !trialExpired) || (paidActive && subscription?.status === "active");
+  const hasAccess = compedActive || trialActive || paidActive || canceledWithGrace;
   const trialDaysLeft = subscription?.trial_end
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - now) / 86400000))
     : null;
 
-  const storedTier: Tier | null = isTier(subscription?.tier) ? subscription.tier : null;
-  // During an active trial (or comp) without an explicit tier selection, treat
-  // the org as Pro so they can preview all Pro-tier modules. Once the trial
-  // expires or converts, the real tier from the subscription is used.
-  const tier: Tier | null = storedTier
-    ?? ((trialActive || compedActive) ? "pro" : null);
-  const tierDef = tier ? TIERS[tier] : null;
+  const flags: PlanState = (() => {
+    const base = !!subscription?.base_active;
+    const compliance = !!subscription?.compliance_active;
+    const business = !!subscription?.business_active;
+    const bundle = !!subscription?.bundle_active;
+    const hasAnyPlan = base || compliance || business || bundle;
+    let primary: PlanId | null = null;
+    let label = "No plan";
+    if (bundle) { primary = "bundle"; label = "Full Bundle"; }
+    else if (base && compliance && business) { primary = "bundle"; label = "Base + Compliance + Business"; }
+    else if (base && compliance) { primary = "base"; label = "Base + Compliance"; }
+    else if (base && business) { primary = "base"; label = "Base + Business"; }
+    else if (base) { primary = "base"; label = "Base Platform"; }
+    else if (compliance) { primary = "compliance"; label = "Compliance Add-on"; }
+    else if (business) { primary = "business"; label = "Business Add-on"; }
+    return { base, compliance, business, bundle, hasAnyPlan, label, primary };
+  })();
 
   return {
     subscription,
@@ -126,8 +128,11 @@ export function useOrgAccess() {
     trialActive,
     trialExpired,
     trialDaysLeft,
+    paidActive,
+    canceledWithGrace,
+    isLocked,
     refresh,
-    tier,
-    tierDef,
+    plan: flags,
+    cycle: (subscription?.billing_interval ?? "month") as BillingCycle,
   };
 }
