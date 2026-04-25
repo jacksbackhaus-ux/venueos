@@ -368,32 +368,19 @@ function RecipeCosting({
                   <TableRow>
                     <TableHead>Ingredient</TableHead>
                     <TableHead className="text-right">Qty</TableHead>
+                    <TableHead className="text-right w-36">Cost override (£/unit)</TableHead>
                     <TableHead className="text-right">Cost</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(recipe.recipe_ingredients || []).map((line) => {
-                    const lineUnit = line.unit || line.ingredients?.unit || "—";
-                    const cpu = line.cost_per_unit_override ?? line.ingredients?.cost_per_unit;
-                    return (
-                      <TableRow key={line.id}>
-                        <TableCell>
-                          <div className="font-medium">{line.ingredients?.name || "—"}</div>
-                          {cpu == null && (
-                            <Badge variant="outline" className="mt-1 text-[10px]">No cost set</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {Number(line.weight || 0)} {lineUnit}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          £{ingredientLineCost(line).toFixed(3)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {(recipe.recipe_ingredients || []).map((line) => (
+                    <RecipeIngredientRow key={line.id} line={line} onSaved={onChange} />
+                  ))}
                 </TableBody>
               </Table>
+              <p className="text-[11px] text-muted-foreground p-2 border-t">
+                Leave override blank to use the ingredient's default cost.
+              </p>
             </div>
           )}
         </div>
