@@ -460,6 +460,33 @@ export default function Batches() {
                   )}
                 </div>
 
+                {/* Cost & Margin snapshot — only for org_owner / hq_admin on Pro / Multi-site / trial */}
+                {hasCostAccess && (selectedBatch.total_production_cost != null || selectedBatch.quantity_produced != null) && (
+                  <div className="rounded-md border bg-primary/5 p-3 space-y-1.5 text-sm">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">
+                      Production Cost
+                    </div>
+                    {selectedBatch.quantity_produced != null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Quantity produced</span>
+                        <span className="tabular-nums">{Number(selectedBatch.quantity_produced)}</span>
+                      </div>
+                    )}
+                    {selectedBatch.unit_cost_snapshot != null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cost per unit (snapshot)</span>
+                        <span className="tabular-nums">£{Number(selectedBatch.unit_cost_snapshot).toFixed(3)}</span>
+                      </div>
+                    )}
+                    {selectedBatch.total_production_cost != null && (
+                      <div className="flex justify-between font-semibold border-t pt-1.5">
+                        <span>Total production cost</span>
+                        <span className="tabular-nums">£{Number(selectedBatch.total_production_cost).toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {selectedBatch.notes && (
                   <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">{selectedBatch.notes}</div>
                 )}
