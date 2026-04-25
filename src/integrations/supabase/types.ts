@@ -1013,6 +1013,41 @@ export type Database = {
           },
         ]
       }
+      module_activation: {
+        Row: {
+          activated_at: string | null
+          id: string
+          is_active: boolean
+          module_name: string
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          id?: string
+          is_active?: boolean
+          module_name: string
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          id?: string
+          is_active?: boolean
+          module_name?: string
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_activation_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_cost_settings: {
         Row: {
           labour_hourly_rate: number
@@ -1718,11 +1753,15 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          base_active: boolean
           billing_interval: string | null
+          bundle_active: boolean
+          business_active: boolean
           cancel_at_period_end: boolean | null
           comped_by: string | null
           comped_reason: string | null
           comped_until: string | null
+          compliance_active: boolean
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
@@ -1730,6 +1769,7 @@ export type Database = {
           hq_quantity: number
           id: string
           is_comped: boolean
+          locked_at: string | null
           organisation_id: string
           site_quantity: number
           status: string
@@ -1740,11 +1780,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          base_active?: boolean
           billing_interval?: string | null
+          bundle_active?: boolean
+          business_active?: boolean
           cancel_at_period_end?: boolean | null
           comped_by?: string | null
           comped_reason?: string | null
           comped_until?: string | null
+          compliance_active?: boolean
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
@@ -1752,6 +1796,7 @@ export type Database = {
           hq_quantity?: number
           id?: string
           is_comped?: boolean
+          locked_at?: string | null
           organisation_id: string
           site_quantity?: number
           status?: string
@@ -1762,11 +1807,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          base_active?: boolean
           billing_interval?: string | null
+          bundle_active?: boolean
+          business_active?: boolean
           cancel_at_period_end?: boolean | null
           comped_by?: string | null
           comped_reason?: string | null
           comped_until?: string | null
+          compliance_active?: boolean
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
@@ -1774,6 +1823,7 @@ export type Database = {
           hq_quantity?: number
           id?: string
           is_comped?: boolean
+          locked_at?: string | null
           organisation_id?: string
           site_quantity?: number
           status?: string
@@ -2092,6 +2142,7 @@ export type Database = {
         Returns: Json
       }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
+      sync_org_modules: { Args: { _org_id: string }; Returns: undefined }
       validate_staff_code: {
         Args: { _site_id: string; _staff_code: string }
         Returns: Json
