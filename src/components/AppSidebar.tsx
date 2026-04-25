@@ -32,7 +32,6 @@ const complianceNavAll: { title: string; url: string; icon: React.ElementType; m
   { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest-maintenance" },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
   { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batches" },
-  { title: "Cost & Margin", url: "/cost-margin", icon: Calculator, mod: "cost-margin", managerOnly: true },
   { title: "Reports", url: "/reports", icon: FileText, mod: "reports", requiresReports: true },
 ];
 
