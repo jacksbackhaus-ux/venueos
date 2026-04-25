@@ -47,7 +47,7 @@ export function AppSidebar() {
   const { isSuperAdmin } = useSuperAdmin();
   const role = useRole();
   const { currentSite, hasSelectedSite, clearSelectedSite } = useSite();
-  const { tier } = useOrgAccess();
+  const { tier, trialActive, compedActive } = useOrgAccess();
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
@@ -55,13 +55,17 @@ export function AppSidebar() {
   // Hide nav items the current tier doesn't include. (No tier yet during trial = show all.)
   const allowed = (mod: string) => !tier || TIERS[tier].allowedModules.has(mod);
 
+  // Pro+ access: explicit pro/multisite tier OR active trial/comp (treated as Pro).
+  const hasProAccess = tier === "pro" || tier === "multisite" || trialActive || compedActive;
+
   const mainNav = mainNavAll.filter((i) => allowed(i.mod));
 
-  const isManager = orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
+  // Use canonical role from useRole() so org_owner, hq_admin, and site owner all qualify.
+  const isManager = role.isManager;
 
   const hqNav = [
-    ...(isHQ && role.isManager && allowed("hq") ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
-    ...(isManager && allowed("cost-margin") ? [{ title: "Cost & Margin", url: "/cost-margin", icon: Calculator }] : []),
+    ...(isHQ && isManager && allowed("hq") ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
+    ...(isManager && hasProAccess ? [{ title: "Cost & Margin", url: "/cost-margin", icon: Calculator }] : []),
     ...(orgRole?.org_role === 'org_owner' ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
   ];
