@@ -75,6 +75,26 @@ export interface ReportData {
   ingredients: any[];
   recipes: any[];
   staffCount: number;
+  // Cost & Margin summary (only populated when caller has access)
+  costMargin?: CostMarginSummary;
+}
+
+export interface CostMarginRecipeRow {
+  id: string;
+  name: string;
+  category: string;
+  costPerUnit: number;
+  recommendedSellExVat: number;
+  currentSellExVat: number | null;
+  marginPct: number | null;
+  targetMarginPct: number;
+}
+
+export interface CostMarginSummary {
+  recipes: CostMarginRecipeRow[];
+  averageMarginPct: number | null;
+  recipesBelowTarget: number;
+  recipesMissingPrice: number;
 }
 
 const pct = (n: number, d: number) => (d === 0 ? 100 : Math.round((n / d) * 100));
