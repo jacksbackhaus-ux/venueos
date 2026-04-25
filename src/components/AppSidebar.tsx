@@ -63,9 +63,13 @@ export function AppSidebar() {
   // Use canonical role from useRole() so org_owner, hq_admin, and site owner all qualify.
   const isManager = role.isManager;
 
+  // Cost & Margin: role check only (org_owner or hq_admin). No tier/onboarding/site gating.
+  const canSeeCostMargin =
+    orgRole?.org_role === 'org_owner' || orgRole?.org_role === 'hq_admin';
+
   const hqNav = [
     ...(isHQ && isManager && allowed("hq") ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
-    ...(isManager && hasProAccess ? [{ title: "Cost & Margin", url: "/cost-margin", icon: Calculator }] : []),
+    ...(canSeeCostMargin ? [{ title: "Cost & Margin", url: "/cost-margin", icon: Calculator }] : []),
     ...(orgRole?.org_role === 'org_owner' ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
   ];
