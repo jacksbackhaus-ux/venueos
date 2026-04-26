@@ -126,7 +126,6 @@ const Shifts = () => {
     [weekStart]
   );
 
-  // Fetch range covers either the full week or just the day depending on view.
   const rangeStart = view === "week" ? weekStart : anchorDate;
   const rangeEnd = view === "week" ? addDays(weekStart, 6) : anchorDate;
 
@@ -169,7 +168,6 @@ const Shifts = () => {
     return m;
   }, [users]);
 
-  // Fetch all task links for the visible assignments
   const assignmentIds = assignments.map((a) => a.id);
   const { data: taskLinks = [] } = useQuery({
     queryKey: ["rota-task-links", assignmentIds.join(",")],
@@ -195,7 +193,6 @@ const Shifts = () => {
     return m;
   }, [taskLinks]);
 
-  // Day sheet sections + items (active only)
   const { data: daySheetSections = [] } = useQuery({
     queryKey: ["rota-daysheet-sections", siteId],
     queryFn: async () => {
@@ -212,7 +209,6 @@ const Shifts = () => {
     enabled: !!siteId && canEdit,
   });
 
-  // Cleaning tasks
   const { data: cleaningTasks = [] } = useQuery({
     queryKey: ["rota-cleaning-tasks", siteId],
     queryFn: async () => {
@@ -229,7 +225,6 @@ const Shifts = () => {
     enabled: !!siteId && canEdit,
   });
 
-  // Group assignments by date+user
   const assignmentsByDateUser = useMemo(() => {
     const m = new Map<string, Assignment[]>();
     assignments.forEach((a) => {
@@ -274,6 +269,20 @@ const Shifts = () => {
     position: "",
   });
   const [linkedTasks, setLinkedTasks] = useState<LinkedTask[]>([]);
+  const [customTasks, setCustomTasks] = useState<string[]>([]);
+  const [customTaskInput, setCustomTaskInput] = useState("");
+
+  const addCustomTask = () => {
+    const trimmed = customTaskInput.trim();
+    if (!trimmed) return;
+    if (customTasks.includes(trimmed)) return;
+    setCustomTasks((prev) => [...prev, trimmed]);
+    setCustomTaskInput("");
+  };
+
+  const removeCustomTask = (task: string) => {
+    setCustomTasks((prev) => prev.filter((t) => t !== task));
+  };
 
   const toggleLinkedTask = (task_type: TaskKind, task_id: string) => {
     setLinkedTasks((prev) => {
@@ -297,6 +306,8 @@ const Shifts = () => {
       position: "",
     });
     setLinkedTasks([]);
+    setCustomTasks([]);
+    setCustomTaskInput("");
     setDialogOpen(true);
   };
 
@@ -311,6 +322,8 @@ const Shifts = () => {
     });
     const existing = linksByAssignment.get(a.id) || [];
     setLinkedTasks(existing.map((l) => ({ task_type: l.task_type, task_id: l.task_id })));
+    setCustomTasks([]);
+    setCustomTaskInput("");
     setDialogOpen(true);
   };
 
@@ -350,7 +363,6 @@ const Shifts = () => {
         assignmentId = data.id;
       }
 
-      // Sync task links: delete then insert (simple + correct).
       const { error: delErr } = await supabase
         .from("rota_assignment_tasks")
         .delete()
@@ -376,7 +388,6 @@ const Shifts = () => {
     onError: (e: Error) => toast.error(e.message || "Could not save shift"),
   });
 
-  // Pull pending shift_requests for status badges on the rota grid
   const { data: pendingRequests = [] } = useQuery({
     queryKey: ["rota-pending-requests", siteId, rangeStart, rangeEnd],
     queryFn: async () => {
@@ -481,7 +492,7 @@ const Shifts = () => {
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-       <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] max-w-lg mx-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] max-w-lg mx-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit shift" : "Add shift"}</DialogTitle>
             <DialogDescription>
@@ -547,24 +558,23 @@ const Shifts = () => {
               />
             </div>
 
-            {/* Optional task linking */}
+            {/* Task linking */}
             <div className="space-y-2 pt-2 border-t">
               <div className="flex items-center justify-between">
-                <Label className="text-sm">Linked compliance tasks (optional)</Label>
-                {linkedTasks.length > 0 && (
+                <Label className="text-sm">Linked tasks (optional)</Label>
+                {(linkedTasks.length + customTasks.length) > 0 && (
                   <Badge variant="secondary" className="text-[10px]">
-                    {linkedTasks.length} linked
+                    {linkedTasks.length + customTasks.length} linked
                   </Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Flag Day Sheet items or Cleaning tasks as this staff member's responsibility for the day.
-                This does not change who can complete them.
+                Flag compliance tasks or add custom tasks as this staff member's responsibility for the day.
               </p>
 
-              <ScrollArea className="h-56 rounded-md border p-2">
+              <ScrollArea className="h-64 rounded-md border p-2">
                 <div className="space-y-3">
-                  {/* Day sheet items grouped by section */}
+                  {/* Day sheet items */}
                   {daySheetSections.length > 0 && (
                     <div>
                       <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
@@ -589,9 +599,7 @@ const Shifts = () => {
                                     >
                                       <Checkbox
                                         checked={checked}
-                                        onCheckedChange={() =>
-                                          toggleLinkedTask("day_sheet_item", it.id)
-                                        }
+                                        onCheckedChange={() => toggleLinkedTask("day_sheet_item", it.id)}
                                       />
                                       <span className="truncate">{it.label}</span>
                                     </label>
@@ -635,10 +643,55 @@ const Shifts = () => {
                   )}
 
                   {daySheetSections.length === 0 && cleaningTasks.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-4">
+                    <p className="text-xs text-muted-foreground text-center py-2">
                       No Day Sheet or Cleaning tasks set up yet.
                     </p>
                   )}
+
+                  {/* Custom tasks */}
+                  <div className="border-t pt-2">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                      Custom Tasks
+                    </div>
+                    <div className="space-y-1 pl-1 mb-2">
+                      {customTasks.map((task) => (
+                        <div key={task} className="flex items-center gap-2 text-sm px-1 py-0.5">
+                          <Checkbox checked onCheckedChange={() => removeCustomTask(task)} />
+                          <span className="flex-1 truncate">{task}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeCustomTask(task)}
+                            className="text-muted-foreground hover:text-destructive text-xs"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 pl-1">
+                      <Input
+                        placeholder="e.g. Bake bread, Set up counter..."
+                        value={customTaskInput}
+                        onChange={(e) => setCustomTaskInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addCustomTask();
+                          }
+                        }}
+                        className="h-8 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={addCustomTask}
+                        className="h-8 shrink-0"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </ScrollArea>
             </div>
@@ -659,7 +712,7 @@ const Shifts = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Cancellation dialog with compensation preview */}
+      {/* Cancellation dialog */}
       <CancellationDialog
         open={!!cancelTarget}
         onOpenChange={(o) => !o && setCancelTarget(null)}
@@ -670,7 +723,7 @@ const Shifts = () => {
         }}
       />
 
-      {/* Smart Fill suggestions */}
+      {/* Smart Fill */}
       <SmartFillDialog
         open={!!smartFillTarget}
         onOpenChange={(o) => !o && setSmartFillTarget(null)}
@@ -752,7 +805,6 @@ function StatusBadge({ info }: { info?: RequestInfo }) {
       </Badge>
     );
   }
-  // cover
   return (
     <Badge variant="outline" className="text-[9px] h-4 px-1 border-destructive/40 bg-destructive/10 text-destructive">
       Cover requested
