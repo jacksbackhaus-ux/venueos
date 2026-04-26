@@ -906,19 +906,23 @@ function DayView({
   assignments,
   userById,
   linkedCount,
+  requestByShiftId,
   canEdit,
   onAdd,
   onEdit,
-  onDelete,
+  onCancel,
+  onSmartFill,
 }: {
   dateIso: string;
   assignments: Assignment[];
   userById: Map<string, AppUser>;
   linkedCount: (assignmentId: string) => number;
+  requestByShiftId: Map<string, RequestInfo>;
   canEdit: boolean;
   onAdd: () => void;
   onEdit: (a: Assignment) => void;
-  onDelete: (id: string) => void;
+  onCancel: (a: Assignment) => void;
+  onSmartFill: (a: Assignment) => void;
 }) {
   const isToday = dateIso === todayIso();
 
@@ -950,14 +954,16 @@ function DayView({
             {assignments.map((a) => {
               const user = userById.get(a.user_id);
               const lc = linkedCount(a.id);
+              const req = requestByShiftId.get(a.id);
               return (
                 <div key={a.id} className="flex items-center gap-3 p-3">
                   <div className="px-2 py-1 rounded text-xs font-semibold border bg-primary/10 text-primary border-primary/20 shrink-0">
                     {a.start_time}–{a.end_time}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">
+                    <div className="font-medium truncate flex items-center gap-2 flex-wrap">
                       {user?.display_name || "Unknown staff"}
+                      <StatusBadge info={req} />
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                       {a.position && (
@@ -976,6 +982,15 @@ function DayView({
                   </div>
                   {canEdit && (
                     <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => onSmartFill(a)}
+                        title="Smart Fill — suggest replacement"
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onEdit(a)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -983,7 +998,8 @@ function DayView({
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        onClick={() => onDelete(a.id)}
+                        onClick={() => onCancel(a)}
+                        title="Cancel shift"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
