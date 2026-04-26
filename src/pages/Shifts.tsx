@@ -481,7 +481,7 @@ const Shifts = () => {
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+       <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] max-w-lg mx-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit shift" : "Add shift"}</DialogTitle>
             <DialogDescription>
