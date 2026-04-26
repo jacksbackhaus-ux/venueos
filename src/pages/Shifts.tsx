@@ -659,23 +659,37 @@ const Shifts = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirm */}
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove shift?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will delete the shift from the rota. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Cancellation dialog with compensation preview */}
+      <CancellationDialog
+        open={!!cancelTarget}
+        onOpenChange={(o) => !o && setCancelTarget(null)}
+        shift={cancelTarget}
+        onCancelled={() => {
+          setCancelTarget(null);
+          qc.invalidateQueries({ queryKey: ["rota-assignments"] });
+        }}
+      />
+
+      {/* Smart Fill suggestions */}
+      <SmartFillDialog
+        open={!!smartFillTarget}
+        onOpenChange={(o) => !o && setSmartFillTarget(null)}
+        siteId={siteId}
+        shift={smartFillTarget}
+        excludeUserIds={smartFillTarget ? [smartFillTarget.user_id] : []}
+        onPick={async (userId) => {
+          if (!smartFillTarget) return;
+          const { error } = await supabase
+            .from("rota_assignments")
+            .update({ user_id: userId })
+            .eq("id", smartFillTarget.id);
+          if (error) toast.error(error.message);
+          else {
+            toast.success("Shift reassigned");
+            qc.invalidateQueries({ queryKey: ["rota-assignments"] });
+          }
+        }}
+      />
     </div>
   );
 };
