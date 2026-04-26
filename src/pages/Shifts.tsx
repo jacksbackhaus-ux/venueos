@@ -740,6 +740,26 @@ function DateBar({
   );
 }
 
+// ---------- Status badge helper ----------
+type RequestInfo = { request_type: "swap" | "cover"; target_user_id: string | null; status: string };
+
+function StatusBadge({ info }: { info?: RequestInfo }) {
+  if (!info) return null;
+  if (info.request_type === "swap") {
+    return (
+      <Badge variant="outline" className="text-[9px] h-4 px-1 border-warning/40 bg-warning/10 text-warning-foreground">
+        Swap pending
+      </Badge>
+    );
+  }
+  // cover
+  return (
+    <Badge variant="outline" className="text-[9px] h-4 px-1 border-destructive/40 bg-destructive/10 text-destructive">
+      Cover requested
+    </Badge>
+  );
+}
+
 // ---------- Weekly view ----------
 function WeekView({
   weekDays,
@@ -747,6 +767,7 @@ function WeekView({
   getAssignments,
   assignmentsForDate,
   linkedCount,
+  requestByShiftId,
   canEdit,
   onAdd,
   onEdit,
@@ -756,6 +777,7 @@ function WeekView({
   getAssignments: (userId: string, iso: string) => Assignment[];
   assignmentsForDate: (iso: string) => Assignment[];
   linkedCount: (assignmentId: string) => number;
+  requestByShiftId: Map<string, RequestInfo>;
   canEdit: boolean;
   onAdd: (iso: string) => void;
   onEdit: (a: Assignment) => void;
@@ -837,6 +859,7 @@ function WeekView({
                         <div className="space-y-1">
                           {list.map((a) => {
                             const lc = linkedCount(a.id);
+                            const req = requestByShiftId.get(a.id);
                             return (
                               <button
                                 key={a.id}
@@ -859,6 +882,7 @@ function WeekView({
                                   )}
                                 </div>
                                 {a.position && <div className="opacity-80 truncate">{a.position}</div>}
+                                {req && <div className="mt-1"><StatusBadge info={req} /></div>}
                               </button>
                             );
                           })}
