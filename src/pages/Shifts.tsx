@@ -264,7 +264,8 @@ const Shifts = () => {
   // ---------- Dialog state ----------
   const [editing, setEditing] = useState<Assignment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Assignment | null>(null);
+  const [smartFillTarget, setSmartFillTarget] = useState<Assignment | null>(null);
   const [form, setForm] = useState({
     user_id: "",
     shift_date: anchorDate,
