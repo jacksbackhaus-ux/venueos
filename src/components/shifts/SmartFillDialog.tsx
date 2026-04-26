@@ -67,7 +67,7 @@ export function SmartFillDialog({ open, onOpenChange, siteId, shift, excludeUser
                 </div>
                 <div className="flex flex-wrap gap-1.5 text-[11px]">
                   {c.available ? (
-                    <Badge variant="outline" className="gap-1 border-green-500/40 text-green-700 dark:text-green-400">
+                    <Badge variant="outline" className="gap-1 border-primary/40 text-primary">
                       <Check className="h-3 w-3" /> Available
                     </Badge>
                   ) : (
