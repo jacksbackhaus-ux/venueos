@@ -1717,12 +1717,16 @@ export type Database = {
       }
       rota_assignments: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           created_at: string
           created_by_user_id: string | null
           end_time: string
           id: string
           organisation_id: string
           position: string | null
+          published_at: string | null
           shift_date: string
           site_id: string
           start_time: string
@@ -1730,12 +1734,16 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
           created_at?: string
           created_by_user_id?: string | null
           end_time: string
           id?: string
           organisation_id: string
           position?: string | null
+          published_at?: string | null
           shift_date: string
           site_id: string
           start_time: string
@@ -1743,12 +1751,16 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
           created_at?: string
           created_by_user_id?: string | null
           end_time?: string
           id?: string
           organisation_id?: string
           position?: string | null
+          published_at?: string | null
           shift_date?: string
           site_id?: string
           start_time?: string
@@ -1780,6 +1792,292 @@ export type Database = {
           {
             foreignKeyName: "rota_assignments_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rota_audit_trail: {
+        Row: {
+          action: string
+          actor_name: string | null
+          actor_user_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          id: string
+          notes: string | null
+          occurred_at: string
+          organisation_id: string
+          rota_assignment_id: string | null
+          site_id: string
+        }
+        Insert: {
+          action: string
+          actor_name?: string | null
+          actor_user_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          organisation_id: string
+          rota_assignment_id?: string | null
+          site_id: string
+        }
+        Update: {
+          action?: string
+          actor_name?: string | null
+          actor_user_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          organisation_id?: string
+          rota_assignment_id?: string | null
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_audit_trail_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_audit_trail_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_audit_trail_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_compensation_logs: {
+        Row: {
+          cancellation_reason: string | null
+          compensation_amount: number
+          created_at: string
+          created_by_user_id: string | null
+          hourly_rate_used: number
+          id: string
+          is_paid: boolean
+          notice_given_hours: number
+          organisation_id: string
+          paid_at: string | null
+          paid_by_user_id: string | null
+          payroll_export_ref: string | null
+          pct_applied: number
+          shift_date: string
+          shift_end: string
+          shift_hours: number
+          shift_id: string | null
+          shift_start: string
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          compensation_amount: number
+          created_at?: string
+          created_by_user_id?: string | null
+          hourly_rate_used: number
+          id?: string
+          is_paid?: boolean
+          notice_given_hours: number
+          organisation_id: string
+          paid_at?: string | null
+          paid_by_user_id?: string | null
+          payroll_export_ref?: string | null
+          pct_applied: number
+          shift_date: string
+          shift_end: string
+          shift_hours: number
+          shift_id?: string | null
+          shift_start: string
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          compensation_amount?: number
+          created_at?: string
+          created_by_user_id?: string | null
+          hourly_rate_used?: number
+          id?: string
+          is_paid?: boolean
+          notice_given_hours?: number
+          organisation_id?: string
+          paid_at?: string | null
+          paid_by_user_id?: string | null
+          payroll_export_ref?: string | null
+          pct_applied?: number
+          shift_date?: string
+          shift_end?: string
+          shift_hours?: number
+          shift_id?: string | null
+          shift_start?: string
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_compensation_logs_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_compensation_logs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_compensation_logs_paid_by_user_id_fkey"
+            columns: ["paid_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_compensation_logs_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "rota_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_compensation_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_compensation_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_requests: {
+        Row: {
+          created_at: string
+          id: string
+          manager_decision_at: string | null
+          manager_id: string | null
+          manager_note: string | null
+          message: string | null
+          organisation_id: string
+          original_shift_id: string
+          request_type: Database["public"]["Enums"]["shift_request_type"]
+          requester_id: string
+          resolved_at: string | null
+          site_id: string
+          status: Database["public"]["Enums"]["shift_request_status"]
+          target_shift_id: string | null
+          target_user_id: string | null
+          teammate_responded_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          manager_decision_at?: string | null
+          manager_id?: string | null
+          manager_note?: string | null
+          message?: string | null
+          organisation_id: string
+          original_shift_id: string
+          request_type: Database["public"]["Enums"]["shift_request_type"]
+          requester_id: string
+          resolved_at?: string | null
+          site_id: string
+          status?: Database["public"]["Enums"]["shift_request_status"]
+          target_shift_id?: string | null
+          target_user_id?: string | null
+          teammate_responded_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          manager_decision_at?: string | null
+          manager_id?: string | null
+          manager_note?: string | null
+          message?: string | null
+          organisation_id?: string
+          original_shift_id?: string
+          request_type?: Database["public"]["Enums"]["shift_request_type"]
+          requester_id?: string
+          resolved_at?: string | null
+          site_id?: string
+          status?: Database["public"]["Enums"]["shift_request_status"]
+          target_shift_id?: string | null
+          target_user_id?: string | null
+          teammate_responded_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_requests_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_original_shift_id_fkey"
+            columns: ["original_shift_id"]
+            isOneToOne: false
+            referencedRelation: "rota_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_target_shift_id_fkey"
+            columns: ["target_shift_id"]
+            isOneToOne: false
+            referencedRelation: "rota_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_target_user_id_fkey"
+            columns: ["target_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -2002,6 +2300,54 @@ export type Database = {
           },
         ]
       }
+      site_compensation_settings: {
+        Row: {
+          default_hourly_rate: number | null
+          organisation_id: string
+          short_notice_hours: number
+          short_notice_pct: number
+          site_id: string
+          updated_at: string
+          very_short_notice_hours: number
+          very_short_notice_pct: number
+        }
+        Insert: {
+          default_hourly_rate?: number | null
+          organisation_id: string
+          short_notice_hours?: number
+          short_notice_pct?: number
+          site_id: string
+          updated_at?: string
+          very_short_notice_hours?: number
+          very_short_notice_pct?: number
+        }
+        Update: {
+          default_hourly_rate?: number | null
+          organisation_id?: string
+          short_notice_hours?: number
+          short_notice_pct?: number
+          site_id?: string
+          updated_at?: string
+          very_short_notice_hours?: number
+          very_short_notice_pct?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_compensation_settings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_compensation_settings_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sites: {
         Row: {
           active: boolean
@@ -2047,6 +2393,76 @@ export type Database = {
           {
             foreignKeyName: "sites_owner_user_id_fkey"
             columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          effective_from: string | null
+          effective_to: string | null
+          end_time: string
+          id: string
+          is_available: boolean
+          notes: string | null
+          organisation_id: string
+          site_id: string
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          effective_from?: string | null
+          effective_to?: string | null
+          end_time: string
+          id?: string
+          is_available?: boolean
+          notes?: string | null
+          organisation_id: string
+          site_id: string
+          start_time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          effective_from?: string | null
+          effective_to?: string | null
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          notes?: string | null
+          organisation_id?: string
+          site_id?: string
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_availability_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_availability_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_availability_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -2370,6 +2786,7 @@ export type Database = {
           created_at: string
           display_name: string
           email: string | null
+          hourly_rate: number | null
           id: string
           last_login_at: string | null
           organisation_id: string
@@ -2382,6 +2799,7 @@ export type Database = {
           created_at?: string
           display_name: string
           email?: string | null
+          hourly_rate?: number | null
           id?: string
           last_login_at?: string | null
           organisation_id: string
@@ -2394,6 +2812,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           email?: string | null
+          hourly_rate?: number | null
           id?: string
           last_login_at?: string | null
           organisation_id?: string
@@ -2419,6 +2838,10 @@ export type Database = {
       generate_staff_code: { Args: { _org_id: string }; Returns: string }
       get_app_user_id: { Args: never; Returns: string }
       get_user_org_id: { Args: never; Returns: string }
+      get_user_weekly_hours: {
+        Args: { _user_id: string; _week_start: string }
+        Returns: number
+      }
       handle_signup: {
         Args: {
           _display_name: string
@@ -2431,6 +2854,16 @@ export type Database = {
       }
       has_channel_audit_access: {
         Args: { _channel_id: string }
+        Returns: boolean
+      }
+      has_clopen_conflict: {
+        Args: {
+          _end_time: string
+          _exclude_assignment_id?: string
+          _shift_date: string
+          _start_time: string
+          _user_id: string
+        }
         Returns: boolean
       }
       has_hq_access: { Args: { _org_id: string }; Returns: boolean }
@@ -2470,6 +2903,14 @@ export type Database = {
       messenger_message_type: "user" | "system" | "shift_card"
       messenger_participant_role: "admin" | "member"
       org_role: "org_owner" | "hq_admin" | "hq_auditor"
+      shift_request_status:
+        | "pending_teammate"
+        | "pending_approval"
+        | "approved"
+        | "declined"
+        | "cancelled"
+        | "expired"
+      shift_request_type: "swap" | "cover"
       site_role: "owner" | "supervisor" | "staff" | "read_only"
       subscription_tier: "starter" | "pro" | "multisite"
       user_status: "active" | "suspended"
@@ -2606,6 +3047,15 @@ export const Constants = {
       messenger_message_type: ["user", "system", "shift_card"],
       messenger_participant_role: ["admin", "member"],
       org_role: ["org_owner", "hq_admin", "hq_auditor"],
+      shift_request_status: [
+        "pending_teammate",
+        "pending_approval",
+        "approved",
+        "declined",
+        "cancelled",
+        "expired",
+      ],
+      shift_request_type: ["swap", "cover"],
       site_role: ["owner", "supervisor", "staff", "read_only"],
       subscription_tier: ["starter", "pro", "multisite"],
       user_status: ["active", "suspended"],
