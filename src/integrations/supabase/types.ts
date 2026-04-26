@@ -1013,6 +1013,308 @@ export type Database = {
           },
         ]
       }
+      messenger_channels: {
+        Row: {
+          archived: boolean
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          id: string
+          is_private: boolean
+          is_system: boolean
+          name: string
+          organisation_id: string
+          role_filter: string | null
+          site_id: string
+          type: Database["public"]["Enums"]["messenger_channel_type"]
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          is_private?: boolean
+          is_system?: boolean
+          name: string
+          organisation_id: string
+          role_filter?: string | null
+          site_id: string
+          type?: Database["public"]["Enums"]["messenger_channel_type"]
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          is_private?: boolean
+          is_system?: boolean
+          name?: string
+          organisation_id?: string
+          role_filter?: string | null
+          site_id?: string
+          type?: Database["public"]["Enums"]["messenger_channel_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_channels_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_channels_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_channels_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_messages: {
+        Row: {
+          attachments: Json
+          channel_id: string
+          content: string | null
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          is_edited: boolean
+          message_type: Database["public"]["Enums"]["messenger_message_type"]
+          sender_id: string | null
+          sender_name_snapshot: string | null
+          site_id: string
+          system_payload: Json | null
+        }
+        Insert: {
+          attachments?: Json
+          channel_id: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          is_edited?: boolean
+          message_type?: Database["public"]["Enums"]["messenger_message_type"]
+          sender_id?: string | null
+          sender_name_snapshot?: string | null
+          site_id: string
+          system_payload?: Json | null
+        }
+        Update: {
+          attachments?: Json
+          channel_id?: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          is_edited?: boolean
+          message_type?: Database["public"]["Enums"]["messenger_message_type"]
+          sender_id?: string | null
+          sender_name_snapshot?: string | null
+          site_id?: string
+          system_payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_messages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_participants: {
+        Row: {
+          channel_id: string
+          id: string
+          joined_at: string
+          last_read_at: string
+          muted: boolean
+          role: Database["public"]["Enums"]["messenger_participant_role"]
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string
+          muted?: boolean
+          role?: Database["public"]["Enums"]["messenger_participant_role"]
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string
+          muted?: boolean
+          role?: Database["public"]["Enums"]["messenger_participant_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_participants_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_presence: {
+        Row: {
+          is_online: boolean
+          last_seen_at: string
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          is_online?: boolean
+          last_seen_at?: string
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          is_online?: boolean
+          last_seen_at?: string
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_presence_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_presence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_read_receipts: {
+        Row: {
+          id: string
+          message_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_read_receipts_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_read_receipts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_settings: {
+        Row: {
+          organisation_id: string
+          read_receipts_enabled: boolean
+          short_notice_compensation_text: string
+          short_notice_hours: number
+          site_id: string
+          updated_at: string
+          who_can_create_channels: string
+        }
+        Insert: {
+          organisation_id: string
+          read_receipts_enabled?: boolean
+          short_notice_compensation_text?: string
+          short_notice_hours?: number
+          site_id: string
+          updated_at?: string
+          who_can_create_channels?: string
+        }
+        Update: {
+          organisation_id?: string
+          read_receipts_enabled?: boolean
+          short_notice_compensation_text?: string
+          short_notice_hours?: number
+          site_id?: string
+          updated_at?: string
+          who_can_create_channels?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_settings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_settings_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       module_activation: {
         Row: {
           activated_at: string | null
@@ -2127,10 +2429,18 @@ export type Database = {
         }
         Returns: Json
       }
+      has_channel_audit_access: {
+        Args: { _channel_id: string }
+        Returns: boolean
+      }
       has_hq_access: { Args: { _org_id: string }; Returns: boolean }
       has_site_access: { Args: { _site_id: string }; Returns: boolean }
       has_site_membership: { Args: { _site_id: string }; Returns: boolean }
       has_site_write_access: { Args: { _site_id: string }; Returns: boolean }
+      is_channel_participant: {
+        Args: { _channel_id: string }
+        Returns: boolean
+      }
       is_org_owner: { Args: { _org_id: string }; Returns: boolean }
       is_site_supervisor_or_owner: {
         Args: { _site_id: string }
@@ -2141,7 +2451,12 @@ export type Database = {
         Args: { _site_id: string; _staff_code: string }
         Returns: Json
       }
+      messenger_mark_read: { Args: { _channel_id: string }; Returns: undefined }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
+      seed_messenger_channels_for_site: {
+        Args: { _site_id: string }
+        Returns: undefined
+      }
       sync_org_modules: { Args: { _org_id: string }; Returns: undefined }
       validate_staff_code: {
         Args: { _site_id: string; _staff_code: string }
@@ -2151,6 +2466,9 @@ export type Database = {
     Enums: {
       auth_type: "email" | "staff_code"
       batch_status: "in_progress" | "complete" | "quarantined" | "disposed"
+      messenger_channel_type: "direct" | "group" | "system" | "role"
+      messenger_message_type: "user" | "system" | "shift_card"
+      messenger_participant_role: "admin" | "member"
       org_role: "org_owner" | "hq_admin" | "hq_auditor"
       site_role: "owner" | "supervisor" | "staff" | "read_only"
       subscription_tier: "starter" | "pro" | "multisite"
@@ -2284,6 +2602,9 @@ export const Constants = {
     Enums: {
       auth_type: ["email", "staff_code"],
       batch_status: ["in_progress", "complete", "quarantined", "disposed"],
+      messenger_channel_type: ["direct", "group", "system", "role"],
+      messenger_message_type: ["user", "system", "shift_card"],
+      messenger_participant_role: ["admin", "member"],
       org_role: ["org_owner", "hq_admin", "hq_auditor"],
       site_role: ["owner", "supervisor", "staff", "read_only"],
       subscription_tier: ["starter", "pro", "multisite"],
