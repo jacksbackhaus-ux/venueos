@@ -376,18 +376,27 @@ const Shifts = () => {
     onError: (e: Error) => toast.error(e.message || "Could not save shift"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("rota_assignments").delete().eq("id", id);
+  // Pull pending shift_requests for status badges on the rota grid
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ["rota-pending-requests", siteId, rangeStart, rangeEnd],
+    queryFn: async () => {
+      if (!siteId) return [];
+      const { data, error } = await supabase
+        .from("shift_requests")
+        .select("id, original_shift_id, request_type, target_user_id, status")
+        .eq("site_id", siteId)
+        .in("status", ["pending_teammate", "pending_approval"]);
       if (error) throw error;
+      return data || [];
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["rota-assignments"] });
-      setDeleteId(null);
-      toast.success("Shift removed");
-    },
-    onError: (e: Error) => toast.error(e.message || "Could not delete shift"),
+    enabled: !!siteId,
   });
+
+  const requestByShiftId = useMemo(() => {
+    const m = new Map<string, { request_type: "swap" | "cover"; target_user_id: string | null; status: string }>();
+    pendingRequests.forEach((r) => m.set(r.original_shift_id, r as { request_type: "swap" | "cover"; target_user_id: string | null; status: string }));
+    return m;
+  }, [pendingRequests]);
 
   const isLoading = loadingAssignments || loadingUsers;
 
