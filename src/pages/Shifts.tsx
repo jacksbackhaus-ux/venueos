@@ -10,6 +10,7 @@ import {
   Pencil,
   Trash2,
   ListChecks,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,16 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -49,6 +40,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { CancellationDialog } from "@/components/shifts/CancellationDialog";
+import { SmartFillDialog } from "@/components/shifts/SmartFillDialog";
 
 // ---------- Date helpers (local time, Mon-first week) ----------
 const DAY_LABELS_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -271,7 +264,8 @@ const Shifts = () => {
   // ---------- Dialog state ----------
   const [editing, setEditing] = useState<Assignment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Assignment | null>(null);
+  const [smartFillTarget, setSmartFillTarget] = useState<Assignment | null>(null);
   const [form, setForm] = useState({
     user_id: "",
     shift_date: anchorDate,
@@ -382,18 +376,27 @@ const Shifts = () => {
     onError: (e: Error) => toast.error(e.message || "Could not save shift"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("rota_assignments").delete().eq("id", id);
+  // Pull pending shift_requests for status badges on the rota grid
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ["rota-pending-requests", siteId, rangeStart, rangeEnd],
+    queryFn: async () => {
+      if (!siteId) return [];
+      const { data, error } = await supabase
+        .from("shift_requests")
+        .select("id, original_shift_id, request_type, target_user_id, status")
+        .eq("site_id", siteId)
+        .in("status", ["pending_teammate", "pending_approval"]);
       if (error) throw error;
+      return data || [];
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["rota-assignments"] });
-      setDeleteId(null);
-      toast.success("Shift removed");
-    },
-    onError: (e: Error) => toast.error(e.message || "Could not delete shift"),
+    enabled: !!siteId,
   });
+
+  const requestByShiftId = useMemo(() => {
+    const m = new Map<string, { request_type: "swap" | "cover"; target_user_id: string | null; status: string }>();
+    pendingRequests.forEach((r) => m.set(r.original_shift_id, r as { request_type: "swap" | "cover"; target_user_id: string | null; status: string }));
+    return m;
+  }, [pendingRequests]);
 
   const isLoading = loadingAssignments || loadingUsers;
 
@@ -456,6 +459,7 @@ const Shifts = () => {
           getAssignments={(uid, iso) => assignmentsByDateUser.get(`${iso}|${uid}`) || []}
           assignmentsForDate={assignmentsForDate}
           linkedCount={(id) => (linksByAssignment.get(id) || []).length}
+          requestByShiftId={requestByShiftId}
           canEdit={canEdit}
           onAdd={(iso) => openCreate(iso)}
           onEdit={openEdit}
@@ -466,10 +470,12 @@ const Shifts = () => {
           assignments={assignmentsForDate(anchorDate)}
           userById={userById}
           linkedCount={(id) => (linksByAssignment.get(id) || []).length}
+          requestByShiftId={requestByShiftId}
           canEdit={canEdit}
           onAdd={() => openCreate(anchorDate)}
           onEdit={openEdit}
-          onDelete={(id) => setDeleteId(id)}
+          onCancel={(a) => setCancelTarget(a)}
+          onSmartFill={(a) => setSmartFillTarget(a)}
         />
       )}
 
@@ -653,23 +659,37 @@ const Shifts = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirm */}
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove shift?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will delete the shift from the rota. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Cancellation dialog with compensation preview */}
+      <CancellationDialog
+        open={!!cancelTarget}
+        onOpenChange={(o) => !o && setCancelTarget(null)}
+        shift={cancelTarget}
+        onCancelled={() => {
+          setCancelTarget(null);
+          qc.invalidateQueries({ queryKey: ["rota-assignments"] });
+        }}
+      />
+
+      {/* Smart Fill suggestions */}
+      <SmartFillDialog
+        open={!!smartFillTarget}
+        onOpenChange={(o) => !o && setSmartFillTarget(null)}
+        siteId={siteId}
+        shift={smartFillTarget}
+        excludeUserIds={smartFillTarget ? [smartFillTarget.user_id] : []}
+        onPick={async (userId) => {
+          if (!smartFillTarget) return;
+          const { error } = await supabase
+            .from("rota_assignments")
+            .update({ user_id: userId })
+            .eq("id", smartFillTarget.id);
+          if (error) toast.error(error.message);
+          else {
+            toast.success("Shift reassigned");
+            qc.invalidateQueries({ queryKey: ["rota-assignments"] });
+          }
+        }}
+      />
     </div>
   );
 };
@@ -720,6 +740,26 @@ function DateBar({
   );
 }
 
+// ---------- Status badge helper ----------
+type RequestInfo = { request_type: "swap" | "cover"; target_user_id: string | null; status: string };
+
+function StatusBadge({ info }: { info?: RequestInfo }) {
+  if (!info) return null;
+  if (info.request_type === "swap") {
+    return (
+      <Badge variant="outline" className="text-[9px] h-4 px-1 border-warning/40 bg-warning/10 text-warning-foreground">
+        Swap pending
+      </Badge>
+    );
+  }
+  // cover
+  return (
+    <Badge variant="outline" className="text-[9px] h-4 px-1 border-destructive/40 bg-destructive/10 text-destructive">
+      Cover requested
+    </Badge>
+  );
+}
+
 // ---------- Weekly view ----------
 function WeekView({
   weekDays,
@@ -727,6 +767,7 @@ function WeekView({
   getAssignments,
   assignmentsForDate,
   linkedCount,
+  requestByShiftId,
   canEdit,
   onAdd,
   onEdit,
@@ -736,6 +777,7 @@ function WeekView({
   getAssignments: (userId: string, iso: string) => Assignment[];
   assignmentsForDate: (iso: string) => Assignment[];
   linkedCount: (assignmentId: string) => number;
+  requestByShiftId: Map<string, RequestInfo>;
   canEdit: boolean;
   onAdd: (iso: string) => void;
   onEdit: (a: Assignment) => void;
@@ -817,6 +859,7 @@ function WeekView({
                         <div className="space-y-1">
                           {list.map((a) => {
                             const lc = linkedCount(a.id);
+                            const req = requestByShiftId.get(a.id);
                             return (
                               <button
                                 key={a.id}
@@ -839,6 +882,7 @@ function WeekView({
                                   )}
                                 </div>
                                 {a.position && <div className="opacity-80 truncate">{a.position}</div>}
+                                {req && <div className="mt-1"><StatusBadge info={req} /></div>}
                               </button>
                             );
                           })}
@@ -862,19 +906,23 @@ function DayView({
   assignments,
   userById,
   linkedCount,
+  requestByShiftId,
   canEdit,
   onAdd,
   onEdit,
-  onDelete,
+  onCancel,
+  onSmartFill,
 }: {
   dateIso: string;
   assignments: Assignment[];
   userById: Map<string, AppUser>;
   linkedCount: (assignmentId: string) => number;
+  requestByShiftId: Map<string, RequestInfo>;
   canEdit: boolean;
   onAdd: () => void;
   onEdit: (a: Assignment) => void;
-  onDelete: (id: string) => void;
+  onCancel: (a: Assignment) => void;
+  onSmartFill: (a: Assignment) => void;
 }) {
   const isToday = dateIso === todayIso();
 
@@ -906,14 +954,16 @@ function DayView({
             {assignments.map((a) => {
               const user = userById.get(a.user_id);
               const lc = linkedCount(a.id);
+              const req = requestByShiftId.get(a.id);
               return (
                 <div key={a.id} className="flex items-center gap-3 p-3">
                   <div className="px-2 py-1 rounded text-xs font-semibold border bg-primary/10 text-primary border-primary/20 shrink-0">
                     {a.start_time}–{a.end_time}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">
+                    <div className="font-medium truncate flex items-center gap-2 flex-wrap">
                       {user?.display_name || "Unknown staff"}
+                      <StatusBadge info={req} />
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                       {a.position && (
@@ -932,6 +982,15 @@ function DayView({
                   </div>
                   {canEdit && (
                     <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => onSmartFill(a)}
+                        title="Smart Fill — suggest replacement"
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onEdit(a)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -939,7 +998,8 @@ function DayView({
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        onClick={() => onDelete(a.id)}
+                        onClick={() => onCancel(a)}
+                        title="Cancel shift"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
