@@ -459,6 +459,7 @@ const Shifts = () => {
           getAssignments={(uid, iso) => assignmentsByDateUser.get(`${iso}|${uid}`) || []}
           assignmentsForDate={assignmentsForDate}
           linkedCount={(id) => (linksByAssignment.get(id) || []).length}
+          requestByShiftId={requestByShiftId}
           canEdit={canEdit}
           onAdd={(iso) => openCreate(iso)}
           onEdit={openEdit}
@@ -469,10 +470,12 @@ const Shifts = () => {
           assignments={assignmentsForDate(anchorDate)}
           userById={userById}
           linkedCount={(id) => (linksByAssignment.get(id) || []).length}
+          requestByShiftId={requestByShiftId}
           canEdit={canEdit}
           onAdd={() => openCreate(anchorDate)}
           onEdit={openEdit}
-          onDelete={(id) => setDeleteId(id)}
+          onCancel={(a) => setCancelTarget(a)}
+          onSmartFill={(a) => setSmartFillTarget(a)}
         />
       )}
 
