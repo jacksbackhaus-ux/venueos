@@ -54,7 +54,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ModuleManagementSection } from "@/components/ModuleManagementSection";
-import { ToggleLeft } from "lucide-react";
+import { MessengerSettingsSection } from "@/components/messenger/MessengerSettingsSection";
+import { ToggleLeft, MessageSquare } from "lucide-react";
 
 // ─── Temperature Units ───
 type TempUnit = {
@@ -576,6 +577,7 @@ const Settings = () => {
             <TabsTrigger value="modules" className="text-xs gap-1"><ToggleLeft className="h-3 w-3" /> Modules</TabsTrigger>
           )}
           <TabsTrigger value="users" className="text-xs gap-1"><Users className="h-3 w-3" /> Users</TabsTrigger>
+          <TabsTrigger value="messenger" className="text-xs gap-1"><MessageSquare className="h-3 w-3" /> Messenger</TabsTrigger>
           <TabsTrigger value="site" className="text-xs gap-1"><Building2 className="h-3 w-3" /> Site</TabsTrigger>
           <TabsTrigger value="account" className="text-xs gap-1"><Shield className="h-3 w-3" /> Account</TabsTrigger>
         </TabsList>
@@ -585,6 +587,10 @@ const Settings = () => {
             <ModuleManagementSection />
           </TabsContent>
         )}
+
+        <TabsContent value="messenger" className="mt-4 space-y-4">
+          <MessengerSettingsSection />
+        </TabsContent>
 
         {/* ════════ TEMPERATURE UNITS ════════ */}
         <TabsContent value="temperature" className="mt-4 space-y-4">
