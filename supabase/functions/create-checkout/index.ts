@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { createStripeClient, type StripeEnv } from "../_shared/stripe.ts";
 
 /**
- * VenueOS plan checkout.
+ * MiseOS plan checkout.
  *
  * Body: { plan: "base"|"compliance"|"business"|"bundle", cycle: "month"|"year", siteQuantity?: number, returnUrl?: string, environment: "sandbox"|"live" }
  *

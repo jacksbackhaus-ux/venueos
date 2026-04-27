@@ -105,7 +105,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <h2 className="font-heading font-bold text-sm text-sidebar-foreground truncate">VenueOS</h2>
+              <h2 className="font-heading font-bold text-sm text-sidebar-foreground truncate">MiseOS</h2>
               <p className="text-[10px] text-muted-foreground truncate">Food Safety Platform</p>
             </div>
           )}

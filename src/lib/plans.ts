@@ -1,4 +1,4 @@
-// VenueOS pricing — Base / Compliance / Business / Bundle.
+// MiseOS pricing — Base / Compliance / Business / Bundle.
 // All prices in GBP per site per month. Annual = monthly × 10 (2 months free).
 
 export type PlanId = "base" | "compliance" | "business" | "bundle";

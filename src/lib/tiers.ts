@@ -1,4 +1,4 @@
-// Tier definitions for VenueOS subscription system. All prices in GBP.
+// Tier definitions for MiseOS subscription system. All prices in GBP.
 
 export type Tier = "starter" | "pro" | "multisite";
 
