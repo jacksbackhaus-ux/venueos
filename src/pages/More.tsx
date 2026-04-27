@@ -55,7 +55,7 @@ export default function More() {
   const isOrgOwner = orgRole?.org_role === "org_owner";
   const orgItems: NavItem[] = [
     ...((isHQ && role.isManager)
-      ? [{ to: "/hq", label: "HQ Dashboard", desc: "Multi-site overview", icon: Building2 }]
+      { to: "/hq", label: "All Sites Overview", desc: "Compliance across all locations", icon: Building2 }
       : []),
     ...(isOrgOwner
       ? [{ to: "/account", label: "Account & Billing", desc: "Subscription & invoices", icon: User }]
