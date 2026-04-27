@@ -2779,6 +2779,106 @@ export type Database = {
           },
         ]
       }
+      timesheet_entries: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          break_minutes: number
+          clock_in: string
+          clock_out: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          organisation_id: string
+          shift_id: string | null
+          site_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          break_minutes?: number
+          clock_in: string
+          clock_out?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          shift_id?: string | null
+          site_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          break_minutes?: number
+          clock_in?: string
+          clock_out?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          shift_id?: string | null
+          site_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_entries_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timesheet_export_logs: {
+        Row: {
+          created_at: string
+          date_from: string
+          date_to: string
+          export_type: string
+          exported_by: string
+          id: string
+          organisation_id: string
+          record_count: number
+          site_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_from: string
+          date_to: string
+          export_type?: string
+          exported_by: string
+          id?: string
+          organisation_id: string
+          record_count?: number
+          site_id: string
+        }
+        Update: {
+          created_at?: string
+          date_from?: string
+          date_to?: string
+          export_type?: string
+          exported_by?: string
+          id?: string
+          organisation_id?: string
+          record_count?: number
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_export_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           auth_type: Database["public"]["Enums"]["auth_type"]
