@@ -2879,6 +2879,91 @@ export type Database = {
           },
         ]
       }
+      tip_allocations: {
+        Row: {
+          created_at: string
+          hours_worked: number | null
+          id: string
+          tip_amount: number
+          tip_pool_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hours_worked?: number | null
+          id?: string
+          tip_amount?: number
+          tip_pool_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hours_worked?: number | null
+          id?: string
+          tip_amount?: number
+          tip_pool_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tip_allocations_tip_pool_id_fkey"
+            columns: ["tip_pool_id"]
+            isOneToOne: false
+            referencedRelation: "tip_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tip_pools: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+          distribution_method: string
+          id: string
+          notes: string | null
+          organisation_id: string
+          site_id: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date: string
+          distribution_method?: string
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          site_id: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          distribution_method?: string
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          site_id?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tip_pools_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           auth_type: Database["public"]["Enums"]["auth_type"]
