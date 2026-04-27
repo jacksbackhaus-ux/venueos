@@ -140,6 +140,20 @@ function SiteSwitcherSheet({
               </button>
             );
           })}
+     {/* All Sites Overview link */}
+          <button
+            onClick={() => { navigate("/hq"); onClose(); }}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-muted transition-colors mt-2 border-t pt-4"
+          >
+            <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">All Sites Overview</p>
+              <p className="text-xs text-muted-foreground">Compliance across all locations</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+          </button>
         </div>
       </div>
     </>
