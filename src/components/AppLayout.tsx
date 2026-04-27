@@ -199,4 +199,176 @@ function MoreSheetExtras({ onClose }: { onClose: () => void }) {
       {orgItems.map((item) => (
         <button
           key={item.url}
-          onClick={() => { navigate(item.url); onC
+          onClick={() => { navigate(item.url); onClose(); }}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-muted transition-colors mb-1"
+        >
+          <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+            <item.icon className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">{item.title}</p>
+            {item.desc && <p className="text-xs text-muted-foreground">{item.desc}</p>}
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main layout ──────────────────────────────────────────────────────────────
+
+type Sheet = "ops" | "compliance" | "more" | null;
+
+export function AppLayout({ children }: { children: React.ReactNode }) {
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const location = useLocation();
+  const { currentSite, hasSelectedSite } = useSite();
+  const { isHQ } = useAuth();
+  const { isActive: isModuleActive } = useModuleAccess();
+
+  const showSiteIndicator = hasSelectedSite && currentSite;
+
+  const filterMods = (items: NavLeaf[]) =>
+    items.filter((i) => !i.mod || isModuleActive(i.mod));
+
+  const visibleOps = hasSelectedSite ? filterMods(operationsItems) : [];
+  const visibleCompliance = hasSelectedSite ? filterMods(complianceItems) : [];
+  const visibleBusiness = filterMods(businessItems);
+
+  // Determine which bottom tab is active
+  const complianceUrls = complianceItems.map((i) => i.url);
+  const opsUrls = operationsItems.map((i) => i.url);
+  const businessUrls = businessItems.map((i) => i.url);
+  const moreUrls = ["/account", "/settings", "/hq", "/admin"];
+
+  const isComplianceActive = complianceUrls.some((u) => location.pathname.startsWith(u));
+  const isOpsActive = opsUrls.some((u) => location.pathname === u || location.pathname.startsWith(u + "/"));
+  const isChatActive = location.pathname.startsWith("/messenger");
+  const isMoreActive = [...businessUrls, ...moreUrls].some((u) => location.pathname.startsWith(u));
+  const isHomeActive = location.pathname === "/" && !isComplianceActive && !isOpsActive && !isChatActive && !isMoreActive;
+
+  const tabClass = (active: boolean) =>
+    cn(
+      "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors",
+      active ? "text-primary" : "text-muted-foreground"
+    );
+
+  const navigate = useNavigate();
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        {/* Desktop sidebar */}
+        <div className="hidden md:block">
+          <AppSidebar />
+        </div>
+
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Desktop header */}
+          <header className="hidden md:flex h-12 items-center border-b bg-card px-4 shrink-0 gap-3">
+            <SidebarTrigger />
+            <h1 className="font-heading font-semibold text-sm text-foreground">MiseOS</h1>
+            {showSiteIndicator && (
+              <Badge variant="outline" className="ml-auto gap-1.5 border-primary/30 bg-primary/5 text-foreground">
+                <MapPin className="h-3 w-3 text-primary" />
+                <span className="font-medium">{currentSite.name}</span>
+                {isHQ && <span className="text-[10px] text-muted-foreground ml-1">HQ view</span>}
+              </Badge>
+            )}
+          </header>
+
+          {/* Mobile header */}
+          <header className="md:hidden flex h-14 items-center border-b bg-card px-4 shrink-0 gap-3">
+            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <ShieldCheck className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <h1 className="font-heading font-semibold text-sm text-foreground">MiseOS</h1>
+            {showSiteIndicator && (
+              <Badge variant="outline" className="ml-auto gap-1 border-primary/30 bg-primary/5 text-foreground max-w-[45%]">
+                <MapPin className="h-3 w-3 text-primary shrink-0" />
+                <span className="font-medium truncate">{currentSite.name}</span>
+              </Badge>
+            )}
+          </header>
+
+          {/* Main content */}
+          <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
+
+          {/* FAB — floating action button */}
+          <FAB />
+
+          {/* Mobile bottom nav */}
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40 flex">
+            {/* Home */}
+            <button className={tabClass(isHomeActive)} onClick={() => { setSheet(null); navigate("/"); }}>
+              <LayoutDashboard className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Home</span>
+            </button>
+
+            {/* Shifts / Operations */}
+            <button
+              className={tabClass(isOpsActive || sheet === "ops")}
+              onClick={() => setSheet(sheet === "ops" ? null : "ops")}
+            >
+              <CalendarClock className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Shifts</span>
+            </button>
+
+            {/* Chat */}
+            <button
+              className={tabClass(isChatActive)}
+              onClick={() => { setSheet(null); navigate("/messenger"); }}
+            >
+              <MessageSquare className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Chat</span>
+            </button>
+
+            {/* Compliance */}
+            <button
+              className={tabClass(isComplianceActive || sheet === "compliance")}
+              onClick={() => setSheet(sheet === "compliance" ? null : "compliance")}
+            >
+              <ShieldCheck className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Compliance</span>
+            </button>
+
+            {/* More */}
+            <button
+              className={tabClass(isMoreActive || sheet === "more")}
+              onClick={() => setSheet(sheet === "more" ? null : "more")}
+            >
+              <MoreHorizontal className="h-5 w-5" />
+              <span className="text-[10px] font-medium">More</span>
+            </button>
+          </nav>
+
+          {/* Operations bottom sheet */}
+          <BottomSheet
+            open={sheet === "ops"}
+            onClose={() => setSheet(null)}
+            title="Daily Operations"
+            items={visibleOps}
+          />
+
+          {/* Compliance bottom sheet */}
+          <BottomSheet
+            open={sheet === "compliance"}
+            onClose={() => setSheet(null)}
+            title="Compliance"
+            items={visibleCompliance}
+          />
+
+          {/* More bottom sheet */}
+          <BottomSheet
+            open={sheet === "more"}
+            onClose={() => setSheet(null)}
+            title="More"
+            items={visibleBusiness}
+            extras={<MoreSheetExtras onClose={() => setSheet(null)} />}
+          />
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
