@@ -17,7 +17,7 @@ export default function Auth() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center mr-3">
-            <span className="text-sm font-bold text-primary-foreground">V</span>
+            <span className="text-sm font-bold text-primary-foreground">M</span>
           </div>
           <h1 className="font-heading text-2xl font-bold text-foreground">MiseOS</h1>
         </div>
