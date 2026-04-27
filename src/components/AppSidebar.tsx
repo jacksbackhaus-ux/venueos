@@ -67,7 +67,7 @@ export function AppSidebar() {
   const isOrgOwner = orgRole?.org_role === "org_owner";
 
   const orgNav: NavLeaf[] = [
-    ...(isHQ && role.isManager ? [{ title: "HQ Dashboard", url: "/hq", icon: Building2 }] : []),
+    ...(isHQ && role.isManager ? [{ title: "All Sites Overview", url: "/hq", icon: Building2 }] : []),
     ...(isOrgOwner ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(role.canViewSettings ? [{ title: "Settings", url: "/settings", icon: Settings }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
