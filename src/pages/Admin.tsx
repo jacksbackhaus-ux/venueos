@@ -52,7 +52,7 @@ export default function Admin() {
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <Card><CardContent className="py-12 text-center text-muted-foreground">
-          Access denied. This area is for VenueOS administrators only.
+          Access denied. This area is for MiseOS administrators only.
         </CardContent></Card>
       </div>
     );

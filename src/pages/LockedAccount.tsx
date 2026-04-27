@@ -23,7 +23,7 @@ export default function LockedAccount() {
           </div>
           <h1 className="font-heading text-xl font-bold">Your free trial has ended</h1>
           <p className="text-sm text-muted-foreground">
-            Your data is safe and waiting for you. To keep using VenueOS,
+            Your data is safe and waiting for you. To keep using MiseOS,
             {isOwner ? " choose a plan and add your payment details." : " ask your account manager to choose a plan."}
           </p>
           <div className="flex flex-col gap-2 pt-2">

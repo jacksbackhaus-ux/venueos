@@ -134,7 +134,7 @@ function MobileDrawer({
             <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
               <ShieldCheck className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-heading font-bold text-sm">VenueOS</span>
+            <span className="font-heading font-bold text-sm">MiseOS</span>
           </div>
           <button
             onClick={onClose}
@@ -226,7 +226,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <header className="hidden md:flex h-12 items-center border-b bg-card px-4 shrink-0 gap-3">
             <SidebarTrigger />
             <h1 className="font-heading font-semibold text-sm text-foreground">
-              VenueOS
+              MiseOS
             </h1>
             {showSiteIndicator && (
               <Badge
@@ -259,7 +259,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </div>
             <h1 className="font-heading font-semibold text-sm text-foreground">
-              VenueOS
+              MiseOS
             </h1>
             {showSiteIndicator && (
               <Badge
