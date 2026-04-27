@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Clock, Plus, Download, CheckCircle2, Timer, Calendar, ChevronLeft, ChevronRight, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,42 +9,46 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
 import { useRole } from "@/hooks/useRole";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type TimesheetEntry = {
   id: string;
   user_id: string;
-  display_name: string;
+  site_id: string;
+  organisation_id: string;
   clock_in: string;
   clock_out: string | null;
   break_minutes: number;
-  total_hours: number | null;
   approved_by: string | null;
-  date: string;
+  approved_at: string | null;
 };
+
+type StaffName = { id: string; display_name: string };
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
-
 function calcHours(clockIn: string, clockOut: string | null, breakMins: number) {
   if (!clockOut) return null;
   const diff = (new Date(clockOut).getTime() - new Date(clockIn).getTime()) / 1000 / 60;
   return Math.max(0, (diff - breakMins) / 60);
 }
-
 function hoursLabel(h: number | null) {
-  if (h === null) return "—";
+  if (h === null || isNaN(h)) return "—";
   const hrs = Math.floor(h);
   const mins = Math.round((h - hrs) * 60);
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
 }
-
-const MOCK_ENTRIES: TimesheetEntry[] = [];
+function toCSV(rows: (string | number)[][]) {
+  return rows.map(r => r.map(v => {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }).join(",")).join("\n");
+}
 
 export default function Timesheets() {
   const { appUser, staffSession } = useAuth();
@@ -52,36 +56,201 @@ export default function Timesheets() {
   const role = useRole();
 
   const userName = appUser?.display_name || staffSession?.display_name || "You";
-  const [entries] = useState<TimesheetEntry[]>(MOCK_ENTRIES);
+  const currentUserId = appUser?.id || staffSession?.user_id || null;
+  const siteId = currentSite?.id || null;
+  const orgId = currentSite?.organisation_id || appUser?.organisation_id || null;
+
+  const [myEntries, setMyEntries] = useState<TimesheetEntry[]>([]);
+  const [allEntries, setAllEntries] = useState<TimesheetEntry[]>([]);
+  const [staffMap, setStaffMap] = useState<Record<string, string>>({});
+  const [openEntry, setOpenEntry] = useState<TimesheetEntry | null>(null);
   const [showClockIn, setShowClockIn] = useState(false);
   const [showClockOut, setShowClockOut] = useState(false);
   const [breakMins, setBreakMins] = useState("0");
   const [weekOffset, setWeekOffset] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  // Week navigation
-  const today = new Date();
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
+  // Week range (Mon–Sun)
+  const { weekStart, weekEnd, weekLabel } = useMemo(() => {
+    const today = new Date();
+    const day = today.getDay(); // 0 Sun..6 Sat
+    const mondayDelta = day === 0 ? -6 : 1 - day;
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(today.getDate() + mondayDelta + weekOffset * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7);
+    const label = `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${new Date(end.getTime() - 1).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+    return { weekStart: start, weekEnd: end, weekLabel: label };
+  }, [weekOffset]);
 
-  const weekLabel = `${weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${weekEnd.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  // Load my entries for the week + currently open entry
+  const loadMy = async () => {
+    if (!currentUserId || !siteId) return;
+    const { data } = await supabase
+      .from("timesheet_entries")
+      .select("*")
+      .eq("user_id", currentUserId)
+      .eq("site_id", siteId)
+      .gte("clock_in", weekStart.toISOString())
+      .lt("clock_in", weekEnd.toISOString())
+      .order("clock_in", { ascending: false });
+    setMyEntries((data || []) as TimesheetEntry[]);
 
-  const isClockedIn = false; // will be wired to DB tomorrow
-  const totalWeekHours = entries.reduce((sum, e) => sum + (e.total_hours || 0), 0);
+    const { data: open } = await supabase
+      .from("timesheet_entries")
+      .select("*")
+      .eq("user_id", currentUserId)
+      .eq("site_id", siteId)
+      .is("clock_out", null)
+      .order("clock_in", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setOpenEntry((open as TimesheetEntry | null) || null);
+  };
 
-  const handleClockIn = () => {
-    toast.success("Clock-in recorded! (Database coming soon)");
+  // Load all entries (manager view)
+  const loadAll = async () => {
+    if (!siteId || !role.isSupervisorPlus) return;
+    const { data } = await supabase
+      .from("timesheet_entries")
+      .select("*")
+      .eq("site_id", siteId)
+      .gte("clock_in", weekStart.toISOString())
+      .lt("clock_in", weekEnd.toISOString())
+      .order("clock_in", { ascending: false });
+    const rows = (data || []) as TimesheetEntry[];
+    setAllEntries(rows);
+
+    const ids = Array.from(new Set(rows.map(r => r.user_id)));
+    if (ids.length) {
+      const { data: users } = await supabase
+        .from("users")
+        .select("id, display_name")
+        .in("id", ids);
+      const map: Record<string, string> = {};
+      (users as StaffName[] | null)?.forEach(u => { map[u.id] = u.display_name; });
+      setStaffMap(map);
+    } else {
+      setStaffMap({});
+    }
+  };
+
+  useEffect(() => { loadMy(); loadAll(); /* eslint-disable-next-line */ }, [currentUserId, siteId, weekOffset, role.isSupervisorPlus]);
+
+  // Realtime updates for this site's entries
+  useEffect(() => {
+    if (!siteId) return;
+    const ch = supabase
+      .channel(`timesheets-${siteId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "timesheet_entries", filter: `site_id=eq.${siteId}` }, () => {
+        loadMy();
+        loadAll();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line
+  }, [siteId, weekStart.getTime()]);
+
+  const isClockedIn = !!openEntry;
+  const totalWeekHours = myEntries.reduce((sum, e) => sum + (calcHours(e.clock_in, e.clock_out, e.break_minutes) || 0), 0);
+
+  const handleClockIn = async () => {
+    if (!currentUserId || !siteId || !orgId) {
+      toast.error("Missing site or user context");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.from("timesheet_entries").insert({
+      site_id: siteId,
+      organisation_id: orgId,
+      user_id: currentUserId,
+      clock_in: new Date().toISOString(),
+      break_minutes: 0,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Clocked in");
     setShowClockIn(false);
+    loadMy();
   };
 
-  const handleClockOut = () => {
-    toast.success("Clock-out recorded! (Database coming soon)");
+  const handleClockOut = async () => {
+    if (!openEntry) return;
+    const breaks = Math.max(0, parseInt(breakMins || "0", 10) || 0);
+    setLoading(true);
+    const { error } = await supabase
+      .from("timesheet_entries")
+      .update({ clock_out: new Date().toISOString(), break_minutes: breaks })
+      .eq("id", openEntry.id);
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Clocked out");
     setShowClockOut(false);
+    setBreakMins("0");
+    loadMy();
   };
 
-  const handleExport = () => {
-    toast.info("CSV export will be available once the database is connected.");
+  const handleApprove = async (entry: TimesheetEntry) => {
+    if (!currentUserId) return;
+    const { error } = await supabase
+      .from("timesheet_entries")
+      .update({ approved_by: currentUserId, approved_at: new Date().toISOString() })
+      .eq("id", entry.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Approved");
+    loadAll();
+  };
+
+  const handleExport = async () => {
+    if (!siteId || !orgId || !currentUserId) return;
+    const rows = allEntries.length ? allEntries : myEntries;
+    if (!rows.length) {
+      toast.info("No entries to export this week");
+      return;
+    }
+    const header = ["Date", "Staff", "Clock In", "Clock Out", "Break (mins)", "Hours", "Approved"];
+    const body = rows.map(e => {
+      const hrs = calcHours(e.clock_in, e.clock_out, e.break_minutes);
+      return [
+        new Date(e.clock_in).toLocaleDateString("en-GB"),
+        staffMap[e.user_id] || (e.user_id === currentUserId ? userName : e.user_id),
+        formatTime(e.clock_in),
+        e.clock_out ? formatTime(e.clock_out) : "",
+        e.break_minutes,
+        hrs !== null ? hrs.toFixed(2) : "",
+        e.approved_by ? "Yes" : "No",
+      ];
+    });
+    const csv = toCSV([header, ...body]);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `timesheets_${weekStart.toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const dateFrom = weekStart.toISOString().slice(0, 10);
+    const dateTo = new Date(weekEnd.getTime() - 1).toISOString().slice(0, 10);
+    await supabase.from("timesheet_export_logs").insert({
+      site_id: siteId,
+      organisation_id: orgId,
+      exported_by: currentUserId,
+      export_type: "csv",
+      date_from: dateFrom,
+      date_to: dateTo,
+      record_count: rows.length,
+    });
+    toast.success(`Exported ${rows.length} entries`);
   };
 
   return (
@@ -113,12 +282,14 @@ export default function Timesheets() {
             </div>
             <div>
               <p className="font-semibold text-sm">{isClockedIn ? "You're clocked in" : "Not clocked in"}</p>
-              <p className="text-xs text-muted-foreground">{userName}</p>
+              <p className="text-xs text-muted-foreground">
+                {userName}{openEntry ? ` · since ${formatTime(openEntry.clock_in)}` : ""}
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
             {!isClockedIn ? (
-              <Button size="sm" onClick={() => setShowClockIn(true)}>
+              <Button size="sm" onClick={() => setShowClockIn(true)} disabled={!siteId}>
                 <Plus className="h-4 w-4 mr-1" /> Clock In
               </Button>
             ) : (
@@ -150,7 +321,7 @@ export default function Timesheets() {
           </div>
         </CardHeader>
         <CardContent>
-          {entries.length === 0 ? (
+          {myEntries.length === 0 ? (
             <div className="text-center py-8 space-y-2">
               <Clock className="h-10 w-10 mx-auto text-muted-foreground opacity-40" />
               <p className="text-sm text-muted-foreground">No timesheet entries this week.</p>
@@ -158,27 +329,30 @@ export default function Timesheets() {
             </div>
           ) : (
             <div className="space-y-2">
-              {entries.map(entry => (
-                <div key={entry.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{formatDate(entry.clock_in)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatTime(entry.clock_in)} – {entry.clock_out ? formatTime(entry.clock_out) : "Still clocked in"}
-                      {entry.break_minutes > 0 && ` · ${entry.break_minutes}m break`}
-                    </p>
+              {myEntries.map(entry => {
+                const hrs = calcHours(entry.clock_in, entry.clock_out, entry.break_minutes);
+                return (
+                  <div key={entry.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{formatDate(entry.clock_in)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatTime(entry.clock_in)} – {entry.clock_out ? formatTime(entry.clock_out) : "Still clocked in"}
+                        {entry.break_minutes > 0 && ` · ${entry.break_minutes}m break`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{hoursLabel(hrs)}</span>
+                      {entry.approved_by ? (
+                        <Badge className="bg-success/10 text-success border-0 text-[10px]">
+                          <CheckCircle2 className="h-3 w-3 mr-1" /> Approved
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">Pending</Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{hoursLabel(entry.total_hours)}</span>
-                    {entry.approved_by ? (
-                      <Badge className="bg-success/10 text-success border-0 text-[10px]">
-                        <CheckCircle2 className="h-3 w-3 mr-1" /> Approved
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px]">Pending</Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="flex justify-between pt-2">
                 <span className="text-sm text-muted-foreground">Total this week</span>
                 <span className="text-sm font-bold">{hoursLabel(totalWeekHours)}</span>
@@ -198,10 +372,42 @@ export default function Timesheets() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-6 space-y-1">
-              <p className="text-sm text-muted-foreground">Staff timesheets will appear here once the database is connected.</p>
-              <p className="text-xs text-muted-foreground">You'll be able to approve, query, and export from this view.</p>
-            </div>
+            {allEntries.length === 0 ? (
+              <div className="text-center py-6 space-y-1">
+                <p className="text-sm text-muted-foreground">No staff entries for this week yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {allEntries.map(entry => {
+                  const hrs = calcHours(entry.clock_in, entry.clock_out, entry.break_minutes);
+                  return (
+                    <div key={entry.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <div>
+                        <p className="text-sm font-medium">{staffMap[entry.user_id] || "Unknown"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(entry.clock_in)} · {formatTime(entry.clock_in)} – {entry.clock_out ? formatTime(entry.clock_out) : "Open"}
+                          {entry.break_minutes > 0 && ` · ${entry.break_minutes}m break`}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">{hoursLabel(hrs)}</span>
+                        {entry.approved_by ? (
+                          <Badge className="bg-success/10 text-success border-0 text-[10px]">
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Approved
+                          </Badge>
+                        ) : entry.clock_out ? (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleApprove(entry)}>
+                            Approve
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">Open</Badge>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -218,7 +424,7 @@ export default function Timesheets() {
               <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p>
             </div>
             <p className="text-sm text-center text-muted-foreground">Clocking in as <strong>{userName}</strong></p>
-            <Button className="w-full" onClick={handleClockIn}>
+            <Button className="w-full" onClick={handleClockIn} disabled={loading}>
               <Clock className="h-4 w-4 mr-2" /> Confirm Clock In
             </Button>
           </div>
@@ -248,7 +454,7 @@ export default function Timesheets() {
                 placeholder="0"
               />
             </div>
-            <Button className="w-full" onClick={handleClockOut}>
+            <Button className="w-full" onClick={handleClockOut} disabled={loading}>
               <CheckCircle2 className="h-4 w-4 mr-2" /> Confirm Clock Out
             </Button>
           </div>
