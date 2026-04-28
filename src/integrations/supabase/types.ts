@@ -3014,6 +3014,68 @@ export type Database = {
           },
         ]
       }
+      waste_logs: {
+        Row: {
+          category: string
+          created_at: string
+          estimated_cost: number | null
+          id: string
+          item_name: string
+          logged_at: string
+          logged_by: string | null
+          logged_by_name: string
+          notes: string | null
+          organisation_id: string
+          quantity: number
+          shift_date: string
+          site_id: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          item_name: string
+          logged_at?: string
+          logged_by?: string | null
+          logged_by_name?: string
+          notes?: string | null
+          organisation_id: string
+          quantity?: number
+          shift_date?: string
+          site_id: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          item_name?: string
+          logged_at?: string
+          logged_by?: string | null
+          logged_by_name?: string
+          notes?: string | null
+          organisation_id?: string
+          quantity?: number
+          shift_date?: string
+          site_id?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waste_logs_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

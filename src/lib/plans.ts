@@ -4,7 +4,7 @@
 export type PlanId = "base" | "compliance" | "business" | "bundle";
 export type BillingCycle = "month" | "year";
 export type ModuleName =
-  | "temperatures" | "day_sheet" | "cleaning" | "shifts" | "timesheets" | "messenger"
+  | "temperatures" | "day_sheet" | "cleaning" | "shifts" | "timesheets" | "messenger" | "waste_log"
   | "allergens" | "suppliers" | "pest_maintenance" | "incidents" | "batch_tracking"
   | "cost_margin" | "tip_tracker" | "reports";
 
@@ -27,6 +27,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
   shifts: "Shifts",
   timesheets: "Timesheets",
   messenger: "Messenger",
+  waste_log: "Waste Log",
   allergens: "Allergens & Labels",
   suppliers: "Suppliers & Deliveries",
   pest_maintenance: "Pest & Maintenance",
@@ -45,6 +46,7 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   shifts: "/shifts",
   timesheets: "/timesheets",
   messenger: "/messenger",
+  waste_log: "/waste-log",
   allergens: "/allergens",
   suppliers: "/suppliers",
   pest_maintenance: "/pest-maintenance",
@@ -55,7 +57,7 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   reports: "/reports",
 };
 
-export const BASE_MODULES: ModuleName[] = ["temperatures", "day_sheet", "cleaning", "shifts", "timesheets", "messenger"];
+export const BASE_MODULES: ModuleName[] = ["temperatures", "day_sheet", "cleaning", "shifts", "timesheets", "messenger", "waste_log"];
 export const COMPLIANCE_MODULES: ModuleName[] = ["allergens", "suppliers", "pest_maintenance", "incidents", "batch_tracking"];
 export const BUSINESS_MODULES: ModuleName[] = ["cost_margin", "tip_tracker", "reports"];
 export const ALL_MODULES: ModuleName[] = [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES];

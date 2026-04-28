@@ -3,7 +3,7 @@ import {
   Calendar, Wheat, Truck, Bug, AlertTriangle, Package, FileBarChart,
   Calculator, Building2, User, Settings as SettingsIcon, Shield,
   ChevronRight, Clock, MessageSquare, Thermometer, ClipboardList,
-  SprayCan, PoundSterling,
+  SprayCan, PoundSterling, Trash2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,7 @@ const dailyOps: NavItem[] = [
   { to: "/day-sheet", label: "Day Sheet", desc: "Opening & closing checks", icon: ClipboardList, mod: "day_sheet" },
   { to: "/temperatures", label: "Temperatures", desc: "Fridge/freezer logs", icon: Thermometer, mod: "temperatures" },
   { to: "/cleaning", label: "Cleaning", desc: "Daily cleaning schedule", icon: SprayCan, mod: "cleaning" },
+  { to: "/waste-log", label: "Waste Log", desc: "Track food waste & cost", icon: Trash2, mod: "waste_log" },
 ];
 
 const compliance: NavItem[] = [

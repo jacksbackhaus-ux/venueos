@@ -18,6 +18,7 @@ import ShiftHive from "./pages/ShiftHive";
 import TemperatureTracking from "./pages/TemperatureTracking";
 import DaySheet from "./pages/DaySheet";
 import Cleaning from "./pages/Cleaning";
+import WasteLog from "./pages/WasteLog";
 import Allergens from "./pages/Allergens";
 import Suppliers from "./pages/Suppliers";
 import PestMaintenance from "./pages/PestMaintenance";
@@ -154,6 +155,7 @@ function AppRoutes() {
       <Route path="/temperatures" element={moduleRoute("temperatures", <TemperatureTracking />)} />
       <Route path="/day-sheet" element={moduleRoute("day_sheet", <DaySheet />)} />
       <Route path="/cleaning" element={moduleRoute("cleaning", <Cleaning />)} />
+      <Route path="/waste-log" element={moduleRoute("waste_log", <WasteLog />)} />
       <Route path="/allergens" element={moduleRoute("allergens", <Allergens />)} />
       <Route path="/suppliers" element={moduleRoute("suppliers", <Suppliers />)} />
       <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <PestMaintenance />)} />

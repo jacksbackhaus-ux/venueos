@@ -2,7 +2,7 @@ import {
   LayoutDashboard, CalendarClock, Thermometer, ClipboardList, SprayCan,
   Wheat, Truck, Bug, AlertTriangle, FileText, Settings, ShieldCheck,
   Package, Building2, CreditCard, MapPin, Calculator, Clock, MessageSquare,
-  PoundSterling, Sparkles,
+  PoundSterling, Sparkles, Trash2,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
@@ -30,6 +30,7 @@ const dailyOpsAll: NavLeaf[] = [
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet" },
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures" },
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
+  { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log" },
 ];
 
 const complianceAll: NavLeaf[] = [
