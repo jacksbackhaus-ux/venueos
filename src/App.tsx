@@ -33,6 +33,7 @@ import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import More from "./pages/More";
+import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { RoleGuard } from "@/components/RoleGuard";
