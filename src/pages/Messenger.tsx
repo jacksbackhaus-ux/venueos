@@ -5,6 +5,7 @@ import { ChannelList } from "@/components/messenger/ChannelList";
 import { ChatWindow } from "@/components/messenger/ChatWindow";
 import { NewChannelDialog } from "@/components/messenger/NewChannelDialog";
 import { NewDMDialog } from "@/components/messenger/NewDMDialog";
+import { MessengerDisclosureModal } from "@/components/messenger/MessengerDisclosureModal";
 import { useChannels, useMessengerSettings } from "@/hooks/useMessenger";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/hooks/useRole";
@@ -13,8 +14,9 @@ import { cn } from "@/lib/utils";
 export default function Messenger() {
   const { channels, loading } = useChannels();
   const { settings } = useMessengerSettings();
-  const { orgRole } = useAuth();
+  const { orgRole, appUser, staffSession } = useAuth();
   const role = useRole();
+  const userKey = appUser?.id ?? staffSession?.user_id ?? null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -52,6 +54,7 @@ export default function Messenger() {
 
   return (
     <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-3.5rem)] flex bg-background">
+      <MessengerDisclosureModal userKey={userKey} />
       {/* Channel list — full width on mobile when no chat selected */}
       <aside
         className={cn(
