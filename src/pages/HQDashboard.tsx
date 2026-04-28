@@ -133,8 +133,8 @@ export default function AllSitesOverview() {
         quarantined_batches: quarantinedBatches || 0,
         temp_breaches: tempBreaches || 0,
         open_incidents: openIncidents || 0,
-        todays_tasks_total: daySheetItems?.length || 0,
-        todays_tasks_done: completedItems?.length || 0,
+        todays_tasks_total: totalItems,
+        todays_tasks_done: completedCount || 0,
       });
     }
 
