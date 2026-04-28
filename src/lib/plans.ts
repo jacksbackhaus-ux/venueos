@@ -27,6 +27,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
   shifts: "Shifts",
   timesheets: "Timesheets",
   messenger: "Messenger",
+  waste_log: "Waste Log",
   allergens: "Allergens & Labels",
   suppliers: "Suppliers & Deliveries",
   pest_maintenance: "Pest & Maintenance",
