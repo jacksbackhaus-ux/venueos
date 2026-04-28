@@ -30,6 +30,7 @@ const dailyOpsAll: NavLeaf[] = [
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet" },
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures" },
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
+  { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log" },
 ];
 
 const complianceAll: NavLeaf[] = [
