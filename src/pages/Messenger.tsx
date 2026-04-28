@@ -14,8 +14,9 @@ import { cn } from "@/lib/utils";
 export default function Messenger() {
   const { channels, loading } = useChannels();
   const { settings } = useMessengerSettings();
-  const { orgRole } = useAuth();
+  const { orgRole, appUser, staffSession } = useAuth();
   const role = useRole();
+  const userKey = appUser?.id ?? staffSession?.user_id ?? null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [showNewDM, setShowNewDM] = useState(false);
