@@ -93,9 +93,11 @@ function ModuleGuard({ module, children }: { module: ModuleName; children: React
 }
 
 function RequireSite({ children }: { children: React.ReactNode }) {
-  const { hasSelectedSite, isLoading } = useSite();
-  const { isHQ } = useAuth();
+  const { hasSelectedSite, isLoading, sites } = useSite();
+  const { isHQ, staffSession } = useAuth();
   if (isLoading) return null;
+  if (staffSession) return <>{children}</>;
+  if (!hasSelectedSite && sites.length > 1) return <Navigate to="/select-site" replace />;
   if (isHQ && !hasSelectedSite) return <Navigate to="/hq" replace />;
   return <>{children}</>;
 }
