@@ -4,7 +4,7 @@
 export type PlanId = "base" | "compliance" | "business" | "bundle";
 export type BillingCycle = "month" | "year";
 export type ModuleName =
-  | "temperatures" | "day_sheet" | "cleaning" | "shifts" | "timesheets" | "messenger"
+  | "temperatures" | "day_sheet" | "cleaning" | "shifts" | "timesheets" | "messenger" | "waste_log"
   | "allergens" | "suppliers" | "pest_maintenance" | "incidents" | "batch_tracking"
   | "cost_margin" | "tip_tracker" | "reports";
 
