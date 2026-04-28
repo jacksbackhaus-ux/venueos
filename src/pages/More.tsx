@@ -3,7 +3,7 @@ import {
   Calendar, Wheat, Truck, Bug, AlertTriangle, Package, FileBarChart,
   Calculator, Building2, User, Settings as SettingsIcon, Shield,
   ChevronRight, Clock, MessageSquare, Thermometer, ClipboardList,
-  SprayCan, PoundSterling,
+  SprayCan, PoundSterling, Trash2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
