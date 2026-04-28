@@ -46,6 +46,7 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   shifts: "/shifts",
   timesheets: "/timesheets",
   messenger: "/messenger",
+  waste_log: "/waste-log",
   allergens: "/allergens",
   suppliers: "/suppliers",
   pest_maintenance: "/pest-maintenance",
