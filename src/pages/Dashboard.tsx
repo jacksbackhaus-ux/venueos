@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSite } from "@/contexts/SiteContext";
+import { LabourVsWasteCard } from "@/components/dashboard/LabourVsWasteCard";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -780,6 +781,14 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {siteId && currentSite?.organisation_id && !isClosed && (
+          <LabourVsWasteCard
+            siteId={siteId}
+            organisationId={currentSite.organisation_id}
+            date={selectedDate}
+          />
+        )}
       </div>
     </div>
   );
