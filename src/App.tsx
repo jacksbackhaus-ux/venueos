@@ -33,6 +33,7 @@ import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import More from "./pages/More";
+import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { RoleGuard } from "@/components/RoleGuard";
@@ -92,9 +93,11 @@ function ModuleGuard({ module, children }: { module: ModuleName; children: React
 }
 
 function RequireSite({ children }: { children: React.ReactNode }) {
-  const { hasSelectedSite, isLoading } = useSite();
-  const { isHQ } = useAuth();
+  const { hasSelectedSite, isLoading, sites } = useSite();
+  const { isHQ, staffSession } = useAuth();
   if (isLoading) return null;
+  if (staffSession) return <>{children}</>;
+  if (!hasSelectedSite && sites.length > 1) return <Navigate to="/select-site" replace />;
   if (isHQ && !hasSelectedSite) return <Navigate to="/hq" replace />;
   return <>{children}</>;
 }
@@ -143,6 +146,7 @@ function AppRoutes() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/pricing" element={<AuthGuard><Pricing /></AuthGuard>} />
       <Route path="/locked" element={<AuthGuard><LockedAccount /></AuthGuard>} />
+      <Route path="/select-site" element={<AuthGuard><AccessGuard><SitePicker /></AccessGuard></AuthGuard>} />
 
       <Route path="/" element={siteRoute(<Dashboard />)} />
       <Route path="/shifts" element={moduleRoute("shifts", <Shifts />)} />
