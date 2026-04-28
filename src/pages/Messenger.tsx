@@ -54,6 +54,7 @@ export default function Messenger() {
 
   return (
     <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-3.5rem)] flex bg-background">
+      <MessengerDisclosureModal userKey={userKey} />
       {/* Channel list — full width on mobile when no chat selected */}
       <aside
         className={cn(
