@@ -781,6 +781,14 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {siteId && currentSite?.organisation_id && !isClosed && (
+          <LabourVsWasteCard
+            siteId={siteId}
+            organisationId={currentSite.organisation_id}
+            date={selectedDate}
+          />
+        )}
       </div>
     </div>
   );
