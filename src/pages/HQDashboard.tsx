@@ -69,13 +69,21 @@ export default function AllSitesOverview() {
     const overviews: SiteOverview[] = [];
 
     for (const site of sitesData || []) {
+      // Look up today's day sheet for this site (if any) so we can count entries.
+      const { data: todaySheet } = await supabase
+        .from("day_sheets")
+        .select("id")
+        .eq("site_id", site.id)
+        .eq("sheet_date", todayIso)
+        .maybeSingle();
+
       const [
         { count: openBatches },
         { count: quarantinedBatches },
         { count: tempBreaches },
         { count: openIncidents },
-        { data: daySheetItems },
-        { data: completedItems },
+        { data: daySheetSections },
+        { count: completedCount },
       ] = await Promise.all([
         supabase
           .from("batches")
@@ -88,10 +96,10 @@ export default function AllSitesOverview() {
           .eq("site_id", site.id)
           .eq("status", "quarantined"),
         supabase
-          .from("temperature_logs")
+          .from("temp_logs")
           .select("*", { count: "exact", head: true })
           .eq("site_id", site.id)
-          .eq("is_breach", true)
+          .eq("pass", false)
           .gte("logged_at", `${todayIso}T00:00:00`)
           .lte("logged_at", `${todayIso}T23:59:59`),
         supabase
@@ -100,16 +108,24 @@ export default function AllSitesOverview() {
           .eq("site_id", site.id)
           .in("status", ["open", "investigating"]),
         supabase
-          .from("day_sheet_items")
-          .select("id")
+          .from("day_sheet_sections")
+          .select("id, day_sheet_items(id)")
           .eq("site_id", site.id)
           .eq("active", true),
-        supabase
-          .from("day_sheet_completions")
-          .select("item_id")
-          .eq("site_id", site.id)
-          .eq("completion_date", todayIso),
+        todaySheet?.id
+          ? supabase
+              .from("day_sheet_entries")
+              .select("*", { count: "exact", head: true })
+              .eq("day_sheet_id", todaySheet.id)
+              .eq("done", true)
+          : Promise.resolve({ count: 0 } as { count: number }),
       ]);
+
+      const totalItems = (daySheetSections || []).reduce(
+        (acc: number, s: { day_sheet_items?: { id: string }[] | null }) =>
+          acc + (s.day_sheet_items?.length || 0),
+        0,
+      );
 
       overviews.push({
         ...site,
@@ -117,8 +133,8 @@ export default function AllSitesOverview() {
         quarantined_batches: quarantinedBatches || 0,
         temp_breaches: tempBreaches || 0,
         open_incidents: openIncidents || 0,
-        todays_tasks_total: daySheetItems?.length || 0,
-        todays_tasks_done: completedItems?.length || 0,
+        todays_tasks_total: totalItems,
+        todays_tasks_done: completedCount || 0,
       });
     }
 
