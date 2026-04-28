@@ -5,6 +5,7 @@ import { ChannelList } from "@/components/messenger/ChannelList";
 import { ChatWindow } from "@/components/messenger/ChatWindow";
 import { NewChannelDialog } from "@/components/messenger/NewChannelDialog";
 import { NewDMDialog } from "@/components/messenger/NewDMDialog";
+import { MessengerDisclosureModal } from "@/components/messenger/MessengerDisclosureModal";
 import { useChannels, useMessengerSettings } from "@/hooks/useMessenger";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/hooks/useRole";
