@@ -324,7 +324,7 @@ function MoreSheetExtras({ onClose }: { onClose: () => void }) {
 
   const orgItems: NavLeaf[] = [
     ...(isHQ && role.isManager
-  { title: "All Sites Overview", url: "/hq", icon: Building2, desc: "Compliance across all locations" }
+      ? [{ title: "All Sites Overview", url: "/hq", icon: Building2, desc: "Compliance across all locations" }]
       : []),
     ...(isOrgOwner
       ? [{ title: "Account & Billing", url: "/account", icon: CreditCard, desc: "Subscription & invoices" }]
