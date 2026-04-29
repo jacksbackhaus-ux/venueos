@@ -765,6 +765,109 @@ export type Database = {
           },
         ]
       }
+      haccp_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          food_business_type: string | null
+          id: string
+          last_reviewed_at: string | null
+          name: string
+          organisation_id: string
+          review_due_at: string | null
+          site_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          food_business_type?: string | null
+          id?: string
+          last_reviewed_at?: string | null
+          name: string
+          organisation_id: string
+          review_due_at?: string | null
+          site_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          food_business_type?: string | null
+          id?: string
+          last_reviewed_at?: string | null
+          name?: string
+          organisation_id?: string
+          review_due_at?: string | null
+          site_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "haccp_plans_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      haccp_steps: {
+        Row: {
+          corrective_action: string | null
+          created_at: string
+          critical_limit: string | null
+          description: string | null
+          id: string
+          monitoring_procedure: string | null
+          plan_id: string
+          responsible_person: string | null
+          sort_order: number
+          step_number: number
+          step_type: string
+          title: string
+        }
+        Insert: {
+          corrective_action?: string | null
+          created_at?: string
+          critical_limit?: string | null
+          description?: string | null
+          id?: string
+          monitoring_procedure?: string | null
+          plan_id: string
+          responsible_person?: string | null
+          sort_order?: number
+          step_number?: number
+          step_type: string
+          title: string
+        }
+        Update: {
+          corrective_action?: string | null
+          created_at?: string
+          critical_limit?: string | null
+          description?: string | null
+          id?: string
+          monitoring_procedure?: string | null
+          plan_id?: string
+          responsible_person?: string | null
+          sort_order?: number
+          step_number?: number
+          step_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "haccp_steps_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "haccp_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holiday_requests: {
         Row: {
           created_at: string
