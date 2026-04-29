@@ -3028,6 +3028,107 @@ export type Database = {
           },
         ]
       }
+      training_records: {
+        Row: {
+          certificate_url: string | null
+          completed_date: string
+          created_at: string
+          created_by: string | null
+          expiry_date: string | null
+          id: string
+          notes: string | null
+          organisation_id: string
+          site_id: string
+          training_name: string
+          training_type: string
+          user_id: string
+        }
+        Insert: {
+          certificate_url?: string | null
+          completed_date: string
+          created_at?: string
+          created_by?: string | null
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          site_id: string
+          training_name: string
+          training_type: string
+          user_id: string
+        }
+        Update: {
+          certificate_url?: string | null
+          completed_date?: string
+          created_at?: string
+          created_by?: string | null
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          site_id?: string
+          training_name?: string
+          training_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_records_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_requirements: {
+        Row: {
+          created_at: string
+          id: string
+          is_mandatory: boolean
+          renewal_period_months: number | null
+          required_for_roles: string[]
+          site_id: string
+          training_name: string
+          training_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_mandatory?: boolean
+          renewal_period_months?: number | null
+          required_for_roles?: string[]
+          site_id: string
+          training_name: string
+          training_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_mandatory?: boolean
+          renewal_period_months?: number | null
+          required_for_roles?: string[]
+          site_id?: string
+          training_name?: string
+          training_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_requirements_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           auth_type: Database["public"]["Enums"]["auth_type"]
