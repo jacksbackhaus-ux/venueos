@@ -40,6 +40,7 @@ const complianceAll: NavLeaf[] = [
   { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
   { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking" },
   { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training" },
+  { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
 ];
 
 const businessAll: NavLeaf[] = [
