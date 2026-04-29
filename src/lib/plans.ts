@@ -33,6 +33,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
   pest_maintenance: "Pest & Maintenance",
   incidents: "Incidents",
   batch_tracking: "Batch Tracking",
+  staff_training: "Staff Training",
   cost_margin: "Cost & Margin",
   tip_tracker: "Tip Tracker",
   reports: "Reports",
