@@ -5,7 +5,7 @@ export type PlanId = "base" | "compliance" | "business" | "bundle";
 export type BillingCycle = "month" | "year";
 export type ModuleName =
   | "temperatures" | "day_sheet" | "cleaning" | "shifts" | "timesheets" | "messenger" | "waste_log"
-  | "allergens" | "suppliers" | "pest_maintenance" | "incidents" | "batch_tracking"
+  | "allergens" | "suppliers" | "pest_maintenance" | "incidents" | "batch_tracking" | "staff_training"
   | "cost_margin" | "tip_tracker" | "reports";
 
 export interface PlanDef {
@@ -33,6 +33,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
   pest_maintenance: "Pest & Maintenance",
   incidents: "Incidents",
   batch_tracking: "Batch Tracking",
+  staff_training: "Staff Training",
   cost_margin: "Cost & Margin",
   tip_tracker: "Tip Tracker",
   reports: "Reports",
@@ -52,13 +53,14 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   pest_maintenance: "/pest-maintenance",
   incidents: "/incidents",
   batch_tracking: "/batches",
+  staff_training: "/staff-training",
   cost_margin: "/cost-margin",
   tip_tracker: "/tip-tracker",
   reports: "/reports",
 };
 
 export const BASE_MODULES: ModuleName[] = ["temperatures", "day_sheet", "cleaning", "shifts", "timesheets", "messenger", "waste_log"];
-export const COMPLIANCE_MODULES: ModuleName[] = ["allergens", "suppliers", "pest_maintenance", "incidents", "batch_tracking"];
+export const COMPLIANCE_MODULES: ModuleName[] = ["allergens", "suppliers", "pest_maintenance", "incidents", "batch_tracking", "staff_training"];
 export const BUSINESS_MODULES: ModuleName[] = ["cost_margin", "tip_tracker", "reports"];
 export const ALL_MODULES: ModuleName[] = [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES];
 

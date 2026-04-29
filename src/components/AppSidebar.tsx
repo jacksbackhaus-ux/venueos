@@ -2,7 +2,7 @@ import {
   LayoutDashboard, CalendarClock, Thermometer, ClipboardList, SprayCan,
   Wheat, Truck, Bug, AlertTriangle, FileText, Settings, ShieldCheck,
   Package, Building2, CreditCard, MapPin, Calculator, Clock, MessageSquare,
-  PoundSterling, Sparkles, Trash2,
+  PoundSterling, Sparkles, Trash2, GraduationCap,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
@@ -39,6 +39,7 @@ const complianceAll: NavLeaf[] = [
   { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest_maintenance" },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
   { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking" },
+  { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training" },
 ];
 
 const businessAll: NavLeaf[] = [

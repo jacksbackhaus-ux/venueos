@@ -25,6 +25,7 @@ import PestMaintenance from "./pages/PestMaintenance";
 import Incidents from "./pages/Incidents";
 import Reports from "./pages/Reports";
 import Batches from "./pages/Batches";
+import StaffTraining from "./pages/StaffTraining";
 import CostMargin from "./pages/CostMargin";
 import Timesheets from "./pages/Timesheets";
 import Messenger from "./pages/Messenger";
@@ -162,6 +163,7 @@ function AppRoutes() {
       <Route path="/incidents" element={moduleRoute("incidents", <Incidents />)} />
       <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
+      <Route path="/staff-training" element={moduleRoute("staff_training", <StaffTraining />)} />
       <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
       <Route path="/timesheets" element={moduleRoute("timesheets", <Timesheets />)} />
       <Route path="/messenger" element={moduleRoute("messenger", <Messenger />)} />
