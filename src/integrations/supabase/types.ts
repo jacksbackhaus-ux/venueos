@@ -3121,6 +3121,7 @@ export type Database = {
         Args: { _channel_id: string }
         Returns: boolean
       }
+      is_org_manager_or_hq: { Args: { _org_id: string }; Returns: boolean }
       is_org_owner: { Args: { _org_id: string }; Returns: boolean }
       is_site_supervisor_or_owner: {
         Args: { _site_id: string }
