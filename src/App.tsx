@@ -25,6 +25,7 @@ import PestMaintenance from "./pages/PestMaintenance";
 import Incidents from "./pages/Incidents";
 import Reports from "./pages/Reports";
 import Batches from "./pages/Batches";
+import StaffTraining from "./pages/StaffTraining";
 import CostMargin from "./pages/CostMargin";
 import Timesheets from "./pages/Timesheets";
 import Messenger from "./pages/Messenger";
