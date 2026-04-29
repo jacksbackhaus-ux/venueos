@@ -55,6 +55,7 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   incidents: "/incidents",
   batch_tracking: "/batches",
   staff_training: "/staff-training",
+  haccp: "/haccp",
   cost_margin: "/cost-margin",
   tip_tracker: "/tip-tracker",
   reports: "/reports",
