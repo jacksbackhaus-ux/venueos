@@ -16,7 +16,9 @@ export function useRole() {
   const { orgRole, staffSession } = useAuth();
   const { currentMembership } = useSite();
 
-  const siteRole = staffSession?.site_role || currentMembership?.site_role || null;
+  // Server-sourced membership role takes priority over the client-stored
+  // staff session role to avoid client-side privilege escalation.
+  const siteRole = currentMembership?.site_role || staffSession?.site_role || null;
   const orgRoleName = orgRole?.org_role || null;
 
   // Resolve the effective role
