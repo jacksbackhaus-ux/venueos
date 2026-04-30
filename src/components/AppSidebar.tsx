@@ -2,7 +2,7 @@ import {
   LayoutDashboard, CalendarClock, Thermometer, ClipboardList, SprayCan,
   Wheat, Truck, Bug, AlertTriangle, FileText, Settings, ShieldCheck,
   Package, Building2, CreditCard, MapPin, Calculator, Clock, MessageSquare,
-  PoundSterling, Sparkles, Trash2, GraduationCap, BookCheck,
+  PoundSterling, Sparkles, Trash2, GraduationCap, BookCheck, MessageSquareHeart,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
