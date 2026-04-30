@@ -159,6 +159,7 @@ function AppRoutes() {
       <Route path="/day-sheet" element={moduleRoute("day_sheet", <DaySheet />)} />
       <Route path="/cleaning" element={moduleRoute("cleaning", <Cleaning />)} />
       <Route path="/waste-log" element={moduleRoute("waste_log", <WasteLog />)} />
+      <Route path="/customer-feedback" element={moduleRoute("customer_feedback", <CustomerFeedback />)} />
       <Route path="/allergens" element={moduleRoute("allergens", <Allergens />)} />
       <Route path="/suppliers" element={moduleRoute("suppliers", <Suppliers />)} />
       <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <PestMaintenance />)} />
