@@ -26,6 +26,7 @@ const PestMaintenance = () => {
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
   const [activeTab, setActiveTab] = useState("pest");
+  const [showPPM, setShowPPM] = useState(false);
   const [showNewPest, setShowNewPest] = useState(false);
   const [showNewMaint, setShowNewMaint] = useState(false);
   const [pestType, setPestType] = useState(""); const [pestLocation, setPestLocation] = useState(""); const [pestDesc, setPestDesc] = useState(""); const [pestAction, setPestAction] = useState("");
