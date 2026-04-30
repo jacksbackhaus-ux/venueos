@@ -1100,5 +1100,27 @@ function DayView({
     </div>
   );
 }
+function ShiftHiveTabs() {
+  const { currentMembership } = useSite();
+  const { staffSession } = useAuth();
+  const role = currentMembership?.site_role || staffSession?.site_role || "staff";
+  const isManager = role === "owner" || role === "supervisor";
 
+  return (
+    <Tabs defaultValue="my-shifts">
+      <TabsList className="w-full overflow-x-auto flex-nowrap justify-start">
+        <TabsTrigger value="my-shifts">My shifts</TabsTrigger>
+        <TabsTrigger value="availability">Availability</TabsTrigger>
+        {isManager && <TabsTrigger value="approvals">Approvals</TabsTrigger>}
+        {isManager && <TabsTrigger value="compensation">Compensation</TabsTrigger>}
+        {isManager && <TabsTrigger value="settings">Settings</TabsTrigger>}
+      </TabsList>
+      <TabsContent value="my-shifts" className="mt-4"><MyShiftsDashboard /></TabsContent>
+      <TabsContent value="availability" className="mt-4"><AvailabilityEditor /></TabsContent>
+      {isManager && <TabsContent value="approvals" className="mt-4"><ManagerApprovalCenter /></TabsContent>}
+      {isManager && <TabsContent value="compensation" className="mt-4"><ComplianceExport /></TabsContent>}
+      {isManager && <TabsContent value="settings" className="mt-4"><ShiftHiveSettings /></TabsContent>}
+    </Tabs>
+  );
+}
 export default Shifts;
