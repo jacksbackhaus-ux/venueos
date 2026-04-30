@@ -468,8 +468,13 @@ const Shifts = () => {
             </p>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
+<div className="flex items-center gap-2 flex-wrap">
+          <Tabs value={topTab} onValueChange={(v) => setTopTab(v as "rota" | "hive")}>
+            <TabsList>
+              <TabsTrigger value="rota">Rota</TabsTrigger>
+              <TabsTrigger value="hive">Shift Hive</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <Tabs value={view} onValueChange={(v) => setView(v as "week" | "day")}>
             <TabsList>
               <TabsTrigger value="week">Weekly</TabsTrigger>
