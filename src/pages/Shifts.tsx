@@ -1,3 +1,8 @@
+import { MyShiftsDashboard } from "@/components/shifts/MyShiftsDashboard";
+import { ManagerApprovalCenter } from "@/components/shifts/ManagerApprovalCenter";
+import { ComplianceExport } from "@/components/shifts/ComplianceExport";
+import { AvailabilityEditor } from "@/components/shifts/AvailabilityEditor";
+import { ShiftHiveSettings } from "@/components/shifts/ShiftHiveSettings";
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
