@@ -50,6 +50,7 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   timesheets: "/timesheets",
   messenger: "/messenger",
   waste_log: "/waste-log",
+  customer_feedback: "/customer-feedback",
   allergens: "/allergens",
   suppliers: "/suppliers",
   pest_maintenance: "/pest-maintenance",
@@ -62,7 +63,7 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   reports: "/reports",
 };
 
-export const BASE_MODULES: ModuleName[] = ["temperatures", "day_sheet", "cleaning", "shifts", "timesheets", "messenger", "waste_log"];
+export const BASE_MODULES: ModuleName[] = ["temperatures", "day_sheet", "cleaning", "shifts", "timesheets", "messenger", "waste_log", "customer_feedback"];
 export const COMPLIANCE_MODULES: ModuleName[] = ["allergens", "suppliers", "pest_maintenance", "incidents", "batch_tracking", "staff_training", "haccp"];
 export const BUSINESS_MODULES: ModuleName[] = ["cost_margin", "tip_tracker", "reports"];
 export const ALL_MODULES: ModuleName[] = [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES];
