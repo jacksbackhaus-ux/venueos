@@ -33,6 +33,7 @@ const compliance: NavItem[] = [
   { to: "/batches", label: "Batch Tracking", desc: "Production batch traceability", icon: Package, mod: "batch_tracking" },
   { to: "/staff-training", label: "Staff Training", desc: "Records, certificates & expiries", icon: GraduationCap, mod: "staff_training" },
   { to: "/haccp", label: "HACCP Plan", desc: "Build and publish HACCP plans", icon: BookCheck, mod: "haccp" },
+  { to: "/customer-feedback", label: "Customer Feedback", desc: "Log and resolve customer feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
 ];
 
 const business: NavItem[] = [
