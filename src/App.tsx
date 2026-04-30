@@ -19,6 +19,7 @@ import TemperatureTracking from "./pages/TemperatureTracking";
 import DaySheet from "./pages/DaySheet";
 import Cleaning from "./pages/Cleaning";
 import WasteLog from "./pages/WasteLog";
+import CustomerFeedback from "./pages/CustomerFeedback";
 import Allergens from "./pages/Allergens";
 import Suppliers from "./pages/Suppliers";
 import PestMaintenance from "./pages/PestMaintenance";
