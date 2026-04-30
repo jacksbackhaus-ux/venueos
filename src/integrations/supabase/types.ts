@@ -765,6 +765,86 @@ export type Database = {
           },
         ]
       }
+      feedback_entries: {
+        Row: {
+          action_taken: string | null
+          category: string
+          created_at: string
+          description: string
+          feedback_date: string
+          id: string
+          logged_by: string | null
+          organisation_id: string
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          sentiment: string
+          site_id: string
+          source: string
+        }
+        Insert: {
+          action_taken?: string | null
+          category: string
+          created_at?: string
+          description: string
+          feedback_date?: string
+          id?: string
+          logged_by?: string | null
+          organisation_id: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sentiment: string
+          site_id: string
+          source: string
+        }
+        Update: {
+          action_taken?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          feedback_date?: string
+          id?: string
+          logged_by?: string | null
+          organisation_id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sentiment?: string
+          site_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_entries_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_entries_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_entries_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_entries_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       haccp_plans: {
         Row: {
           created_at: string

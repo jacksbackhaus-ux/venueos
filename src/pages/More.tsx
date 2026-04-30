@@ -3,7 +3,7 @@ import {
   Calendar, Wheat, Truck, Bug, AlertTriangle, Package, FileBarChart,
   Calculator, Building2, User, Settings as SettingsIcon, Shield,
   ChevronRight, Clock, MessageSquare, Thermometer, ClipboardList,
-  SprayCan, PoundSterling, Trash2, GraduationCap, BookCheck,
+  SprayCan, PoundSterling, Trash2, GraduationCap, BookCheck, MessageSquareHeart,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +33,7 @@ const compliance: NavItem[] = [
   { to: "/batches", label: "Batch Tracking", desc: "Production batch traceability", icon: Package, mod: "batch_tracking" },
   { to: "/staff-training", label: "Staff Training", desc: "Records, certificates & expiries", icon: GraduationCap, mod: "staff_training" },
   { to: "/haccp", label: "HACCP Plan", desc: "Build and publish HACCP plans", icon: BookCheck, mod: "haccp" },
+  { to: "/customer-feedback", label: "Customer Feedback", desc: "Log and resolve customer feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
 ];
 
 const business: NavItem[] = [
