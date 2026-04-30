@@ -42,6 +42,7 @@ const complianceAll: NavLeaf[] = [
   { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training" },
   { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
   { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
+  { title: "PPM Schedule", url: "/ppm-schedule", icon: Wrench, mod: "ppm_schedule" },
 ];
 
 const businessAll: NavLeaf[] = [
