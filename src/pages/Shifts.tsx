@@ -420,6 +420,35 @@ const Shifts = () => {
   }
 
   return (
+    // Top-level tab: Rota vs Shift Hive
+  const [topTab, setTopTab] = useState<"rota" | "hive">("rota");
+
+  if (topTab === "hive") {
+    return (
+      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-heading font-bold">Shifts</h1>
+            <p className="text-sm text-muted-foreground">Self-service swaps, cover & compliance</p>
+          </div>
+          <div className="ml-auto">
+            <Tabs value={topTab} onValueChange={(v) => setTopTab(v as "rota" | "hive")}>
+              <TabsList>
+                <TabsTrigger value="rota">Rota</TabsTrigger>
+                <TabsTrigger value="hive">Shift Hive</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </div>
+        <ShiftHiveTabs />
+      </div>
+    );
+  }
+
+  return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
