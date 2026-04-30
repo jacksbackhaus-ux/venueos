@@ -41,6 +41,7 @@ const complianceAll: NavLeaf[] = [
   { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking" },
   { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training" },
   { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
+  { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
 ];
 
 const businessAll: NavLeaf[] = [
