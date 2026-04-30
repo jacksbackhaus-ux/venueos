@@ -20,6 +20,7 @@ import DaySheet from "./pages/DaySheet";
 import Cleaning from "./pages/Cleaning";
 import WasteLog from "./pages/WasteLog";
 import CustomerFeedback from "./pages/CustomerFeedback";
+import PPMSchedule from "./pages/PPMSchedule";
 import Allergens from "./pages/Allergens";
 import Suppliers from "./pages/Suppliers";
 import PestMaintenance from "./pages/PestMaintenance";
