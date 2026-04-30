@@ -1759,6 +1759,124 @@ export type Database = {
           },
         ]
       }
+      ppm_completions: {
+        Row: {
+          completed_by: string | null
+          completed_date: string
+          cost: number | null
+          created_at: string
+          id: string
+          next_due_date: string
+          notes: string | null
+          site_id: string
+          task_id: string
+        }
+        Insert: {
+          completed_by?: string | null
+          completed_date?: string
+          cost?: number | null
+          created_at?: string
+          id?: string
+          next_due_date: string
+          notes?: string | null
+          site_id: string
+          task_id: string
+        }
+        Update: {
+          completed_by?: string | null
+          completed_date?: string
+          cost?: number | null
+          created_at?: string
+          id?: string
+          next_due_date?: string
+          notes?: string | null
+          site_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ppm_completions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ppm_completions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ppm_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ppm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ppm_tasks: {
+        Row: {
+          assigned_to: string | null
+          category: string
+          contractor_name: string | null
+          created_at: string
+          description: string | null
+          estimated_duration_minutes: number | null
+          frequency: string
+          id: string
+          is_active: boolean
+          organisation_id: string
+          site_id: string
+          task_name: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category: string
+          contractor_name?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          frequency: string
+          id?: string
+          is_active?: boolean
+          organisation_id: string
+          site_id: string
+          task_name: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string
+          contractor_name?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          organisation_id?: string
+          site_id?: string
+          task_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ppm_tasks_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ppm_tasks_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       preventative_checks: {
         Row: {
           active: boolean

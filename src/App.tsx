@@ -20,6 +20,7 @@ import DaySheet from "./pages/DaySheet";
 import Cleaning from "./pages/Cleaning";
 import WasteLog from "./pages/WasteLog";
 import CustomerFeedback from "./pages/CustomerFeedback";
+import PPMSchedule from "./pages/PPMSchedule";
 import Allergens from "./pages/Allergens";
 import Suppliers from "./pages/Suppliers";
 import PestMaintenance from "./pages/PestMaintenance";
@@ -160,6 +161,7 @@ function AppRoutes() {
       <Route path="/cleaning" element={moduleRoute("cleaning", <Cleaning />)} />
       <Route path="/waste-log" element={moduleRoute("waste_log", <WasteLog />)} />
       <Route path="/customer-feedback" element={moduleRoute("customer_feedback", <CustomerFeedback />)} />
+      <Route path="/ppm-schedule" element={moduleRoute("ppm_schedule", <PPMSchedule />)} />
       <Route path="/allergens" element={moduleRoute("allergens", <Allergens />)} />
       <Route path="/suppliers" element={moduleRoute("suppliers", <Suppliers />)} />
       <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <PestMaintenance />)} />

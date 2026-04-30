@@ -3,7 +3,7 @@ import {
   Calendar, Wheat, Truck, Bug, AlertTriangle, Package, FileBarChart,
   Calculator, Building2, User, Settings as SettingsIcon, Shield,
   ChevronRight, Clock, MessageSquare, Thermometer, ClipboardList,
-  SprayCan, PoundSterling, Trash2, GraduationCap, BookCheck, MessageSquareHeart,
+  SprayCan, PoundSterling, Trash2, GraduationCap, BookCheck, MessageSquareHeart, Wrench,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +34,7 @@ const compliance: NavItem[] = [
   { to: "/staff-training", label: "Staff Training", desc: "Records, certificates & expiries", icon: GraduationCap, mod: "staff_training" },
   { to: "/haccp", label: "HACCP Plan", desc: "Build and publish HACCP plans", icon: BookCheck, mod: "haccp" },
   { to: "/customer-feedback", label: "Customer Feedback", desc: "Log and resolve customer feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
+  { to: "/ppm-schedule", label: "PPM Schedule", desc: "Planned preventative maintenance", icon: Wrench, mod: "ppm_schedule" },
 ];
 
 const business: NavItem[] = [
