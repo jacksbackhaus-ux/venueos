@@ -513,6 +513,14 @@ const Shifts = () => {
           onSmartFill={(a) => setSmartFillTarget(a)}
         />
       )}
+        </TabsContent>
+
+        <TabsContent value="my-shifts" className="mt-0"><MyShiftsDashboard /></TabsContent>
+        <TabsContent value="availability" className="mt-0"><AvailabilityEditor /></TabsContent>
+        {isManager && <TabsContent value="approvals" className="mt-0"><ManagerApprovalCenter /></TabsContent>}
+        {isManager && <TabsContent value="compensation" className="mt-0"><ComplianceExport /></TabsContent>}
+        {isManager && <TabsContent value="settings" className="mt-0"><ShiftHiveSettings /></TabsContent>}
+      </Tabs>
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
