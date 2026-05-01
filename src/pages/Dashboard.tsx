@@ -350,39 +350,146 @@ const Dashboard = () => {
     }
   };
 
+  // ---- Derived: unified today plan ----
+  const completedCount = tasks.filter((t) => t.status === "done").length;
+  const overdueCount = tasks.filter((t) => t.status === "overdue").length;
+  const pendingCount = tasks.filter((t) => t.status === "pending").length;
+  const totalCount = tasks.length;
+  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
+
+  const moduleHref = (module: string, taskId: string) => {
+    if (taskId.startsWith("temp-")) return "/temperatures";
+    if (taskId.startsWith("cleaning-")) return "/cleaning";
+    if (taskId.startsWith("ds-")) return "/day-sheet";
+    if (module === "Cleaning") return "/cleaning";
+    if (module === "Temps") return "/temperatures";
+    return "/day-sheet";
+  };
+
+  const dueToMinutes = (due: string) => {
+    if (!due || due === "—") return 99 * 60;
+    const [h, m] = due.split(":").map((n) => parseInt(n, 10));
+    if (Number.isNaN(h)) return 99 * 60;
+    return h * 60 + (m || 0);
+  };
+  const statusOrder: Record<string, number> = { overdue: 0, pending: 1, done: 2 };
+
+  // Sort by status then time-of-day so the manager sees what to act on first.
+  const sortedTasks = [...tasks].sort(
+    (a, b) => (statusOrder[a.status] - statusOrder[b.status]) || (dueToMinutes(a.due) - dueToMinutes(b.due))
+  );
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
-      {/* Header */}
-      <motion.div initial="hidden" animate="visible" custom={0} variants={fadeUp}>
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-heading font-bold text-foreground">{greeting} 👋</h1>
-            <p className="text-sm text-muted-foreground">{dateStr}</p>
+      {/* ============================================================
+          COMMAND CENTRE HERO — greeting, date, live progress, actions
+          ============================================================ */}
+      <motion.section
+        initial="hidden"
+        animate="visible"
+        custom={0}
+        variants={fadeUp}
+        className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-card to-card p-5 md:p-6"
+      >
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary/80">
+              {isToday ? "Today" : "Reviewing"}
+            </p>
+            <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground mt-0.5">
+              {greeting}{appUser?.display_name ? `, ${appUser.display_name.split(" ")[0]}` : ""} 👋
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{dateStr}</p>
           </div>
-          {isClosed ? (
-            <Badge variant="outline" className="text-xs self-start sm:self-auto border-muted-foreground/30 text-muted-foreground">
-              <Lock className="h-3 w-3 mr-1" />
-              Closed day
-            </Badge>
-          ) : (
-            <Badge
-              variant="outline"
-              className={`text-xs self-start sm:self-auto ${
-                complianceScore >= 80
-                  ? "border-success text-success"
-                  : complianceScore >= 60
-                  ? "border-warning text-warning"
-                  : "border-breach text-breach"
-              }`}
-            >
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {complianceScore}% compliant {isToday ? "today" : "this day"}
-            </Badge>
-          )}
+
+          {/* Live KPI strip */}
+          <div className="flex items-stretch gap-2 shrink-0">
+            <div className="rounded-xl border bg-card/80 backdrop-blur px-3 py-2 text-center min-w-[72px]">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Done</p>
+              <p className="text-xl font-heading font-bold text-success leading-tight">
+                {isClosed ? "—" : completedCount}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-card/80 backdrop-blur px-3 py-2 text-center min-w-[72px]">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Pending</p>
+              <p className="text-xl font-heading font-bold text-foreground leading-tight">
+                {isClosed ? "—" : pendingCount}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-card/80 backdrop-blur px-3 py-2 text-center min-w-[72px]">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Overdue</p>
+              <p className={`text-xl font-heading font-bold leading-tight ${overdueCount > 0 ? "text-breach" : "text-muted-foreground"}`}>
+                {isClosed ? "—" : overdueCount}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Date navigation */}
-        <div className="mt-3 flex items-center justify-between rounded-lg border bg-card px-2 py-1.5">
+        {/* Unified day progress bar */}
+        {!isClosed && (
+          <div className="mt-5 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-foreground">
+                Day progress · {completedCount} of {totalCount} tasks
+              </span>
+              <span
+                className={`font-bold tabular-nums ${
+                  progressPct >= 80 ? "text-success" : progressPct >= 60 ? "text-warning" : "text-breach"
+                }`}
+              >
+                {progressPct}%
+              </span>
+            </div>
+            <Progress value={progressPct} className="h-2" />
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                {progressPct >= 80
+                  ? "On track for the day"
+                  : progressPct >= 60
+                  ? "Keep the momentum going"
+                  : "Plenty still to do — let's get moving"}
+              </span>
+              {stats.breaches > 0 && (
+                <span className="inline-flex items-center gap-1 text-breach">
+                  <AlertTriangle className="h-3 w-3" />
+                  {stats.breaches} temp breach{stats.breaches === 1 ? "" : "es"}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {isClosed && (
+          <div className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <Lock className="h-4 w-4" />
+            Site closed today — tracking paused.
+          </div>
+        )}
+
+        {/* Quick action launcher — at the top, where they belong */}
+        <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {quickActions.map((action) => (
+            <Link key={action.label} to={action.href}>
+              <Button
+                variant="outline"
+                className="w-full h-auto flex-col gap-1.5 py-3 bg-card/80 backdrop-blur border hover:border-primary/40 hover:bg-card transition-all"
+              >
+                <div className={`h-9 w-9 rounded-lg ${action.color} flex items-center justify-center shadow-sm`}>
+                  <action.icon className="h-4.5 w-4.5 text-primary-foreground" />
+                </div>
+                <span className="text-xs font-semibold text-foreground">{action.label}</span>
+              </Button>
+            </Link>
+          ))}
+        </div>
+      </motion.section>
+
+      {/* ============================================================
+          DATE NAV + CLOSED-DAY CONTROL (kept for past-day review)
+          ============================================================ */}
+      <motion.div initial="hidden" animate="visible" custom={0.5} variants={fadeUp} className="space-y-2">
+        <div className="flex items-center justify-between rounded-lg border bg-card px-2 py-1.5">
           <Button
             variant="ghost"
             size="sm"
@@ -418,10 +525,9 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Closed day banner / action */}
         {(isClosed || canCloseDay) && (
           <div
-            className={`mt-3 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
+            className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
               isClosed ? "bg-muted/40 border-muted-foreground/20" : "bg-card"
             }`}
           >
@@ -433,7 +539,7 @@ const Dashboard = () => {
               )}
               <p className="text-xs sm:text-sm text-foreground truncate">
                 {isClosed
-                  ? `This day is marked as closed${closedDay?.closed_by_name ? ` by ${closedDay.closed_by_name}` : ""}. It won't count toward compliance.`
+                  ? `This day is marked as closed${closedDay?.closed_by_name ? ` by ${closedDay.closed_by_name}` : ""}.`
                   : "Site closed on this day? Mark it so it doesn't count against compliance."}
               </p>
             </div>
@@ -452,220 +558,71 @@ const Dashboard = () => {
         )}
       </motion.div>
 
-      {/* Alerts */}
+      {/* ============================================================
+          ALERTS — surfaced loud, right under the hero
+          ============================================================ */}
       {alerts.length > 0 && (
         <motion.div initial="hidden" animate="visible" custom={1} variants={fadeUp}>
-          <div className="space-y-2">
-            {alerts.map((alert, i) => (
-              <div
-                key={i}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                  alert.type === "breach"
-                    ? "bg-breach/10 text-breach"
-                    : "bg-warning/10 text-warning"
-                }`}
-              >
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span className="flex-1">{alert.message}</span>
-                <span className="text-xs opacity-70">{alert.time}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Outstanding Tasks (grouped by module) — hidden on closed days */}
-      {!isClosed && !isLoading && (() => {
-        const outstanding = tasks.filter((t) => t.status !== "done");
-        if (tasks.length === 0) return null;
-        if (outstanding.length === 0) {
-          return (
-            <motion.div initial="hidden" animate="visible" custom={1.5} variants={fadeUp}>
-              <Card>
-                <CardContent className="py-4 flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">All done {isToday ? "today" : "for this day"}</p>
-                    <p className="text-xs text-muted-foreground">Every task has been completed.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        }
-
-        const moduleHref = (module: string, taskId: string) => {
-          if (taskId.startsWith("temp-")) return "/temperatures";
-          if (taskId.startsWith("cleaning-")) return "/cleaning";
-          if (taskId.startsWith("ds-")) return "/day-sheet";
-          if (module === "Cleaning") return "/cleaning";
-          if (module === "Temps") return "/temperatures";
-          return "/day-sheet";
-        };
-
-        const grouped = outstanding.reduce<Record<string, TaskRow[]>>((acc, t) => {
-          (acc[t.module] ||= []).push(t);
-          return acc;
-        }, {});
-
-        return (
-          <motion.div initial="hidden" animate="visible" custom={1.5} variants={fadeUp}>
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-heading">Outstanding Tasks</CardTitle>
-                  <Badge variant="secondary" className="text-xs">{outstanding.length} to do</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-4">
-                {Object.entries(grouped).map(([module, items]) => (
-                  <div key={module} className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{module}</p>
-                    <div className="divide-y">
-                      {items.map((task) => {
-                        const linked = isTaskLinkedToMe(task);
-                        return (
-                          <Link
-                            key={task.id}
-                            to={moduleHref(task.module, task.id)}
-                            className={`flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors ${
-                              linked ? "bg-primary/5 ring-1 ring-primary/20" : ""
-                            }`}
-                          >
-                            {statusIcon(task.status)}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{task.title}</p>
-                              <p className="text-xs text-muted-foreground">Due {task.due}</p>
-                            </div>
-                            {linked && (
-                              <Badge variant="default" className="text-[10px] shrink-0 bg-primary/15 text-primary hover:bg-primary/15 border-0">
-                                <Star className="h-3 w-3 mr-0.5" />
-                                Yours
-                              </Badge>
-                            )}
-                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        );
-      })()}
-
-      {/* Today's Shift (rota) — only on today, only when shifts exist */}
-      {isToday && !isClosed && (todayShifts?.shifts.length ?? 0) > 0 && (
-        <motion.div initial="hidden" animate="visible" custom={2} variants={fadeUp}>
-          <Card>
+          <Card className="border-breach/30">
             <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-base font-heading">Today's Shift</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-heading flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-breach" />
+                  Needs your attention
+                </CardTitle>
+                <Badge variant="outline" className="text-xs border-breach/40 text-breach">
+                  {alerts.length}
+                </Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <ul className="divide-y">
-                {todayShifts!.shifts.map((s) => (
-                  <li
-                    key={s.id}
-                    className={`flex items-center justify-between py-2 text-sm ${
-                      s.isMe ? "font-semibold text-foreground" : "text-foreground"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 min-w-0 truncate">
-                      {s.isMe && <Star className="h-3.5 w-3.5 text-primary shrink-0" />}
-                      <span className="truncate">{s.name}{s.isMe ? " (you)" : ""}</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground tabular-nums shrink-0 ml-3">
-                      {s.start_time}–{s.end_time}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            <CardContent className="pt-0 space-y-2">
+              {alerts.map((alert, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
+                    alert.type === "breach" ? "bg-breach/10 text-breach" : "bg-warning/10 text-warning"
+                  }`}
+                >
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{alert.message}</span>
+                  <span className="text-xs opacity-70 tabular-nums">{alert.time}</span>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </motion.div>
       )}
 
-      {/* Quick Actions */}
-      <motion.div initial="hidden" animate="visible" custom={2} variants={fadeUp}>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {quickActions.map((action) => (
-            <Link key={action.label} to={action.href}>
-              <Button
-                variant="outline"
-                className="w-full h-auto flex-col gap-2 py-4 border-2 hover:border-primary/30 transition-all"
-              >
-                <div className={`h-10 w-10 rounded-xl ${action.color} flex items-center justify-center`}>
-                  <action.icon className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-xs font-semibold text-foreground">{action.label}</span>
-              </Button>
-            </Link>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Stats Row */}
-      <motion.div initial="hidden" animate="visible" custom={3} variants={fadeUp}>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: "Completed", value: stats.completed, total: stats.total, color: "text-success" },
-            { label: "Remaining", value: Math.max(0, stats.total - stats.completed - stats.overdue), color: "text-muted-foreground" },
-            { label: "Overdue", value: stats.overdue, color: "text-warning" },
-            { label: "Breaches", value: stats.breaches, color: "text-breach" },
-          ].map((stat) => (
-            <Card key={stat.label} className="border">
-              <CardContent className="p-3">
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-                {isClosed ? (
-                  <p className="text-2xl font-heading font-bold text-muted-foreground">—</p>
-                ) : (
-                  <p className={`text-2xl font-heading font-bold ${stat.color}`}>
-                    {stat.value}
-                    {"total" in stat && (
-                      <span className="text-sm font-normal text-muted-foreground">/{stat.total}</span>
-                    )}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Two-column layout on desktop */}
-      <div className="grid md:grid-cols-5 gap-5">
-        {/* My Tasks */}
+      {/* ============================================================
+          THE PLAN — unified timeline of today's tasks + shift
+          ============================================================ */}
+      <div className="grid md:grid-cols-3 gap-5">
+        {/* Live checklist (left, 2 cols) */}
         <motion.div
           initial="hidden"
           animate="visible"
-          custom={4}
+          custom={2}
           variants={fadeUp}
-          className="md:col-span-3"
+          className="md:col-span-2"
         >
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-heading">{isToday ? "My Tasks Today" : "Tasks for this day"}</CardTitle>
+                <CardTitle className="text-base font-heading">
+                  {isToday ? "Today's checklist" : "Checklist for this day"}
+                </CardTitle>
                 {isClosed ? (
                   <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
                     <Lock className="h-3 w-3 mr-1" /> Closed
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className="text-xs">
-                    {tasks.filter((t) => t.status === "done").length}/{tasks.length}
+                  <Badge variant="secondary" className="text-xs tabular-nums">
+                    {completedCount}/{totalCount}
                   </Badge>
                 )}
               </div>
-              {!isClosed && (
-                <Progress
-                  value={tasks.length > 0 ? (tasks.filter((t) => t.status === "done").length / tasks.length) * 100 : 0}
-                  className="h-1.5"
-                />
+              {!isClosed && totalCount > 0 && (
+                <Progress value={progressPct} className="h-1.5 mt-1" />
               )}
             </CardHeader>
             <CardContent className="pt-0">
@@ -679,46 +636,43 @@ const Dashboard = () => {
                 </div>
               ) : isLoading ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
-              ) : tasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">No tasks set up yet. Configure modules in Settings.</p>
+              ) : sortedTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">
+                  No tasks set up yet. Configure modules in Settings.
+                </p>
               ) : (
-                <div className="divide-y">
-                  {tasks.slice(0, 12).map((task) => {
+                <div className="divide-y -mx-2">
+                  {sortedTasks.map((task) => {
                     const linked = isTaskLinkedToMe(task);
+                    const isDone = task.status === "done";
                     return (
-                      <div
+                      <Link
                         key={task.id}
-                        className={`flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-md ${
-                          task.status === "done" ? "opacity-60" : ""
+                        to={moduleHref(task.module, task.id)}
+                        className={`flex items-center gap-3 py-2.5 px-2 rounded-md hover:bg-muted/50 transition-colors ${
+                          isDone ? "opacity-60" : ""
                         } ${linked ? "bg-primary/5 ring-1 ring-primary/20" : ""}`}
                       >
                         {statusIcon(task.status)}
                         <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm font-medium ${
-                              task.status === "done" ? "line-through" : ""
-                            }`}
-                          >
+                          <p className={`text-sm font-medium truncate ${isDone ? "line-through" : ""}`}>
                             {task.title}
                           </p>
-                          <p className="text-xs text-muted-foreground">Due {task.due}</p>
+                          <p className="text-xs text-muted-foreground">
+                            <span className="tabular-nums">{task.due}</span> · {task.module}
+                          </p>
                         </div>
                         {linked && (
-                          <Badge variant="default" className="text-[10px] shrink-0 bg-primary/15 text-primary hover:bg-primary/15 border-0">
+                          <Badge
+                            variant="default"
+                            className="text-[10px] shrink-0 bg-primary/15 text-primary hover:bg-primary/15 border-0"
+                          >
                             <Star className="h-3 w-3 mr-0.5" />
                             Yours
                           </Badge>
                         )}
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] shrink-0"
-                        >
-                          {task.module}
-                        </Badge>
-                        {task.status === "pending" && (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </div>
+                        {!isDone && <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      </Link>
                     );
                   })}
                 </div>
@@ -727,69 +681,121 @@ const Dashboard = () => {
           </Card>
         </motion.div>
 
-        {/* Inspection Readiness */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          custom={5}
-          variants={fadeUp}
-          className="md:col-span-2"
-        >
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-heading">Inspection Readiness</CardTitle>
-              <p className="text-xs text-muted-foreground">3 pillars of food hygiene rating</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {pillars.map((pillar) => (
-                <div key={pillar.name} className="space-y-1.5">
+        {/* Right column: Today's shift + Inspection readiness */}
+        <div className="md:col-span-1 space-y-5">
+          {/* Today's shift */}
+          {isToday && !isClosed && (
+            <motion.div initial="hidden" animate="visible" custom={2.5} variants={fadeUp}>
+              <Card>
+                <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <pillar.icon className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-medium">{pillar.name}</span>
-                    </div>
-                    {isClosed ? (
-                      <span className="text-xs font-bold text-muted-foreground inline-flex items-center gap-1">
-                        <Lock className="h-3 w-3" /> Closed
-                      </span>
-                    ) : (
-                      <span
-                        className={`text-xs font-bold ${
-                          pillar.score >= 80
-                            ? "text-success"
-                            : pillar.score >= 60
-                            ? "text-warning"
-                            : "text-breach"
-                        }`}
-                      >
-                        {pillar.score}%
-                      </span>
+                    <CardTitle className="text-base font-heading flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      On shift today
+                    </CardTitle>
+                    {(todayShifts?.shifts.length ?? 0) > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {todayShifts!.shifts.length}
+                      </Badge>
                     )}
                   </div>
-                  {!isClosed && <Progress value={pillar.score} className="h-1.5" />}
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {(todayShifts?.shifts.length ?? 0) === 0 ? (
+                    <div className="py-4 text-center space-y-2">
+                      <p className="text-sm text-muted-foreground">No shifts scheduled.</p>
+                      <Link to="/shifts">
+                        <Button variant="outline" size="sm" className="text-xs">
+                          Open rota
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <ul className="divide-y">
+                      {todayShifts!.shifts.map((s) => (
+                        <li
+                          key={s.id}
+                          className={`flex items-center justify-between py-2 text-sm ${
+                            s.isMe ? "font-semibold text-foreground" : "text-foreground"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 truncate">
+                            {s.isMe && <Star className="h-3.5 w-3.5 text-primary shrink-0" />}
+                            <span className="truncate">{s.name}{s.isMe ? " (you)" : ""}</span>
+                          </span>
+                          <span className="text-xs text-muted-foreground tabular-nums shrink-0 ml-3">
+                            {s.start_time}–{s.end_time}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Inspection readiness */}
+          <motion.div initial="hidden" animate="visible" custom={3} variants={fadeUp}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-heading">Inspection readiness</CardTitle>
+                <p className="text-xs text-muted-foreground">3 pillars of food hygiene rating</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {pillars.map((pillar) => (
+                  <div key={pillar.name} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <pillar.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium">{pillar.name}</span>
+                      </div>
+                      {isClosed ? (
+                        <span className="text-xs font-bold text-muted-foreground inline-flex items-center gap-1">
+                          <Lock className="h-3 w-3" /> Closed
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-xs font-bold ${
+                            pillar.score >= 80
+                              ? "text-success"
+                              : pillar.score >= 60
+                              ? "text-warning"
+                              : "text-breach"
+                          }`}
+                        >
+                          {pillar.score}%
+                        </span>
+                      )}
+                    </div>
+                    {!isClosed && <Progress value={pillar.score} className="h-1.5" />}
+                  </div>
+                ))}
+
+                <div className="pt-2 border-t">
+                  <Link to="/reports">
+                    <Button variant="outline" size="sm" className="w-full text-xs">
+                      <FileTextIcon className="h-3.5 w-3.5 mr-1.5" />
+                      Generate Inspection Pack
+                    </Button>
+                  </Link>
                 </div>
-              ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
 
-              <div className="pt-2 border-t">
-                <Link to="/reports">
-                  <Button variant="outline" size="sm" className="w-full text-xs">
-                    <FileTextIcon className="h-3.5 w-3.5 mr-1.5" />
-                    Generate Inspection Pack
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {siteId && currentSite?.organisation_id && !isClosed && (
+      {/* Labour vs waste — kept as supporting business view */}
+      {siteId && currentSite?.organisation_id && !isClosed && (
+        <motion.div initial="hidden" animate="visible" custom={4} variants={fadeUp}>
           <LabourVsWasteCard
             siteId={siteId}
             organisationId={currentSite.organisation_id}
             date={selectedDate}
           />
-        )}
-      </div>
+        </motion.div>
+      )}
     </div>
   );
 };
