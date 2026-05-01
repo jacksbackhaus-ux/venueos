@@ -30,7 +30,7 @@ type NavLeaf = {
 
 const operationsItems: NavLeaf[] = [
   { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts", desc: "Staff rota" },
-  { title: "Shift Hive", url: "/shift-hive", icon: Sparkles, mod: "shifts", desc: "Swaps & cover" },
+  
   { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets", desc: "Hours & payroll" },
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet", desc: "Opening & closing" },
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures", desc: "Fridge/freezer logs" },

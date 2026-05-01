@@ -14,7 +14,7 @@ import Pricing from "./pages/Pricing";
 import LockedAccount from "./pages/LockedAccount";
 import Dashboard from "./pages/Dashboard";
 import Shifts from "./pages/Shifts";
-import ShiftHive from "./pages/ShiftHive";
+
 import TemperatureTracking from "./pages/TemperatureTracking";
 import DaySheet from "./pages/DaySheet";
 import Cleaning from "./pages/Cleaning";
@@ -155,7 +155,7 @@ function AppRoutes() {
 
       <Route path="/" element={siteRoute(<Dashboard />)} />
       <Route path="/shifts" element={moduleRoute("shifts", <Shifts />)} />
-      <Route path="/shift-hive" element={moduleRoute("shifts", <ShiftHive />)} />
+      
       <Route path="/temperatures" element={moduleRoute("temperatures", <TemperatureTracking />)} />
       <Route path="/day-sheet" element={moduleRoute("day_sheet", <DaySheet />)} />
       <Route path="/cleaning" element={moduleRoute("cleaning", <Cleaning />)} />

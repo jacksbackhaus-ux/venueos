@@ -24,7 +24,7 @@ type NavLeaf = { title: string; url: string; icon: React.ElementType; mod?: Modu
 const dailyOpsAll: NavLeaf[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard }, // always visible
   { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts" },
-  { title: "Shift Hive", url: "/shift-hive", icon: Sparkles, mod: "shifts" },
+  
   { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets" },
   { title: "Messenger", url: "/messenger", icon: MessageSquare, mod: "messenger" },
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet" },
