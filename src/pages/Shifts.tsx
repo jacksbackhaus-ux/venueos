@@ -20,7 +20,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -277,6 +277,10 @@ const Shifts = () => {
   const [customTasks, setCustomTasks] = useState<string[]>([]);
   const [customTaskInput, setCustomTaskInput] = useState("");
 
+  // Unified tab state — Rota + Shift Hive surfaces in one page.
+  const isManager = role === "owner" || role === "supervisor";
+  const [mainTab, setMainTab] = useState<string>("rota");
+
   const addCustomTask = () => {
     const trimmed = customTaskInput.trim();
     if (!trimmed) return;
@@ -425,69 +429,50 @@ const Shifts = () => {
   }
 
   return (
-    // Top-level tab: Rota vs Shift Hive
-  const [topTab, setTopTab] = useState<"rota" | "hive">("rota");
-
-  if (topTab === "hive") {
-    return (
-      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-heading font-bold">Shifts</h1>
-            <p className="text-sm text-muted-foreground">Self-service swaps, cover & compliance</p>
-          </div>
-          <div className="ml-auto">
-            <Tabs value={topTab} onValueChange={(v) => setTopTab(v as "rota" | "hive")}>
-              <TabsList>
-                <TabsTrigger value="rota">Rota</TabsTrigger>
-                <TabsTrigger value="hive">Shift Hive</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </div>
-        <ShiftHiveTabs />
-      </div>
-    );
-  }
-
-  return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <CalendarDays className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-heading font-bold text-foreground">Rota</h1>
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <CalendarDays className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-xl font-heading font-bold text-foreground">Shifts</h1>
+          <p className="text-sm text-muted-foreground">
+            Rota, swaps, cover, availability & compliance — all in one place
+          </p>
+        </div>
+      </div>
+
+      <Tabs value={mainTab} onValueChange={setMainTab} className="space-y-4">
+        <TabsList className="w-full overflow-x-auto flex-nowrap justify-start">
+          <TabsTrigger value="rota">Rota</TabsTrigger>
+          <TabsTrigger value="my-shifts">My shifts</TabsTrigger>
+          <TabsTrigger value="availability">Availability</TabsTrigger>
+          {isManager && <TabsTrigger value="approvals">Approvals</TabsTrigger>}
+          {isManager && <TabsTrigger value="compensation">Compensation</TabsTrigger>}
+          {isManager && <TabsTrigger value="settings">Settings</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="rota" className="space-y-5 mt-0">
+          {/* Rota controls */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="text-sm text-muted-foreground">
               {canEdit ? "Plan and view staff shifts" : "View staff shifts (read-only)"}
             </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Tabs value={view} onValueChange={(v) => setView(v as "week" | "day")}>
+                <TabsList>
+                  <TabsTrigger value="week">Weekly</TabsTrigger>
+                  <TabsTrigger value="day">Daily</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {canEdit && (
+                <Button size="sm" onClick={() => openCreate()}>
+                  <Plus className="h-4 w-4 mr-1" /> Add shift
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-<div className="flex items-center gap-2 flex-wrap">
-          <Tabs value={topTab} onValueChange={(v) => setTopTab(v as "rota" | "hive")}>
-            <TabsList>
-              <TabsTrigger value="rota">Rota</TabsTrigger>
-              <TabsTrigger value="hive">Shift Hive</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Tabs value={view} onValueChange={(v) => setView(v as "week" | "day")}>
-            <TabsList>
-              <TabsTrigger value="week">Weekly</TabsTrigger>
-              <TabsTrigger value="day">Daily</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {canEdit && (
-            <Button size="sm" onClick={() => openCreate()}>
-              <Plus className="h-4 w-4 mr-1" /> Add shift
-            </Button>
-          )}
-        </div>
-      </div>
 
       <DateBar
         view={view}
@@ -528,6 +513,14 @@ const Shifts = () => {
           onSmartFill={(a) => setSmartFillTarget(a)}
         />
       )}
+        </TabsContent>
+
+        <TabsContent value="my-shifts" className="mt-0"><MyShiftsDashboard /></TabsContent>
+        <TabsContent value="availability" className="mt-0"><AvailabilityEditor /></TabsContent>
+        {isManager && <TabsContent value="approvals" className="mt-0"><ManagerApprovalCenter /></TabsContent>}
+        {isManager && <TabsContent value="compensation" className="mt-0"><ComplianceExport /></TabsContent>}
+        {isManager && <TabsContent value="settings" className="mt-0"><ShiftHiveSettings /></TabsContent>}
+      </Tabs>
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -1103,29 +1096,6 @@ function DayView({
         </Card>
       )}
     </div>
-  );
-}
-function ShiftHiveTabs() {
-  const { currentMembership } = useSite();
-  const { staffSession } = useAuth();
-  const role = currentMembership?.site_role || staffSession?.site_role || "staff";
-  const isManager = role === "owner" || role === "supervisor";
-
-  return (
-    <Tabs defaultValue="my-shifts">
-      <TabsList className="w-full overflow-x-auto flex-nowrap justify-start">
-        <TabsTrigger value="my-shifts">My shifts</TabsTrigger>
-        <TabsTrigger value="availability">Availability</TabsTrigger>
-        {isManager && <TabsTrigger value="approvals">Approvals</TabsTrigger>}
-        {isManager && <TabsTrigger value="compensation">Compensation</TabsTrigger>}
-        {isManager && <TabsTrigger value="settings">Settings</TabsTrigger>}
-      </TabsList>
-      <TabsContent value="my-shifts" className="mt-4"><MyShiftsDashboard /></TabsContent>
-      <TabsContent value="availability" className="mt-4"><AvailabilityEditor /></TabsContent>
-      {isManager && <TabsContent value="approvals" className="mt-4"><ManagerApprovalCenter /></TabsContent>}
-      {isManager && <TabsContent value="compensation" className="mt-4"><ComplianceExport /></TabsContent>}
-      {isManager && <TabsContent value="settings" className="mt-4"><ShiftHiveSettings /></TabsContent>}
-    </Tabs>
   );
 }
 export default Shifts;
