@@ -20,7 +20,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -276,6 +276,10 @@ const Shifts = () => {
   const [linkedTasks, setLinkedTasks] = useState<LinkedTask[]>([]);
   const [customTasks, setCustomTasks] = useState<string[]>([]);
   const [customTaskInput, setCustomTaskInput] = useState("");
+
+  // Unified tab state — Rota + Shift Hive surfaces in one page.
+  const isManager = role === "owner" || role === "supervisor";
+  const [mainTab, setMainTab] = useState<string>("rota");
 
   const addCustomTask = () => {
     const trimmed = customTaskInput.trim();
