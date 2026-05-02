@@ -477,6 +477,23 @@ const TemperatureTracking = () => {
                     </p>
                   ) : null}
                 </div>
+                {!processMode && selectedUnit && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Check type</Label>
+                    <Select value={logType} onValueChange={(v) => requestCheckType(v, selectedUnit.id)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AM Check">
+                          AM Check {hasCheckForUnitToday(selectedUnit.id, "AM Check") ? "· already logged today" : ""}
+                        </SelectItem>
+                        <SelectItem value="PM Check">
+                          PM Check {hasCheckForUnitToday(selectedUnit.id, "PM Check") ? "· already logged today" : ""}
+                        </SelectItem>
+                        <SelectItem value="Spot Check">Spot Check</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-2">
                   {["1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "0", "."].map((key) => (
                     <Button key={key} variant="outline" className="h-14 text-xl font-bold" onClick={() => handleKeypad(key)}>{key}</Button>
