@@ -163,17 +163,19 @@ export async function fetchReportData(
   const recipes = recipesRes.data || [];
   const memberships = membershipsRes.data || [];
 
-  // === Day sheet completion ===
-  // Each day in range (excluding closed days) should have a sheet; locked = better.
-  const totalItemsPerSheet = sections.reduce((s, sec: any) => s + (sec.day_sheet_items?.filter((i: any) => i.active).length || 0), 0);
-  const expectedSheets = Math.max(1, range.days);
-  const daySheetsCreated = daySheets.length;
-  const daySheetsLocked = daySheets.filter(d => d.locked).length;
-  const daySheetCompletionPct = pct(daySheetsCreated, expectedSheets);
-  const daySheetsLockedPct = daySheetsCreated === 0 ? 0 : pct(daySheetsLocked, daySheetsCreated);
-
   const closedDays = closedDaysRes.data || [];
   const closedSet = new Set((closedDays as any[]).map((c) => c.closed_date));
+  const closedInRange = closedDays.length;
+
+  // === Day sheet completion ===
+  // Each day in range (excluding closed days) should have a sheet; locked = better.
+  // Closed days are exempt from compliance and removed from both numerator and denominator.
+  const totalItemsPerSheet = sections.reduce((s, sec: any) => s + (sec.day_sheet_items?.filter((i: any) => i.active).length || 0), 0);
+  const expectedSheets = Math.max(1, range.days - closedInRange);
+  const daySheetsCreated = (daySheets as any[]).filter((d) => !closedSet.has(d.sheet_date)).length;
+  const daySheetsLocked = (daySheets as any[]).filter((d) => d.locked && !closedSet.has(d.sheet_date)).length;
+  const daySheetCompletionPct = pct(daySheetsCreated, expectedSheets);
+  const daySheetsLockedPct = daySheetsCreated === 0 ? 0 : pct(daySheetsLocked, daySheetsCreated);
 
   // === Cleaning completion (period-aware with closed-day exemption) ===
   // Build expected occurrences per task by walking through period buckets:
