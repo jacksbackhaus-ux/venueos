@@ -401,6 +401,7 @@ const TemperatureTracking = () => {
                     <SelectContent>
                       <SelectItem value="AM Check">AM Check (fridge/freezer)</SelectItem>
                       <SelectItem value="PM Check">PM Check (fridge/freezer)</SelectItem>
+                      <SelectItem value="Spot Check">Spot Check (fridge/freezer)</SelectItem>
                       <SelectItem value="Delivery">Delivery Temp (food)</SelectItem>
                       <SelectItem value="Cooking">Cooking Temp (food)</SelectItem>
                       <SelectItem value="Cooling">Cooling Temp (food)</SelectItem>
