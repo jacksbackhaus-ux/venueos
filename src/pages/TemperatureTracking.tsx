@@ -83,6 +83,7 @@ const TemperatureTracking = () => {
   const [correctiveAction, setCorrectiveAction] = useState("");
   const processMode = isProcessCheck(logType);
   const processRange = PROCESS_RANGES[logType];
+  const [pendingCheckType, setPendingCheckType] = useState<string | null>(null);
 
   const { data: units = [], isLoading: unitsLoading } = useQuery({
     queryKey: ["temp_units", siteId],
