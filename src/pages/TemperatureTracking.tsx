@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,6 +83,7 @@ const TemperatureTracking = () => {
   const [correctiveAction, setCorrectiveAction] = useState("");
   const processMode = isProcessCheck(logType);
   const processRange = PROCESS_RANGES[logType];
+  const [pendingCheckType, setPendingCheckType] = useState<string | null>(null);
 
   const { data: units = [], isLoading: unitsLoading } = useQuery({
     queryKey: ["temp_units", siteId],
@@ -217,6 +222,20 @@ const TemperatureTracking = () => {
 
   const getUnitName = (unitId: string | null) => unitId ? (units.find((u) => u.id === unitId)?.name || "Unknown") : "—";
   const getUnitLastReading = (unitId: string) => logs.find((l) => l.unit_id === unitId);
+  const hasCheckForUnitToday = (unitId: string, type: string) =>
+    logs.some((l) => l.unit_id === unitId && l.log_type === type);
+  const smartDefaultCheckType = (unitId: string) => {
+    if (!hasCheckForUnitToday(unitId, "AM Check")) return "AM Check";
+    if (!hasCheckForUnitToday(unitId, "PM Check")) return "PM Check";
+    return "Spot Check";
+  };
+  const requestCheckType = (type: string, unitId: string | null) => {
+    if ((type === "AM Check" || type === "PM Check") && unitId && hasCheckForUnitToday(unitId, type)) {
+      setPendingCheckType(type);
+      return;
+    }
+    setLogType(type);
+  };
   const breaches = logs.filter((l) => !l.pass);
 
   if (!siteId) {
@@ -281,7 +300,7 @@ const TemperatureTracking = () => {
             <motion.div key={unit.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <Card
                 className={`transition-shadow ${isToday ? "cursor-pointer hover:shadow-md" : "cursor-default"} ${isBreaching ? "border-breach/50 bg-breach/5" : ""}`}
-                onClick={() => { if (!isToday) return; setSelectedUnit(unit); setShowLog(true); setStep("keypad"); }}
+                onClick={() => { if (!isToday) return; setSelectedUnit(unit); setLogType(smartDefaultCheckType(unit.id)); setShowLog(true); setStep("keypad"); }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -382,6 +401,7 @@ const TemperatureTracking = () => {
                     <SelectContent>
                       <SelectItem value="AM Check">AM Check (fridge/freezer)</SelectItem>
                       <SelectItem value="PM Check">PM Check (fridge/freezer)</SelectItem>
+                      <SelectItem value="Spot Check">Spot Check (fridge/freezer)</SelectItem>
                       <SelectItem value="Delivery">Delivery Temp (food)</SelectItem>
                       <SelectItem value="Cooking">Cooking Temp (food)</SelectItem>
                       <SelectItem value="Cooling">Cooling Temp (food)</SelectItem>
@@ -415,16 +435,23 @@ const TemperatureTracking = () => {
                 ) : (
                   <div className="space-y-2 pt-1">
                     <Label className="text-xs text-muted-foreground">Select unit</Label>
-                    {units.map((unit) => (
-                      <Button key={unit.id} variant="outline" className="w-full justify-start gap-3 h-14 text-left"
-                        onClick={() => { setSelectedUnit(unit); setStep("keypad"); }}>
-                        <Thermometer className="h-4 w-4 text-primary" />
-                        <div>
-                          <span className="font-medium">{unit.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)</span>
-                        </div>
-                      </Button>
-                    ))}
+                    {units.map((unit) => {
+                      const conflict = (logType === "AM Check" || logType === "PM Check") && hasCheckForUnitToday(unit.id, logType);
+                      return (
+                        <Button key={unit.id} variant="outline" className="w-full justify-start gap-3 h-14 text-left"
+                          onClick={() => {
+                            setSelectedUnit(unit);
+                            if (conflict) { setPendingCheckType(logType); } else { setStep("keypad"); }
+                          }}>
+                          <Thermometer className="h-4 w-4 text-primary" />
+                          <div>
+                            <span className="font-medium">{unit.name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)</span>
+                            {conflict && <span className="block text-[10px] text-warning mt-0.5">{logType} already logged today</span>}
+                          </div>
+                        </Button>
+                      );
+                    })}
                   </div>
                 )}
               </motion.div>
@@ -451,6 +478,23 @@ const TemperatureTracking = () => {
                     </p>
                   ) : null}
                 </div>
+                {!processMode && selectedUnit && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Check type</Label>
+                    <Select value={logType} onValueChange={(v) => requestCheckType(v, selectedUnit.id)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AM Check">
+                          AM Check {hasCheckForUnitToday(selectedUnit.id, "AM Check") ? "· already logged today" : ""}
+                        </SelectItem>
+                        <SelectItem value="PM Check">
+                          PM Check {hasCheckForUnitToday(selectedUnit.id, "PM Check") ? "· already logged today" : ""}
+                        </SelectItem>
+                        <SelectItem value="Spot Check">Spot Check</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-2">
                   {["1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "0", "."].map((key) => (
                     <Button key={key} variant="outline" className="h-14 text-xl font-bold" onClick={() => handleKeypad(key)}>{key}</Button>
@@ -508,6 +552,27 @@ const TemperatureTracking = () => {
           </AnimatePresence>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!pendingCheckType} onOpenChange={(open) => { if (!open) setPendingCheckType(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicate {pendingCheckType}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingCheckType} already logged for {selectedUnit?.name || "this unit"} today — are you sure?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingCheckType(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingCheckType) setLogType(pendingCheckType);
+              setPendingCheckType(null);
+              if (selectedUnit && step === "select") setStep("keypad");
+            }}>
+              Yes, log another
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
