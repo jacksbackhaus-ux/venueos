@@ -169,6 +169,13 @@ export async function fetchReportData(
   const closedSet = new Set((closedDays as any[]).map((c) => c.closed_date));
   const closedInRange = closedDays.length;
 
+  // Strip temperature logs that fall on closed days — those days are exempt entirely.
+  tempLogs = tempLogsRaw.filter((t: any) => {
+    const d = (t.logged_at || "").slice(0, 10);
+    return !closedSet.has(d);
+  });
+  tempBreaches = tempLogs.filter((t: any) => !t.pass);
+
   // === Day sheet completion ===
   // Each day in range (excluding closed days) should have a sheet; locked = better.
   // Closed days are exempt from compliance and removed from both numerator and denominator.
