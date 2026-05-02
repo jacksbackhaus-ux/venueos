@@ -222,6 +222,20 @@ const TemperatureTracking = () => {
 
   const getUnitName = (unitId: string | null) => unitId ? (units.find((u) => u.id === unitId)?.name || "Unknown") : "—";
   const getUnitLastReading = (unitId: string) => logs.find((l) => l.unit_id === unitId);
+  const hasCheckForUnitToday = (unitId: string, type: string) =>
+    logs.some((l) => l.unit_id === unitId && l.log_type === type);
+  const smartDefaultCheckType = (unitId: string) => {
+    if (!hasCheckForUnitToday(unitId, "AM Check")) return "AM Check";
+    if (!hasCheckForUnitToday(unitId, "PM Check")) return "PM Check";
+    return "Spot Check";
+  };
+  const requestCheckType = (type: string, unitId: string | null) => {
+    if ((type === "AM Check" || type === "PM Check") && unitId && hasCheckForUnitToday(unitId, type)) {
+      setPendingCheckType(type);
+      return;
+    }
+    setLogType(type);
+  };
   const breaches = logs.filter((l) => !l.pass);
 
   if (!siteId) {
