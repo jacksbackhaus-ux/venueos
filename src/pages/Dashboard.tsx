@@ -245,8 +245,14 @@ const Dashboard = () => {
   const tasks = data?.tasks ?? [];
   const alerts = isClosed ? [] : (data?.alerts ?? []);
   const stats = data?.stats ?? { completed: 0, total: 0, overdue: 0, breaches: 0 };
-  const complianceScore = data?.compliance ?? 100;
-  const pillars = data?.pillars ?? [
+  const complianceScore = isClosed ? 100 : (data?.compliance ?? 100);
+  const pillars = (isClosed
+    ? [
+        { name: "Hygienic Handling", score: 100, icon: ClipboardCheck },
+        { name: "Premises & Cleanliness", score: 100, icon: SprayCan },
+        { name: "Management Confidence", score: 100, icon: ShieldCheck },
+      ]
+    : data?.pillars) ?? [
     { name: "Hygienic Handling", score: 100, icon: ClipboardCheck },
     { name: "Premises & Cleanliness", score: 100, icon: SprayCan },
     { name: "Management Confidence", score: 100, icon: ShieldCheck },
