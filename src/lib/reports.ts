@@ -148,8 +148,10 @@ export async function fetchReportData(
     supabase.from("closed_days").select("closed_date").eq("site_id", siteId).gte("closed_date", fromDate).lte("closed_date", toDate),
   ]);
 
-  const tempLogs = tempRes.data || [];
-  const tempBreaches = tempLogs.filter(t => !t.pass);
+  const tempLogsRaw = tempRes.data || [];
+  // We filter out closed-day temp logs further down, once closedSet is built.
+  let tempLogs = tempLogsRaw;
+  let tempBreaches = tempLogs.filter(t => !t.pass);
   const cleaningTasks = cleaningTasksRes.data || [];
   const cleaningLogs = cleaningLogsRes.data || [];
   const daySheets = daySheetsRes.data || [];
