@@ -409,4 +409,98 @@ const PestMaintenance = () => {
                           {overdue ? (
                             <><AlertTriangle className="h-3 w-3 mr-1" /> Overdue</>
                           ) : dueSoon ? (
-                            <><Clock className="h-3 w-3 mr-1" /> Due {new Date(nextDue).t
+                            <><Clock className="h-3 w-3 mr-1" /> Due {new Date(nextDue).toLocaleDateString("en-GB")}</>
+                          ) : (
+                            <><CheckCircle2 className="h-3 w-3 mr-1" /> {new Date(nextDue).toLocaleDateString("en-GB")}</>
+                          )}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] shrink-0">
+                          Not yet logged
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* New Pest dialog */}
+      <Dialog open={showNewPest} onOpenChange={setShowNewPest}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report Pest Sighting</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Type</Label>
+              <Input value={pestType} onChange={(e) => setPestType(e.target.value)} placeholder="e.g. Mouse, Fly" />
+            </div>
+            <div>
+              <Label>Location</Label>
+              <Input value={pestLocation} onChange={(e) => setPestLocation(e.target.value)} placeholder="e.g. Kitchen" />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea value={pestDesc} onChange={(e) => setPestDesc(e.target.value)} />
+            </div>
+            <div>
+              <Label>Action taken</Label>
+              <Textarea value={pestAction} onChange={(e) => setPestAction(e.target.value)} />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => savePest.mutate()}
+              disabled={!pestType || !pestLocation || savePest.isPending}
+            >
+              {savePest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save report"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Maintenance dialog */}
+      <Dialog open={showNewMaint} onOpenChange={setShowNewMaint}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Log Maintenance Issue</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Item</Label>
+              <Input value={maintItem} onChange={(e) => setMaintItem(e.target.value)} placeholder="e.g. Walk-in fridge" />
+            </div>
+            <div>
+              <Label>Issue</Label>
+              <Textarea value={maintIssue} onChange={(e) => setMaintIssue(e.target.value)} />
+            </div>
+            <div>
+              <Label>Priority</Label>
+              <Select value={maintPriority} onValueChange={(v) => setMaintPriority(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => saveMaint.mutate()}
+              disabled={!maintItem || !maintIssue || saveMaint.isPending}
+            >
+              {saveMaint.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Log issue"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default PestMaintenance;
+
