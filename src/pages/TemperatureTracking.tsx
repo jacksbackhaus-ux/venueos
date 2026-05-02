@@ -552,6 +552,27 @@ const TemperatureTracking = () => {
           </AnimatePresence>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!pendingCheckType} onOpenChange={(open) => { if (!open) setPendingCheckType(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicate {pendingCheckType}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingCheckType} already logged for {selectedUnit?.name || "this unit"} today — are you sure?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingCheckType(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingCheckType) setLogType(pendingCheckType);
+              setPendingCheckType(null);
+              if (selectedUnit && step === "select") setStep("keypad");
+            }}>
+              Yes, log another
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
