@@ -300,7 +300,7 @@ const TemperatureTracking = () => {
             <motion.div key={unit.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <Card
                 className={`transition-shadow ${isToday ? "cursor-pointer hover:shadow-md" : "cursor-default"} ${isBreaching ? "border-breach/50 bg-breach/5" : ""}`}
-                onClick={() => { if (!isToday) return; setSelectedUnit(unit); setShowLog(true); setStep("keypad"); }}
+                onClick={() => { if (!isToday) return; setSelectedUnit(unit); setLogType(smartDefaultCheckType(unit.id)); setShowLog(true); setStep("keypad"); }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
