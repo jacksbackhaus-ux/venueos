@@ -434,16 +434,23 @@ const TemperatureTracking = () => {
                 ) : (
                   <div className="space-y-2 pt-1">
                     <Label className="text-xs text-muted-foreground">Select unit</Label>
-                    {units.map((unit) => (
-                      <Button key={unit.id} variant="outline" className="w-full justify-start gap-3 h-14 text-left"
-                        onClick={() => { setSelectedUnit(unit); setStep("keypad"); }}>
-                        <Thermometer className="h-4 w-4 text-primary" />
-                        <div>
-                          <span className="font-medium">{unit.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)</span>
-                        </div>
-                      </Button>
-                    ))}
+                    {units.map((unit) => {
+                      const conflict = (logType === "AM Check" || logType === "PM Check") && hasCheckForUnitToday(unit.id, logType);
+                      return (
+                        <Button key={unit.id} variant="outline" className="w-full justify-start gap-3 h-14 text-left"
+                          onClick={() => {
+                            setSelectedUnit(unit);
+                            if (conflict) { setPendingCheckType(logType); } else { setStep("keypad"); }
+                          }}>
+                          <Thermometer className="h-4 w-4 text-primary" />
+                          <div>
+                            <span className="font-medium">{unit.name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)</span>
+                            {conflict && <span className="block text-[10px] text-warning mt-0.5">{logType} already logged today</span>}
+                          </div>
+                        </Button>
+                      );
+                    })}
                   </div>
                 )}
               </motion.div>
