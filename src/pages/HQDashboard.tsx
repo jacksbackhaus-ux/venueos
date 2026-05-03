@@ -24,9 +24,11 @@ interface SiteOverview {
   open_incidents: number;
   todays_tasks_total: number;
   todays_tasks_done: number;
+  closed_today: boolean;
 }
 
-function complianceScore(done: number, total: number) {
+function complianceScore(done: number, total: number, closed: boolean) {
+  if (closed) return 100; // Closed days are exempt from compliance.
   if (total === 0) return null;
   return Math.round((done / total) * 100);
 }
@@ -121,6 +123,14 @@ export default function AllSitesOverview() {
           : Promise.resolve({ count: 0 } as { count: number }),
       ]);
 
+      // Closed-day exemption: if today is marked closed for this site, skip compliance scoring.
+      const { data: closedToday } = await supabase
+        .from("closed_days")
+        .select("id")
+        .eq("site_id", site.id)
+        .eq("closed_date", todayIso)
+        .maybeSingle();
+
       const totalItems = (daySheetSections || []).reduce(
         (acc: number, s: { day_sheet_items?: { id: string }[] | null }) =>
           acc + (s.day_sheet_items?.length || 0),
@@ -135,6 +145,7 @@ export default function AllSitesOverview() {
         open_incidents: openIncidents || 0,
         todays_tasks_total: totalItems,
         todays_tasks_done: completedCount || 0,
+        closed_today: !!closedToday,
       });
     }
 
@@ -234,7 +245,8 @@ export default function AllSitesOverview() {
                     activeSites.reduce((sum, s) => {
                       const score = complianceScore(
                         s.todays_tasks_done,
-                        s.todays_tasks_total
+                        s.todays_tasks_total,
+                        s.closed_today
                       );
                       return sum + (score ?? 100);
                     }, 0) / activeSites.length
@@ -272,7 +284,8 @@ export default function AllSitesOverview() {
           sites.map((site, idx) => {
             const score = complianceScore(
               site.todays_tasks_done,
-              site.todays_tasks_total
+              site.todays_tasks_total,
+              site.closed_today
             );
             const hasAlerts =
               site.temp_breaches > 0 ||
