@@ -123,6 +123,14 @@ export default function AllSitesOverview() {
           : Promise.resolve({ count: 0 } as { count: number }),
       ]);
 
+      // Closed-day exemption: if today is marked closed for this site, skip compliance scoring.
+      const { data: closedToday } = await supabase
+        .from("closed_days")
+        .select("id")
+        .eq("site_id", site.id)
+        .eq("closed_date", todayIso)
+        .maybeSingle();
+
       const totalItems = (daySheetSections || []).reduce(
         (acc: number, s: { day_sheet_items?: { id: string }[] | null }) =>
           acc + (s.day_sheet_items?.length || 0),
@@ -137,6 +145,7 @@ export default function AllSitesOverview() {
         open_incidents: openIncidents || 0,
         todays_tasks_total: totalItems,
         todays_tasks_done: completedCount || 0,
+        closed_today: !!closedToday,
       });
     }
 
