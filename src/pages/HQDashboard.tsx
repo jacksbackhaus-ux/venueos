@@ -284,7 +284,8 @@ export default function AllSitesOverview() {
           sites.map((site, idx) => {
             const score = complianceScore(
               site.todays_tasks_done,
-              site.todays_tasks_total
+              site.todays_tasks_total,
+              site.closed_today
             );
             const hasAlerts =
               site.temp_breaches > 0 ||
