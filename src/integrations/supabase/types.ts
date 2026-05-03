@@ -594,6 +594,9 @@ export type Database = {
           organisation_id: string
           problem_notes: string | null
           sheet_date: string
+          signed_off: boolean
+          signed_off_at: string | null
+          signed_off_by: string | null
           site_id: string
         }
         Insert: {
@@ -606,6 +609,9 @@ export type Database = {
           organisation_id: string
           problem_notes?: string | null
           sheet_date: string
+          signed_off?: boolean
+          signed_off_at?: string | null
+          signed_off_by?: string | null
           site_id: string
         }
         Update: {
@@ -618,6 +624,9 @@ export type Database = {
           organisation_id?: string
           problem_notes?: string | null
           sheet_date?: string
+          signed_off?: boolean
+          signed_off_at?: string | null
+          signed_off_by?: string | null
           site_id?: string
         }
         Relationships: [
