@@ -24,9 +24,11 @@ interface SiteOverview {
   open_incidents: number;
   todays_tasks_total: number;
   todays_tasks_done: number;
+  closed_today: boolean;
 }
 
-function complianceScore(done: number, total: number) {
+function complianceScore(done: number, total: number, closed: boolean) {
+  if (closed) return 100; // Closed days are exempt from compliance.
   if (total === 0) return null;
   return Math.round((done / total) * 100);
 }
