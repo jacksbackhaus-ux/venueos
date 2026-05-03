@@ -18,6 +18,7 @@ import { DateNavigator } from "@/components/DateNavigator";
 const DaySheet = () => {
   const { currentSite, organisationId } = useSite();
   const { appUser, staffSession } = useAuth();
+  const { isManager, isSupervisorPlus } = useRole();
   const queryClient = useQueryClient();
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
