@@ -177,7 +177,42 @@ const DaySheet = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
-  const isLockedSheet = daySheet?.locked || false;
+  const signOff = useMutation({
+    mutationFn: async () => {
+      const dsId = await ensureDaySheet();
+      const now = new Date().toISOString();
+      const { error } = await supabase.from("day_sheets").update({
+        signed_off: true, signed_off_by: userName, signed_off_at: now,
+        locked: true, locked_at: now, locked_by_user_id: appUser?.id || null,
+        manager_note: managerNote || null, problem_notes: problemNotes || null,
+      }).eq("id", dsId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
+      toast.success("Day sheet signed off");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const unlockSheet = useMutation({
+    mutationFn: async () => {
+      if (!daySheet?.id) return;
+      const { error } = await supabase.from("day_sheets").update({
+        signed_off: false, signed_off_by: null, signed_off_at: null,
+        locked: false, locked_at: null, locked_by_user_id: null,
+      }).eq("id", daySheet.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
+      toast.success("Day sheet unlocked");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const isSignedOff = daySheet?.signed_off || false;
+  const isLockedSheet = daySheet?.locked || isSignedOff;
   const locked = isLockedSheet || !isToday; // past days are read-only
   const doneItemIds = new Set(entries.filter((e: any) => e.done).map((e: any) => e.item_id));
   const allItems = sections.flatMap((s: any) => s.day_sheet_items || []);
