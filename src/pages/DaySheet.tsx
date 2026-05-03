@@ -316,9 +316,19 @@ const DaySheet = () => {
                         const isDone = doneItemIds.has(item.id);
                         return (
                           <button key={item.id} onClick={() => !locked && toggleItem.mutate(item.id)} disabled={locked}
-                            className={`w-full flex items-start gap-3 p-2.5 rounded-md text-left transition-colors ${locked ? "cursor-default" : "hover:bg-muted/50 cursor-pointer"} ${isDone ? "opacity-70" : ""}`}>
+                            className={`w-full flex items-start gap-3 p-2.5 rounded-md text-left transition-colors ${locked ? "cursor-default" : "hover:bg-muted/50 cursor-pointer"}`}>
                             {isDone ? <CheckCircle2 className="h-5 w-5 text-success mt-0.5 shrink-0" /> : <Circle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />}
-                            <span className={`text-sm ${isDone ? "line-through text-muted-foreground" : "font-medium"}`}>{item.label}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className={`text-sm ${isDone ? "line-through text-muted-foreground" : "font-medium"}`}>{item.label}</span>
+                              {isDone && (() => {
+                                const entry = entries.find((e: any) => e.item_id === item.id && e.done);
+                                return entry?.completed_at ? (
+                                  <p className="text-[10px] text-success/70 mt-0.5">
+                                    ✓ {entry.completed_at ? new Date(entry.completed_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""}{entry.completed_by_name ? ` · ${entry.completed_by_name}` : ""}
+                                  </p>
+                                ) : null;
+                              })()}
+                            </div>
                           </button>
                         );
                       })}
