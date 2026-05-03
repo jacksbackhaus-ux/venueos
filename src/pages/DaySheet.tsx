@@ -344,26 +344,59 @@ const DaySheet = () => {
 
           <Card className="border-primary/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-heading flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Manager Verification & Lock</CardTitle>
+              <CardTitle className="text-sm font-heading flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Manager Verification & Sign-off</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Textarea placeholder="Manager notes (required if breaches occurred)..." value={managerNote} onChange={(e) => setManagerNote(e.target.value)} className="text-sm" />
-              <Button className="w-full" disabled={!allDone && !managerNote} onClick={() => lockSheet.mutate()}>
-                <Lock className="h-4 w-4 mr-2" /> {allDone ? "Lock Day Sheet" : "Lock with Exception Note"}
+              {isSupervisorPlus && (
+                <Button className="w-full" disabled={!allDone || signOff.isPending} onClick={() => signOff.mutate()}>
+                  <PenLine className="h-4 w-4 mr-2" /> Sign off Day Sheet
+                </Button>
+              )}
+              <Button variant="outline" className="w-full" disabled={!allDone && !managerNote} onClick={() => lockSheet.mutate()}>
+                <Lock className="h-4 w-4 mr-2" /> {allDone ? "Lock without sign-off" : "Lock with Exception Note"}
               </Button>
-              {!allDone && !managerNote && <p className="text-xs text-muted-foreground text-center">All tasks must be complete, or add an exception note to lock</p>}
+              {!allDone && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {isSupervisorPlus
+                    ? "Complete all tasks to sign off, or lock with an exception note."
+                    : "All tasks must be complete, or add an exception note to lock."}
+                </p>
+              )}
             </CardContent>
           </Card>
         </>
       )}
 
-      {isLockedSheet && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center">
-          <Lock className="h-6 w-6 text-success mx-auto mb-2" />
+      {isSignedOff && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center space-y-2">
+          <ShieldCheck className="h-6 w-6 text-success mx-auto" />
+          <p className="font-heading font-bold text-success">Day Sheet Signed Off</p>
+          <p className="text-xs text-muted-foreground">
+            Signed off by <span className="font-medium text-foreground">{daySheet?.signed_off_by || "—"}</span>
+            {daySheet?.signed_off_at && <> at {new Date(daySheet.signed_off_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</>}.
+            Tasks are locked.
+          </p>
+          {isManager && isToday && (
+            <Button variant="outline" size="sm" onClick={() => unlockSheet.mutate()} disabled={unlockSheet.isPending}>
+              <Unlock className="h-3 w-3 mr-1" /> Unlock day sheet
+            </Button>
+          )}
+        </motion.div>
+      )}
+
+      {isLockedSheet && !isSignedOff && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center space-y-2">
+          <Lock className="h-6 w-6 text-success mx-auto" />
           <p className="font-heading font-bold text-success">Day Sheet Locked</p>
           <p className="text-xs text-muted-foreground">
             Locked at {daySheet?.locked_at ? new Date(daySheet.locked_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "—"}. Entries are now immutable.
           </p>
+          {isManager && isToday && (
+            <Button variant="outline" size="sm" onClick={() => unlockSheet.mutate()} disabled={unlockSheet.isPending}>
+              <Unlock className="h-3 w-3 mr-1" /> Unlock day sheet
+            </Button>
+          )}
         </motion.div>
       )}
     </div>
