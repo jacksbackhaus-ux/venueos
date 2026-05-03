@@ -172,9 +172,13 @@ const DaySheet = () => {
   const lockSheet = useMutation({
     mutationFn: async () => {
       const dsId = await ensureDaySheet();
-      const { error } = await supabase.from("day_sheets").update({
-        locked: true, locked_at: new Date().toISOString(), locked_by_user_id: appUser?.id || null,
-        manager_note: managerNote || null, problem_notes: problemNotes || null,
+     const { error } = await supabase.from("day_sheets").update({
+        locked: true,
+        locked_at: new Date().toISOString(),
+        locked_by_user_id: appUser?.id || null,
+        locked_by_name: userName,
+        manager_note: managerNote || null,
+        problem_notes: problemNotes || null,
       }).eq("id", dsId);
       if (error) throw error;
     },
@@ -408,7 +412,8 @@ const DaySheet = () => {
           <Lock className="h-6 w-6 text-success mx-auto" />
           <p className="font-heading font-bold text-success">Day Sheet Locked</p>
           <p className="text-xs text-muted-foreground">
-            Locked at {daySheet?.locked_at ? new Date(daySheet.locked_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "—"}. Entries are now immutable.
+            Locked at {daySheet?.locked_at ? new Date(daySheet.locked_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "—"}
+            {daySheet?.locked_by_name ? ` by ${daySheet.locked_by_name}` : ""}. Entries are now immutable.
           </p>
           {isManager && isToday && (
             <Button variant="outline" size="sm" onClick={() => unlockSheet.mutate()} disabled={unlockSheet.isPending}>
