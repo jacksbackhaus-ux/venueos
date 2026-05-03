@@ -149,7 +149,10 @@ const DaySheet = () => {
         if (error) throw error;
       } else {
         const { error } = await supabase.from("day_sheet_entries").insert({
-          day_sheet_id: dsId, item_id: itemId, done: true, completed_by_user_id: appUser?.id || null, completed_at: new Date().toISOString(),
+          day_sheet_id: dsId, item_id: itemId, done: true,
+          completed_by_user_id: appUser?.id || null,
+          completed_by_name: userName,
+          completed_at: new Date().toISOString(),
         });
         if (error) throw error;
       }
