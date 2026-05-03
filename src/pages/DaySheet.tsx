@@ -145,7 +145,12 @@ const DaySheet = () => {
         const { error } = await supabase.from("day_sheet_entries").update({ done: false, completed_at: null, completed_by_user_id: null }).eq("id", existing.id);
         if (error) throw error;
       } else if (existing) {
-        const { error } = await supabase.from("day_sheet_entries").update({ done: true, completed_at: new Date().toISOString(), completed_by_user_id: appUser?.id || null }).eq("id", existing.id);
+     const { error } = await supabase.from("day_sheet_entries").update({
+          done: true,
+          completed_at: new Date().toISOString(),
+          completed_by_user_id: appUser?.id || null,
+          completed_by_name: userName,
+        }).eq("id", existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("day_sheet_entries").insert({
