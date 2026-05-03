@@ -245,7 +245,8 @@ export default function AllSitesOverview() {
                     activeSites.reduce((sum, s) => {
                       const score = complianceScore(
                         s.todays_tasks_done,
-                        s.todays_tasks_total
+                        s.todays_tasks_total,
+                        s.closed_today
                       );
                       return sum + (score ?? 100);
                     }, 0) / activeSites.length
