@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ClipboardList, CheckCircle2, Circle, Lock, AlertTriangle, Clock, ChevronDown, ChevronUp, ShieldCheck, Loader2 } from "lucide-react";
+import { ClipboardList, CheckCircle2, Circle, Lock, Unlock, AlertTriangle, Clock, ChevronDown, ChevronUp, ShieldCheck, Loader2, PenLine } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import { DateNavigator } from "@/components/DateNavigator";
 const DaySheet = () => {
   const { currentSite, organisationId } = useSite();
   const { appUser, staffSession } = useAuth();
+  const { isManager, isSupervisorPlus } = useRole();
   const queryClient = useQueryClient();
   const siteId = currentSite?.id || staffSession?.site_id;
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
@@ -175,7 +177,42 @@ const DaySheet = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
-  const isLockedSheet = daySheet?.locked || false;
+  const signOff = useMutation({
+    mutationFn: async () => {
+      const dsId = await ensureDaySheet();
+      const now = new Date().toISOString();
+      const { error } = await supabase.from("day_sheets").update({
+        signed_off: true, signed_off_by: userName, signed_off_at: now,
+        locked: true, locked_at: now, locked_by_user_id: appUser?.id || null,
+        manager_note: managerNote || null, problem_notes: problemNotes || null,
+      }).eq("id", dsId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
+      toast.success("Day sheet signed off");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const unlockSheet = useMutation({
+    mutationFn: async () => {
+      if (!daySheet?.id) return;
+      const { error } = await supabase.from("day_sheets").update({
+        signed_off: false, signed_off_by: null, signed_off_at: null,
+        locked: false, locked_at: null, locked_by_user_id: null,
+      }).eq("id", daySheet.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
+      toast.success("Day sheet unlocked");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const isSignedOff = daySheet?.signed_off || false;
+  const isLockedSheet = daySheet?.locked || isSignedOff;
   const locked = isLockedSheet || !isToday; // past days are read-only
   const doneItemIds = new Set(entries.filter((e: any) => e.done).map((e: any) => e.item_id));
   const allItems = sections.flatMap((s: any) => s.day_sheet_items || []);
@@ -214,7 +251,9 @@ const DaySheet = () => {
               </p>
             </div>
           </div>
-          {isLockedSheet ? (
+          {isSignedOff ? (
+            <Badge className="bg-success text-success-foreground gap-1"><ShieldCheck className="h-3 w-3" /> Signed off</Badge>
+          ) : isLockedSheet ? (
             <Badge className="bg-success text-success-foreground gap-1"><Lock className="h-3 w-3" /> Locked</Badge>
           ) : !isToday ? (
             <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
@@ -305,26 +344,59 @@ const DaySheet = () => {
 
           <Card className="border-primary/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-heading flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Manager Verification & Lock</CardTitle>
+              <CardTitle className="text-sm font-heading flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Manager Verification & Sign-off</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Textarea placeholder="Manager notes (required if breaches occurred)..." value={managerNote} onChange={(e) => setManagerNote(e.target.value)} className="text-sm" />
-              <Button className="w-full" disabled={!allDone && !managerNote} onClick={() => lockSheet.mutate()}>
-                <Lock className="h-4 w-4 mr-2" /> {allDone ? "Lock Day Sheet" : "Lock with Exception Note"}
+              {isSupervisorPlus && (
+                <Button className="w-full" disabled={!allDone || signOff.isPending} onClick={() => signOff.mutate()}>
+                  <PenLine className="h-4 w-4 mr-2" /> Sign off Day Sheet
+                </Button>
+              )}
+              <Button variant="outline" className="w-full" disabled={!allDone && !managerNote} onClick={() => lockSheet.mutate()}>
+                <Lock className="h-4 w-4 mr-2" /> {allDone ? "Lock without sign-off" : "Lock with Exception Note"}
               </Button>
-              {!allDone && !managerNote && <p className="text-xs text-muted-foreground text-center">All tasks must be complete, or add an exception note to lock</p>}
+              {!allDone && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {isSupervisorPlus
+                    ? "Complete all tasks to sign off, or lock with an exception note."
+                    : "All tasks must be complete, or add an exception note to lock."}
+                </p>
+              )}
             </CardContent>
           </Card>
         </>
       )}
 
-      {isLockedSheet && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center">
-          <Lock className="h-6 w-6 text-success mx-auto mb-2" />
+      {isSignedOff && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center space-y-2">
+          <ShieldCheck className="h-6 w-6 text-success mx-auto" />
+          <p className="font-heading font-bold text-success">Day Sheet Signed Off</p>
+          <p className="text-xs text-muted-foreground">
+            Signed off by <span className="font-medium text-foreground">{daySheet?.signed_off_by || "—"}</span>
+            {daySheet?.signed_off_at && <> at {new Date(daySheet.signed_off_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</>}.
+            Tasks are locked.
+          </p>
+          {isManager && isToday && (
+            <Button variant="outline" size="sm" onClick={() => unlockSheet.mutate()} disabled={unlockSheet.isPending}>
+              <Unlock className="h-3 w-3 mr-1" /> Unlock day sheet
+            </Button>
+          )}
+        </motion.div>
+      )}
+
+      {isLockedSheet && !isSignedOff && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center space-y-2">
+          <Lock className="h-6 w-6 text-success mx-auto" />
           <p className="font-heading font-bold text-success">Day Sheet Locked</p>
           <p className="text-xs text-muted-foreground">
             Locked at {daySheet?.locked_at ? new Date(daySheet.locked_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "—"}. Entries are now immutable.
           </p>
+          {isManager && isToday && (
+            <Button variant="outline" size="sm" onClick={() => unlockSheet.mutate()} disabled={unlockSheet.isPending}>
+              <Unlock className="h-3 w-3 mr-1" /> Unlock day sheet
+            </Button>
+          )}
         </motion.div>
       )}
     </div>

@@ -171,14 +171,15 @@ export function generateInspectionPackPdf(data: ReportData) {
   // Day sheets
   addEvidence(
     "Daily Records (Day Sheets)",
-    [["Date", "Created", "Locked", "Locked at", "Manager note"]],
+    [["Date", "Created", "Locked", "Signed off by", "Signed off at", "Manager note"]],
     data.daySheets
       .sort((a, b) => (a.sheet_date < b.sheet_date ? 1 : -1))
       .map(d => [
         d.sheet_date,
         "Yes",
         d.locked ? "Yes" : "No",
-        d.locked_at ? format(new Date(d.locked_at), "d MMM HH:mm") : "—",
+        d.signed_off ? (d.signed_off_by || "—") : "—",
+        d.signed_off_at ? format(new Date(d.signed_off_at), "d MMM HH:mm") : "—",
         (d.manager_note || d.problem_notes || "—").slice(0, 80),
       ]),
     `${data.daySheets.length} day sheets created • ${data.daySheetCompletionPct}% completion vs expected • ${data.daySheetsLockedPct}% locked by a manager.`
