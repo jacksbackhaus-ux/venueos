@@ -362,19 +362,7 @@ const Reports = () => {
             {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             Export Excel
           </Button>
-        </div>
-const handleExcelExport = async () => {
-    if (!data) return;
-    setExporting(true);
-    try {
-      generateInspectionPackExcel(data);
-      toast({ title: "Excel report generated", description: "Your inspection pack has been downloaded." });
-    } catch (err: any) {
-      toast({ title: "Export failed", description: err.message, variant: "destructive" });
-    } finally {
-      setExporting(false);
-    }
-  };
+         </div>
               <p className="text-[10px] text-muted-foreground text-center">
                 A multi-page A4 PDF with all records and evidence for the selected period. Includes the disclaimer above.
               </p>
