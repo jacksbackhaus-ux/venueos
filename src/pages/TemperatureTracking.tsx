@@ -442,3 +442,190 @@ const TemperatureTracking = () => {
                 disabled={!isToday}
                 className={cn(
                   "flex flex-col items-center gap-2 p-3 rounded-xl border text-left transition-all",
+                  isToday ? "hover:shadow-md cursor-pointer" : "cursor-default opacity-60",
+                  pc.color
+                )}
+              >
+                <Icon className="h-6 w-6" />
+                <span className="text-xs font-semibold text-center leading-tight">{pc.label}</span>
+                {count > 0 && (
+                  <Badge className="text-[10px] h-4 px-1.5 bg-white/50">{count} logged</Badge>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Process logs today */}
+        {processLogs.length > 0 && (
+          <Card>
+            <CardContent className="p-0 divide-y">
+              {processLogs.map((log) => (
+                <div key={log.id} className="flex items-center gap-3 p-3">
+                  {log.pass ? <CheckCircle2 className="h-4 w-4 text-success shrink-0" /> : <XCircle className="h-4 w-4 text-destructive shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium">{log.food_item}</span>
+                      <Badge variant="outline" className="text-[10px]">{log.log_type}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {Number(log.value)}°C · {new Date(log.logged_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {log.logged_by_name}
+                    </p>
+                    {log.corrective_action && (
+                      <p className="text-xs text-destructive mt-0.5 flex items-start gap-1">
+                        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />{log.corrective_action}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Unit readings log */}
+      {unitLogs.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-heading font-semibold text-muted-foreground uppercase tracking-wide">All Readings</h2>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <Card>
+            <CardContent className="p-0 divide-y">
+              {logs.map((log) => (
+                <div key={log.id} className="flex items-center gap-3 p-3">
+                  {log.pass ? <CheckCircle2 className="h-4 w-4 text-success shrink-0" /> : <XCircle className="h-4 w-4 text-destructive shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium">{log.food_item || getUnitName(log.unit_id)}</span>
+                      <Badge variant="outline" className="text-[10px]">{log.log_type}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {Number(log.value)}°C · {new Date(log.logged_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {log.logged_by_name}
+                    </p>
+                    {log.corrective_action && (
+                      <p className="text-xs text-destructive mt-0.5 flex items-start gap-1">
+                        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />{log.corrective_action}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Process check modal ─────────────────────────────────────────────── */}
+      <Dialog open={!!processDialog} onOpenChange={(open) => !open && resetProcess()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading flex items-center gap-2">
+              {activeProcess && <activeProcess.icon className="h-5 w-5" />}
+              {processStep === "food" && `${activeProcess?.label} — What food?`}
+              {processStep === "keypad" && `${activeProcess?.label} — ${foodItem}`}
+              {processStep === "corrective" && "⚠️ Out of Spec"}
+              {processStep === "done" && "✅ Logged"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <AnimatePresence mode="wait">
+            {processStep === "food" && (
+              <motion.div key="food" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Food item or dish name</Label>
+                  <Input
+                    className="mt-1"
+                    placeholder='e.g. "Chicken curry", "Tomato soup"'
+                    value={foodItem}
+                    onChange={(e) => setFoodItem(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && foodItem.trim() && setProcessStep("keypad")}
+                  />
+                </div>
+                {activeProcess && (
+                  <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
+                    Target: <span className="font-medium text-foreground">{activeProcess.target}</span>
+                  </p>
+                )}
+                <Button className="w-full" disabled={!foodItem.trim()} onClick={() => setProcessStep("keypad")}>
+                  Continue
+                </Button>
+              </motion.div>
+            )}
+
+            {processStep === "keypad" && (
+              <motion.div key="keypad" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                <div className={cn(
+                  "text-center text-5xl font-heading font-bold py-4 rounded-lg border-2",
+                  processTemp === "" ? "border-border text-muted-foreground"
+                    : processOutOfSpec ? "border-destructive bg-destructive/5 text-destructive"
+                    : "border-success bg-success/5 text-success"
+                )}>
+                  {processTemp || "—"}<span className="text-2xl">°C</span>
+                </div>
+                {activeProcess && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    <span className="font-medium text-foreground">{foodItem}</span> · Target: {activeProcess.target}
+                  </p>
+                )}
+                <div className="grid grid-cols-3 gap-2">
+                  {["1","2","3","4","5","6","7","8","9","-","0","."].map((k) => (
+                    <Button key={k} variant="outline" className="h-14 text-xl font-bold" onClick={() => handleProcessKey(k)}>{k}</Button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => handleProcessKey("backspace")}>
+                    <RotateCcw className="h-4 w-4 mr-1" /> Clear
+                  </Button>
+                  <Button className="flex-1" disabled={processTemp === "" || isNaN(processTempNum)} onClick={submitProcessTemp}>
+                    {processOutOfSpec ? <><AlertTriangle className="h-4 w-4 mr-1" /> Out of Spec</> : <><CheckCircle2 className="h-4 w-4 mr-1" /> Save</>}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {processStep === "corrective" && (
+              <motion.div key="corrective" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                <div className="rounded-lg bg-destructive/10 p-4 text-center">
+                  <XCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                  <p className="text-2xl font-heading font-bold text-destructive">{processTempNum}°C</p>
+                  <p className="text-sm text-destructive/80">
+                    {foodItem} — outside safe range for {activeProcess?.label} ({activeProcess?.target})
+                  </p>
+                </div>
+                <p className="text-sm font-semibold">Corrective action taken:</p>
+                <div className="space-y-2">
+                  {["Continued cooking until safe temp reached", "Disposed of food — not safe to serve", "Returned to supplier", "Re-chilled and rechecked"].map((a) => (
+                    <Button key={a} variant={processCorrectiveAction === a ? "default" : "outline"} size="sm"
+                      className="w-full justify-start text-left h-auto py-2"
+                      onClick={() => setProcessCorrectiveAction(a)}>{a}</Button>
+                  ))}
+                </div>
+                <Textarea placeholder="Additional details (optional)..." onChange={(e) => { if (e.target.value) setProcessCorrectiveAction(e.target.value); }} className="text-sm" />
+                <Button className="w-full" disabled={!processCorrectiveAction} onClick={saveProcessLog}>Save with Action</Button>
+              </motion.div>
+            )}
+
+            {processStep === "done" && (
+              <motion.div key="done" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6 space-y-4">
+                <CheckCircle2 className="h-16 w-16 text-success mx-auto" />
+                <div>
+                  <p className="font-heading font-bold text-lg">Logged Successfully</p>
+                  <p className="text-sm text-muted-foreground">{foodItem} · {processTempNum}°C · {activeProcess?.label}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={resetProcess}>Done</Button>
+                  <Button className="flex-1" onClick={() => { setFoodItem(""); setProcessTemp(""); setProcessStep("food"); setProcessCorrectiveAction(""); }}>Log Another</Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default TemperatureTracking;
