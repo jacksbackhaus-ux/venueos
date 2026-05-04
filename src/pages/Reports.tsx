@@ -340,11 +340,16 @@ const Reports = () => {
                   ))}
                 </div>
               </div>
-
-              <Button className="w-full gap-2" size="lg" onClick={handleExport} disabled={exporting}>
-                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                {exporting ? "Generating PDF…" : "Export Inspection Pack (PDF)"}
-              </Button>
+<div className="flex gap-2 flex-wrap">
+          <Button onClick={handleExport} disabled={exporting || !data} variant="outline">
+            {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Export PDF
+          </Button>
+          <Button onClick={handleExcelExport} disabled={exporting || !data}>
+            {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Export Excel
+          </Button>
+        </div>
 
               <p className="text-[10px] text-muted-foreground text-center">
                 A multi-page A4 PDF with all records and evidence for the selected period. Includes the disclaimer above.
