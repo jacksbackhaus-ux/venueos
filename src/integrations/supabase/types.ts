@@ -1109,36 +1109,69 @@ export type Database = {
           allergens: string[]
           cost_per_unit: number | null
           created_at: string
+          default_recipe_unit: string
+          density_g_per_ml: number | null
           id: string
           name: string
           organisation_id: string
+          pack_price: number | null
+          pack_quantity: number | null
+          pack_unit: string | null
           site_id: string
+          supplier_id: string | null
+          supplier_item_id: string | null
           supplier_name: string | null
+          supplier_price_input_mode: string
           unit: string
+          updated_at: string
+          vat_rate_percent: number
+          yield_percent_default: number
         }
         Insert: {
           active?: boolean
           allergens?: string[]
           cost_per_unit?: number | null
           created_at?: string
+          default_recipe_unit?: string
+          density_g_per_ml?: number | null
           id?: string
           name: string
           organisation_id: string
+          pack_price?: number | null
+          pack_quantity?: number | null
+          pack_unit?: string | null
           site_id: string
+          supplier_id?: string | null
+          supplier_item_id?: string | null
           supplier_name?: string | null
+          supplier_price_input_mode?: string
           unit?: string
+          updated_at?: string
+          vat_rate_percent?: number
+          yield_percent_default?: number
         }
         Update: {
           active?: boolean
           allergens?: string[]
           cost_per_unit?: number | null
           created_at?: string
+          default_recipe_unit?: string
+          density_g_per_ml?: number | null
           id?: string
           name?: string
           organisation_id?: string
+          pack_price?: number | null
+          pack_quantity?: number | null
+          pack_unit?: string | null
           site_id?: string
+          supplier_id?: string | null
+          supplier_item_id?: string | null
           supplier_name?: string | null
+          supplier_price_input_mode?: string
           unit?: string
+          updated_at?: string
+          vat_rate_percent?: number
+          yield_percent_default?: number
         }
         Relationships: [
           {
@@ -1153,6 +1186,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingredients_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -1608,6 +1648,11 @@ export type Database = {
       }
       org_cost_settings: {
         Row: {
+          business_vat_registered: boolean
+          costing_view_mode: string
+          labor_rate_lookback_days: number
+          labor_rate_manual_override_enabled: boolean
+          labor_rate_manual_override_value: number | null
           labour_hourly_rate: number
           monthly_overhead: number
           organisation_id: string
@@ -1615,6 +1660,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_vat_registered?: boolean
+          costing_view_mode?: string
+          labor_rate_lookback_days?: number
+          labor_rate_manual_override_enabled?: boolean
+          labor_rate_manual_override_value?: number | null
           labour_hourly_rate?: number
           monthly_overhead?: number
           organisation_id: string
@@ -1622,6 +1672,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_vat_registered?: boolean
+          costing_view_mode?: string
+          labor_rate_lookback_days?: number
+          labor_rate_manual_override_enabled?: boolean
+          labor_rate_manual_override_value?: number | null
           labour_hourly_rate?: number
           monthly_overhead?: number
           organisation_id?: string
@@ -1942,31 +1997,43 @@ export type Database = {
           cost_per_unit_override: number | null
           created_at: string
           id: string
-          ingredient_id: string
+          ingredient_id: string | null
+          line_type: string
+          nested_recipe_id: string | null
+          quantity: number | null
           recipe_id: string
           sort_order: number
           unit: string | null
           weight: number | null
+          yield_percent_override: number | null
         }
         Insert: {
           cost_per_unit_override?: number | null
           created_at?: string
           id?: string
-          ingredient_id: string
+          ingredient_id?: string | null
+          line_type?: string
+          nested_recipe_id?: string | null
+          quantity?: number | null
           recipe_id: string
           sort_order?: number
           unit?: string | null
           weight?: number | null
+          yield_percent_override?: number | null
         }
         Update: {
           cost_per_unit_override?: number | null
           created_at?: string
           id?: string
-          ingredient_id?: string
+          ingredient_id?: string | null
+          line_type?: string
+          nested_recipe_id?: string | null
+          quantity?: number | null
           recipe_id?: string
           sort_order?: number
           unit?: string | null
           weight?: number | null
+          yield_percent_override?: number | null
         }
         Relationships: [
           {
@@ -1974,6 +2041,13 @@ export type Database = {
             columns: ["ingredient_id"]
             isOneToOne: false
             referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_nested_recipe_id_fkey"
+            columns: ["nested_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
             referencedColumns: ["id"]
           },
           {
@@ -1989,55 +2063,88 @@ export type Database = {
         Row: {
           active: boolean
           approved: boolean
+          batch_yield_quantity: number | null
+          batch_yield_unit: string | null
           category: string
           created_at: string
           id: string
           label_type: string
+          labor_estimate_mode: string
           labour_minutes: number
           last_reviewed_at: string | null
           monthly_volume: number
           name: string
+          notes: string | null
           organisation_id: string
           packaging_cost: number
+          portions: number
+          recipe_type: string
+          sale_price: number | null
+          sale_price_vat_rate_percent: number
           sell_price_ex_vat: number | null
           site_id: string
+          target_gp_percent: number
           target_margin_override: number | null
+          total_prep_time_minutes: number
+          updated_at: string
           vat_rate: string
         }
         Insert: {
           active?: boolean
           approved?: boolean
+          batch_yield_quantity?: number | null
+          batch_yield_unit?: string | null
           category?: string
           created_at?: string
           id?: string
           label_type?: string
+          labor_estimate_mode?: string
           labour_minutes?: number
           last_reviewed_at?: string | null
           monthly_volume?: number
           name: string
+          notes?: string | null
           organisation_id: string
           packaging_cost?: number
+          portions?: number
+          recipe_type?: string
+          sale_price?: number | null
+          sale_price_vat_rate_percent?: number
           sell_price_ex_vat?: number | null
           site_id: string
+          target_gp_percent?: number
           target_margin_override?: number | null
+          total_prep_time_minutes?: number
+          updated_at?: string
           vat_rate?: string
         }
         Update: {
           active?: boolean
           approved?: boolean
+          batch_yield_quantity?: number | null
+          batch_yield_unit?: string | null
           category?: string
           created_at?: string
           id?: string
           label_type?: string
+          labor_estimate_mode?: string
           labour_minutes?: number
           last_reviewed_at?: string | null
           monthly_volume?: number
           name?: string
+          notes?: string | null
           organisation_id?: string
           packaging_cost?: number
+          portions?: number
+          recipe_type?: string
+          sale_price?: number | null
+          sale_price_vat_rate_percent?: number
           sell_price_ex_vat?: number | null
           site_id?: string
+          target_gp_percent?: number
           target_margin_override?: number | null
+          total_prep_time_minutes?: number
+          updated_at?: string
           vat_rate?: string
         }
         Relationships: [
