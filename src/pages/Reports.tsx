@@ -85,6 +85,19 @@ const Reports = () => {
     }
   };
 
+  const handleExcelExport = async () => {
+    if (!data) return;
+    setExporting(true);
+    try {
+      generateInspectionPackExcel(data);
+      toast({ title: "Excel report generated", description: "Your inspection pack has been downloaded." });
+    } catch (err: any) {
+      toast({ title: "Export failed", description: err.message, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (!currentSite) {
     return <div className="p-6 text-sm text-muted-foreground">Select a site to view reports.</div>;
   }
