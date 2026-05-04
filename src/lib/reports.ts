@@ -180,9 +180,15 @@ export async function fetchReportData(
   // Each day in range (excluding closed days) should have a sheet; locked = better.
   // Closed days are exempt from compliance and removed from both numerator and denominator.
   const totalItemsPerSheet = sections.reduce((s, sec: any) => s + (sec.day_sheet_items?.filter((i: any) => i.active).length || 0), 0);
-  const expectedSheets = Math.max(1, range.days - closedInRange);
-  const daySheetsCreated = (daySheets as any[]).filter((d) => !closedSet.has(d.sheet_date)).length;
-  const daySheetsLocked = (daySheets as any[]).filter((d) => d.locked && !closedSet.has(d.sheet_date)).length;
+ const closedDays = closedDaysRes.data || [];
+  const closedSet = new Set((closedDays as any[]).map((c) => c.closed_date));
+
+  // Expected sheets = total days in range minus closed days
+  const allDaysInRange = eachDayOfInterval({ start: range.from, end: range.to });
+  const openTradingDays = allDaysInRange.filter(d => !closedSet.has(format(d, "yyyy-MM-dd")));
+  const expectedSheets = Math.max(1, openTradingDays.length);
+  const daySheetsCreated = daySheets.filter(d => !closedSet.has(d.date?.slice(0, 10))).length;
+  const daySheetsLocked = daySheets.filter(d => d.locked && !closedSet.has(d.date?.slice(0, 10))).length;
   const daySheetCompletionPct = pct(daySheetsCreated, expectedSheets);
   const daySheetsLockedPct = daySheetsCreated === 0 ? 0 : pct(daySheetsLocked, daySheetsCreated);
 
