@@ -51,6 +51,20 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
     else toast.success("Message pinned");
   };
 
+  const handleRequestAck = async () => {
+    const { error } = await setMessageRequiresAck(message.id, true);
+    if (error) toast.error(error.message ?? "Failed to request acknowledgement");
+    else toast.success("Acknowledgement requested");
+  };
+
+  const handleClearAck = async () => {
+    const { error } = await setMessageRequiresAck(message.id, false);
+    if (error) toast.error(error.message ?? "Failed to clear request");
+    else toast.success("Acknowledgement cleared");
+  };
+
+  const requiresAck = !!message.requires_ack && !message.deleted_at;
+
   // System / shift card rendering
   if (message.message_type === "shift_card" || message.message_type === "system") {
     return <SystemCard message={message} />;
