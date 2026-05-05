@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, ShieldCheck, Gift, X, ArrowLeft, ChevronRight, Users, Building2, CreditCard, Layers, MessageSquare, Trash2, CalendarClock, Eye, KeyRound } from "lucide-react";
 import SuperAdminsTab from "@/components/admin/SuperAdminsTab";
+import { OnboardingAccessPanel } from "@/components/admin/OnboardingAccessPanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
