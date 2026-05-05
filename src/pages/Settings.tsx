@@ -141,7 +141,24 @@ const Settings = () => {
     staffSession?.site_role === 'owner' ||
     staffSession?.site_role === 'supervisor';
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("temperature");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") || "temperature");
+
+  // Honour ?tab= changes (e.g. returning from Stripe checkout)
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && t !== activeTab) setActiveTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Reflect the active tab back into the URL so deep-links work and refreshes stick.
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", value);
+    // Don't clobber checkout return params
+    setSearchParams(next, { replace: true });
+  };
   const [loading, setLoading] = useState(true);
 
   // Temperature state
