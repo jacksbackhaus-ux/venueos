@@ -18,6 +18,10 @@ export default function Onboarding() {
   const { user, refreshAppUser, signOut, appUser, isLoading } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<"form" | "welcome">("form");
+  const [orgSlug, setOrgSlug] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState<string>("");
+  const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({
     displayName: "",
     orgName: "",
@@ -25,12 +29,13 @@ export default function Onboarding() {
     siteAddress: "",
   });
 
-  // If profile already exists, bounce to dashboard
+  // If profile already exists AND we are not in the post-signup welcome screen,
+  // bounce to dashboard. (During the welcome step we WANT to keep showing it.)
   useEffect(() => {
-    if (!isLoading && appUser) {
+    if (!isLoading && appUser && step === "form") {
       navigate("/", { replace: true });
     }
-  }, [appUser, isLoading, navigate]);
+  }, [appUser, isLoading, navigate, step]);
 
   // If no auth user, bounce to /auth
   useEffect(() => {
@@ -56,7 +61,7 @@ export default function Onboarding() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.rpc('handle_signup', {
+    const { data, error } = await supabase.rpc('handle_signup', {
       _org_name: form.orgName.trim(),
       _site_name: form.siteName.trim(),
       _display_name: form.displayName.trim(),
@@ -69,9 +74,41 @@ export default function Onboarding() {
       setSubmitting(false);
       return;
     }
-    await refreshAppUser();
+    // Fetch the auto-generated slug for the new org
+    const orgId = (data as any)?.organisation_id;
+    if (orgId) {
+      const { data: orgRow } = await supabase
+        .from("organisations")
+        .select("slug, name")
+        .eq("id", orgId)
+        .maybeSingle();
+      setOrgSlug((orgRow as any)?.slug ?? null);
+      setOrgName((orgRow as any)?.name ?? form.orgName.trim());
+    } else {
+      setOrgName(form.orgName.trim());
+    }
+    setStep("welcome");
+    setSubmitting(false);
     toast.success("Your account is ready!");
+    // Refresh appUser in the background so downstream guards work after Continue.
+    void refreshAppUser();
+  };
+
+  const continueToPricing = () => {
     navigate("/pricing", { replace: true });
+  };
+
+  const copyUrl = async () => {
+    if (!orgSlug) return;
+    const url = `${window.location.origin}/login/${orgSlug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Login URL copied");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Could not copy — please copy manually.");
+    }
   };
 
   const handleSignOut = async () => {
