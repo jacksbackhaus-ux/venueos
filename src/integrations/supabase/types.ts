@@ -4117,7 +4117,7 @@ export type Database = {
       messenger_channel_type: "direct" | "group" | "system" | "role"
       messenger_message_type: "user" | "system" | "shift_card"
       messenger_participant_role: "admin" | "member"
-      org_role: "org_owner" | "hq_admin" | "hq_auditor"
+      org_role: "org_owner" | "hq_admin" | "hq_auditor" | "onboarding_admin"
       shift_request_status:
         | "pending_teammate"
         | "pending_approval"
@@ -4262,7 +4262,7 @@ export const Constants = {
       messenger_channel_type: ["direct", "group", "system", "role"],
       messenger_message_type: ["user", "system", "shift_card"],
       messenger_participant_role: ["admin", "member"],
-      org_role: ["org_owner", "hq_admin", "hq_auditor"],
+      org_role: ["org_owner", "hq_admin", "hq_auditor", "onboarding_admin"],
       shift_request_status: [
         "pending_teammate",
         "pending_approval",
