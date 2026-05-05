@@ -242,6 +242,9 @@ export default function Account() {
         </CardContent>
       </Card>
 
+      {/* Org-specific login URL */}
+      {appUser?.organisation_id && <LoginUrlCard organisationId={appUser.organisation_id} />}
+
       {/* Savings hints */}
       {(unusedHint.compliance || unusedHint.business) && (
         <Card className="border-warning/30 bg-warning/5">
