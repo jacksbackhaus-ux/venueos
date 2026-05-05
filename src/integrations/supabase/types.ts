@@ -1027,6 +1027,44 @@ export type Database = {
           },
         ]
       }
+      impersonation_logs: {
+        Row: {
+          ended_at: string | null
+          id: string
+          reason: string
+          started_at: string
+          super_admin_user_id: string
+          target_organisation_id: string
+          target_user_id: string | null
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          reason: string
+          started_at?: string
+          super_admin_user_id: string
+          target_organisation_id: string
+          target_user_id?: string | null
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          reason?: string
+          started_at?: string
+          super_admin_user_id?: string
+          target_organisation_id?: string
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impersonation_logs_target_organisation_id_fkey"
+            columns: ["target_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
           created_at: string
