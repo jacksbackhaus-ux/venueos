@@ -168,6 +168,19 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       // then hq_admin, then any active manager-level org user.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb: any = supabase;
+
+      // Server-side scope check: must be super admin AND have staff access to this org.
+      // `has_staff_access_to_org` returns true for super admins automatically (bypass),
+      // and otherwise requires an active staff_org_access row.
+      const { data: scopeOk, error: scopeErr } = await sb.rpc(
+        "has_staff_access_to_org",
+        { _org_id: organisationId },
+      );
+      if (scopeErr) return { error: scopeErr.message };
+      if (scopeOk !== true) {
+        return { error: "You don't have staff access to this organisation." };
+      }
+
       const { data: org } = await sb
         .from("organisations")
         .select("id, name")
