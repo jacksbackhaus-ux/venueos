@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { TasksPanel } from "./TasksPanel";
+import { PinnedPanel } from "./PinnedPanel";
+import { useChannelPins } from "@/hooks/useMessengerPinsAcks";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
