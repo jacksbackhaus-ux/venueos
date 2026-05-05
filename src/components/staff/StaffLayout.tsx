@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Building2, FileClock, Database, ArrowLeft, Wrench,
+  LayoutDashboard, Users, Building2, FileClock, Database, ArrowLeft, Wrench, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/staff", end: true, label: "Dashboard", icon: LayoutDashboard },
   { to: "/staff/users", label: "Users", icon: Users },
   { to: "/staff/orgs", label: "Organisations", icon: Building2 },
+  { to: "/staff/access", label: "Access", icon: ShieldCheck, requiresSuperAdmin: true },
   { to: "/staff/ops", label: "Ops Log", icon: FileClock, requiresSuperAdmin: true },
   { to: "/staff/migrations", label: "Migrations", icon: Database },
 ];
