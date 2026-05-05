@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SiteProvider, useSite } from "@/contexts/SiteContext";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "./pages/Auth";
+import StaffLogin from "./pages/StaffLogin";
 import OrgLogin from "./pages/OrgLogin";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
@@ -42,8 +43,10 @@ import More from "./pages/More";
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffUsers from "./pages/staff/StaffUsers";
 import StaffOrgs from "./pages/staff/StaffOrgs";
+import StaffOrgDetail from "./pages/staff/StaffOrgDetail";
 import StaffOpsLog from "./pages/staff/StaffOpsLog";
 import StaffMigrations from "./pages/staff/StaffMigrations";
+import StaffAccess from "./pages/staff/StaffAccess";
 import { StaffGuard } from "./components/staff/StaffGuard";
 import { StaffLayout } from "./components/staff/StaffLayout";
 import SitePicker from "./pages/SitePicker";
@@ -157,6 +160,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthRedirect />} />
+      <Route path="/staff-login" element={<StaffLogin />} />
       <Route path="/login/:slug" element={<OrgLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
@@ -205,6 +209,8 @@ function AppRoutes() {
       <Route path="/staff" element={<AuthGuard><StaffGuard><StaffLayout><StaffDashboard /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/users" element={<AuthGuard><StaffGuard><StaffLayout><StaffUsers /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/orgs" element={<AuthGuard><StaffGuard><StaffLayout><StaffOrgs /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/org/:orgId" element={<AuthGuard><StaffGuard><StaffLayout><StaffOrgDetail /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/access" element={<AuthGuard><StaffGuard><StaffLayout><StaffAccess /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/ops" element={<AuthGuard><StaffGuard><StaffLayout><StaffOpsLog /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/migrations" element={<AuthGuard><StaffGuard><StaffLayout><StaffMigrations /></StaffLayout></StaffGuard></AuthGuard>} />
 

@@ -3280,6 +3280,53 @@ export type Database = {
           },
         ]
       }
+      staff_org_access: {
+        Row: {
+          access_level: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          organisation_id: string
+          reason: string
+          revoked_at: string | null
+          revoked_by: string | null
+          staff_user_id: string
+        }
+        Insert: {
+          access_level?: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          organisation_id: string
+          reason: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          staff_user_id: string
+        }
+        Update: {
+          access_level?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          organisation_id?: string
+          reason?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          staff_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_org_access_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           base_active: boolean
@@ -4087,6 +4134,7 @@ export type Database = {
       has_site_access: { Args: { _site_id: string }; Returns: boolean }
       has_site_membership: { Args: { _site_id: string }; Returns: boolean }
       has_site_write_access: { Args: { _site_id: string }; Returns: boolean }
+      has_staff_access_to_org: { Args: { _org_id: string }; Returns: boolean }
       is_active_org_user: {
         Args: { _auth_uid: string; _org_id: string }
         Returns: boolean
@@ -4122,12 +4170,49 @@ export type Database = {
         Returns: undefined
       }
       slugify_org_name: { Args: { _name: string }; Returns: string }
+      staff_get_org_detail: { Args: { _org_id: string }; Returns: Json }
+      staff_list_assigned_orgs: {
+        Args: never
+        Returns: {
+          access_level: string
+          expires_at: string
+          granted_at: string
+          is_super_admin_view: boolean
+          name: string
+          organisation_id: string
+          slug: string
+        }[]
+      }
+      staff_list_internal_staff: {
+        Args: never
+        Returns: {
+          email: string
+          expires_at: string
+          granted_at: string
+          reason: string
+          role: Database["public"]["Enums"]["internal_role"]
+          user_id: string
+        }[]
+      }
       staff_list_migrations: {
         Args: never
         Returns: {
           applied_at_estimate: string
           name: string
           version: string
+        }[]
+      }
+      staff_list_org_assignments: {
+        Args: { _org_id?: string; _staff_user_id?: string }
+        Returns: {
+          access_level: string
+          expires_at: string
+          granted_at: string
+          id: string
+          organisation_id: string
+          organisation_name: string
+          reason: string
+          staff_user_id: string
         }[]
       }
       sync_org_modules: { Args: { _org_id: string }; Returns: undefined }
