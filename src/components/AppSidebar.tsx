@@ -5,6 +5,7 @@ import {
   PoundSterling, Sparkles, Trash2, GraduationCap, BookCheck, MessageSquareHeart, Wrench,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { useRole } from "@/hooks/useRole";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { NavLink } from "@/components/NavLink";
@@ -57,6 +58,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { isHQ, orgRole, appUser } = useAuth();
   const { isSuperAdmin } = useSuperAdmin();
+  const { isInternalStaff } = useInternalStaff();
   const role = useRole();
   const { currentSite, hasSelectedSite, clearSelectedSite } = useSite();
   const { isActive: isModuleActive } = useModuleAccess();
@@ -76,6 +78,7 @@ export function AppSidebar() {
     ...(isOrgOwner ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(role.canViewSettings ? [{ title: "Settings", url: "/settings", icon: Settings }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
+    ...(isInternalStaff ? [{ title: "Staff Console", url: "/staff", icon: Wrench }] : []),
   ];
 
   const dailyOps = hasSelectedSite ? visible(dailyOpsAll) : [];

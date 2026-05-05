@@ -4040,6 +4040,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_internal_staff: { Args: never; Returns: undefined }
       assert_super_admin: { Args: never; Returns: undefined }
       generate_site_code: { Args: never; Returns: string }
       generate_staff_code: { Args: { _org_id: string }; Returns: string }
@@ -4094,6 +4095,7 @@ export type Database = {
         Args: { _channel_id: string }
         Returns: boolean
       }
+      is_internal_staff: { Args: never; Returns: boolean }
       is_org_manager_or_hq: { Args: { _org_id: string }; Returns: boolean }
       is_org_owner: { Args: { _org_id: string }; Returns: boolean }
       is_site_supervisor_or_owner: {
@@ -4120,6 +4122,14 @@ export type Database = {
         Returns: undefined
       }
       slugify_org_name: { Args: { _name: string }; Returns: string }
+      staff_list_migrations: {
+        Args: never
+        Returns: {
+          applied_at_estimate: string
+          name: string
+          version: string
+        }[]
+      }
       sync_org_modules: { Args: { _org_id: string }; Returns: undefined }
       validate_staff_code: {
         Args: { _site_id: string; _staff_code: string }
@@ -4129,7 +4139,7 @@ export type Database = {
     Enums: {
       auth_type: "email" | "staff_code"
       batch_status: "in_progress" | "complete" | "quarantined" | "disposed"
-      internal_role: "support" | "onboarding" | "ops"
+      internal_role: "support" | "onboarding" | "ops" | "engineering"
       messenger_channel_type: "direct" | "group" | "system" | "role"
       messenger_message_type: "user" | "system" | "shift_card"
       messenger_participant_role: "admin" | "member"
@@ -4274,7 +4284,7 @@ export const Constants = {
     Enums: {
       auth_type: ["email", "staff_code"],
       batch_status: ["in_progress", "complete", "quarantined", "disposed"],
-      internal_role: ["support", "onboarding", "ops"],
+      internal_role: ["support", "onboarding", "ops", "engineering"],
       messenger_channel_type: ["direct", "group", "system", "role"],
       messenger_message_type: ["user", "system", "shift_card"],
       messenger_participant_role: ["admin", "member"],

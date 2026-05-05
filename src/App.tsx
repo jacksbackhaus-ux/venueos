@@ -39,6 +39,13 @@ import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import More from "./pages/More";
+import StaffDashboard from "./pages/staff/StaffDashboard";
+import StaffUsers from "./pages/staff/StaffUsers";
+import StaffOrgs from "./pages/staff/StaffOrgs";
+import StaffOpsLog from "./pages/staff/StaffOpsLog";
+import StaffMigrations from "./pages/staff/StaffMigrations";
+import { StaffGuard } from "./components/staff/StaffGuard";
+import { StaffLayout } from "./components/staff/StaffLayout";
 import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
@@ -193,6 +200,14 @@ function AppRoutes() {
         </RequireSite></AppLayout></AccessGuard></AuthGuard>
       } />
       <Route path="/more" element={<AuthGuard><AppLayout><More /></AppLayout></AuthGuard>} />
+
+      {/* Staff-only internal console — gated by internal_staff_roles, NOT by super_admin */}
+      <Route path="/staff" element={<AuthGuard><StaffGuard><StaffLayout><StaffDashboard /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/users" element={<AuthGuard><StaffGuard><StaffLayout><StaffUsers /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/orgs" element={<AuthGuard><StaffGuard><StaffLayout><StaffOrgs /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/ops" element={<AuthGuard><StaffGuard><StaffLayout><StaffOpsLog /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/migrations" element={<AuthGuard><StaffGuard><StaffLayout><StaffMigrations /></StaffLayout></StaffGuard></AuthGuard>} />
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
