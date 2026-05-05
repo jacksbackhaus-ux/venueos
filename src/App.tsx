@@ -209,6 +209,8 @@ function AppRoutes() {
       <Route path="/staff" element={<AuthGuard><StaffGuard><StaffLayout><StaffDashboard /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/users" element={<AuthGuard><StaffGuard><StaffLayout><StaffUsers /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/orgs" element={<AuthGuard><StaffGuard><StaffLayout><StaffOrgs /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/org/:orgId" element={<AuthGuard><StaffGuard><StaffLayout><StaffOrgDetail /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/access" element={<AuthGuard><StaffGuard><StaffLayout><StaffAccess /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/ops" element={<AuthGuard><StaffGuard><StaffLayout><StaffOpsLog /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/migrations" element={<AuthGuard><StaffGuard><StaffLayout><StaffMigrations /></StaffLayout></StaffGuard></AuthGuard>} />
 
