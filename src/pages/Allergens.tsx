@@ -248,24 +248,59 @@ const Allergens = () => {
 
       {/* Recipe details dialog */}
       <Dialog open={!!selectedRecipe} onOpenChange={open => !open && setSelectedRecipeId(null)}>
-        <DialogContent className="sm:max-w-lg">
-          {selectedRecipe && (<>
-            <DialogHeader><DialogTitle className="font-heading">{selectedRecipe.name}</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div><h4 className="text-sm font-semibold mb-2">Ingredients</h4>
-                <div className="space-y-1">{(selectedRecipe.recipe_ingredients || []).sort((a: any, b: any) => (b.weight || 0) - (a.weight || 0)).map((ri: any) => (
-                  <div key={ri.id} className="flex items-center justify-between text-sm py-1 border-b border-border/50">
-                    <div className="flex items-center gap-2 flex-wrap"><span>{ri.ingredients?.name}</span>{(ri.ingredients?.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>)}</div>
-                    {ri.weight && <span className="text-muted-foreground text-xs">{ri.weight}g</span>}
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          {selectedRecipe && (() => {
+            const sortedRis = (selectedRecipe.recipe_ingredients || [])
+              .slice()
+              .sort((a: any, b: any) => (b.weight || 0) - (a.weight || 0));
+            const ppdsLabel = sortedRis
+              .map((ri: any) => {
+                const name = ri.ingredients?.name || "";
+                const sub = ri.ingredients?.is_compound && ri.ingredients?.composition_text
+                  ? ` (${ri.ingredients.composition_text})`
+                  : "";
+                return `${name}${sub}`;
+              })
+              .filter(Boolean)
+              .join(", ");
+            return (<>
+              <DialogHeader><DialogTitle className="font-heading">{selectedRecipe.name}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><h4 className="text-sm font-semibold mb-2">Ingredients</h4>
+                  <div className="space-y-1">{sortedRis.map((ri: any) => (
+                    <div key={ri.id} className="text-sm py-1 border-b border-border/50">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span>{ri.ingredients?.name}</span>
+                          {ri.ingredients?.is_compound && <Badge variant="secondary" className="text-[10px]">Blend</Badge>}
+                          {(ri.ingredients?.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>)}
+                        </div>
+                        {ri.weight && <span className="text-muted-foreground text-xs shrink-0">{ri.weight}g</span>}
+                      </div>
+                      {ri.ingredients?.is_compound && ri.ingredients?.composition_text && (
+                        <p className="text-[11px] text-muted-foreground italic pl-1 mt-0.5">contains: {ri.ingredients.composition_text}</p>
+                      )}
+                    </div>
+                  ))}</div>
+                </div>
+
+                {(selectedRecipe.label_type || "ppds") === "ppds" && ppdsLabel && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> PPDS label preview</h4>
+                    <div className="rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+                      <span className="font-semibold">Ingredients:</span> {ppdsLabel}.
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">Sub-ingredients of premade blends are shown in parentheses, as required by FIC / Natasha's Law.</p>
                   </div>
-                ))}</div>
+                )}
+
+                <div><h4 className="text-sm font-semibold mb-2">Contains these allergens</h4>
+                  <div className="flex flex-wrap gap-1.5">{getRecipeAllergens(selectedRecipe).map(a => <Badge key={a} className="bg-breach/10 text-breach border-0">{a}</Badge>)}</div>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t"><Tag className="h-3 w-3" /> Label type: <Badge variant="secondary" className="text-[10px]">{(selectedRecipe.label_type || "ppds").toUpperCase()}</Badge></div>
               </div>
-              <div><h4 className="text-sm font-semibold mb-2">Contains these allergens</h4>
-                <div className="flex flex-wrap gap-1.5">{getRecipeAllergens(selectedRecipe).map(a => <Badge key={a} className="bg-breach/10 text-breach border-0">{a}</Badge>)}</div>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t"><Tag className="h-3 w-3" /> Label type: <Badge variant="secondary" className="text-[10px]">{(selectedRecipe.label_type || "ppds").toUpperCase()}</Badge></div>
-            </div>
-          </>)}
+            </>);
+          })()}
         </DialogContent>
       </Dialog>
 
