@@ -148,6 +148,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthRedirect />} />
+      <Route path="/login/:slug" element={<OrgLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/pricing" element={<AuthGuard><Pricing /></AuthGuard>} />
