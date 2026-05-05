@@ -63,8 +63,10 @@ export function useChannelTasks(channelId: string | null) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("messenger_tasks" as never)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb: any = supabase;
+    const { data, error } = await sb
+      .from("messenger_tasks")
       .select("*")
       .eq("channel_id", channelId)
       .order("created_at", { ascending: false });
