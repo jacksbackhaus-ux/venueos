@@ -62,7 +62,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, {
 });
 PasswordInput.displayName = "PasswordInput";
 
-function EmailLoginForm() {
+export function EmailLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
