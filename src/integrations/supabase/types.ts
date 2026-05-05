@@ -3280,6 +3280,33 @@ export type Database = {
           },
         ]
       }
+      staff_code_attempts: {
+        Row: {
+          attempt_count: number
+          auth_user_id: string
+          created_at: string
+          id: string
+          last_attempt_at: string
+          locked_until: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          auth_user_id: string
+          created_at?: string
+          id?: string
+          last_attempt_at?: string
+          locked_until?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          auth_user_id?: string
+          created_at?: string
+          id?: string
+          last_attempt_at?: string
+          locked_until?: string | null
+        }
+        Relationships: []
+      }
       staff_org_access: {
         Row: {
           access_level: string
@@ -4087,6 +4114,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _check_staff_code_lockout: { Args: { _auth_uid: string }; Returns: Json }
+      _clear_staff_code_attempts: {
+        Args: { _auth_uid: string }
+        Returns: undefined
+      }
+      _record_staff_code_failure: {
+        Args: { _auth_uid: string }
+        Returns: undefined
+      }
       assert_internal_staff: { Args: never; Returns: undefined }
       assert_super_admin: { Args: never; Returns: undefined }
       generate_site_code: { Args: never; Returns: string }
