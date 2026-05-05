@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChannelList } from "@/components/messenger/ChannelList";
@@ -20,6 +21,7 @@ export default function Messenger() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [showNewDM, setShowNewDM] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Auto-select first channel on desktop
   useEffect(() => {
