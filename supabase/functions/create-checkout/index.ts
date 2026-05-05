@@ -45,7 +45,7 @@ serve(async (req) => {
     }
     const userEmail = claimsData.claims.email as string | undefined;
 
-    const { plan, cycle = "month", siteQuantity = 1, returnUrl, environment } = await req.json();
+    const { plan, cycle = "month", siteQuantity = 1, returnUrl, environment, addSiteMode = false } = await req.json();
     if (!plan || !LOOKUP[plan as PlanId]) {
       return new Response(JSON.stringify({ error: "Invalid plan" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
