@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +7,9 @@ import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Building2, FileClock, Database, ShieldCheck, Loader2, ArrowRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users, Building2, FileClock, Database, ShieldCheck, Loader2, ArrowRight, Search, X } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb: any = supabase;
@@ -36,6 +38,31 @@ export default function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [assigned, setAssigned] = useState<AssignedOrg[]>([]);
   const [assignedLoading, setAssignedLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+
+  // Distinct access levels present in the user's assigned list (for the filter dropdown).
+  const availableLevels = useMemo(() => {
+    const set = new Set(assigned.map(o => (o.is_super_admin_view ? "super_admin" : o.access_level)));
+    return Array.from(set).sort();
+  }, [assigned]);
+
+  // Filter by name / slug / ID and by access level.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return assigned.filter(o => {
+      if (levelFilter !== "all") {
+        const lvl = o.is_super_admin_view ? "super_admin" : o.access_level;
+        if (lvl !== levelFilter) return false;
+      }
+      if (!q) return true;
+      return (
+        o.name.toLowerCase().includes(q) ||
+        (o.slug ?? "").toLowerCase().includes(q) ||
+        o.organisation_id.toLowerCase().includes(q)
+      );
+    });
+  }, [assigned, query, levelFilter]);
 
   useEffect(() => {
     void (async () => {
@@ -103,7 +130,9 @@ export default function StaffDashboard() {
             <Building2 className="h-4 w-4 text-primary" />
             {isSuperAdmin ? "All organisations" : "Your assigned organisations"}
             {!assignedLoading && (
-              <span className="text-xs font-normal text-muted-foreground">({assigned.length})</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                ({query || levelFilter !== "all" ? `${filtered.length} of ${assigned.length}` : assigned.length})
+              </span>
             )}
           </CardTitle>
           <Link to="/staff/orgs">
@@ -112,6 +141,46 @@ export default function StaffDashboard() {
             </Button>
           </Link>
         </CardHeader>
+
+        {!assignedLoading && assigned.length > 0 && (
+          <div className="px-4 pb-3 flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search by name, slug, or ID…"
+                className="pl-8 pr-8 h-9 text-sm"
+              />
+              {query && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => setQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            {availableLevels.length > 1 && (
+              <Select value={levelFilter} onValueChange={setLevelFilter}>
+                <SelectTrigger className="h-9 text-sm sm:w-[180px]">
+                  <SelectValue placeholder="All access levels" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All access levels</SelectItem>
+                  {availableLevels.map(l => (
+                    <SelectItem key={l} value={l} className="capitalize">
+                      {l.replace("_", " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
+
         <CardContent className="p-0">
           {assignedLoading ? (
             <div className="p-6 text-center"><Loader2 className="h-5 w-5 animate-spin inline text-muted-foreground" /></div>
@@ -122,9 +191,17 @@ export default function StaffDashboard() {
                 Ask a platform super admin to grant you access to specific organisations.
               </p>
             </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-6 text-center space-y-2">
+              <p className="text-sm font-medium">No matches</p>
+              <p className="text-xs text-muted-foreground">Try a different search or clear the filter.</p>
+              <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setLevelFilter("all"); }}>
+                Clear filters
+              </Button>
+            </div>
           ) : (
             <div className="divide-y">
-              {assigned.slice(0, 8).map(o => (
+              {filtered.slice(0, 8).map(o => (
                 <Link key={o.organisation_id} to={`/staff/org/${o.organisation_id}`}
                   className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
                   <div className="min-w-0">
@@ -139,9 +216,9 @@ export default function StaffDashboard() {
                   <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </Link>
               ))}
-              {assigned.length > 8 && (
+              {filtered.length > 8 && (
                 <Link to="/staff/orgs" className="block text-center py-2 text-xs text-primary hover:underline">
-                  + {assigned.length - 8} more
+                  + {filtered.length - 8} more
                 </Link>
               )}
             </div>
