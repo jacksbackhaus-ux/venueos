@@ -152,6 +152,9 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
 
       <TasksPanel open={tasksOpen} onOpenChange={setTasksOpen} channelId={channel.id} />
       <PinnedPanel open={pinsOpen} onOpenChange={setPinsOpen} channelId={channel.id} />
+      {isMainSiteChannel && (
+        <HandoverDialog open={handoverOpen} onOpenChange={setHandoverOpen} channelId={channel.id} siteId={channel.site_id} />
+      )}
     </div>
   );
 }
