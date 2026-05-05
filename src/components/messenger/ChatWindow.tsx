@@ -135,6 +135,7 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
       />
 
       <TasksPanel open={tasksOpen} onOpenChange={setTasksOpen} channelId={channel.id} />
+      <PinnedPanel open={pinsOpen} onOpenChange={setPinsOpen} channelId={channel.id} />
     </div>
   );
 }
