@@ -30,6 +30,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSite } from "@/contexts/SiteContext";
 import { LabourVsWasteCard } from "@/components/dashboard/LabourVsWasteCard";
+import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
