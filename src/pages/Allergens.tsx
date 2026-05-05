@@ -222,10 +222,7 @@ const Allergens = () => {
                 <div key={ing.id} className="p-3 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate flex items-center gap-1.5">
-                        {ing.name}
-                        {ing.is_compound && <Badge variant="secondary" className="text-[10px]">Blend</Badge>}
-                      </p>
+                      <p className="text-sm font-medium truncate">{ing.name}</p>
                       {ing.supplier_name && <p className="text-xs text-muted-foreground truncate">{ing.supplier_name}</p>}
                     </div>
                     <div className="flex flex-wrap gap-1 justify-end">
@@ -235,7 +232,7 @@ const Allergens = () => {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  {ing.is_compound && ing.composition_text && (
+                  {ing.composition_text && (
                     <p className="text-[11px] text-muted-foreground italic pl-1">contains: {ing.composition_text}</p>
                   )}
                 </div>
