@@ -95,7 +95,8 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
             ? "bg-primary text-primary-foreground rounded-br-sm"
             : "bg-muted text-foreground rounded-bl-sm",
           message._optimistic && "opacity-70",
-          message._failed && "ring-2 ring-destructive"
+          message._failed && "ring-2 ring-destructive",
+          requiresAck && "ring-2 ring-warning/60 shadow-[0_0_0_4px_hsl(var(--warning)/0.08)]"
         )}>
           {isDeleted ? (
             <p className="italic opacity-70">This message was deleted</p>
