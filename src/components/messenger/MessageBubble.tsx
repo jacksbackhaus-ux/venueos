@@ -1,15 +1,21 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon } from "lucide-react";
+import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import type { MessengerMessage } from "@/hooks/useMessenger";
+import { useRole } from "@/hooks/useRole";
+import { useSite } from "@/contexts/SiteContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { CreateTaskDialog } from "./CreateTaskDialog";
+import { pinMessage } from "@/hooks/useMessengerTasks";
+import { toast } from "sonner";
 
 interface Props {
   message: MessengerMessage;
