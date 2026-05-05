@@ -61,7 +61,7 @@ function statusOf(row: SuperAdminRow): { label: string; tone: "active" | "expiri
 }
 
 export default function SuperAdminsTab() {
-  const { authUser } = useAuth();
+  const { user } = useAuth();
   const [rows, setRows] = useState<SuperAdminRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +113,7 @@ export default function SuperAdminsTab() {
                 <SuperAdminCard
                   key={r.id}
                   row={r}
-                  isSelf={authUser?.id === r.user_id}
+                  isSelf={user?.id === r.user_id}
                   onChange={load}
                 />
               ))}
@@ -190,7 +190,7 @@ function SuperAdminCard({ row, isSelf, onChange }: { row: SuperAdminRow; isSelf:
 function GrantDialog({
   open, onOpenChange, onGranted, existingRows,
 }: { open: boolean; onOpenChange: (v: boolean) => void; onGranted: () => void; existingRows: SuperAdminRow[] }) {
-  const { authUser } = useAuth();
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<UserSearchRow[]>([]);
   const [searching, setSearching] = useState(false);
@@ -222,7 +222,7 @@ function GrantDialog({
     return () => clearTimeout(t);
   }, [query]);
 
-  const isSelfPick = picked?.auth_user_id && authUser?.id === picked.auth_user_id;
+  const isSelfPick = picked?.auth_user_id && user?.id === picked.auth_user_id;
   const alreadyActive = picked?.auth_user_id
     && existingRows.some(r => r.user_id === picked.auth_user_id && !r.revoked_at && (!r.expires_at || new Date(r.expires_at) > new Date()));
 
@@ -249,7 +249,7 @@ function GrantDialog({
     if (error) { toast.error(error.message); setSubmitting(false); return; }
 
     await sb.from("admin_actions_log").insert({
-      performed_by: authUser?.id,
+      performed_by: user?.id,
       action_type: "grant_super_admin",
       target_user_id: picked.auth_user_id,
       reason: reason.trim(),
@@ -357,7 +357,7 @@ function GrantDialog({
 function RevokeDialog({
   open, onOpenChange, row, onChanged,
 }: { open: boolean; onOpenChange: (v: boolean) => void; row: SuperAdminRow; onChanged: () => void }) {
-  const { authUser } = useAuth();
+  const { user } = useAuth();
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [safeToRevoke, setSafeToRevoke] = useState<boolean | null>(null);
@@ -375,11 +375,11 @@ function RevokeDialog({
     setSubmitting(true);
     const { error } = await sb
       .from("super_admins")
-      .update({ revoked_at: new Date().toISOString(), revoked_by: authUser?.id })
+      .update({ revoked_at: new Date().toISOString(), revoked_by: user?.id })
       .eq("id", row.id);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
     await sb.from("admin_actions_log").insert({
-      performed_by: authUser?.id,
+      performed_by: user?.id,
       action_type: "revoke_super_admin",
       target_user_id: row.user_id,
       reason: reason.trim(),
@@ -424,7 +424,7 @@ function RevokeDialog({
 function ExtendDialog({
   open, onOpenChange, row, onChanged,
 }: { open: boolean; onOpenChange: (v: boolean) => void; row: SuperAdminRow; onChanged: () => void }) {
-  const { authUser } = useAuth();
+  const { user } = useAuth();
   const [reason, setReason] = useState("");
   const [days, setDays] = useState<"7" | "30" | "permanent">("7");
   const [permConfirm, setPermConfirm] = useState("");
@@ -451,7 +451,7 @@ function ExtendDialog({
       .eq("id", row.id);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
     await sb.from("admin_actions_log").insert({
-      performed_by: authUser?.id,
+      performed_by: user?.id,
       action_type: "extend_super_admin",
       target_user_id: row.user_id,
       reason: reason.trim(),
