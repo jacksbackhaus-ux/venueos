@@ -23,6 +23,8 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const userId = appUser?.id;
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [pinsOpen, setPinsOpen] = useState(false);
+  const { pins } = useChannelPins(channel.id);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
