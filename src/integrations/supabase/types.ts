@@ -4129,7 +4129,7 @@ export type Database = {
     Enums: {
       auth_type: "email" | "staff_code"
       batch_status: "in_progress" | "complete" | "quarantined" | "disposed"
-      internal_role: "support" | "onboarding" | "ops"
+      internal_role: "support" | "onboarding" | "ops" | "engineering"
       messenger_channel_type: "direct" | "group" | "system" | "role"
       messenger_message_type: "user" | "system" | "shift_card"
       messenger_participant_role: "admin" | "member"
@@ -4274,7 +4274,7 @@ export const Constants = {
     Enums: {
       auth_type: ["email", "staff_code"],
       batch_status: ["in_progress", "complete", "quarantined", "disposed"],
-      internal_role: ["support", "onboarding", "ops"],
+      internal_role: ["support", "onboarding", "ops", "engineering"],
       messenger_channel_type: ["direct", "group", "system", "role"],
       messenger_message_type: ["user", "system", "shift_card"],
       messenger_participant_role: ["admin", "member"],
