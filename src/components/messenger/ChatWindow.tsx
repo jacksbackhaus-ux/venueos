@@ -20,6 +20,7 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
   const { messages, loading, send, editMessage, deleteMessage } = useChannelMessages(channel.id);
   const scrollRef = useRef<HTMLDivElement>(null);
   const userId = appUser?.id;
+  const [tasksOpen, setTasksOpen] = useState(false);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
