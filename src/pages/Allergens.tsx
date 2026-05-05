@@ -252,7 +252,7 @@ const Allergens = () => {
             const ppdsLabel = sortedRis
               .map((ri: any) => {
                 const name = ri.ingredients?.name || "";
-                const sub = ri.ingredients?.is_compound && ri.ingredients?.composition_text
+                const sub = ri.ingredients?.composition_text
                   ? ` (${ri.ingredients.composition_text})`
                   : "";
                 return `${name}${sub}`;
@@ -268,12 +268,11 @@ const Allergens = () => {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span>{ri.ingredients?.name}</span>
-                          {ri.ingredients?.is_compound && <Badge variant="secondary" className="text-[10px]">Blend</Badge>}
                           {(ri.ingredients?.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>)}
                         </div>
                         {ri.weight && <span className="text-muted-foreground text-xs shrink-0">{ri.weight}g</span>}
                       </div>
-                      {ri.ingredients?.is_compound && ri.ingredients?.composition_text && (
+                      {ri.ingredients?.composition_text && (
                         <p className="text-[11px] text-muted-foreground italic pl-1 mt-0.5">contains: {ri.ingredients.composition_text}</p>
                       )}
                     </div>
