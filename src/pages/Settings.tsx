@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
@@ -55,6 +55,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ModuleManagementSection } from "@/components/ModuleManagementSection";
 import { MessengerSettingsSection } from "@/components/messenger/MessengerSettingsSection";
+import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
 import { ToggleLeft, MessageSquare } from "lucide-react";
 
 // ─── Temperature Units ───
@@ -140,7 +141,24 @@ const Settings = () => {
     staffSession?.site_role === 'owner' ||
     staffSession?.site_role === 'supervisor';
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("temperature");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") || "temperature");
+
+  // Honour ?tab= changes (e.g. returning from Stripe checkout)
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && t !== activeTab) setActiveTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Reflect the active tab back into the URL so deep-links work and refreshes stick.
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", value);
+    // Don't clobber checkout return params
+    setSearchParams(next, { replace: true });
+  };
   const [loading, setLoading] = useState(true);
 
   // Temperature state
@@ -568,7 +586,7 @@ const Settings = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="temperature" className="text-xs gap-1"><Thermometer className="h-3 w-3" /> Temps</TabsTrigger>
           <TabsTrigger value="cleaning" className="text-xs gap-1"><SprayCan className="h-3 w-3" /> Cleaning</TabsTrigger>
@@ -579,8 +597,13 @@ const Settings = () => {
           <TabsTrigger value="users" className="text-xs gap-1"><Users className="h-3 w-3" /> Users</TabsTrigger>
           <TabsTrigger value="messenger" className="text-xs gap-1"><MessageSquare className="h-3 w-3" /> Messenger</TabsTrigger>
           <TabsTrigger value="site" className="text-xs gap-1"><Building2 className="h-3 w-3" /> Site</TabsTrigger>
+          <TabsTrigger value="sites" className="text-xs gap-1"><Plus className="h-3 w-3" /> Sites</TabsTrigger>
           <TabsTrigger value="account" className="text-xs gap-1"><Shield className="h-3 w-3" /> Account</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sites" className="mt-4 space-y-4">
+          <SitesBillingSection />
+        </TabsContent>
 
         {orgRole?.org_role === 'org_owner' && (
           <TabsContent value="modules" className="mt-4 space-y-4">

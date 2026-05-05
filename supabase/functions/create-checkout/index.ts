@@ -45,7 +45,7 @@ serve(async (req) => {
     }
     const userEmail = claimsData.claims.email as string | undefined;
 
-    const { plan, cycle = "month", siteQuantity = 1, returnUrl, environment } = await req.json();
+    const { plan, cycle = "month", siteQuantity = 1, returnUrl, environment, addSiteMode = false } = await req.json();
     if (!plan || !LOOKUP[plan as PlanId]) {
       return new Response(JSON.stringify({ error: "Invalid plan" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -84,10 +84,10 @@ serve(async (req) => {
     const stripePrice = priceList.data[0];
     const qty = Math.max(1, Number(siteQuantity) || 1);
 
-    // Multi-site discount: 15% off when > 1 site.
-    // Apply as a coupon to the entire subscription (simplest), only if >1 site.
+    // Multi-site discount: 15% off when > 1 site, EXCEPT when adding sites
+    // from the Settings → Sites flow (full per-site price by product decision).
     const discounts: Array<{ coupon: string }> = [];
-    if (qty > 1) {
+    if (qty > 1 && !addSiteMode) {
       // Reuse / create a coupon. Stripe allows GET by id; we use a deterministic id.
       const couponId = "venueos_multisite_15";
       try {
@@ -110,9 +110,9 @@ serve(async (req) => {
       ...(discounts.length ? { discounts } : {}),
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       ...(userEmail && { customer_email: userEmail }),
-      metadata: { organisation_id: organisationId, plan, cycle },
+      metadata: { organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
       subscription_data: {
-        metadata: { organisation_id: organisationId, plan, cycle },
+        metadata: { organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
       },
     });
 

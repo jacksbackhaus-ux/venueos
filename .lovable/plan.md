@@ -1,293 +1,103 @@
-# Super Admin Permission Management — Architecture & Phased Plan
+## Goal
 
-## 1. Recommended Approach (Summary)
+In `/settings`, owners need a clear place to (a) see all sites in their organisation, and (b) buy/add another site. Pricing for an additional site = the same per-site price as their current plan, **no discount**, on the same monthly/yearly cycle. Production is live — all changes are additive.
 
-Adopt a **two-layer least-privilege model** layered on top of the existing `super_admins` table (which currently has 0 rows, so additive changes are safe):
+## What's already there (no changes needed)
 
-- **Layer A — Global Super Admin** (`public.super_admins`): platform-wide access to `/admin`. Rare. Always granted with a reason and, by default, **time-bound** (7 days). Permanent grants require explicit confirmation. Now extended with `created_by`, `reason`, `expires_at`, `revoked_at`, `revoked_by`.
-- **Layer B — Internal Staff Roles** (`public.internal_staff_roles`): named roles like `support`, `onboarding`, `ops` for our employees who need limited admin tooling but **not** full super admin. (Phase 2 wiring; table created in Phase 1 so the model is consistent.)
+- `subscriptions.site_quantity` already exists and drives per-site Stripe quantity.
+- `create-checkout` edge function already accepts `siteQuantity` and uses Stripe quantity-based per-site billing.
+- `payments-webhook` already syncs `site_quantity` back into the subscriptions table.
+- `customer-portal` edge function already exists for managing the underlying Stripe subscription.
+- Pricing model in `src/lib/plans.ts` (Base/Compliance/Business/Bundle, monthly/yearly).
 
-For customers who need extra power during signup, **never** grant global super admin. Instead use:
+The only existing behaviour we change: when adding sites from Settings, we will **not** apply the existing 15% multi-site coupon — full per-site price as you requested.
 
-- **`onboarding_admin` org-scoped role** (added to existing `org_users.org_role` via a new value), limited to a single organisation. This is the recommended path.
-- Optional `organisations.onboarding_mode_until` flag for time-boxed setup capabilities — designed but not implemented unless requested.
-- For our own debugging on a customer account, prefer the **existing read-only impersonation** flow rather than granting permissions.
+## Phase 1 — Edge function (additive, non-breaking)
 
-A single `admin_actions_log` table records every security-sensitive change (grant/revoke/extend, role changes, onboarding flag toggles).
+Update `supabase/functions/create-checkout/index.ts` to accept a new optional flag in the request body:
 
-### Why this shape
-- Keeps the existing `super_admins` row shape and `is_super_admin()` signature intact (preview app + RLS keep working).
-- Additive columns are nullable with safe defaults — no breakage of existing inserts/policies.
-- Hard guardrails (last-admin protection, self-grant prevention, mandatory reasons) are enforced **in the database**, not just the UI.
+```ts
+{ ..., addSiteMode?: boolean }
+```
 
-## 2. Risks & Mitigations
+Behaviour:
+- When `addSiteMode === true`: skip the `venueos_multisite_15` coupon block entirely (full price), and stamp `metadata.add_site_mode = "true"` for traceability in Stripe.
+- When omitted/false: existing behaviour preserved exactly (so `/account` keeps its 15% discount logic — nothing breaks).
 
-| Risk | Mitigation |
+No DB schema changes. No new edge functions.
+
+## Phase 2 — Settings page: new "Sites" tab
+
+Edit `src/pages/Settings.tsx` to add an 8th tab between **Site** and **Account**:
+
+```
+[ Temps ][ Cleaning ][ Day Sheet ][ Modules ][ Users ][ Messenger ][ Site ][ Sites ][ Account ]
+```
+
+New `<TabsTrigger value="sites">` with `<Building2 />` icon labelled **"Sites"**.
+
+### New component: `src/components/settings/SitesBillingSection.tsx`
+
+Owner-only (gated by `is_org_owner` / `currentMembership.site_role === 'owner'`). Non-owners see a read-only list with a note that only the owner can add sites.
+
+Loads:
+1. All sites in `organisation_id` (id, name, address, site_code, created_at).
+2. Current subscription row (plan flags, billing_interval, site_quantity, status).
+
+Renders three blocks:
+
+**a) Current sites list**
+```
+┌─────────────────────────────────────────────────────┐
+│ Greenfield Bakery — High St            Code: AB12CD │
+│ Greenfield Bakery — Mill Lane          Code: XK93PQ │
+└─────────────────────────────────────────────────────┘
+2 of 2 sites used on your subscription
+```
+Shows `sites.length` vs `subscription.site_quantity`. If `sites.length > site_quantity` (shouldn't happen, but defensive), show an amber warning.
+
+**b) Add another site card**
+- Heading: "Add another site"
+- Shows the live cost calculation for the user's current plan + cycle:
+  - "Each additional site: **£X.XX / month**" (or /year), full per-site price, no discount.
+  - Brief breakdown of which add-ons are active (Base / +Compliance / +Business / Bundle) and the resulting per-site rate, summed from `PLANS` definitions × the customer's active flags.
+- Primary CTA: **"Add a site"** → opens embedded Stripe checkout (existing `EmbeddedCheckoutFlow` component pattern from `/account`) with `{ plan: <derived>, cycle: <current>, siteQuantity: site_quantity + 1, addSiteMode: true, returnUrl: /settings?tab=sites&checkout=success }`.
+- The `plan` argument passed to checkout is the plan they currently hold (or `bundle` if they have all three add-ons), so the Stripe subscription updates the existing line, not a new one.
+
+**c) After purchase**
+- On `?checkout=success` query param, show a green banner: "New site added — finishing setup…" and poll `subscriptions.site_quantity` for ~10s for the webhook to land.
+- Once the count goes up, prompt: "Create your new site" → opens a small dialog to enter name + address, which inserts a new row into `public.sites` (RLS already permits org owners). Site appears in the list with auto-generated `site_code`.
+
+**d) Manage billing**
+- Secondary button: "Manage billing in customer portal" → existing `customer-portal` edge function (also lets them remove a site — Stripe handles the proration).
+
+### Routing nicety
+
+Tiny additive change in Settings: read `?tab=` query param on mount and set `activeTab` accordingly so the success redirect lands on the Sites tab.
+
+## Phase 3 — Bookkeeping rules (no DB changes)
+
+- We rely on Stripe quantity as the source of truth; `payments-webhook` already syncs `site_quantity` into the subscription row.
+- `org_has_active_access` already gates module access — no change needed.
+- The new site row is only created by the user inside the success dialog. We do NOT auto-create a placeholder site, because (a) we cannot guarantee the webhook has fired, and (b) it lets the user name it.
+- A defensive guard in the "Create your new site" dialog: only allow inserting a new site if `sites.length < subscription.site_quantity`. Prevents accidental over-creation.
+
+## Files touched
+
+| File | Change |
 |---|---|
-| Privilege escalation (user adds self) | RLS `WITH CHECK (is_super_admin() AND user_id <> auth.uid())`; trigger forces `created_by = auth.uid()` and rejects self-grants. |
-| Lockout (last admin removed) | `BEFORE UPDATE/DELETE` trigger on `super_admins` blocks any change that would leave 0 active admins (active = not revoked AND (`expires_at` IS NULL OR future)). |
-| Silent expiry causing surprise lockout | `is_super_admin()` updated to honour `revoked_at` and `expires_at`; UI shows expiring-soon banner; bootstrap admin is created **without** an expiry. |
-| Forgotten temporary grants | Default 7-day expiry; admin list shows status (active/expiring/expired/revoked); audit log immutable. |
-| Audit tampering | `admin_actions_log` is INSERT/SELECT only for super admins; no UPDATE/DELETE policies. |
-| Bootstrap abuse | No public endpoint. Bootstrap is a single SQL snippet run once by the project owner using a known `auth.uid()`. |
-| Breaking the live `/admin` panel | All schema changes are additive; existing `is_super_admin()` is replaced with a backwards-compatible version (same name, same signature, returns the same `true` for any current row because new columns default to "active"). |
+| `supabase/functions/create-checkout/index.ts` | Accept `addSiteMode` flag; skip coupon when set. |
+| `src/pages/Settings.tsx` | Add "Sites" tab trigger + content; honour `?tab=` query param. |
+| `src/components/settings/SitesBillingSection.tsx` | **New** — list + add-site purchase flow + manage-billing button. |
 
-## 3. Phased Plan
+No migrations. No changes to `/admin`, `/account`, auth, or RLS.
 
-```
-Phase 1  Schema (additive)         super_admins +cols, admin_actions_log,
-                                    internal_staff_roles, onboarding_admin enum value
-Phase 2  Functions, triggers, RLS  is_super_admin v2, assert_super_admin,
-                                    last-admin guard, self-grant guard, audit triggers
-Phase 3  Bootstrap + Admin UI      One-time SQL snippet, /admin → "Super Admins" tab
-                                    (search users, grant, revoke, extend, audit viewer)
-Phase 4  Optional org-scoped       onboarding_admin role wiring + RLS helpers for
-                                    org-scoped elevation during signup/support
-```
+## Testing checklist
 
-Each phase is shippable on its own and never removes columns or policies.
-
-## 4. Database Changes (Phase 1 + 2)
-
-### 4.1 Extend `super_admins` (additive only)
-
-```sql
-ALTER TABLE public.super_admins
-  ADD COLUMN IF NOT EXISTS created_by  uuid,            -- auth.uid() of granter
-  ADD COLUMN IF NOT EXISTS reason      text,            -- mandatory for new rows (enforced by trigger)
-  ADD COLUMN IF NOT EXISTS expires_at  timestamptz,     -- NULL = permanent
-  ADD COLUMN IF NOT EXISTS revoked_at  timestamptz,
-  ADD COLUMN IF NOT EXISTS revoked_by  uuid;
-
-CREATE INDEX IF NOT EXISTS idx_super_admins_active
-  ON public.super_admins (user_id)
-  WHERE revoked_at IS NULL;
-```
-
-Existing columns (`id, user_id, email, granted_at, granted_by, notes`) are untouched.
-
-### 4.2 New audit table
-
-```sql
-CREATE TABLE IF NOT EXISTS public.admin_actions_log (
-  id                      uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  performed_by            uuid NOT NULL,
-  action_type             text NOT NULL,          -- grant_super_admin, revoke_super_admin,
-                                                  -- extend_super_admin, grant_internal_role,
-                                                  -- revoke_internal_role, grant_onboarding_admin, etc.
-  target_user_id          uuid,
-  target_organisation_id  uuid,
-  reason                  text NOT NULL,
-  metadata                jsonb,
-  created_at              timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE public.admin_actions_log ENABLE ROW LEVEL SECURITY;
-
--- Read: super admins only. Insert: super admins only and performed_by = auth.uid().
--- No UPDATE / DELETE policies → effectively immutable.
-```
-
-### 4.3 Internal staff roles (created now, surfaced in UI later)
-
-```sql
-CREATE TYPE public.internal_role AS ENUM ('support','onboarding','ops');
-
-CREATE TABLE IF NOT EXISTS public.internal_staff_roles (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     uuid NOT NULL,
-  role        public.internal_role NOT NULL,
-  created_by  uuid NOT NULL,
-  reason      text NOT NULL,
-  expires_at  timestamptz,
-  revoked_at  timestamptz,
-  revoked_by  uuid,
-  created_at  timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (user_id, role)
-);
-ALTER TABLE public.internal_staff_roles ENABLE ROW LEVEL SECURITY;
-```
-
-### 4.4 Helper functions
-
-```sql
--- Backwards-compatible replacement: same signature, same return type.
-CREATE OR REPLACE FUNCTION public.is_super_admin()
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.super_admins
-    WHERE user_id = auth.uid()
-      AND revoked_at IS NULL
-      AND (expires_at IS NULL OR expires_at > now())
-  );
-$$;
-
-CREATE OR REPLACE FUNCTION public.assert_super_admin()
-RETURNS void LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-  IF NOT public.is_super_admin() THEN
-    RAISE EXCEPTION 'Not authorised: super admin required' USING ERRCODE = '42501';
-  END IF;
-END $$;
-
-CREATE OR REPLACE FUNCTION public.has_internal_role(_role public.internal_role)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.internal_staff_roles
-    WHERE user_id = auth.uid() AND role = _role
-      AND revoked_at IS NULL
-      AND (expires_at IS NULL OR expires_at > now())
-  );
-$$;
-```
-
-### 4.5 Guardrail triggers on `super_admins`
-
-```sql
--- 1. Mandatory reason + creator stamping + self-grant block on INSERT
-CREATE OR REPLACE FUNCTION public.trg_super_admin_insert_guard()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-  IF NEW.user_id = auth.uid() THEN
-    RAISE EXCEPTION 'Self-grant of super admin is not allowed';
-  END IF;
-  IF NEW.reason IS NULL OR length(trim(NEW.reason)) < 5 THEN
-    RAISE EXCEPTION 'A reason (>=5 chars) is required to grant super admin';
-  END IF;
-  NEW.created_by := COALESCE(NEW.created_by, auth.uid());
-  NEW.granted_by := COALESCE(NEW.granted_by, auth.uid());
-  RETURN NEW;
-END $$;
-
--- 2. Block change that would leave zero active super admins
-CREATE OR REPLACE FUNCTION public.trg_super_admin_protect_last()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE _active_after int;
-BEGIN
-  SELECT count(*) INTO _active_after
-  FROM public.super_admins
-  WHERE revoked_at IS NULL
-    AND (expires_at IS NULL OR expires_at > now())
-    AND id <> COALESCE(OLD.id, NEW.id);
-
-  IF TG_OP = 'UPDATE' AND NEW.revoked_at IS NULL
-     AND (NEW.expires_at IS NULL OR NEW.expires_at > now()) THEN
-    _active_after := _active_after + 1;        -- this row stays active
-  END IF;
-
-  IF _active_after < 1 THEN
-    RAISE EXCEPTION 'Cannot remove the last active super admin';
-  END IF;
-  RETURN COALESCE(NEW, OLD);
-END $$;
-```
-
-Triggers attached `BEFORE INSERT`, `BEFORE UPDATE`, `BEFORE DELETE` respectively.
-
-### 4.6 RLS (additive — replace existing super_admins INSERT policy)
-
-```sql
-DROP POLICY IF EXISTS "Super admins can insert super_admins" ON public.super_admins;
-CREATE POLICY "Super admins can insert super_admins"
-  ON public.super_admins FOR INSERT TO authenticated
-  WITH CHECK (public.is_super_admin() AND user_id <> auth.uid());
-
--- SELECT/DELETE policies unchanged. Add UPDATE for revoke/extend:
-CREATE POLICY "Super admins can update super_admins"
-  ON public.super_admins FOR UPDATE TO authenticated
-  USING (public.is_super_admin())
-  WITH CHECK (public.is_super_admin());
-
--- admin_actions_log
-CREATE POLICY "Super admins read audit"   ON public.admin_actions_log
-  FOR SELECT TO authenticated USING (public.is_super_admin());
-CREATE POLICY "Super admins write audit"  ON public.admin_actions_log
-  FOR INSERT TO authenticated WITH CHECK (public.is_super_admin() AND performed_by = auth.uid());
-
--- internal_staff_roles: same shape — super admins only, self-grant blocked.
-```
-
-### 4.7 Bootstrap (Phase 3, one-time, manual)
-
-No public endpoint. Run this once via the migration tool, after the project owner has signed up:
-
-```sql
--- Replace <YOUR_AUTH_UID> and <YOUR_EMAIL> before running.
-INSERT INTO public.super_admins (user_id, email, created_by, granted_by, reason, expires_at)
-VALUES ('<YOUR_AUTH_UID>', '<YOUR_EMAIL>', '<YOUR_AUTH_UID>', '<YOUR_AUTH_UID>',
-        'Initial bootstrap super admin', NULL)
-ON CONFLICT (user_id) DO NOTHING;
-```
-
-To allow this single self-insert, the insert guard exempts cases where there are **zero existing super admins**:
-
-```sql
--- inside trg_super_admin_insert_guard, before the self-grant check:
-IF (SELECT count(*) FROM public.super_admins) = 0 THEN
-  NEW.created_by := COALESCE(NEW.created_by, NEW.user_id);
-  RETURN NEW;
-END IF;
-```
-
-After bootstrap, the self-grant block applies to all future inserts. The guidance to the operator: sign up normally, copy your `auth.users.id` from the Cloud user list, paste into the snippet, run once.
-
-## 5. Admin UI / UX (Phase 3)
-
-Add a new tab to the existing `/admin` page (no new route required, so existing functionality is untouched):
-
-```
-/admin
- ├── Platform stats        (existing)
- ├── Organisations list    (existing)
- ├── [Org detail tabs …]   (existing)
- └── Super Admins  ← NEW top-level tab
-       ├── User search       (email / name / id, debounced)
-       ├── Active admins     (table: user, granted_at, expires_at, created_by, reason, status)
-       ├── Pending/expired   (collapsed)
-       └── Audit log         (filter by action_type, user, date range)
-```
-
-Component: `src/components/admin/SuperAdminsTab.tsx`. Reused dialogs:
-
-- **Grant dialog**: pick user from search → reason (required, min 5 chars) → duration radio (`7 days` default / `30 days` / `Permanent (requires typing GRANT-PERMANENT)`).
-- **Revoke dialog**: reason required. Pre-flight calls `is_super_admin_revoke_safe(target_id)` (a tiny RPC wrapping the last-admin check) so the UI shows a clear error before submitting.
-- **Extend dialog**: reason + new expiry. Cannot reduce expiry below `now()`.
-
-Edge cases handled in UI:
-- Searching for the current user → grant button hidden ("you cannot grant yourself").
-- Granting an already-active admin → button switches to "Extend".
-- Revoking last admin → toast: *"Cannot revoke — would leave the platform with no active super admins."*
-- Expiring within 24h → row highlighted amber.
-- Audit viewer is paginated, read-only.
-
-After every successful grant/revoke/extend, the client also inserts an `admin_actions_log` row (DB triggers also enforce). UI shows a toast and refreshes both lists.
-
-## 6. Customer Onboarding Elevated Access (Part D)
-
-**Recommendation:** add a new value `'onboarding_admin'` to `org_users.org_role` (or its enum if one exists), scoped to a single organisation. This is the safest of the three options because:
-
-- It reuses the existing org membership + RLS plumbing.
-- It cannot escape its `organisation_id`.
-- It is revocable and expirable using the same pattern as super admins.
-
-Add nullable `expires_at` and `reason` to `org_users` (additive). Treat `onboarding_admin` like `org_owner` for setup-related write paths only (modules, sites, users), not for billing or destructive actions. Granting it is a super-admin action that writes to `admin_actions_log`. Reject `onboarding_admin` from any path checking `is_super_admin()`.
-
-Phase 4 also exposes a "Grant onboarding access" button on each org detail view. We can ship Phases 1–3 without this if you'd rather defer.
-
-## 7. Testing Checklist
-
-Run after Phase 2 and again after Phase 3:
-
-1. **Self-escalation:** logged-in non-admin → `INSERT INTO super_admins (user_id) VALUES (auth.uid())` → must fail (RLS + trigger).
-2. **Self-grant by admin:** logged-in admin grants self → must fail with "Self-grant" error.
-3. **Missing reason:** insert without reason → must fail.
-4. **Last-admin protection:** with 1 active admin, revoke or set `expires_at = now() - 1` → must fail. With 2, must succeed.
-5. **Expiry enforcement:** grant with `expires_at = now() + interval '5 seconds'`, wait 6s → `is_super_admin()` returns false; admin loses `/admin` access on next page load.
-6. **Bootstrap path:** drop into empty table, run snippet → succeeds; run snippet again → blocked by uniqueness or self-grant guard.
-7. **Audit immutability:** as super admin, attempt `UPDATE admin_actions_log` / `DELETE` → must fail (no policy).
-8. **Existing /admin still works:** load `/admin` as the bootstrap admin; verify Platform Stats, Org list, Org detail tabs (Plan, Sites, Users, Sub history, Support log), Impersonation flow all behave as before.
-9. **Read-only impersonation unchanged:** start impersonation, attempt write → blocked by existing guard.
-10. **Onboarding admin (Phase 4 only):** user with `onboarding_admin` role → can edit own org, cannot read other orgs, cannot read `super_admins` or `admin_actions_log`.
-
----
-
-On approval I will implement **Phases 1–3** in a single pass (additive migration + UI tab), and stop before Phase 4 so you can confirm the onboarding-admin design before any `org_users` changes.
+1. Owner on Base monthly with 1 site — Sites tab shows 1 site, "Each additional site: £7.99/month", Add → Stripe embedded checkout opens, pay with `4242 4242 4242 4242`, return to `/settings?tab=sites`, banner appears, `site_quantity` becomes 2 within ~10s, dialog prompts for new site details, new site shows in list.
+2. Same but yearly cycle — price shown is `monthly × 10`, checkout passes `cycle: "year"`.
+3. Owner with Bundle — calculator uses bundle per-site price, not the sum of add-ons.
+4. Non-owner staff/supervisor — sees the site list read-only, no "Add a site" CTA, sees note "Only the organisation owner can add sites".
+5. `/account` page checkout still applies the 15% multi-site discount when `siteQuantity > 1` and `addSiteMode` is not sent — regression check.
+6. Try to insert a 3rd site row when `site_quantity === 2` from the dialog — blocked client-side with a clear message.
+7. "Manage billing" → opens Stripe customer portal in a new tab.

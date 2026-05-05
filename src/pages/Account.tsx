@@ -323,7 +323,7 @@ export default function Account() {
             <p className="text-xs text-muted-foreground">
               Per-site cost: {formatGBP(totals.perSite)} · Each additional site: {formatGBP(totals.discountedSiteCost)} ({100 - 15}% of base).
             </p>
-            <Button variant="outline" size="sm" onClick={() => navigate("/settings")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/settings?tab=sites")}>
               <Plus className="h-3.5 w-3.5 mr-1.5" />Add a site in Settings
             </Button>
           </CardContent>
