@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
@@ -28,7 +27,7 @@ const Allergens = () => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
 
   const [showIngDialog, setShowIngDialog] = useState(false);
-  const [ingForm, setIngForm] = useState({ name: "", supplier_name: "", allergens: [] as string[], is_compound: false, composition_text: "" });
+  const [ingForm, setIngForm] = useState({ name: "", supplier_name: "", allergens: [] as string[], composition_text: "" });
 
   const [showRecipeDialog, setShowRecipeDialog] = useState(false);
   const [recipeForm, setRecipeForm] = useState({
@@ -60,15 +59,14 @@ const Allergens = () => {
       const { error } = await supabase.from("ingredients").insert({
         site_id: siteId, organisation_id: organisationId,
         name: ingForm.name, supplier_name: ingForm.supplier_name || null, allergens: ingForm.allergens,
-        is_compound: ingForm.is_compound,
-        composition_text: ingForm.is_compound ? (ingForm.composition_text.trim() || null) : null,
+        composition_text: ingForm.composition_text.trim() || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Ingredient added");
       setShowIngDialog(false);
-      setIngForm({ name: "", supplier_name: "", allergens: [], is_compound: false, composition_text: "" });
+      setIngForm({ name: "", supplier_name: "", allergens: [], composition_text: "" });
       qc.invalidateQueries({ queryKey: ["ingredients", siteId] });
       qc.invalidateQueries({ queryKey: ["recipes", siteId] });
     },
@@ -223,10 +221,7 @@ const Allergens = () => {
                 <div key={ing.id} className="p-3 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate flex items-center gap-1.5">
-                        {ing.name}
-                        {ing.is_compound && <Badge variant="secondary" className="text-[10px]">Blend</Badge>}
-                      </p>
+                      <p className="text-sm font-medium truncate">{ing.name}</p>
                       {ing.supplier_name && <p className="text-xs text-muted-foreground truncate">{ing.supplier_name}</p>}
                     </div>
                     <div className="flex flex-wrap gap-1 justify-end">
@@ -236,7 +231,7 @@ const Allergens = () => {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  {ing.is_compound && ing.composition_text && (
+                  {ing.composition_text && (
                     <p className="text-[11px] text-muted-foreground italic pl-1">contains: {ing.composition_text}</p>
                   )}
                 </div>
@@ -256,7 +251,7 @@ const Allergens = () => {
             const ppdsLabel = sortedRis
               .map((ri: any) => {
                 const name = ri.ingredients?.name || "";
-                const sub = ri.ingredients?.is_compound && ri.ingredients?.composition_text
+                const sub = ri.ingredients?.composition_text
                   ? ` (${ri.ingredients.composition_text})`
                   : "";
                 return `${name}${sub}`;
@@ -272,12 +267,11 @@ const Allergens = () => {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span>{ri.ingredients?.name}</span>
-                          {ri.ingredients?.is_compound && <Badge variant="secondary" className="text-[10px]">Blend</Badge>}
                           {(ri.ingredients?.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>)}
                         </div>
                         {ri.weight && <span className="text-muted-foreground text-xs shrink-0">{ri.weight}g</span>}
                       </div>
-                      {ri.ingredients?.is_compound && ri.ingredients?.composition_text && (
+                      {ri.ingredients?.composition_text && (
                         <p className="text-[11px] text-muted-foreground italic pl-1 mt-0.5">contains: {ri.ingredients.composition_text}</p>
                       )}
                     </div>
@@ -312,26 +306,15 @@ const Allergens = () => {
             <div><Label className="text-sm">Name</Label><Input placeholder="e.g. Plain flour" value={ingForm.name} onChange={(e) => setIngForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label className="text-sm">Supplier (optional)</Label><Input placeholder="e.g. Allinsons" value={ingForm.supplier_name} onChange={(e) => setIngForm(f => ({ ...f, supplier_name: e.target.value }))} /></div>
 
-            <div className="rounded-md border p-3 space-y-2 bg-muted/30">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <Label className="text-sm">Premade blend / paste</Label>
-                  <p className="text-xs text-muted-foreground">Turn on for compound ingredients (e.g. tomato paste, curry paste, pesto) so the full sub-ingredient list appears on PPDS labels.</p>
-                </div>
-                <Switch checked={ingForm.is_compound} onCheckedChange={(v) => setIngForm(f => ({ ...f, is_compound: v }))} />
-              </div>
-              {ingForm.is_compound && (
-                <div>
-                  <Label className="text-sm">Full ingredients list (from supplier label)</Label>
-                  <Textarea
-                    rows={3}
-                    placeholder="e.g. Tomato (60%), sugar, salt, basil, citric acid, sunflower oil"
-                    value={ingForm.composition_text}
-                    onChange={(e) => setIngForm(f => ({ ...f, composition_text: e.target.value }))}
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-1">Copy this verbatim from the supplier's pack. It will be shown in parentheses after this ingredient on PPDS labels (FIC compliant).</p>
-                </div>
-              )}
+            <div>
+              <Label className="text-sm">Full ingredients list (optional)</Label>
+              <Textarea
+                rows={3}
+                placeholder="e.g. Tomato (60%), sugar, salt, basil, citric acid"
+                value={ingForm.composition_text}
+                onChange={(e) => setIngForm(f => ({ ...f, composition_text: e.target.value }))}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">If this ingredient has its own sub-ingredients (e.g. from the supplier's pack), list them here. They'll appear in parentheses after this ingredient on PPDS labels.</p>
             </div>
 
             <div>

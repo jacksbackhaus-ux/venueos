@@ -1190,7 +1190,6 @@ export type Database = {
           default_recipe_unit: string
           density_g_per_ml: number | null
           id: string
-          is_compound: boolean
           name: string
           organisation_id: string
           pack_price: number | null
@@ -1215,7 +1214,6 @@ export type Database = {
           default_recipe_unit?: string
           density_g_per_ml?: number | null
           id?: string
-          is_compound?: boolean
           name: string
           organisation_id: string
           pack_price?: number | null
@@ -1240,7 +1238,6 @@ export type Database = {
           default_recipe_unit?: string
           density_g_per_ml?: number | null
           id?: string
-          is_compound?: boolean
           name?: string
           organisation_id?: string
           pack_price?: number | null
