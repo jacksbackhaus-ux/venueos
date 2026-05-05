@@ -31,6 +31,23 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content || "");
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const role = useRole();
+  const { currentSite } = useSite();
+  const { appUser } = useAuth();
+  const canManage = role.isSupervisorPlus;
+
+  const handlePin = async () => {
+    if (!currentSite?.id || !appUser?.id || !message.channel_id) return;
+    const { error } = await pinMessage({
+      channel_id: message.channel_id,
+      site_id: currentSite.id,
+      message_id: message.id,
+      pinned_by: appUser.id,
+    });
+    if (error) toast.error(error.message ?? "Failed to pin");
+    else toast.success("Message pinned");
+  };
 
   // System / shift card rendering
   if (message.message_type === "shift_card" || message.message_type === "system") {
