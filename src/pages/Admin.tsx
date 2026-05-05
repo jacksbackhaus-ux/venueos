@@ -399,6 +399,7 @@ function OrgDetail({ org, onBack, onChange }: { org: OrgRow; onBack: () => void;
             <TabsTrigger value="overview"><CreditCard className="h-4 w-4 mr-1.5" />Plan</TabsTrigger>
             <TabsTrigger value="sites"><Building2 className="h-4 w-4 mr-1.5" />Sites & modules</TabsTrigger>
             <TabsTrigger value="users"><Users className="h-4 w-4 mr-1.5" />Users</TabsTrigger>
+            <TabsTrigger value="onboarding"><KeyRound className="h-4 w-4 mr-1.5" />Onboarding access</TabsTrigger>
             <TabsTrigger value="history"><Layers className="h-4 w-4 mr-1.5" />Sub history</TabsTrigger>
             <TabsTrigger value="support"><MessageSquare className="h-4 w-4 mr-1.5" />Support log</TabsTrigger>
           </TabsList>
@@ -421,6 +422,10 @@ function OrgDetail({ org, onBack, onChange }: { org: OrgRow; onBack: () => void;
 
           <TabsContent value="users" className="mt-4">
             <UsersPanel users={users} />
+          </TabsContent>
+
+          <TabsContent value="onboarding" className="mt-4">
+            <OnboardingAccessPanel orgId={org.id} orgName={org.name} users={users} />
           </TabsContent>
 
           <TabsContent value="history" className="mt-4">
