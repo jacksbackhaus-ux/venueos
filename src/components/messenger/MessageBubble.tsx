@@ -116,27 +116,43 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
             </>
           )}
 
-          {isOwn && !isDeleted && !editing && (
+          {!isDeleted && !editing && (isOwn || canManage) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   size="icon" variant="ghost"
                   className={cn(
-                    "absolute -left-7 top-1/2 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100",
-                    "text-muted-foreground hover:text-foreground"
+                    "absolute top-1/2 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100",
+                    isOwn ? "-left-7" : "-right-7",
+                    isOwn ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                   aria-label="Message actions"
                 >
                   <MoreVertical className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => { setDraft(message.content || ""); setEditing(true); }}>
-                  <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(message.id)} className="text-destructive">
-                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                </DropdownMenuItem>
+              <DropdownMenuContent align={isOwn ? "end" : "start"}>
+                {canManage && (
+                  <>
+                    <DropdownMenuItem onClick={() => setTaskDialogOpen(true)}>
+                      <ListTodo className="h-3.5 w-3.5 mr-2" /> Create task
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handlePin}>
+                      <Pin className="h-3.5 w-3.5 mr-2" /> Pin message
+                    </DropdownMenuItem>
+                    {isOwn && <DropdownMenuSeparator />}
+                  </>
+                )}
+                {isOwn && (
+                  <>
+                    <DropdownMenuItem onClick={() => { setDraft(message.content || ""); setEditing(true); }}>
+                      <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDelete(message.id)} className="text-destructive">
+                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -149,6 +165,16 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
           {lightbox && <img src={lightbox} alt="Attachment" className="w-full h-auto rounded-lg" />}
         </DialogContent>
       </Dialog>
+
+      {canManage && message.channel_id && (
+        <CreateTaskDialog
+          open={taskDialogOpen}
+          onOpenChange={setTaskDialogOpen}
+          channelId={message.channel_id}
+          messageId={message.id}
+          initialTitle={message.content || ""}
+        />
+      )}
     </div>
   );
 }
