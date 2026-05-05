@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SiteProvider, useSite } from "@/contexts/SiteContext";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "./pages/Auth";
+import OrgLogin from "./pages/OrgLogin";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Pricing from "./pages/Pricing";
@@ -147,6 +148,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthRedirect />} />
+      <Route path="/login/:slug" element={<OrgLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/pricing" element={<AuthGuard><Pricing /></AuthGuard>} />

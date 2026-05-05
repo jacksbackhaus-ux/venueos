@@ -20,6 +20,7 @@ import {
   type PlanId, type BillingCycle, type ModuleName,
   BASE_MODULES, COMPLIANCE_MODULES, BUSINESS_MODULES,
 } from "@/lib/plans";
+import { LoginUrlCard } from "@/components/LoginUrlCard";
 
 export default function Account() {
   const navigate = useNavigate();
@@ -240,6 +241,9 @@ export default function Account() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Org-specific login URL */}
+      {appUser?.organisation_id && <LoginUrlCard organisationId={appUser.organisation_id} />}
 
       {/* Savings hints */}
       {(unusedHint.compliance || unusedHint.business) && (

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Building2, LogOut } from "lucide-react";
+import { Loader2, Building2, LogOut, Link2, Copy, Check, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,10 @@ export default function Onboarding() {
   const { user, refreshAppUser, signOut, appUser, isLoading } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<"form" | "welcome">("form");
+  const [orgSlug, setOrgSlug] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState<string>("");
+  const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({
     displayName: "",
     orgName: "",
@@ -24,12 +29,13 @@ export default function Onboarding() {
     siteAddress: "",
   });
 
-  // If profile already exists, bounce to dashboard
+  // If profile already exists AND we are not in the post-signup welcome screen,
+  // bounce to dashboard. (During the welcome step we WANT to keep showing it.)
   useEffect(() => {
-    if (!isLoading && appUser) {
+    if (!isLoading && appUser && step === "form") {
       navigate("/", { replace: true });
     }
-  }, [appUser, isLoading, navigate]);
+  }, [appUser, isLoading, navigate, step]);
 
   // If no auth user, bounce to /auth
   useEffect(() => {
@@ -55,7 +61,7 @@ export default function Onboarding() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.rpc('handle_signup', {
+    const { data, error } = await supabase.rpc('handle_signup', {
       _org_name: form.orgName.trim(),
       _site_name: form.siteName.trim(),
       _display_name: form.displayName.trim(),
@@ -68,9 +74,41 @@ export default function Onboarding() {
       setSubmitting(false);
       return;
     }
-    await refreshAppUser();
+    // Fetch the auto-generated slug for the new org
+    const orgId = (data as any)?.organisation_id;
+    if (orgId) {
+      const { data: orgRow } = await supabase
+        .from("organisations")
+        .select("slug, name")
+        .eq("id", orgId)
+        .maybeSingle();
+      setOrgSlug((orgRow as any)?.slug ?? null);
+      setOrgName((orgRow as any)?.name ?? form.orgName.trim());
+    } else {
+      setOrgName(form.orgName.trim());
+    }
+    setStep("welcome");
+    setSubmitting(false);
     toast.success("Your account is ready!");
+    // Refresh appUser in the background so downstream guards work after Continue.
+    void refreshAppUser();
+  };
+
+  const continueToPricing = () => {
     navigate("/pricing", { replace: true });
+  };
+
+  const copyUrl = async () => {
+    if (!orgSlug) return;
+    const url = `${window.location.origin}/login/${orgSlug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Login URL copied");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Could not copy — please copy manually.");
+    }
   };
 
   const handleSignOut = async () => {
@@ -82,6 +120,61 @@ export default function Onboarding() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (step === "welcome") {
+    const url = orgSlug ? `${window.location.origin}/login/${orgSlug}` : null;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mx-auto mb-2">
+                <Building2 className="h-7 w-7 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Welcome to MiseOS, {orgName}!</CardTitle>
+              <CardDescription>
+                Your account is live. Here's the unique login page for your team — bookmark or share it now.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {url ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5"><Link2 className="h-4 w-4" /> Your team's login URL</Label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input readOnly value={url} className="font-mono text-sm bg-muted/40" onFocus={(e) => e.currentTarget.select()} />
+                      <Button onClick={copyUrl} className="shrink-0 gap-1.5">
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {copied ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 items-start pt-1">
+                    <div className="rounded-lg border border-border bg-background p-3 shrink-0 mx-auto sm:mx-0">
+                      <QRCodeSVG value={url} size={132} level="M" />
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-1.5 flex-1">
+                      <p>Staff scan this QR code or open the URL on their phone, then log in with their <strong>Site ID</strong> and <strong>Staff ID</strong>.</p>
+                      <p>You'll always be able to find this URL in <strong>Account &amp; Billing</strong>.</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Your account is set up. You can find your team's login URL in Account &amp; Billing.
+                </p>
+              )}
+
+              <Button onClick={continueToPricing} className="w-full mt-2">
+                Continue to plan setup <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
