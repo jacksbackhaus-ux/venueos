@@ -97,11 +97,63 @@ export default function StaffDashboard() {
         </div>
       )}
 
+      <Card>
+        <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm font-heading flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-primary" />
+            {isSuperAdmin ? "All organisations" : "Your assigned organisations"}
+            {!assignedLoading && (
+              <span className="text-xs font-normal text-muted-foreground">({assigned.length})</span>
+            )}
+          </CardTitle>
+          <Link to="/staff/orgs">
+            <Button variant="ghost" size="sm" className="text-xs">
+              View all <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0">
+          {assignedLoading ? (
+            <div className="p-6 text-center"><Loader2 className="h-5 w-5 animate-spin inline text-muted-foreground" /></div>
+          ) : assigned.length === 0 ? (
+            <div className="p-6 text-center space-y-1">
+              <p className="text-sm font-medium">No organisations assigned yet</p>
+              <p className="text-xs text-muted-foreground">
+                Ask a platform super admin to grant you access to specific organisations.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {assigned.slice(0, 8).map(o => (
+                <Link key={o.organisation_id} to={`/staff/org/${o.organisation_id}`}
+                  className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{o.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {o.slug && <code className="mr-2">/{o.slug}</code>}
+                      <Badge variant={o.is_super_admin_view ? "outline" : "secondary"} className="text-[10px]">
+                        {o.is_super_admin_view ? "super admin" : o.access_level}
+                      </Badge>
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </Link>
+              ))}
+              {assigned.length > 8 && (
+                <Link to="/staff/orgs" className="block text-center py-2 text-xs text-primary hover:underline">
+                  + {assigned.length - 8} more
+                </Link>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid md:grid-cols-2 gap-4">
         <ToolCard to="/staff/users" icon={Users} title="Users tool"
           desc="Search users by email or name. View profiles, memberships, and trigger password reset links." />
         <ToolCard to="/staff/orgs" icon={Building2} title="Organisations tool"
-          desc="Browse all organisations, open detail pages, and (super admin) start impersonation." />
+          desc="Browse organisations you're assigned to and (super admin) start impersonation." />
         {isSuperAdmin && (
           <ToolCard to="/staff/ops" icon={FileClock} title="Ops audit log"
             desc="Every privileged staff action with reason, actor, and target." />
