@@ -1,4 +1,5 @@
 import { useState, forwardRef } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,14 @@ export default function Auth() {
   const [tab, setTab] = useState<"login" | "signup" | "staff">("login");
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      {/* Internal-only entrypoint for MiseOS employees. Not advertised to customers. */}
+      <Link
+        to="/staff-login"
+        className="absolute top-4 right-4 text-xs text-primary hover:underline font-medium"
+      >
+        MiseOS Staff →
+      </Link>
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center mr-3">
