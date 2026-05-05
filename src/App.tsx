@@ -48,6 +48,7 @@ import StaffOpsLog from "./pages/staff/StaffOpsLog";
 import StaffMigrations from "./pages/staff/StaffMigrations";
 import StaffAccess from "./pages/staff/StaffAccess";
 import { StaffGuard } from "./components/staff/StaffGuard";
+import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { StaffLayout } from "./components/staff/StaffLayout";
 import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
@@ -66,9 +67,14 @@ const queryClient = new QueryClient();
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user, appUser, staffSession } = useAuth();
+  const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <>{children}</>;
-  if (user && !user.is_anonymous && !appUser) return <Navigate to="/onboarding" replace />;
+  if (user && !user.is_anonymous && !appUser) {
+    if (staffLoading) return <FullScreenLoader />;
+    if (isInternalStaff) return <Navigate to="/staff" replace />;
+    return <Navigate to="/onboarding" replace />;
+  }
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
@@ -122,9 +128,14 @@ function RequireSite({ children }: { children: React.ReactNode }) {
 
 function AuthRedirect() {
   const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
+  const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <Navigate to="/" replace />;
-  if (user && !user.is_anonymous && !appUser) return <Navigate to="/onboarding" replace />;
+  if (user && !user.is_anonymous && !appUser) {
+    if (staffLoading) return <FullScreenLoader />;
+    if (isInternalStaff) return <Navigate to="/staff" replace />;
+    return <Navigate to="/onboarding" replace />;
+  }
   if (isAuthenticated) return <Navigate to="/" replace />;
   return <Auth />;
 }

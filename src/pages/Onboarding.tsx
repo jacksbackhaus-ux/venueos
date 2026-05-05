@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { Loader2, Building2, LogOut, Link2, Copy, Check, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
  */
 export default function Onboarding() {
   const { user, refreshAppUser, signOut, appUser, isLoading } = useAuth();
+  const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState<"form" | "welcome">("form");
@@ -28,6 +30,14 @@ export default function Onboarding() {
     siteName: "",
     siteAddress: "",
   });
+
+  // Internal MiseOS staff should never be sent through customer onboarding —
+  // bounce them to the Staff Console instead.
+  useEffect(() => {
+    if (!staffLoading && isInternalStaff && step === "form") {
+      navigate("/staff", { replace: true });
+    }
+  }, [isInternalStaff, staffLoading, navigate, step]);
 
   // If profile already exists AND we are not in the post-signup welcome screen,
   // bounce to dashboard. (During the welcome step we WANT to keep showing it.)
