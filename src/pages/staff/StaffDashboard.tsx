@@ -6,7 +6,8 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building2, FileClock, Database, ShieldCheck, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Building2, FileClock, Database, ShieldCheck, Loader2, ArrowRight } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb: any = supabase;
