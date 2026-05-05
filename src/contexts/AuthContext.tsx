@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useImpersonation } from './ImpersonationContext';
 
 interface AppUser {
   id: string;
@@ -67,10 +68,11 @@ function readStoredStaffSession(): StaffSession | null {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { isImpersonating, targetAppUser, targetOrgRole } = useImpersonation();
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [appUser, setAppUser] = useState<AppUser | null>(null);
-  const [orgRole, setOrgRole] = useState<OrgRole | null>(null);
+  const [appUserReal, setAppUser] = useState<AppUser | null>(null);
+  const [orgRoleReal, setOrgRole] = useState<OrgRole | null>(null);
   const [staffSession, setStaffSession] = useState<StaffSession | null>(() => readStoredStaffSession());
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
@@ -197,9 +199,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  // While impersonating, present the target manager's appUser/orgRole to the
+  // rest of the app so all UI renders as they would see it. The actual auth
+  // session and supabase.auth.uid() never change — writes are blocked by the
+  // global impersonation guard.
+  const appUser: AppUser | null = isImpersonating && targetAppUser ? (targetAppUser as AppUser) : appUserReal;
+  const orgRole: OrgRole | null = isImpersonating ? (targetOrgRole as OrgRole | null) : orgRoleReal;
+
   const isAuthenticated = !!(session && appUser) || !!staffSession;
   const isHQ = !!orgRole && ['org_owner', 'hq_admin', 'hq_auditor'].includes(orgRole.org_role);
-  const isReadOnly = orgRole?.org_role === 'hq_auditor' || staffSession?.site_role === 'read_only';
+  const isReadOnly = isImpersonating || orgRole?.org_role === 'hq_auditor' || staffSession?.site_role === 'read_only';
 
   return (
     <AuthContext.Provider value={{
