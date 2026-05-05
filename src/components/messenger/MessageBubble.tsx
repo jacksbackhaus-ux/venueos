@@ -183,6 +183,17 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
             </DropdownMenu>
           )}
         </div>
+        {requiresAck && message.channel_id && (
+          <div className="w-full max-w-[420px]">
+            <AckStrip
+              messageId={message.id}
+              channelId={message.channel_id}
+              siteId={message.site_id}
+              senderId={message.sender_id}
+              isOwn={isOwn}
+            />
+          </div>
+        )}
         <ReceiptRow message={message} isOwn={isOwn} readReceipts={readReceipts} />
       </div>
 
