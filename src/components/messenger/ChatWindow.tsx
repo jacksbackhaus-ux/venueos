@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle, ListTodo } from "lucide-react";
+import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle, ListTodo, Pin, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChannelMessages, markChannelRead, type MessengerChannel, type MessengerMessage } from "@/hooks/useMessenger";
