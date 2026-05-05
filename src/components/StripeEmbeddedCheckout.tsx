@@ -10,6 +10,8 @@ interface Props {
   siteQuantity?: number;
   /** When true, this is an add-on bought alongside an existing plan (no separate checkout — go via portal). */
   returnUrl?: string;
+  /** When true, skip the multi-site 15% discount (used by Settings → Sites add-site flow). */
+  addSiteMode?: boolean;
 }
 
 /**
@@ -19,19 +21,19 @@ interface Props {
  * passing a comma-separated `withAddons` list to create-checkout.
  */
 export function StripeEmbeddedCheckout({
-  plan, cycle, siteQuantity = 1, returnUrl,
+  plan, cycle, siteQuantity = 1, returnUrl, addSiteMode = false,
 }: Props) {
   const fetchClientSecret = useCallback(async (): Promise<string> => {
     const { data, error } = await supabase.functions.invoke("create-checkout", {
       body: {
-        plan, cycle, siteQuantity,
+        plan, cycle, siteQuantity, addSiteMode,
         returnUrl: returnUrl || `${window.location.origin}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
         environment: stripeEnvironment,
       },
     });
     if (error || !data?.clientSecret) throw new Error(error?.message || "Could not start checkout");
     return data.clientSecret;
-  }, [plan, cycle, siteQuantity, returnUrl]);
+  }, [plan, cycle, siteQuantity, returnUrl, addSiteMode]);
 
   return (
     <div id="checkout">
