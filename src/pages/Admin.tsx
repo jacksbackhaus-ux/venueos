@@ -715,3 +715,76 @@ function SupportLogPanel({ orgId }: { orgId: string }) {
     </div>
   );
 }
+
+function ImpersonateDialog({ orgId, orgName }: { orgId: string; orgName: string }) {
+  const { startImpersonation, isImpersonating } = useImpersonation();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const canSubmit = reason.trim().length >= 5 && confirm.trim().toUpperCase() === "IMPERSONATE";
+
+  const begin = async () => {
+    if (!canSubmit) return;
+    setBusy(true);
+    const { error } = await startImpersonation({ organisationId: orgId, reason });
+    setBusy(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    setOpen(false);
+    setReason("");
+    setConfirm("");
+    toast.success(`Now impersonating ${orgName}`);
+    navigate("/", { replace: true });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!busy) setOpen(v); }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" disabled={isImpersonating}>
+          <Eye className="h-4 w-4 mr-1.5" />
+          {isImpersonating ? "Impersonation active" : "Impersonate"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Impersonate {orgName}</DialogTitle>
+          <DialogDescription>
+            You'll see exactly what their primary manager sees. Sessions are <strong>read-only</strong> and
+            automatically end after 60 minutes. This action is logged.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Reason for impersonation (required)</Label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Investigating a bug reported by the customer in the Cleaning module."
+              rows={3}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Type <code className="font-mono text-xs">IMPERSONATE</code> to confirm</Label>
+            <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="IMPERSONATE" />
+          </div>
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            All writes are blocked while impersonating. The customer will not be notified, but a permanent
+            audit log entry is created.
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+          <Button onClick={begin} disabled={!canSubmit || busy}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+            <Eye className="h-4 w-4 mr-1" />Start impersonation
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
