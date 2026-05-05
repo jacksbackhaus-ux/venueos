@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ShieldCheck, Gift, X, ArrowLeft, ChevronRight, Users, Building2, CreditCard, Layers, MessageSquare, Trash2, CalendarClock } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, ShieldCheck, Gift, X, ArrowLeft, ChevronRight, Users, Building2, CreditCard, Layers, MessageSquare, Trash2, CalendarClock, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -354,6 +356,7 @@ function OrgDetail({ org, onBack, onChange }: { org: OrgRow; onBack: () => void;
     <div className="p-4 md:p-6 space-y-5 max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-3">
         <Button variant="ghost" size="sm" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-1" />Back to organisations</Button>
+        <ImpersonateDialog orgId={org.id} orgName={org.name} />
       </div>
 
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -710,5 +713,78 @@ function SupportLogPanel({ orgId }: { orgId: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+function ImpersonateDialog({ orgId, orgName }: { orgId: string; orgName: string }) {
+  const { startImpersonation, isImpersonating } = useImpersonation();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const canSubmit = reason.trim().length >= 5 && confirm.trim().toUpperCase() === "IMPERSONATE";
+
+  const begin = async () => {
+    if (!canSubmit) return;
+    setBusy(true);
+    const { error } = await startImpersonation({ organisationId: orgId, reason });
+    setBusy(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    setOpen(false);
+    setReason("");
+    setConfirm("");
+    toast.success(`Now impersonating ${orgName}`);
+    navigate("/", { replace: true });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!busy) setOpen(v); }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" disabled={isImpersonating}>
+          <Eye className="h-4 w-4 mr-1.5" />
+          {isImpersonating ? "Impersonation active" : "Impersonate"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Impersonate {orgName}</DialogTitle>
+          <DialogDescription>
+            You'll see exactly what their primary manager sees. Sessions are <strong>read-only</strong> and
+            automatically end after 60 minutes. This action is logged.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Reason for impersonation (required)</Label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Investigating a bug reported by the customer in the Cleaning module."
+              rows={3}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Type <code className="font-mono text-xs">IMPERSONATE</code> to confirm</Label>
+            <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="IMPERSONATE" />
+          </div>
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            All writes are blocked while impersonating. The customer will not be notified, but a permanent
+            audit log entry is created.
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+          <Button onClick={begin} disabled={!canSubmit || busy}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+            <Eye className="h-4 w-4 mr-1" />Start impersonation
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

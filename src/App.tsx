@@ -42,6 +42,8 @@ import More from "./pages/More";
 import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { RoleGuard } from "@/components/RoleGuard";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
@@ -202,14 +204,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <SiteProvider>
-            <PaymentTestModeBanner />
-            <Suspense fallback={<FullScreenLoader />}>
-              <AppRoutes />
-            </Suspense>
-          </SiteProvider>
-        </AuthProvider>
+        <ImpersonationProvider>
+          <AuthProvider>
+            <SiteProvider>
+              <ImpersonationBanner />
+              <PaymentTestModeBanner />
+              <Suspense fallback={<FullScreenLoader />}>
+                <AppRoutes />
+              </Suspense>
+            </SiteProvider>
+          </AuthProvider>
+        </ImpersonationProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
