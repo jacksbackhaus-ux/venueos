@@ -29,7 +29,7 @@ import {
 import { Calculator, Settings as SettingsIcon, ChefHat, Boxes, BarChart3, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  loadTMEContext, calcRecipeBreakdown,
+  loadTMEContext, calcRecipeBreakdown, tmeLineCost,
   type TMEContext, type TMERecipe, type TMERecipeIngredient, type TMEIngredient,
 } from "@/lib/trueMargin";
 
