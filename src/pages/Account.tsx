@@ -20,6 +20,7 @@ import {
   type PlanId, type BillingCycle, type ModuleName,
   BASE_MODULES, COMPLIANCE_MODULES, BUSINESS_MODULES,
 } from "@/lib/plans";
+import { LoginUrlCard } from "@/components/LoginUrlCard";
 
 export default function Account() {
   const navigate = useNavigate();
