@@ -121,7 +121,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("create-checkout error:", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    return new Response(JSON.stringify({ error: "Unable to start checkout" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
