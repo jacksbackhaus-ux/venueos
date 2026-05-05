@@ -220,17 +220,25 @@ const Allergens = () => {
           <TabsContent value="ingredients" className="mt-4">
             <Card><CardContent className="p-0"><div className="divide-y">
               {ingredients.map((ing: any) => (
-                <div key={ing.id} className="flex items-center justify-between p-3 gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{ing.name}</p>
-                    {ing.supplier_name && <p className="text-xs text-muted-foreground truncate">{ing.supplier_name}</p>}
+                <div key={ing.id} className="p-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                        {ing.name}
+                        {ing.is_compound && <Badge variant="secondary" className="text-[10px]">Blend</Badge>}
+                      </p>
+                      {ing.supplier_name && <p className="text-xs text-muted-foreground truncate">{ing.supplier_name}</p>}
+                    </div>
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      {(ing.allergens || []).length > 0 ? (ing.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>) : <Badge variant="outline" className="text-[10px] text-success border-success/30">None</Badge>}
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-breach hover:text-breach h-7 w-7 p-0 shrink-0" onClick={() => deleteIngredient.mutate(ing.id)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <div className="flex flex-wrap gap-1 justify-end">
-                    {(ing.allergens || []).length > 0 ? (ing.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>) : <Badge variant="outline" className="text-[10px] text-success border-success/30">None</Badge>}
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-breach hover:text-breach h-7 w-7 p-0 shrink-0" onClick={() => deleteIngredient.mutate(ing.id)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  {ing.is_compound && ing.composition_text && (
+                    <p className="text-[11px] text-muted-foreground italic pl-1">contains: {ing.composition_text}</p>
+                  )}
                 </div>
               ))}
             </div></CardContent></Card>
