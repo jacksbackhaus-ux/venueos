@@ -172,6 +172,7 @@ export interface RecipeWithCost extends RawRecipe {
 }
 
 // Compute total production cost for a batch of N units of a given recipe.
+// Now backed by the True Margin Engine so Batches uses the same cost model.
 export async function calcBatchProductionCost(
   recipeId: string,
   quantity: number,
@@ -179,9 +180,12 @@ export async function calcBatchProductionCost(
   siteId: string
 ): Promise<{ unitCost: number; totalCost: number } | null> {
   if (!recipeId || !quantity || quantity <= 0) return null;
-  const { ctx, recipes } = await loadCostContextForOrg(siteId, orgId);
+  const { loadTMEContext, calcRecipeBreakdown } = await import("./trueMargin");
+  const { ctx, recipes } = await loadTMEContext(siteId, orgId);
   const recipe = recipes.find((r) => r.id === recipeId);
   if (!recipe) return null;
-  const unitCost = recipe.breakdown.totalCostPerUnit;
+  const bd = calcRecipeBreakdown(recipe, ctx);
+  const portions = Math.max(1, Number(recipe.portions) || 1);
+  const unitCost = bd.totalCostExVat / portions;
   return { unitCost, totalCost: unitCost * quantity };
 }
