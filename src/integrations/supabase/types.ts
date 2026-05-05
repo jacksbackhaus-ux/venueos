@@ -2012,25 +2012,34 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          created_by: string | null
+          expires_at: string | null
           id: string
           org_role: Database["public"]["Enums"]["org_role"]
           organisation_id: string
+          reason: string | null
           user_id: string
         }
         Insert: {
           active?: boolean
           created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
           id?: string
           org_role: Database["public"]["Enums"]["org_role"]
           organisation_id: string
+          reason?: string | null
           user_id: string
         }
         Update: {
           active?: boolean
           created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
           id?: string
           org_role?: Database["public"]["Enums"]["org_role"]
           organisation_id?: string
+          reason?: string | null
           user_id?: string
         }
         Relationships: [
@@ -4074,6 +4083,10 @@ export type Database = {
       has_site_access: { Args: { _site_id: string }; Returns: boolean }
       has_site_membership: { Args: { _site_id: string }; Returns: boolean }
       has_site_write_access: { Args: { _site_id: string }; Returns: boolean }
+      is_active_org_user: {
+        Args: { _auth_uid: string; _org_id: string }
+        Returns: boolean
+      }
       is_channel_participant: {
         Args: { _channel_id: string }
         Returns: boolean
@@ -4117,7 +4130,7 @@ export type Database = {
       messenger_channel_type: "direct" | "group" | "system" | "role"
       messenger_message_type: "user" | "system" | "shift_card"
       messenger_participant_role: "admin" | "member"
-      org_role: "org_owner" | "hq_admin" | "hq_auditor"
+      org_role: "org_owner" | "hq_admin" | "hq_auditor" | "onboarding_admin"
       shift_request_status:
         | "pending_teammate"
         | "pending_approval"
@@ -4262,7 +4275,7 @@ export const Constants = {
       messenger_channel_type: ["direct", "group", "system", "role"],
       messenger_message_type: ["user", "system", "shift_card"],
       messenger_participant_role: ["admin", "member"],
-      org_role: ["org_owner", "hq_admin", "hq_auditor"],
+      org_role: ["org_owner", "hq_admin", "hq_auditor", "onboarding_admin"],
       shift_request_status: [
         "pending_teammate",
         "pending_approval",
