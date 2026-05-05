@@ -71,6 +71,18 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
           <h2 className="font-semibold text-sm truncate">{channel.name}</h2>
           {channel.description && <p className="text-[11px] text-muted-foreground truncate">{channel.description}</p>}
         </div>
+        {isMainSiteChannel && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 shrink-0 gap-1.5"
+            onClick={() => setHandoverOpen(true)}
+            title="Post shift handover"
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            <span className="hidden sm:inline text-xs">Handover</span>
+          </Button>
+        )}
         {channel.type !== "system" && (
           <Button
             size="icon"
