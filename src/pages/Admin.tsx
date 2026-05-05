@@ -160,18 +160,30 @@ export default function Admin() {
 
       {stats && <PlatformStatsSection stats={stats} />}
 
-      <Input placeholder="Search organisations…" value={filter} onChange={e => setFilter(e.target.value)} />
+      <Tabs defaultValue="orgs" className="w-full">
+        <TabsList>
+          <TabsTrigger value="orgs"><Building2 className="h-4 w-4 mr-1.5" />Organisations</TabsTrigger>
+          <TabsTrigger value="super_admins"><KeyRound className="h-4 w-4 mr-1.5" />Super Admins</TabsTrigger>
+        </TabsList>
 
-      {loading ? (
-        <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map(org => (
-            <OrgCard key={org.id} org={org} onChange={load} onOpen={() => setSelectedOrgId(org.id)} />
-          ))}
-          {filtered.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No organisations.</p>}
-        </div>
-      )}
+        <TabsContent value="orgs" className="mt-4 space-y-3">
+          <Input placeholder="Search organisations…" value={filter} onChange={e => setFilter(e.target.value)} />
+          {loading ? (
+            <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map(org => (
+                <OrgCard key={org.id} org={org} onChange={load} onOpen={() => setSelectedOrgId(org.id)} />
+              ))}
+              {filtered.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No organisations.</p>}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="super_admins" className="mt-4">
+          <SuperAdminsTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
