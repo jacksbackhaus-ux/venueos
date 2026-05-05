@@ -120,8 +120,10 @@ export function useMyMessengerTasks() {
       return;
     }
     setLoading(true);
-    const { data } = await supabase
-      .from("messenger_tasks" as never)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb: any = supabase;
+    const { data } = await sb
+      .from("messenger_tasks")
       .select("*")
       .eq("site_id", siteId)
       .eq("assigned_to", userId)
