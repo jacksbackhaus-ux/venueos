@@ -181,20 +181,16 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
         return { error: "You don't have staff access to this organisation." };
       }
 
-      const { data: org } = await sb
-        .from("organisations")
-        .select("id, name")
-        .eq("id", organisationId)
-        .maybeSingle();
+      // Use SECURITY DEFINER RPC so super admins can read orgs they don't belong to.
+      const { data: detail, error: detailErr } = await sb.rpc("staff_get_org_detail", {
+        _org_id: organisationId,
+      });
+      if (detailErr) return { error: detailErr.message };
+      const org = detail?.organisation as { id: string; name: string } | null;
       if (!org) return { error: "Organisation not found." };
 
-      const { data: orgUsers } = await sb
-        .from("org_users")
-        .select("user_id, org_role")
-        .eq("organisation_id", organisationId)
-        .eq("active", true);
-
-      const ranked = (orgUsers || []).slice().sort((a: { org_role: string }, b: { org_role: string }) => {
+      const owners = (detail?.org_owners || []) as Array<{ user_id: string; org_role: string }>;
+      const ranked = owners.slice().sort((a, b) => {
         const order: Record<string, number> = { org_owner: 0, hq_admin: 1, hq_auditor: 2 };
         return (order[a.org_role] ?? 99) - (order[b.org_role] ?? 99);
       });
