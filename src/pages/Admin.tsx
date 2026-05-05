@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ShieldCheck, Gift, X, ArrowLeft, ChevronRight, Users, Building2, CreditCard, Layers, MessageSquare, Trash2, CalendarClock } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, ShieldCheck, Gift, X, ArrowLeft, ChevronRight, Users, Building2, CreditCard, Layers, MessageSquare, Trash2, CalendarClock, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -354,6 +356,7 @@ function OrgDetail({ org, onBack, onChange }: { org: OrgRow; onBack: () => void;
     <div className="p-4 md:p-6 space-y-5 max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-3">
         <Button variant="ghost" size="sm" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-1" />Back to organisations</Button>
+        <ImpersonateDialog orgId={org.id} orgName={org.name} />
       </div>
 
       <div className="flex items-start justify-between gap-3 flex-wrap">
