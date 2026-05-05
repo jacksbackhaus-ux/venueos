@@ -28,7 +28,7 @@ const Allergens = () => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
 
   const [showIngDialog, setShowIngDialog] = useState(false);
-  const [ingForm, setIngForm] = useState({ name: "", supplier_name: "", allergens: [] as string[] });
+  const [ingForm, setIngForm] = useState({ name: "", supplier_name: "", allergens: [] as string[], is_compound: false, composition_text: "" });
 
   const [showRecipeDialog, setShowRecipeDialog] = useState(false);
   const [recipeForm, setRecipeForm] = useState({
