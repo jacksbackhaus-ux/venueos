@@ -124,6 +124,61 @@ export default function Onboarding() {
     );
   }
 
+  if (step === "welcome") {
+    const url = orgSlug ? `${window.location.origin}/login/${orgSlug}` : null;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mx-auto mb-2">
+                <Building2 className="h-7 w-7 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Welcome to MiseOS, {orgName}!</CardTitle>
+              <CardDescription>
+                Your account is live. Here's the unique login page for your team — bookmark or share it now.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {url ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5"><Link2 className="h-4 w-4" /> Your team's login URL</Label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input readOnly value={url} className="font-mono text-sm bg-muted/40" onFocus={(e) => e.currentTarget.select()} />
+                      <Button onClick={copyUrl} className="shrink-0 gap-1.5">
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {copied ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 items-start pt-1">
+                    <div className="rounded-lg border border-border bg-background p-3 shrink-0 mx-auto sm:mx-0">
+                      <QRCodeSVG value={url} size={132} level="M" />
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-1.5 flex-1">
+                      <p>Staff scan this QR code or open the URL on their phone, then log in with their <strong>Site ID</strong> and <strong>Staff ID</strong>.</p>
+                      <p>You'll always be able to find this URL in <strong>Account &amp; Billing</strong>.</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Your account is set up. You can find your team's login URL in Account &amp; Billing.
+                </p>
+              )}
+
+              <Button onClick={continueToPricing} className="w-full mt-2">
+                Continue to plan setup <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
