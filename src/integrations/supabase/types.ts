@@ -1948,16 +1948,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          slug: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          slug: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          slug?: string
         }
         Relationships: []
       }
@@ -3873,7 +3876,12 @@ export type Database = {
     Functions: {
       generate_site_code: { Args: never; Returns: string }
       generate_staff_code: { Args: { _org_id: string }; Returns: string }
+      generate_unique_org_slug: {
+        Args: { _exclude_id?: string; _name: string }
+        Returns: string
+      }
       get_app_user_id: { Args: never; Returns: string }
+      get_org_public_by_slug: { Args: { _slug: string }; Returns: Json }
       get_user_org_id: { Args: never; Returns: string }
       get_user_weekly_hours: {
         Args: { _user_id: string; _week_start: string }
@@ -3922,12 +3930,17 @@ export type Database = {
         Args: { _site_id: string; _staff_code: string }
         Returns: Json
       }
+      link_staff_session_for_org: {
+        Args: { _org_slug: string; _site_id: string; _staff_code: string }
+        Returns: Json
+      }
       messenger_mark_read: { Args: { _channel_id: string }; Returns: undefined }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
       seed_messenger_channels_for_site: {
         Args: { _site_id: string }
         Returns: undefined
       }
+      slugify_org_name: { Args: { _name: string }; Returns: string }
       sync_org_modules: { Args: { _org_id: string }; Returns: undefined }
       validate_staff_code: {
         Args: { _site_id: string; _staff_code: string }
