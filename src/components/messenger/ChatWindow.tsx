@@ -63,6 +63,18 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
           <h2 className="font-semibold text-sm truncate">{channel.name}</h2>
           {channel.description && <p className="text-[11px] text-muted-foreground truncate">{channel.description}</p>}
         </div>
+        {channel.type !== "system" && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 shrink-0"
+            onClick={() => setTasksOpen(true)}
+            aria-label="Channel tasks"
+            title="Tasks"
+          >
+            <ListTodo className="h-4 w-4" />
+          </Button>
+        )}
       </header>
 
       <ScrollArea ref={scrollRef} className="flex-1">
