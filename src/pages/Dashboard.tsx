@@ -30,6 +30,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSite } from "@/contexts/SiteContext";
 import { LabourVsWasteCard } from "@/components/dashboard/LabourVsWasteCard";
+import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -598,6 +599,9 @@ const Dashboard = () => {
           </Card>
         </motion.div>
       )}
+
+      {/* My messenger tasks — only renders if module active and user has open tasks */}
+      <MyTasksWidget />
 
       {/* ============================================================
           THE PLAN — unified timeline of today's tasks + shift

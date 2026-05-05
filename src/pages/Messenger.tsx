@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChannelList } from "@/components/messenger/ChannelList";
@@ -20,6 +21,19 @@ export default function Messenger() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [showNewDM, setShowNewDM] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Honour ?channel=<id> query param (e.g. from My Tasks widget)
+  useEffect(() => {
+    const wanted = searchParams.get("channel");
+    if (wanted && channels.some((c) => c.id === wanted) && wanted !== selectedId) {
+      setSelectedId(wanted);
+      // Clear the param so it doesn't override later navigation
+      const next = new URLSearchParams(searchParams);
+      next.delete("channel");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, channels, selectedId, setSearchParams]);
 
   // Auto-select first channel on desktop
   useEffect(() => {

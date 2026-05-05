@@ -1,11 +1,12 @@
-import { useEffect, useRef } from "react";
-import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChannelMessages, markChannelRead, type MessengerChannel, type MessengerMessage } from "@/hooks/useMessenger";
 import { useAuth } from "@/contexts/AuthContext";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
+import { TasksPanel } from "./TasksPanel";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
@@ -19,6 +20,7 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
   const { messages, loading, send, editMessage, deleteMessage } = useChannelMessages(channel.id);
   const scrollRef = useRef<HTMLDivElement>(null);
   const userId = appUser?.id;
+  const [tasksOpen, setTasksOpen] = useState(false);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -61,6 +63,18 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
           <h2 className="font-semibold text-sm truncate">{channel.name}</h2>
           {channel.description && <p className="text-[11px] text-muted-foreground truncate">{channel.description}</p>}
         </div>
+        {channel.type !== "system" && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 shrink-0"
+            onClick={() => setTasksOpen(true)}
+            aria-label="Channel tasks"
+            title="Tasks"
+          >
+            <ListTodo className="h-4 w-4" />
+          </Button>
+        )}
       </header>
 
       <ScrollArea ref={scrollRef} className="flex-1">
@@ -97,6 +111,8 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
         disabled={isSystemReadOnly}
         onSend={async (content, atts) => { await send(content, atts); }}
       />
+
+      <TasksPanel open={tasksOpen} onOpenChange={setTasksOpen} channelId={channel.id} />
     </div>
   );
 }
