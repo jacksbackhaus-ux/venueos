@@ -1,10 +1,9 @@
-import { Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { FullScreenLoader } from "@/components/FullScreenLoader";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 
 /**
  * Gate for /staff/*. Allows ONLY users in internal_staff_roles.
