@@ -259,7 +259,7 @@ export function useChannelMessages(channelId: string | null) {
     if (error) {
       setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, _failed: true } : m)));
     } else if (data) {
-      setMessages((prev) => prev.map((m) => (m.id === tempId ? (data as MessengerMessage) : m)));
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? (data as unknown as MessengerMessage) : m)));
     }
   }, [channelId, appUser]);
 
