@@ -101,16 +101,14 @@ export function useChannelPins(channelId: string | null) {
   refRefresh.current = refresh;
   useEffect(() => {
     if (!channelId) return;
-    const ch = supabase
-      .channel(`msgr-pins-${channelId}`)
-      .on(
-        "postgres_changes" as never,
-        { event: "*", schema: "public", table: "messenger_pins", filter: `channel_id=eq.${channelId}` },
-        () => {
-          void refRefresh.current();
-        }
-      )
-      .subscribe();
+    const ch = supabase.channel(`msgr-pins-${channelId}-${Math.random().toString(36).slice(2, 8)}`);
+    ch.on(
+      "postgres_changes" as never,
+      { event: "*", schema: "public", table: "messenger_pins", filter: `channel_id=eq.${channelId}` },
+      () => {
+        void refRefresh.current();
+      }
+    ).subscribe();
     return () => {
       void supabase.removeChannel(ch);
     };
@@ -160,16 +158,14 @@ export function useChannelAcks(channelId: string | null, messageIds: string[]) {
   refRefresh.current = refresh;
   useEffect(() => {
     if (!channelId) return;
-    const ch = supabase
-      .channel(`msgr-acks-${channelId}`)
-      .on(
-        "postgres_changes" as never,
-        { event: "*", schema: "public", table: "messenger_acknowledgements" },
-        () => {
-          void refRefresh.current();
-        }
-      )
-      .subscribe();
+    const ch = supabase.channel(`msgr-acks-${channelId}-${Math.random().toString(36).slice(2, 8)}`);
+    ch.on(
+      "postgres_changes" as never,
+      { event: "*", schema: "public", table: "messenger_acknowledgements" },
+      () => {
+        void refRefresh.current();
+      }
+    ).subscribe();
     return () => {
       void supabase.removeChannel(ch);
     };
