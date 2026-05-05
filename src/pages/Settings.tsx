@@ -586,7 +586,7 @@ const Settings = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="temperature" className="text-xs gap-1"><Thermometer className="h-3 w-3" /> Temps</TabsTrigger>
           <TabsTrigger value="cleaning" className="text-xs gap-1"><SprayCan className="h-3 w-3" /> Cleaning</TabsTrigger>
@@ -597,8 +597,13 @@ const Settings = () => {
           <TabsTrigger value="users" className="text-xs gap-1"><Users className="h-3 w-3" /> Users</TabsTrigger>
           <TabsTrigger value="messenger" className="text-xs gap-1"><MessageSquare className="h-3 w-3" /> Messenger</TabsTrigger>
           <TabsTrigger value="site" className="text-xs gap-1"><Building2 className="h-3 w-3" /> Site</TabsTrigger>
+          <TabsTrigger value="sites" className="text-xs gap-1"><Plus className="h-3 w-3" /> Sites</TabsTrigger>
           <TabsTrigger value="account" className="text-xs gap-1"><Shield className="h-3 w-3" /> Account</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sites" className="mt-4 space-y-4">
+          <SitesBillingSection />
+        </TabsContent>
 
         {orgRole?.org_role === 'org_owner' && (
           <TabsContent value="modules" className="mt-4 space-y-4">
