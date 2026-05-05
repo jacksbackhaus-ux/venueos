@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin, BellRing } from "lucide-react";
+import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin, BellRing, ClipboardCheck, Thermometer, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -307,9 +307,83 @@ function Attachment({ attachment, onOpenImage }: {
 }
 
 function SystemCard({ message }: { message: MessengerMessage }) {
-  const p = message.system_payload as { kind?: string; user_name?: string; shift_date?: string; start_time?: string; end_time?: string; short_notice?: boolean } | null;
-  const kind = p?.kind || "system";
+  const p = (message.system_payload || {}) as Record<string, any>;
+  const kind = (p.kind as string) || (message.message_type === "system" ? "system" : "shift");
 
+  // ── Shift Handover ───────────────────────────────────────────────────────
+  if (kind === "shift_handover") {
+    return (
+      <div className="flex justify-center">
+        <div className="max-w-md w-full rounded-xl border-2 border-primary/40 bg-primary/5 my-1 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 border-b border-primary/20">
+            <ClipboardCheck className="h-4 w-4 text-primary" />
+            <span className="text-xs font-bold uppercase tracking-wide text-primary">Shift Handover</span>
+            <span className="ml-auto text-[11px] text-muted-foreground">{formatTime(message.created_at)}</span>
+          </div>
+          <div className="px-3 py-2.5 space-y-2 text-sm">
+            <p className="text-[11px] text-muted-foreground">By {p.handover_by_name || "Unknown"}</p>
+            <HandoverField label="Summary" value={p.summary} required />
+            {p.issues && <HandoverField label="Issues / incidents" value={p.issues} />}
+            <HandoverField label="Fridges & freezers" value={p.fridge_status_label} />
+            {p.food_prep && <HandoverField label="Food prep completed" value={p.food_prep} />}
+            {p.outstanding_tasks && <HandoverField label="Outstanding tasks" value={p.outstanding_tasks} />}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Temperature breach ──────────────────────────────────────────────────
+  if (kind === "temp_breach") {
+    return (
+      <div className="flex justify-center">
+        <div className="max-w-md w-full rounded-xl border-2 border-destructive/40 bg-destructive/5 my-1 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 bg-destructive/10 border-b border-destructive/20">
+            <Thermometer className="h-4 w-4 text-destructive" />
+            <span className="text-xs font-bold uppercase tracking-wide text-destructive">Temperature Breach</span>
+            <span className="ml-auto text-[11px] text-muted-foreground">{formatTime(message.created_at)}</span>
+          </div>
+          <div className="px-3 py-2.5 space-y-1.5 text-sm">
+            <p className="font-medium">{p.unit_name || p.food_item || "Unit"}</p>
+            <p className="text-sm">
+              Recorded <span className="font-semibold text-destructive">{p.value}°C</span>
+              {p.min_temp !== null && p.max_temp !== null && p.min_temp !== undefined && (
+                <span className="text-muted-foreground"> · acceptable {p.min_temp}°C to {p.max_temp}°C</span>
+              )}
+            </p>
+            <p className="text-[12px]">
+              <span className="text-muted-foreground">Corrective action: </span>
+              <span>{p.corrective_action || "None recorded"}</span>
+            </p>
+            {p.logged_by_name && <p className="text-[11px] text-muted-foreground">Logged by {p.logged_by_name}</p>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Delivery rejected ───────────────────────────────────────────────────
+  if (kind === "delivery_rejected") {
+    return (
+      <div className="flex justify-center">
+        <div className="max-w-md w-full rounded-xl border-2 border-warning/40 bg-warning/5 my-1 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border-b border-warning/20">
+            <Truck className="h-4 w-4 text-warning" />
+            <span className="text-xs font-bold uppercase tracking-wide text-warning">Delivery Rejected</span>
+            <span className="ml-auto text-[11px] text-muted-foreground">{formatTime(message.created_at)}</span>
+          </div>
+          <div className="px-3 py-2.5 space-y-1.5 text-sm">
+            <p className="font-medium">{p.supplier_name || "Unknown supplier"}</p>
+            {p.items && <p className="text-[12px]"><span className="text-muted-foreground">Items: </span>{p.items}</p>}
+            <p className="text-[12px]"><span className="text-muted-foreground">Reason: </span>{p.reason}</p>
+            {p.logged_by_name && <p className="text-[11px] text-muted-foreground">Logged by {p.logged_by_name}</p>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Default (existing shift cards) ──────────────────────────────────────
   const colour =
     kind === "shift_cancelled" ? "border-destructive/40 bg-destructive/5"
       : kind === "shift_assigned" ? "border-success/40 bg-success/5"
@@ -332,6 +406,17 @@ function SystemCard({ message }: { message: MessengerMessage }) {
         </div>
         <p className="text-[10px] text-muted-foreground text-right mt-1">{formatTime(message.created_at)}</p>
       </div>
+    </div>
+  );
+}
+
+function HandoverField({ label, value, required }: { label: string; value: any; required?: boolean }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}{required && <span className="text-destructive ml-0.5">*</span>}
+      </p>
+      <p className="text-sm whitespace-pre-wrap">{value || "—"}</p>
     </div>
   );
 }

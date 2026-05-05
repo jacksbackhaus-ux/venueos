@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle, ListTodo, Pin, ChevronRight } from "lucide-react";
+import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle, ListTodo, Pin, ChevronRight, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChannelMessages, markChannelRead, type MessengerChannel, type MessengerMessage } from "@/hooks/useMessenger";
@@ -8,6 +8,7 @@ import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { TasksPanel } from "./TasksPanel";
 import { PinnedPanel } from "./PinnedPanel";
+import { HandoverDialog } from "./HandoverDialog";
 import { useChannelPins } from "@/hooks/useMessengerPinsAcks";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,7 +25,10 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
   const userId = appUser?.id;
   const [tasksOpen, setTasksOpen] = useState(false);
   const [pinsOpen, setPinsOpen] = useState(false);
+  const [handoverOpen, setHandoverOpen] = useState(false);
   const { pins } = useChannelPins(channel.id);
+
+  const isMainSiteChannel = channel.is_system && channel.name === "whole-site";
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -67,6 +71,18 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
           <h2 className="font-semibold text-sm truncate">{channel.name}</h2>
           {channel.description && <p className="text-[11px] text-muted-foreground truncate">{channel.description}</p>}
         </div>
+        {isMainSiteChannel && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 shrink-0 gap-1.5"
+            onClick={() => setHandoverOpen(true)}
+            title="Post shift handover"
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            <span className="hidden sm:inline text-xs">Handover</span>
+          </Button>
+        )}
         {channel.type !== "system" && (
           <Button
             size="icon"
@@ -136,6 +152,9 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
 
       <TasksPanel open={tasksOpen} onOpenChange={setTasksOpen} channelId={channel.id} />
       <PinnedPanel open={pinsOpen} onOpenChange={setPinsOpen} channelId={channel.id} />
+      {isMainSiteChannel && (
+        <HandoverDialog open={handoverOpen} onOpenChange={setHandoverOpen} channelId={channel.id} siteId={channel.site_id} />
+      )}
     </div>
   );
 }
