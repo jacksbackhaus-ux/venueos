@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin } from "lucide-react";
+import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -15,6 +15,8 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { CreateTaskDialog } from "./CreateTaskDialog";
 import { pinMessage } from "@/hooks/useMessengerTasks";
+import { setMessageRequiresAck } from "@/hooks/useMessengerPinsAcks";
+import { AckStrip } from "./AckStrip";
 import { toast } from "sonner";
 
 interface Props {
