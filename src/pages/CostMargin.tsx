@@ -621,9 +621,7 @@ function LineRow({
     quantity: Number(qty) || 0,
     yield_percent_override: yieldPct === "" ? null : Number(yieldPct),
   };
-  // Calc inline (mirror tmeLineCost)
-  const importInline = require("@/lib/trueMargin");
-  const cost = importInline.tmeLineCost(previewLine, ctx);
+  const cost = tmeLineCost(previewLine, ctx);
 
   return (
     <TableRow>
