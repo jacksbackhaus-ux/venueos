@@ -181,7 +181,7 @@ export function useChannelMessages(channelId: string | null) {
       .eq("channel_id", channelId)
       .order("created_at", { ascending: true })
       .limit(500);
-    if (!error) setMessages((data ?? []) as MessengerMessage[]);
+    if (!error) setMessages((data ?? []) as unknown as MessengerMessage[]);
     setLoading(false);
   }, [channelId]);
 
