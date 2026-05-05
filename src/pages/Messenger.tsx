@@ -23,6 +23,18 @@ export default function Messenger() {
   const [showNewDM, setShowNewDM] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Honour ?channel=<id> query param (e.g. from My Tasks widget)
+  useEffect(() => {
+    const wanted = searchParams.get("channel");
+    if (wanted && channels.some((c) => c.id === wanted) && wanted !== selectedId) {
+      setSelectedId(wanted);
+      // Clear the param so it doesn't override later navigation
+      const next = new URLSearchParams(searchParams);
+      next.delete("channel");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, channels, selectedId, setSearchParams]);
+
   // Auto-select first channel on desktop
   useEffect(() => {
     if (
