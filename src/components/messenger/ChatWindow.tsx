@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle, ListTodo } from "lucide-react";
+import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle, ListTodo, Pin, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChannelMessages, markChannelRead, type MessengerChannel, type MessengerMessage } from "@/hooks/useMessenger";
@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { TasksPanel } from "./TasksPanel";
+import { PinnedPanel } from "./PinnedPanel";
+import { useChannelPins } from "@/hooks/useMessengerPinsAcks";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
@@ -21,6 +23,8 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const userId = appUser?.id;
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [pinsOpen, setPinsOpen] = useState(false);
+  const { pins } = useChannelPins(channel.id);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -77,6 +81,24 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
         )}
       </header>
 
+      {pins.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setPinsOpen(true)}
+          className="flex items-center gap-2 w-full px-3 py-2 border-b border-border bg-muted/30 hover:bg-muted/50 text-left transition-colors"
+          aria-label="View pinned messages"
+        >
+          <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="text-xs font-medium text-foreground">
+            {pins.length} pinned message{pins.length === 1 ? "" : "s"}
+          </span>
+          <span className="text-[11px] text-muted-foreground truncate flex-1 min-w-0">
+            · {pins[0].message_content?.slice(0, 80) || "(no text)"}
+          </span>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </button>
+      )}
+
       <ScrollArea ref={scrollRef} className="flex-1">
         <div className="px-3 py-3 space-y-2">
           {loading && <p className="text-xs text-muted-foreground text-center py-8">Loading…</p>}
@@ -113,6 +135,7 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
       />
 
       <TasksPanel open={tasksOpen} onOpenChange={setTasksOpen} channelId={channel.id} />
+      <PinnedPanel open={pinsOpen} onOpenChange={setPinsOpen} channelId={channel.id} />
     </div>
   );
 }

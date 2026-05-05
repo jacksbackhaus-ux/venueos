@@ -37,6 +37,7 @@ export interface MessengerMessage {
   edited_at: string | null;
   deleted_at: string | null;
   created_at: string;
+  requires_ack?: boolean;
   // Local-only:
   _optimistic?: boolean;
   _failed?: boolean;
@@ -181,7 +182,7 @@ export function useChannelMessages(channelId: string | null) {
       .eq("channel_id", channelId)
       .order("created_at", { ascending: true })
       .limit(500);
-    if (!error) setMessages((data ?? []) as MessengerMessage[]);
+    if (!error) setMessages((data ?? []) as unknown as MessengerMessage[]);
     setLoading(false);
   }, [channelId]);
 
@@ -259,7 +260,7 @@ export function useChannelMessages(channelId: string | null) {
     if (error) {
       setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, _failed: true } : m)));
     } else if (data) {
-      setMessages((prev) => prev.map((m) => (m.id === tempId ? (data as MessengerMessage) : m)));
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? (data as unknown as MessengerMessage) : m)));
     }
   }, [channelId, appUser]);
 

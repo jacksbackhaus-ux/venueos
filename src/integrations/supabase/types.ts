@@ -1442,6 +1442,7 @@ export type Database = {
           id: string
           is_edited: boolean
           message_type: Database["public"]["Enums"]["messenger_message_type"]
+          requires_ack: boolean
           sender_id: string | null
           sender_name_snapshot: string | null
           site_id: string
@@ -1457,6 +1458,7 @@ export type Database = {
           id?: string
           is_edited?: boolean
           message_type?: Database["public"]["Enums"]["messenger_message_type"]
+          requires_ack?: boolean
           sender_id?: string | null
           sender_name_snapshot?: string | null
           site_id: string
@@ -1472,6 +1474,7 @@ export type Database = {
           id?: string
           is_edited?: boolean
           message_type?: Database["public"]["Enums"]["messenger_message_type"]
+          requires_ack?: boolean
           sender_id?: string | null
           sender_name_snapshot?: string | null
           site_id?: string

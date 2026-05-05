@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin } from "lucide-react";
+import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -15,6 +15,8 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { CreateTaskDialog } from "./CreateTaskDialog";
 import { pinMessage } from "@/hooks/useMessengerTasks";
+import { setMessageRequiresAck } from "@/hooks/useMessengerPinsAcks";
+import { AckStrip } from "./AckStrip";
 import { toast } from "sonner";
 
 interface Props {
@@ -49,6 +51,20 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
     else toast.success("Message pinned");
   };
 
+  const handleRequestAck = async () => {
+    const { error } = await setMessageRequiresAck(message.id, true);
+    if (error) toast.error(error.message ?? "Failed to request acknowledgement");
+    else toast.success("Acknowledgement requested");
+  };
+
+  const handleClearAck = async () => {
+    const { error } = await setMessageRequiresAck(message.id, false);
+    if (error) toast.error(error.message ?? "Failed to clear request");
+    else toast.success("Acknowledgement cleared");
+  };
+
+  const requiresAck = !!message.requires_ack && !message.deleted_at;
+
   // System / shift card rendering
   if (message.message_type === "shift_card" || message.message_type === "system") {
     return <SystemCard message={message} />;
@@ -79,7 +95,8 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
             ? "bg-primary text-primary-foreground rounded-br-sm"
             : "bg-muted text-foreground rounded-bl-sm",
           message._optimistic && "opacity-70",
-          message._failed && "ring-2 ring-destructive"
+          message._failed && "ring-2 ring-destructive",
+          requiresAck && "ring-2 ring-warning/60 shadow-[0_0_0_4px_hsl(var(--warning)/0.08)]"
         )}>
           {isDeleted ? (
             <p className="italic opacity-70">This message was deleted</p>
@@ -140,6 +157,15 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
                     <DropdownMenuItem onClick={handlePin}>
                       <Pin className="h-3.5 w-3.5 mr-2" /> Pin message
                     </DropdownMenuItem>
+                    {requiresAck ? (
+                      <DropdownMenuItem onClick={handleClearAck}>
+                        <BellRing className="h-3.5 w-3.5 mr-2" /> Clear ack request
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={handleRequestAck}>
+                        <BellRing className="h-3.5 w-3.5 mr-2" /> Request acknowledgement
+                      </DropdownMenuItem>
+                    )}
                     {isOwn && <DropdownMenuSeparator />}
                   </>
                 )}
@@ -157,6 +183,17 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
             </DropdownMenu>
           )}
         </div>
+        {requiresAck && message.channel_id && (
+          <div className="w-full max-w-[420px]">
+            <AckStrip
+              messageId={message.id}
+              channelId={message.channel_id}
+              siteId={message.site_id}
+              senderId={message.sender_id}
+              isOwn={isOwn}
+            />
+          </div>
+        )}
         <ReceiptRow message={message} isOwn={isOwn} readReceipts={readReceipts} />
       </div>
 
