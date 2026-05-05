@@ -170,9 +170,14 @@ export interface CreateTaskInput {
   priority?: TaskPriority;
 }
 
+// Cast supabase to a loose client because the auto-generated types lag behind
+// the new tables introduced in this migration.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sb: any = supabase;
+
 export async function createMessengerTask(input: CreateTaskInput) {
-  const { data, error } = await supabase
-    .from("messenger_tasks" as never)
+  const { data, error } = await sb
+    .from("messenger_tasks")
     .insert({
       ...input,
       status: "open",
@@ -187,8 +192,8 @@ export async function updateTaskStatus(id: string, status: TaskStatus) {
   const patch: Record<string, unknown> = { status };
   if (status === "done") patch.completed_at = new Date().toISOString();
   else patch.completed_at = null;
-  const { error } = await supabase
-    .from("messenger_tasks" as never)
+  const { error } = await sb
+    .from("messenger_tasks")
     .update(patch)
     .eq("id", id);
   return { error };
@@ -200,6 +205,6 @@ export async function pinMessage(input: {
   message_id: string;
   pinned_by: string;
 }) {
-  const { error } = await supabase.from("messenger_pins" as never).insert(input);
+  const { error } = await sb.from("messenger_pins").insert(input);
   return { error };
 }
