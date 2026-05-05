@@ -3340,6 +3340,38 @@ export type Database = {
           },
         ]
       }
+      support_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          note: string
+          organisation_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          note: string
+          organisation_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_notes_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       temp_logs: {
         Row: {
           corrective_action: string | null
