@@ -84,10 +84,10 @@ serve(async (req) => {
     const stripePrice = priceList.data[0];
     const qty = Math.max(1, Number(siteQuantity) || 1);
 
-    // Multi-site discount: 15% off when > 1 site.
-    // Apply as a coupon to the entire subscription (simplest), only if >1 site.
+    // Multi-site discount: 15% off when > 1 site, EXCEPT when adding sites
+    // from the Settings → Sites flow (full per-site price by product decision).
     const discounts: Array<{ coupon: string }> = [];
-    if (qty > 1) {
+    if (qty > 1 && !addSiteMode) {
       // Reuse / create a coupon. Stripe allows GET by id; we use a deterministic id.
       const couponId = "venueos_multisite_15";
       try {
