@@ -44,7 +44,7 @@ export default function Auth() {
   );
 }
 
-const PasswordInput = forwardRef<HTMLInputElement, {
+export const PasswordInput = forwardRef<HTMLInputElement, {
   id: string; placeholder: string; value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; required?: boolean;
 }>(({ id, placeholder, value, onChange, required = true }, ref) => {
