@@ -37,6 +37,7 @@ export interface MessengerMessage {
   edited_at: string | null;
   deleted_at: string | null;
   created_at: string;
+  requires_ack?: boolean;
   // Local-only:
   _optimistic?: boolean;
   _failed?: boolean;
