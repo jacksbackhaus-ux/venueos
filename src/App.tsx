@@ -48,6 +48,7 @@ import StaffOpsLog from "./pages/staff/StaffOpsLog";
 import StaffMigrations from "./pages/staff/StaffMigrations";
 import StaffAccess from "./pages/staff/StaffAccess";
 import { StaffGuard } from "./components/staff/StaffGuard";
+import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { StaffLayout } from "./components/staff/StaffLayout";
 import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
