@@ -18,7 +18,7 @@ import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { toast } from "@/hooks/use-toast";
 import { buildRange, fetchReportData, type DateRangeKey, type ReportData } from "@/lib/reports";
 import { generateInspectionPackPdf } from "@/lib/reportPdf";
-import { generateInspectionPackExcel } from "@/lib/reportExcel";
+import { generateInspectionPackExcel } from "@/lib/ReportExcel";
 import { format } from "date-fns";
 import { Calculator } from "lucide-react";
 
