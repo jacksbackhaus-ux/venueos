@@ -81,6 +81,24 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
         )}
       </header>
 
+      {pins.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setPinsOpen(true)}
+          className="flex items-center gap-2 w-full px-3 py-2 border-b border-border bg-muted/30 hover:bg-muted/50 text-left transition-colors"
+          aria-label="View pinned messages"
+        >
+          <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="text-xs font-medium text-foreground">
+            {pins.length} pinned message{pins.length === 1 ? "" : "s"}
+          </span>
+          <span className="text-[11px] text-muted-foreground truncate flex-1 min-w-0">
+            · {pins[0].message_content?.slice(0, 80) || "(no text)"}
+          </span>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </button>
+      )}
+
       <ScrollArea ref={scrollRef} className="flex-1">
         <div className="px-3 py-3 space-y-2">
           {loading && <p className="text-xs text-muted-foreground text-center py-8">Loading…</p>}
