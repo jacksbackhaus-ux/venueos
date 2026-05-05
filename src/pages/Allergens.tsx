@@ -311,26 +311,15 @@ const Allergens = () => {
             <div><Label className="text-sm">Name</Label><Input placeholder="e.g. Plain flour" value={ingForm.name} onChange={(e) => setIngForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label className="text-sm">Supplier (optional)</Label><Input placeholder="e.g. Allinsons" value={ingForm.supplier_name} onChange={(e) => setIngForm(f => ({ ...f, supplier_name: e.target.value }))} /></div>
 
-            <div className="rounded-md border p-3 space-y-2 bg-muted/30">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <Label className="text-sm">Premade blend / paste</Label>
-                  <p className="text-xs text-muted-foreground">Turn on for compound ingredients (e.g. tomato paste, curry paste, pesto) so the full sub-ingredient list appears on PPDS labels.</p>
-                </div>
-                <Switch checked={ingForm.is_compound} onCheckedChange={(v) => setIngForm(f => ({ ...f, is_compound: v }))} />
-              </div>
-              {ingForm.is_compound && (
-                <div>
-                  <Label className="text-sm">Full ingredients list (from supplier label)</Label>
-                  <Textarea
-                    rows={3}
-                    placeholder="e.g. Tomato (60%), sugar, salt, basil, citric acid, sunflower oil"
-                    value={ingForm.composition_text}
-                    onChange={(e) => setIngForm(f => ({ ...f, composition_text: e.target.value }))}
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-1">Copy this verbatim from the supplier's pack. It will be shown in parentheses after this ingredient on PPDS labels (FIC compliant).</p>
-                </div>
-              )}
+            <div>
+              <Label className="text-sm">Full ingredients list (optional)</Label>
+              <Textarea
+                rows={3}
+                placeholder="e.g. Tomato (60%), sugar, salt, basil, citric acid"
+                value={ingForm.composition_text}
+                onChange={(e) => setIngForm(f => ({ ...f, composition_text: e.target.value }))}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">If this ingredient has its own sub-ingredients (e.g. from the supplier's pack), list them here. They'll appear in parentheses after this ingredient on PPDS labels.</p>
             </div>
 
             <div>
