@@ -60,13 +60,15 @@ const Allergens = () => {
       const { error } = await supabase.from("ingredients").insert({
         site_id: siteId, organisation_id: organisationId,
         name: ingForm.name, supplier_name: ingForm.supplier_name || null, allergens: ingForm.allergens,
+        is_compound: ingForm.is_compound,
+        composition_text: ingForm.is_compound ? (ingForm.composition_text.trim() || null) : null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Ingredient added");
       setShowIngDialog(false);
-      setIngForm({ name: "", supplier_name: "", allergens: [] });
+      setIngForm({ name: "", supplier_name: "", allergens: [], is_compound: false, composition_text: "" });
       qc.invalidateQueries({ queryKey: ["ingredients", siteId] });
       qc.invalidateQueries({ queryKey: ["recipes", siteId] });
     },
