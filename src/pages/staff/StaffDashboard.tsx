@@ -38,6 +38,31 @@ export default function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [assigned, setAssigned] = useState<AssignedOrg[]>([]);
   const [assignedLoading, setAssignedLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+
+  // Distinct access levels present in the user's assigned list (for the filter dropdown).
+  const availableLevels = useMemo(() => {
+    const set = new Set(assigned.map(o => (o.is_super_admin_view ? "super_admin" : o.access_level)));
+    return Array.from(set).sort();
+  }, [assigned]);
+
+  // Filter by name / slug / ID and by access level.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return assigned.filter(o => {
+      if (levelFilter !== "all") {
+        const lvl = o.is_super_admin_view ? "super_admin" : o.access_level;
+        if (lvl !== levelFilter) return false;
+      }
+      if (!q) return true;
+      return (
+        o.name.toLowerCase().includes(q) ||
+        (o.slug ?? "").toLowerCase().includes(q) ||
+        o.organisation_id.toLowerCase().includes(q)
+      );
+    });
+  }, [assigned, query, levelFilter]);
 
   useEffect(() => {
     void (async () => {
