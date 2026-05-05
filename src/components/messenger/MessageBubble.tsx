@@ -157,6 +157,15 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
                     <DropdownMenuItem onClick={handlePin}>
                       <Pin className="h-3.5 w-3.5 mr-2" /> Pin message
                     </DropdownMenuItem>
+                    {requiresAck ? (
+                      <DropdownMenuItem onClick={handleClearAck}>
+                        <BellRing className="h-3.5 w-3.5 mr-2" /> Clear ack request
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={handleRequestAck}>
+                        <BellRing className="h-3.5 w-3.5 mr-2" /> Request acknowledgement
+                      </DropdownMenuItem>
+                    )}
                     {isOwn && <DropdownMenuSeparator />}
                   </>
                 )}
