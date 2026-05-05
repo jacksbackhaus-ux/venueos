@@ -20,17 +20,30 @@ interface Stats {
   newSignups30d: number;
 }
 
+interface AssignedOrg {
+  organisation_id: string;
+  name: string;
+  slug: string | null;
+  access_level: string;
+  is_super_admin_view: boolean;
+}
+
 export default function StaffDashboard() {
   const { appUser, user } = useAuth();
   const { isSuperAdmin } = useSuperAdmin();
   const { roles } = useInternalStaff();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [assigned, setAssigned] = useState<AssignedOrg[]>([]);
+  const [assignedLoading, setAssignedLoading] = useState(true);
 
   useEffect(() => {
     void (async () => {
-      // Stats only available to super admins (RLS on subscriptions/organisations).
-      // Non-super-admin staff see a slimmed-down dashboard.
+      // Always fetch assigned orgs — this is the staff home view.
+      const { data: orgs, error: orgsErr } = await sb.rpc("staff_list_assigned_orgs");
+      if (!orgsErr) setAssigned((orgs ?? []) as AssignedOrg[]);
+      setAssignedLoading(false);
+
       if (!isSuperAdmin) {
         setLoading(false);
         return;
