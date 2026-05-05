@@ -55,6 +55,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ModuleManagementSection } from "@/components/ModuleManagementSection";
 import { MessengerSettingsSection } from "@/components/messenger/MessengerSettingsSection";
+import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
 import { ToggleLeft, MessageSquare } from "lucide-react";
 
 // ─── Temperature Units ───
