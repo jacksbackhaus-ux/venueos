@@ -1,11 +1,12 @@
-import { useEffect, useRef } from "react";
-import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Hash, Lock, Bell, Users, MessageCircle, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChannelMessages, markChannelRead, type MessengerChannel, type MessengerMessage } from "@/hooks/useMessenger";
 import { useAuth } from "@/contexts/AuthContext";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
+import { TasksPanel } from "./TasksPanel";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
