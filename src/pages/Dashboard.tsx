@@ -600,6 +600,9 @@ const Dashboard = () => {
         </motion.div>
       )}
 
+      {/* My messenger tasks — only renders if module active and user has open tasks */}
+      <MyTasksWidget />
+
       {/* ============================================================
           THE PLAN — unified timeline of today's tasks + shift
           ============================================================ */}
