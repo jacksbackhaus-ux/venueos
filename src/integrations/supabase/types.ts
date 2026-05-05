@@ -445,6 +445,7 @@ export type Database = {
       day_sheet_entries: {
         Row: {
           completed_at: string | null
+          completed_by_name: string | null
           completed_by_user_id: string | null
           created_at: string
           day_sheet_id: string
@@ -455,6 +456,7 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
+          completed_by_name?: string | null
           completed_by_user_id?: string | null
           created_at?: string
           day_sheet_id: string
@@ -465,6 +467,7 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
+          completed_by_name?: string | null
           completed_by_user_id?: string | null
           created_at?: string
           day_sheet_id?: string
@@ -589,6 +592,7 @@ export type Database = {
           id: string
           locked: boolean
           locked_at: string | null
+          locked_by_name: string | null
           locked_by_user_id: string | null
           manager_note: string | null
           organisation_id: string
@@ -604,6 +608,7 @@ export type Database = {
           id?: string
           locked?: boolean
           locked_at?: string | null
+          locked_by_name?: string | null
           locked_by_user_id?: string | null
           manager_note?: string | null
           organisation_id: string
@@ -619,6 +624,7 @@ export type Database = {
           id?: string
           locked?: boolean
           locked_at?: string | null
+          locked_by_name?: string | null
           locked_by_user_id?: string | null
           manager_note?: string | null
           organisation_id?: string
