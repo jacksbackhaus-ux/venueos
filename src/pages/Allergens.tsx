@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +28,7 @@ const Allergens = () => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
 
   const [showIngDialog, setShowIngDialog] = useState(false);
-  const [ingForm, setIngForm] = useState({ name: "", supplier_name: "", allergens: [] as string[] });
+  const [ingForm, setIngForm] = useState({ name: "", supplier_name: "", allergens: [] as string[], is_compound: false, composition_text: "" });
 
   const [showRecipeDialog, setShowRecipeDialog] = useState(false);
   const [recipeForm, setRecipeForm] = useState({
@@ -58,13 +60,15 @@ const Allergens = () => {
       const { error } = await supabase.from("ingredients").insert({
         site_id: siteId, organisation_id: organisationId,
         name: ingForm.name, supplier_name: ingForm.supplier_name || null, allergens: ingForm.allergens,
+        is_compound: ingForm.is_compound,
+        composition_text: ingForm.is_compound ? (ingForm.composition_text.trim() || null) : null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Ingredient added");
       setShowIngDialog(false);
-      setIngForm({ name: "", supplier_name: "", allergens: [] });
+      setIngForm({ name: "", supplier_name: "", allergens: [], is_compound: false, composition_text: "" });
       qc.invalidateQueries({ queryKey: ["ingredients", siteId] });
       qc.invalidateQueries({ queryKey: ["recipes", siteId] });
     },
@@ -216,17 +220,25 @@ const Allergens = () => {
           <TabsContent value="ingredients" className="mt-4">
             <Card><CardContent className="p-0"><div className="divide-y">
               {ingredients.map((ing: any) => (
-                <div key={ing.id} className="flex items-center justify-between p-3 gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{ing.name}</p>
-                    {ing.supplier_name && <p className="text-xs text-muted-foreground truncate">{ing.supplier_name}</p>}
+                <div key={ing.id} className="p-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                        {ing.name}
+                        {ing.is_compound && <Badge variant="secondary" className="text-[10px]">Blend</Badge>}
+                      </p>
+                      {ing.supplier_name && <p className="text-xs text-muted-foreground truncate">{ing.supplier_name}</p>}
+                    </div>
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      {(ing.allergens || []).length > 0 ? (ing.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>) : <Badge variant="outline" className="text-[10px] text-success border-success/30">None</Badge>}
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-breach hover:text-breach h-7 w-7 p-0 shrink-0" onClick={() => deleteIngredient.mutate(ing.id)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <div className="flex flex-wrap gap-1 justify-end">
-                    {(ing.allergens || []).length > 0 ? (ing.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>) : <Badge variant="outline" className="text-[10px] text-success border-success/30">None</Badge>}
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-breach hover:text-breach h-7 w-7 p-0 shrink-0" onClick={() => deleteIngredient.mutate(ing.id)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  {ing.is_compound && ing.composition_text && (
+                    <p className="text-[11px] text-muted-foreground italic pl-1">contains: {ing.composition_text}</p>
+                  )}
                 </div>
               ))}
             </div></CardContent></Card>
@@ -236,24 +248,59 @@ const Allergens = () => {
 
       {/* Recipe details dialog */}
       <Dialog open={!!selectedRecipe} onOpenChange={open => !open && setSelectedRecipeId(null)}>
-        <DialogContent className="sm:max-w-lg">
-          {selectedRecipe && (<>
-            <DialogHeader><DialogTitle className="font-heading">{selectedRecipe.name}</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div><h4 className="text-sm font-semibold mb-2">Ingredients</h4>
-                <div className="space-y-1">{(selectedRecipe.recipe_ingredients || []).sort((a: any, b: any) => (b.weight || 0) - (a.weight || 0)).map((ri: any) => (
-                  <div key={ri.id} className="flex items-center justify-between text-sm py-1 border-b border-border/50">
-                    <div className="flex items-center gap-2 flex-wrap"><span>{ri.ingredients?.name}</span>{(ri.ingredients?.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>)}</div>
-                    {ri.weight && <span className="text-muted-foreground text-xs">{ri.weight}g</span>}
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          {selectedRecipe && (() => {
+            const sortedRis = (selectedRecipe.recipe_ingredients || [])
+              .slice()
+              .sort((a: any, b: any) => (b.weight || 0) - (a.weight || 0));
+            const ppdsLabel = sortedRis
+              .map((ri: any) => {
+                const name = ri.ingredients?.name || "";
+                const sub = ri.ingredients?.is_compound && ri.ingredients?.composition_text
+                  ? ` (${ri.ingredients.composition_text})`
+                  : "";
+                return `${name}${sub}`;
+              })
+              .filter(Boolean)
+              .join(", ");
+            return (<>
+              <DialogHeader><DialogTitle className="font-heading">{selectedRecipe.name}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><h4 className="text-sm font-semibold mb-2">Ingredients</h4>
+                  <div className="space-y-1">{sortedRis.map((ri: any) => (
+                    <div key={ri.id} className="text-sm py-1 border-b border-border/50">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span>{ri.ingredients?.name}</span>
+                          {ri.ingredients?.is_compound && <Badge variant="secondary" className="text-[10px]">Blend</Badge>}
+                          {(ri.ingredients?.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>)}
+                        </div>
+                        {ri.weight && <span className="text-muted-foreground text-xs shrink-0">{ri.weight}g</span>}
+                      </div>
+                      {ri.ingredients?.is_compound && ri.ingredients?.composition_text && (
+                        <p className="text-[11px] text-muted-foreground italic pl-1 mt-0.5">contains: {ri.ingredients.composition_text}</p>
+                      )}
+                    </div>
+                  ))}</div>
+                </div>
+
+                {(selectedRecipe.label_type || "ppds") === "ppds" && ppdsLabel && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> PPDS label preview</h4>
+                    <div className="rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+                      <span className="font-semibold">Ingredients:</span> {ppdsLabel}.
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">Sub-ingredients of premade blends are shown in parentheses, as required by FIC / Natasha's Law.</p>
                   </div>
-                ))}</div>
+                )}
+
+                <div><h4 className="text-sm font-semibold mb-2">Contains these allergens</h4>
+                  <div className="flex flex-wrap gap-1.5">{getRecipeAllergens(selectedRecipe).map(a => <Badge key={a} className="bg-breach/10 text-breach border-0">{a}</Badge>)}</div>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t"><Tag className="h-3 w-3" /> Label type: <Badge variant="secondary" className="text-[10px]">{(selectedRecipe.label_type || "ppds").toUpperCase()}</Badge></div>
               </div>
-              <div><h4 className="text-sm font-semibold mb-2">Contains these allergens</h4>
-                <div className="flex flex-wrap gap-1.5">{getRecipeAllergens(selectedRecipe).map(a => <Badge key={a} className="bg-breach/10 text-breach border-0">{a}</Badge>)}</div>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t"><Tag className="h-3 w-3" /> Label type: <Badge variant="secondary" className="text-[10px]">{(selectedRecipe.label_type || "ppds").toUpperCase()}</Badge></div>
-            </div>
-          </>)}
+            </>);
+          })()}
         </DialogContent>
       </Dialog>
 
@@ -264,6 +311,29 @@ const Allergens = () => {
           <div className="space-y-3">
             <div><Label className="text-sm">Name</Label><Input placeholder="e.g. Plain flour" value={ingForm.name} onChange={(e) => setIngForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label className="text-sm">Supplier (optional)</Label><Input placeholder="e.g. Allinsons" value={ingForm.supplier_name} onChange={(e) => setIngForm(f => ({ ...f, supplier_name: e.target.value }))} /></div>
+
+            <div className="rounded-md border p-3 space-y-2 bg-muted/30">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Label className="text-sm">Premade blend / paste</Label>
+                  <p className="text-xs text-muted-foreground">Turn on for compound ingredients (e.g. tomato paste, curry paste, pesto) so the full sub-ingredient list appears on PPDS labels.</p>
+                </div>
+                <Switch checked={ingForm.is_compound} onCheckedChange={(v) => setIngForm(f => ({ ...f, is_compound: v }))} />
+              </div>
+              {ingForm.is_compound && (
+                <div>
+                  <Label className="text-sm">Full ingredients list (from supplier label)</Label>
+                  <Textarea
+                    rows={3}
+                    placeholder="e.g. Tomato (60%), sugar, salt, basil, citric acid, sunflower oil"
+                    value={ingForm.composition_text}
+                    onChange={(e) => setIngForm(f => ({ ...f, composition_text: e.target.value }))}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">Copy this verbatim from the supplier's pack. It will be shown in parentheses after this ingredient on PPDS labels (FIC compliant).</p>
+                </div>
+              )}
+            </div>
+
             <div>
               <Label className="text-sm mb-2 block">Allergens contained</Label>
               <div className="grid grid-cols-2 gap-1.5">
