@@ -20,7 +20,7 @@ export default function Auth() {
         to="/staff-login"
         className="absolute top-4 right-4 text-xs text-primary hover:underline font-medium"
       >
-        MiseOS Staff →
+        Admin Login →
       </Link>
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
