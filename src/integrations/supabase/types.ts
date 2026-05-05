@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          performed_by: string
+          reason: string
+          target_organisation_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          performed_by: string
+          reason: string
+          target_organisation_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string
+          reason?: string
+          target_organisation_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       audit_trail: {
         Row: {
           action: string
@@ -1240,6 +1273,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      internal_staff_roles: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          reason: string
+          revoked_at: string | null
+          revoked_by: string | null
+          role: Database["public"]["Enums"]["internal_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          reason: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role: Database["public"]["Enums"]["internal_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role?: Database["public"]["Enums"]["internal_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       maintenance_logs: {
         Row: {
@@ -3293,27 +3362,42 @@ export type Database = {
       }
       super_admins: {
         Row: {
+          created_by: string | null
           email: string
+          expires_at: string | null
           granted_at: string
           granted_by: string | null
           id: string
           notes: string | null
+          reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
           user_id: string
         }
         Insert: {
+          created_by?: string | null
           email: string
+          expires_at?: string | null
           granted_at?: string
           granted_by?: string | null
           id?: string
           notes?: string | null
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           user_id: string
         }
         Update: {
+          created_by?: string | null
           email?: string
+          expires_at?: string | null
           granted_at?: string
           granted_by?: string | null
           id?: string
           notes?: string | null
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           user_id?: string
         }
         Relationships: []
@@ -3944,6 +4028,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_super_admin: { Args: never; Returns: undefined }
       generate_site_code: { Args: never; Returns: string }
       generate_staff_code: { Args: { _org_id: string }; Returns: string }
       generate_unique_org_slug: {
@@ -3982,6 +4067,10 @@ export type Database = {
         Returns: boolean
       }
       has_hq_access: { Args: { _org_id: string }; Returns: boolean }
+      has_internal_role: {
+        Args: { _role: Database["public"]["Enums"]["internal_role"] }
+        Returns: boolean
+      }
       has_site_access: { Args: { _site_id: string }; Returns: boolean }
       has_site_membership: { Args: { _site_id: string }; Returns: boolean }
       has_site_write_access: { Args: { _site_id: string }; Returns: boolean }
@@ -3996,6 +4085,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      is_super_admin_revoke_safe: {
+        Args: { _row_id: string }
+        Returns: boolean
+      }
       link_staff_session: {
         Args: { _site_id: string; _staff_code: string }
         Returns: Json
@@ -4020,6 +4113,7 @@ export type Database = {
     Enums: {
       auth_type: "email" | "staff_code"
       batch_status: "in_progress" | "complete" | "quarantined" | "disposed"
+      internal_role: "support" | "onboarding" | "ops"
       messenger_channel_type: "direct" | "group" | "system" | "role"
       messenger_message_type: "user" | "system" | "shift_card"
       messenger_participant_role: "admin" | "member"
@@ -4164,6 +4258,7 @@ export const Constants = {
     Enums: {
       auth_type: ["email", "staff_code"],
       batch_status: ["in_progress", "complete", "quarantined", "disposed"],
+      internal_role: ["support", "onboarding", "ops"],
       messenger_channel_type: ["direct", "group", "system", "role"],
       messenger_message_type: ["user", "system", "shift_card"],
       messenger_participant_role: ["admin", "member"],
