@@ -111,6 +111,8 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
         disabled={isSystemReadOnly}
         onSend={async (content, atts) => { await send(content, atts); }}
       />
+
+      <TasksPanel open={tasksOpen} onOpenChange={setTasksOpen} channelId={channel.id} />
     </div>
   );
 }
