@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -66,13 +66,16 @@ import type { ModuleName } from "@/lib/plans";
 const queryClient = new QueryClient();
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   const { isAuthenticated, isLoading, user, appUser, staffSession } = useAuth();
   const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <>{children}</>;
   if (user && !user.is_anonymous && !appUser) {
     if (staffLoading) return <FullScreenLoader />;
-    if (isInternalStaff) return <Navigate to="/staff" replace />;
+    if (isInternalStaff) {
+      return location.pathname.startsWith("/staff") ? <>{children}</> : <Navigate to="/staff" replace />;
+    }
     return <Navigate to="/onboarding" replace />;
   }
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
