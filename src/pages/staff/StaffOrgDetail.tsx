@@ -108,8 +108,6 @@ export default function StaffOrgDetail() {
 
   if (!detail) return null;
 
-  const sub = detail.subscription as Record<string, unknown> | null;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
