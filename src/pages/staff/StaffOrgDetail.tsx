@@ -204,7 +204,8 @@ export default function StaffOrgDetail() {
             </div>
           )}
         </CardContent>
-      </Card>
+</Card>
+      <SupportNotes orgId={detail.organisation.id} />
 
       <Dialog open={showImpersonate} onOpenChange={setShowImpersonate}>
         <DialogContent>
