@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, ArrowLeft, Eye, ShieldAlert, MapPin, Users, CreditCard } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, ShieldAlert, MapPin, Users } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { SubscriptionManager } from "@/components/staff/SubscriptionManager";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb: any = supabase;
@@ -107,8 +108,6 @@ export default function StaffOrgDetail() {
 
   if (!detail) return null;
 
-  const sub = detail.subscription as Record<string, unknown> | null;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -144,7 +143,7 @@ export default function StaffOrgDetail() {
         </CardHeader>
       </Card>
 
-      <div className="grid sm:grid-cols-3 gap-3">
+      <div className="grid sm:grid-cols-2 gap-3">
         <Card>
           <CardContent className="py-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -161,17 +160,9 @@ export default function StaffOrgDetail() {
             <p className="font-heading text-2xl font-bold">{detail.user_count}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="py-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-              <CreditCard className="h-3.5 w-3.5" /> Subscription
-            </div>
-            <p className="font-heading text-sm font-semibold capitalize">
-              {sub ? String(sub.status ?? "—") : "no subscription"}
-            </p>
-          </CardContent>
-        </Card>
       </div>
+
+      <SubscriptionManager orgId={detail.organisation.id} orgName={detail.organisation.name} />
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Sites</CardTitle></CardHeader>
