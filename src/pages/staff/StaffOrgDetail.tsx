@@ -235,5 +235,68 @@ export default function StaffOrgDetail() {
     </div>
   );
 }
+function SupportNotes({ orgId }: { orgId: string }) {
+  const [notes, setNotes] = useState<{ id: string; note: string; created_at: string; created_by: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
 
+  const load = async () => {
+    setLoading(true);
+    const { data } = await sb.from("support_notes").select("*").eq("organisation_id", orgId).order("created_at", { ascending: false }).limit(50);
+    setNotes((data ?? []) as any[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); }, [orgId]);
+
+  const save = async () => {
+    if (!draft.trim() || !user?.id) return;
+    setSaving(true);
+    const { error } = await sb.from("support_notes").insert({ organisation_id: orgId, created_by: user.id, note: draft.trim() });
+    if (error) { toast.error(error.message); } else { setDraft(""); void load(); }
+    setSaving(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <ShieldAlert className="h-4 w-4" /> Internal Support Notes
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex gap-2">
+          <Textarea
+            placeholder="Add an internal note — e.g. 'Called 6 May, resolved login issue. Follow up next week.'"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            rows={2}
+            className="text-sm"
+          />
+          <Button size="sm" onClick={save} disabled={saving || !draft.trim()} className="shrink-0 self-end">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+          </Button>
+        </div>
+        {loading ? (
+          <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin" /></div>
+        ) : notes.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-2">No notes yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {notes.map((n: any) => (
+              <div key={n.id} className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                <p className="text-foreground">{n.note}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {format(new Date(n.created_at), "d MMM yyyy HH:mm")}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 export const _Link = Link;
