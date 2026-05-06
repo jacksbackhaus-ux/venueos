@@ -86,6 +86,13 @@ export type Database = {
             foreignKeyName: "audit_trail_actor_user_id_fkey"
             columns: ["actor_user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_trail_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -134,6 +141,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_stage_events_performed_by_user_id_fkey"
+            columns: ["performed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -242,6 +256,13 @@ export type Database = {
           use_by_date?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "batches_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "batches_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
@@ -355,6 +376,13 @@ export type Database = {
           task_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cleaning_logs_completed_by_user_id_fkey"
+            columns: ["completed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cleaning_logs_completed_by_user_id_fkey"
             columns: ["completed_by_user_id"]
@@ -510,6 +538,13 @@ export type Database = {
           note?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "day_sheet_entries_completed_by_user_id_fkey"
+            columns: ["completed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "day_sheet_entries_completed_by_user_id_fkey"
             columns: ["completed_by_user_id"]
@@ -673,6 +708,13 @@ export type Database = {
             foreignKeyName: "day_sheets_locked_by_user_id_fkey"
             columns: ["locked_by_user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheets_locked_by_user_id_fkey"
+            columns: ["locked_by_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -745,6 +787,13 @@ export type Database = {
           use_by_ok?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "delivery_logs_logged_by_user_id_fkey"
+            columns: ["logged_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "delivery_logs_logged_by_user_id_fkey"
             columns: ["logged_by_user_id"]
@@ -867,6 +916,13 @@ export type Database = {
             foreignKeyName: "feedback_entries_logged_by_fkey"
             columns: ["logged_by"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_entries_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -875,6 +931,13 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_entries_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1041,6 +1104,13 @@ export type Database = {
             foreignKeyName: "holiday_requests_requested_by_fkey"
             columns: ["requested_by"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holiday_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1049,6 +1119,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holiday_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1162,6 +1239,13 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_reported_by_user_id_fkey"
+            columns: ["reported_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1371,6 +1455,13 @@ export type Database = {
             foreignKeyName: "maintenance_logs_reported_by_user_id_fkey"
             columns: ["reported_by_user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_logs_reported_by_user_id_fkey"
+            columns: ["reported_by_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1420,6 +1511,13 @@ export type Database = {
             foreignKeyName: "memberships_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1460,6 +1558,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_acknowledgements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1518,6 +1623,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messenger_channels_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messenger_channels_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
@@ -1602,6 +1714,13 @@ export type Database = {
             foreignKeyName: "messenger_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1648,6 +1767,13 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "messenger_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1703,6 +1829,13 @@ export type Database = {
             foreignKeyName: "messenger_pins_pinned_by_fkey"
             columns: ["pinned_by"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_pins_pinned_by_fkey"
+            columns: ["pinned_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1746,6 +1879,13 @@ export type Database = {
             foreignKeyName: "messenger_presence_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_presence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1776,6 +1916,13 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messenger_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_read_receipts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1889,7 +2036,21 @@ export type Database = {
             foreignKeyName: "messenger_tasks_assigned_by_fkey"
             columns: ["assigned_by"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_tasks_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2057,6 +2218,13 @@ export type Database = {
             foreignKeyName: "org_users_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2141,6 +2309,13 @@ export type Database = {
             foreignKeyName: "pest_logs_reported_by_user_id_fkey"
             columns: ["reported_by_user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pest_logs_reported_by_user_id_fkey"
+            columns: ["reported_by_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2188,6 +2363,13 @@ export type Database = {
           task_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ppm_completions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ppm_completions_completed_by_fkey"
             columns: ["completed_by"]
@@ -2583,6 +2765,13 @@ export type Database = {
             foreignKeyName: "rota_assignments_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_assignments_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2598,6 +2787,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2650,6 +2846,13 @@ export type Database = {
           site_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rota_audit_trail_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rota_audit_trail_actor_user_id_fkey"
             columns: ["actor_user_id"]
@@ -2745,6 +2948,13 @@ export type Database = {
             foreignKeyName: "shift_compensation_logs_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_compensation_logs_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2753,6 +2963,13 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_compensation_logs_paid_by_user_id_fkey"
+            columns: ["paid_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2774,6 +2991,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_compensation_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2848,6 +3072,13 @@ export type Database = {
             foreignKeyName: "shift_requests_manager_id_fkey"
             columns: ["manager_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2869,6 +3100,13 @@ export type Database = {
             foreignKeyName: "shift_requests_requester_id_fkey"
             columns: ["requester_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2884,6 +3122,13 @@ export type Database = {
             columns: ["target_shift_id"]
             isOneToOne: false
             referencedRelation: "rota_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_requests_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2920,6 +3165,13 @@ export type Database = {
             columns: ["shift_id"]
             isOneToOne: false
             referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_staff_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2963,6 +3215,13 @@ export type Database = {
           task_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shift_task_completions_completed_by_user_id_fkey"
+            columns: ["completed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shift_task_completions_completed_by_user_id_fkey"
             columns: ["completed_by_user_id"]
@@ -3027,6 +3286,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shift_tasks_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shift_tasks_assigned_to_user_id_fkey"
             columns: ["assigned_to_user_id"]
@@ -3205,6 +3471,13 @@ export type Database = {
             foreignKeyName: "sites_owner_user_id_fkey"
             columns: ["owner_user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sites_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -3269,6 +3542,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
             referencedColumns: ["id"]
           },
           {
@@ -3631,6 +3911,13 @@ export type Database = {
             foreignKeyName: "temp_logs_logged_by_user_id_fkey"
             columns: ["logged_by_user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_logs_logged_by_user_id_fkey"
+            columns: ["logged_by_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -3951,6 +4238,13 @@ export type Database = {
             foreignKeyName: "training_records_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -4104,6 +4398,13 @@ export type Database = {
             foreignKeyName: "waste_logs_logged_by_fkey"
             columns: ["logged_by"]
             isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waste_logs_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -4111,7 +4412,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      org_users_safe: {
+        Row: {
+          auth_type: Database["public"]["Enums"]["auth_type"] | null
+          auth_user_id: string | null
+          created_at: string | null
+          display_name: string | null
+          hourly_rate: number | null
+          id: string | null
+          last_login_at: string | null
+          organisation_id: string | null
+          status: Database["public"]["Enums"]["user_status"] | null
+        }
+        Insert: {
+          auth_type?: Database["public"]["Enums"]["auth_type"] | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          last_login_at?: string | null
+          organisation_id?: string | null
+          status?: Database["public"]["Enums"]["user_status"] | null
+        }
+        Update: {
+          auth_type?: Database["public"]["Enums"]["auth_type"] | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          last_login_at?: string | null
+          organisation_id?: string | null
+          status?: Database["public"]["Enums"]["user_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_users_org"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _check_staff_code_lockout: { Args: { _auth_uid: string }; Returns: Json }
@@ -4125,6 +4469,7 @@ export type Database = {
       }
       assert_internal_staff: { Args: never; Returns: undefined }
       assert_super_admin: { Args: never; Returns: undefined }
+      can_access_realtime_topic: { Args: { _topic: string }; Returns: boolean }
       generate_site_code: { Args: never; Returns: string }
       generate_staff_code: { Args: { _org_id: string }; Returns: string }
       generate_unique_org_slug: {
@@ -4207,6 +4552,7 @@ export type Database = {
       }
       slugify_org_name: { Args: { _name: string }; Returns: string }
       staff_get_org_detail: { Args: { _org_id: string }; Returns: Json }
+      staff_get_subscription: { Args: { _org_id: string }; Returns: Json }
       staff_list_assigned_orgs: {
         Args: never
         Returns: {
@@ -4250,6 +4596,10 @@ export type Database = {
           reason: string
           staff_user_id: string
         }[]
+      }
+      staff_update_subscription: {
+        Args: { _org_id: string; _patch: Json; _reason: string }
+        Returns: Json
       }
       sync_org_modules: { Args: { _org_id: string }; Returns: undefined }
       validate_staff_code: {
