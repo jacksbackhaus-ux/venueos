@@ -195,7 +195,7 @@ export function SubscriptionManager({ orgId, orgName }: { orgId: string; orgName
               "Trial extension")}>
             +14d trial
           </Button>
-          {sub.locked_at ? (
+          {(draft.locked_at ?? sub.locked_at) ? (
             <Button variant="outline" size="sm" disabled={saving}
               onClick={() => quickAction("Unlock account", { locked_at: null }, "Unlock — payment resolved")}>
               <Unlock className="h-3.5 w-3.5 mr-1.5" /> Unlock
