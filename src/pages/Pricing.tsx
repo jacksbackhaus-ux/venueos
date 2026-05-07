@@ -62,11 +62,6 @@ export default function Pricing() {
     navigate(`/account?checkout=${planId}&cycle=${cycle}`);
   };
 
-  const handleSelect = (planId: PlanId) => {
-    if (hasPaidSub) goToCheckout(planId);
-    else if (isTrialing) startTrialWithPlan(planId);
-    else goToCheckout(planId);
-  };
 
   const planIds: PlanId[] = ["base", "compliance", "business", "bundle"];
 
