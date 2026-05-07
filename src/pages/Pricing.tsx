@@ -62,11 +62,6 @@ export default function Pricing() {
     navigate(`/account?checkout=${planId}&cycle=${cycle}`);
   };
 
-  const handleSelect = (planId: PlanId) => {
-    if (hasPaidSub) goToCheckout(planId);
-    else if (isTrialing) startTrialWithPlan(planId);
-    else goToCheckout(planId);
-  };
 
   const planIds: PlanId[] = ["base", "compliance", "business", "bundle"];
 
@@ -160,24 +155,39 @@ export default function Pricing() {
                     ))}
                   </ul>
 
-                  <Button
-                    className="w-full"
-                    variant={p.highlight ? "default" : "outline"}
-                    disabled={isCurrent || selecting !== null}
-                    onClick={() => handleSelect(planId)}
-                  >
-                    {selecting === planId ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : isCurrent ? (
-                      "Current plan"
-                    ) : isTrialing ? (
-                      "Start 14-day free trial"
-                    ) : hasPaidSub ? (
-                      "Switch to this plan"
-                    ) : (
-                      "Choose plan"
-                    )}
-                  </Button>
+                  {(() => {
+                    // Button label & action priority:
+                    // 1. Already on a paid plan AND it's this plan → disabled "Current plan"
+                    // 2. Trialing AND it's this plan → "Subscribe now" (go to Stripe to keep it past trial)
+                    // 3. Trialing AND different plan → "Switch & continue trial" (flags only)
+                    // 4. Otherwise (no sub, expired trial, paid swap) → "Subscribe now" via Stripe
+                    const isCurrentPaid = isCurrent && hasPaidSub;
+                    const isCurrentTrial = isCurrent && isTrialing;
+                    const trialSwitch = isTrialing && !isCurrent;
+
+                    let label: React.ReactNode = "Subscribe now";
+                    if (selecting === planId) label = <Loader2 className="h-4 w-4 animate-spin" />;
+                    else if (isCurrentPaid) label = "Current plan";
+                    else if (isCurrentTrial) label = "Subscribe now";
+                    else if (trialSwitch) label = "Switch & continue trial";
+                    else if (hasPaidSub) label = "Switch to this plan";
+
+                    const onClick = () => {
+                      if (trialSwitch) startTrialWithPlan(planId);
+                      else goToCheckout(planId);
+                    };
+
+                    return (
+                      <Button
+                        className="w-full"
+                        variant={p.highlight ? "default" : "outline"}
+                        disabled={isCurrentPaid || selecting !== null}
+                        onClick={onClick}
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             );
