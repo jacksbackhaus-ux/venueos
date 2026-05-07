@@ -117,18 +117,14 @@ export function SubscriptionManager({ orgId, orgName }: { orgId: string; orgName
     void load();
   };
 
-  const quickAction = async (label: string, patch: Record<string, unknown>, defaultReason: string) => {
+  // Apply a "quick action" by mutating the draft + suggesting a reason.
+  // The user reviews and hits Save — avoids window.prompt() which is
+  // blocked inside the preview iframe.
+  const quickAction = (label: string, patch: Partial<Subscription>, defaultReason: string) => {
     if (!isSuperAdmin) return;
-    const r = window.prompt(`Reason for "${label}" (min 5 chars):`, defaultReason);
-    if (!r || r.trim().length < 5) return;
-    setSaving(true);
-    const { error } = await sb.rpc("staff_update_subscription", {
-      _org_id: orgId, _reason: r.trim(), _patch: patch,
-    });
-    setSaving(false);
-    if (error) { console.error(error); toast.error("Could not apply change"); return; }
-    toast.success(`${label} applied.`);
-    void load();
+    setDraft(d => ({ ...d, ...patch }));
+    setReason(prev => prev || defaultReason);
+    toast.info(`${label} staged — review and click Save to apply.`);
   };
 
   if (loading) {
