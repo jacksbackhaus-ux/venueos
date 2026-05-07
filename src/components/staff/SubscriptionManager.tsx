@@ -109,7 +109,8 @@ export function SubscriptionManager({ orgId, orgName }: { orgId: string; orgName
     setSaving(false);
     if (error) {
       console.error(error);
-      toast.error(error.message?.includes("authoris") ? "Not authorised — super admin required." : "Could not update subscription");
+      const msg = error.message || "Could not update subscription";
+      toast.error(msg.includes("authoris") ? "Not authorised — super admin required." : msg);
       return;
     }
     toast.success("Subscription updated.");
