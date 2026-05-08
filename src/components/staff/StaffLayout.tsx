@@ -8,7 +8,7 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 const NAV = [
   { to: "/staff", end: true, label: "Dashboard", icon: LayoutDashboard },
   { to: "/staff/users", label: "Users", icon: Users },
-  { to: "/staff/orgs", label: "Organisations", icon: Building2 },
+  { to: "/staff/orgs", label: "Tenants", icon: Building2 },
   { to: "/staff/access", label: "Access", icon: ShieldCheck, requiresSuperAdmin: true },
   { to: "/staff/ops", label: "Ops Log", icon: FileClock, requiresSuperAdmin: true },
   { to: "/staff/migrations", label: "Migrations", icon: Database },
