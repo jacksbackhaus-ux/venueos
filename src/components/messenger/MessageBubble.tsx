@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin, BellRing, ClipboardCheck, Thermometer, Truck } from "lucide-react";
+import { Check, CheckCheck, MoreVertical, Pencil, Trash2, AlertCircle, Calendar, Clock, FileText, Download, Image as ImageIcon, ListTodo, Pin, BellRing, ClipboardCheck, Thermometer, Truck, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -27,9 +27,10 @@ interface Props {
   readReceipts: boolean;
   onEdit: (id: string, content: string) => void;
   onDelete: (id: string) => void;
+  onReply?: (message: MessengerMessage) => void;
 }
 
-export function MessageBubble({ message, isOwn, showAvatar, showName, readReceipts, onEdit, onDelete }: Props) {
+export function MessageBubble({ message, isOwn, showAvatar, showName, readReceipts, onEdit, onDelete, onReply }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content || "");
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -133,7 +134,7 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
             </>
           )}
 
-          {!isDeleted && !editing && (isOwn || canManage) && (
+          {!isDeleted && !editing && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -141,7 +142,7 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100",
                     isOwn ? "-left-7" : "-right-7",
-                    isOwn ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"
+                    "text-muted-foreground hover:text-foreground"
                   )}
                   aria-label="Message actions"
                 >
@@ -149,6 +150,11 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, readReceip
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align={isOwn ? "end" : "start"}>
+                {onReply && (
+                  <DropdownMenuItem onClick={() => onReply(message)}>
+                    <Reply className="h-3.5 w-3.5 mr-2" /> Reply
+                  </DropdownMenuItem>
+                )}
                 {canManage && (
                   <>
                     <DropdownMenuItem onClick={() => setTaskDialogOpen(true)}>
