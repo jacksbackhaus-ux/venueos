@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Send, X, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,16 +11,32 @@ interface Props {
   channelId: string;
   disabled?: boolean;
   onSend: (content: string, attachments: MessengerMessage["attachments"]) => Promise<void>;
+  prefill?: { text: string; nonce: number } | null;
+  onPrefillConsumed?: () => void;
 }
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/jpg", "application/pdf"]);
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
-export function MessageInput({ channelId, disabled, onSend }: Props) {
+export function MessageInput({ channelId, disabled, onSend, prefill, onPrefillConsumed }: Props) {
   const [text, setText] = useState("");
   const [pending, setPending] = useState<MessengerMessage["attachments"]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!prefill) return;
+    setText((prev) => (prev ? prev + "\n" + prefill.text : prefill.text));
+    onPrefillConsumed?.();
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    });
+  }, [prefill?.nonce]);
 
   const onFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -104,6 +120,7 @@ export function MessageInput({ channelId, disabled, onSend }: Props) {
           onChange={(e) => onFiles(e.target.files)}
         />
         <Textarea
+          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
