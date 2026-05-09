@@ -1,9 +1,11 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Building2, FileClock, Database, ArrowLeft, Wrench, ShieldCheck,
+  LayoutDashboard, Users, Building2, FileClock, Database, ArrowLeft, Wrench, ShieldCheck, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const NAV = [
   { to: "/staff", end: true, label: "Dashboard", icon: LayoutDashboard },
@@ -16,7 +18,19 @@ const NAV = [
 
 export function StaffLayout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { isSuperAdmin } = useSuperAdmin();
+  const { appUser } = useAuth();
+  const hasCustomerProfile = !!appUser;
+
+  const handleExit = async () => {
+    if (hasCustomerProfile) {
+      navigate("/");
+    } else {
+      await supabase.auth.signOut();
+      navigate("/auth", { replace: true });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -32,9 +46,14 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
               Internal
             </span>
           </div>
-          <NavLink to="/" className="text-xs flex items-center gap-1 hover:underline opacity-80 hover:opacity-100">
-            <ArrowLeft className="h-3 w-3" /> Exit to customer app
-          </NavLink>
+          <button
+            type="button"
+            onClick={handleExit}
+            className="text-xs flex items-center gap-1 hover:underline opacity-80 hover:opacity-100"
+          >
+            {hasCustomerProfile ? <ArrowLeft className="h-3 w-3" /> : <LogOut className="h-3 w-3" />}
+            {hasCustomerProfile ? "Exit to customer app" : "Sign out"}
+          </button>
         </div>
         <nav className="max-w-7xl mx-auto px-2 flex gap-1 overflow-x-auto">
           {NAV.filter(item => !item.requiresSuperAdmin || isSuperAdmin).map(item => {
