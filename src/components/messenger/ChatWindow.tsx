@@ -26,7 +26,15 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
   const [tasksOpen, setTasksOpen] = useState(false);
   const [pinsOpen, setPinsOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
+  const [prefill, setPrefill] = useState<{ text: string; nonce: number } | null>(null);
   const { pins } = useChannelPins(channel.id);
+
+  const handleReply = (m: MessengerMessage) => {
+    const author = m.sender_name_snapshot || "Unknown";
+    const body = (m.content || "").split("\n").map((l) => `> ${l}`).join("\n");
+    const quoted = `> **${author}**\n${body}\n\n`;
+    setPrefill({ text: quoted, nonce: Date.now() });
+  };
 
   const isMainSiteChannel = channel.is_system && channel.name === "whole-site";
 
@@ -138,6 +146,7 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
                 readReceipts={readReceipts}
                 onEdit={editMessage}
                 onDelete={deleteMessage}
+                onReply={handleReply}
               />
             );
           })}
@@ -148,6 +157,8 @@ export function ChatWindow({ channel, readReceipts, onBack }: Props) {
         channelId={channel.id}
         disabled={isSystemReadOnly}
         onSend={async (content, atts) => { await send(content, atts); }}
+        prefill={prefill}
+        onPrefillConsumed={() => setPrefill(null)}
       />
 
       <TasksPanel open={tasksOpen} onOpenChange={setTasksOpen} channelId={channel.id} />
