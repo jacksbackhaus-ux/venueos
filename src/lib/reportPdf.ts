@@ -195,7 +195,7 @@ export function generateInspectionPackPdf(data: ReportData) {
       .map(t => [
         format(new Date(t.logged_at), "d MMM HH:mm"),
         t.log_type || "—",
-        t.food_item || t.unit_id?.slice(0, 8) || "—",
+        t.temp_units?.name || t.food_item || "—",
         `${t.value}°C`,
         t.pass ? "PASS" : "FAIL",
         (t.corrective_action || "—").slice(0, 60),
