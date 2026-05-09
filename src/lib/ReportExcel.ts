@@ -103,11 +103,13 @@ function buildTemperatureSheet(data: ReportData): XLSX.WorkSheet {
 
   for (const log of data.tempLogs) {
     const dt = new Date(log.logged_at);
+    const unitName = log.temp_units?.name || log.unit_name || log.food_item || "—";
+    const unitType = log.temp_units?.type ? ` (${log.temp_units.type})` : "";
     rows.push([
       format(dt, "dd/MM/yyyy"),
       format(dt, "HH:mm"),
-      log.food_item || log.unit_name || log.unit_id || "—",
-      log.log_type || "—",
+      `${unitName}${unitType}`,
+      log.food_item || log.log_type || "—",
       Number(log.value),
       log.pass ? "PASS" : "FAIL",
       log.logged_by_name || "—",
