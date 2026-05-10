@@ -218,7 +218,7 @@ const DaySheet = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
-      toast.success("Day sheet unlocked");
+      toast.success("Sign-off removed");
     },
     onError: (err: any) => toast.error(err.message),
   });
