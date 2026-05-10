@@ -132,7 +132,7 @@ export async function fetchReportData(
   ] = await Promise.all([
     supabase.from("sites").select("name").eq("id", siteId).maybeSingle(),
     supabase.from("organisations").select("name").eq("id", orgId).maybeSingle(),
-    supabase.from("temp_logs").select("*, temp_units(name, type, min_temp, max_temp)").eq("site_id", siteId).gte("logged_at", fromIso).lte("logged_at", toIso),
+    supabase.from("temp_logs").select("*, temp_units(name)").eq("site_id", siteId).gte("logged_at", fromIso).lte("logged_at", toIso),
     supabase.from("cleaning_tasks").select("id, task, area, frequency, active").eq("site_id", siteId).eq("active", true),
     supabase.from("cleaning_logs").select("*").eq("site_id", siteId).gte("log_date", fromDate).lte("log_date", toDate),
     supabase.from("day_sheets").select("*").eq("site_id", siteId).gte("sheet_date", fromDate).lte("sheet_date", toDate),
