@@ -184,7 +184,7 @@ const DaySheet = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
-      toast.success("Day sheet locked!");
+      toast.success("Day sheet signed off");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -218,7 +218,7 @@ const DaySheet = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
-      toast.success("Day sheet unlocked");
+      toast.success("Sign-off removed");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -397,11 +397,11 @@ const locked = !isToday; // only past days are read-only — sign-off no longer 
           <p className="text-xs text-muted-foreground">
             Signed off by <span className="font-medium text-foreground">{daySheet?.signed_off_by || "—"}</span>
             {daySheet?.signed_off_at && <> at {new Date(daySheet.signed_off_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</>}.
-      Day sheet signed off — tasks can still be edited if needed.
+            Signed off — tasks can still be edited if needed.
           </p>
           {isManager && isToday && (
             <Button variant="outline" size="sm" onClick={() => unlockSheet.mutate()} disabled={unlockSheet.isPending}>
-              <Unlock className="h-3 w-3 mr-1" /> Unlock day sheet
+              <Unlock className="h-3 w-3 mr-1" /> Remove sign-off
             </Button>
           )}
         </motion.div>
@@ -409,15 +409,15 @@ const locked = !isToday; // only past days are read-only — sign-off no longer 
 
       {isLockedSheet && !isSignedOff && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg bg-success/10 p-4 text-center space-y-2">
-          <Lock className="h-6 w-6 text-success mx-auto" />
-          <p className="font-heading font-bold text-success">Day Sheet Locked</p>
+          <CheckCircle2 className="h-6 w-6 text-success mx-auto" />
+          <p className="font-heading font-bold text-success">Day Sheet Signed Off</p>
           <p className="text-xs text-muted-foreground">
-            Locked at {daySheet?.locked_at ? new Date(daySheet.locked_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "—"}
-            {daySheet?.locked_by_name ? ` by ${daySheet.locked_by_name}` : ""}. Entries are now immutable.
+            Signed off at {daySheet?.locked_at ? new Date(daySheet.locked_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "—"}
+            {daySheet?.locked_by_name ? ` by ${daySheet.locked_by_name}` : ""}. Signed off — tasks can still be edited if needed.
           </p>
           {isManager && isToday && (
             <Button variant="outline" size="sm" onClick={() => unlockSheet.mutate()} disabled={unlockSheet.isPending}>
-              <Unlock className="h-3 w-3 mr-1" /> Unlock day sheet
+              <Unlock className="h-3 w-3 mr-1" /> Remove sign-off
             </Button>
           )}
         </motion.div>
