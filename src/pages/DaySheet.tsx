@@ -225,7 +225,7 @@ const DaySheet = () => {
 
   const isSignedOff = daySheet?.signed_off || false;
   const isLockedSheet = daySheet?.locked || isSignedOff;
-  const locked = isLockedSheet || !isToday; // past days are read-only
+const locked = !isToday; // only past days are read-only — sign-off no longer prevents editing
   const doneItemIds = new Set(entries.filter((e: any) => e.done).map((e: any) => e.item_id));
   const allItems = sections.flatMap((s: any) => s.day_sheet_items || []);
   const totalItems = allItems.length;
