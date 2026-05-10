@@ -190,21 +190,19 @@ export default function Pricing() {
                   </ul>
 
                   {(() => {
-                    // Button label & action priority:
-                    // 1. Already on a paid plan AND it's this plan → disabled "Current plan"
-                    // 2. Trialing AND it's this plan → "Subscribe now" (go to Stripe to keep it past trial)
-                    // 3. Trialing AND different plan → "Switch & continue trial" (flags only)
-                    // 4. Otherwise (no sub, expired trial, paid swap) → "Subscribe now" via Stripe
+                    const isAddon = planId === "compliance" || planId === "business";
+                    const needsBaseFirst = isAddon && !hasBaseAccess;
                     const isCurrentPaid = isCurrent && hasPaidSub;
                     const isCurrentTrial = isCurrent && isTrialing;
                     const trialSwitch = isTrialing && !isCurrent;
 
                     let label: React.ReactNode = "Subscribe now";
                     if (selecting === planId) label = <Loader2 className="h-4 w-4 animate-spin" />;
+                    else if (needsBaseFirst) label = "Requires Base plan";
                     else if (isCurrentPaid) label = "Current plan";
                     else if (isCurrentTrial) label = "Subscribe now";
-                    else if (trialSwitch) label = "Switch & continue trial";
-                    else if (hasPaidSub) label = "Switch to this plan";
+                    else if (trialSwitch) label = isAddon ? "Add to trial" : "Switch & continue trial";
+                    else if (hasPaidSub) label = isAddon ? "Add to plan" : "Switch to this plan";
 
                     const onClick = () => {
                       if (trialSwitch) startTrialWithPlan(planId);
@@ -215,7 +213,7 @@ export default function Pricing() {
                       <Button
                         className="w-full"
                         variant={p.highlight ? "default" : "outline"}
-                        disabled={isCurrentPaid || selecting !== null}
+                        disabled={isCurrentPaid || needsBaseFirst || selecting !== null}
                         onClick={onClick}
                       >
                         {label}
