@@ -59,6 +59,9 @@ export interface ReportData {
   cleaningCompletionPct: number;
   cleaningTasksTotal: number;
   cleaningTasksDone: number;
+  cleaningTasks: any[];
+  cleaningLogs: any[];
+  closedDays: any[];
   daySheets: any[];
   daySheetCompletionPct: number;
   daySheetsLockedPct: number;
