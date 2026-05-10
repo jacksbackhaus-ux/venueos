@@ -162,22 +162,51 @@ function buildCleaningSheet(data: ReportData): XLSX.WorkSheet {
     ["Date", "Task", "Area", "Frequency", "Status", "Completed By", "Completed At"],
   ];
 
-  const cleaningData = (data as any).cleaningLogs || [];
-  if (cleaningData.length > 0) {
-    for (const log of cleaningData) {
+  const tasks = (data as any).cleaningTasks || [];
+  const logs = (data as any).cleaningLogs || [];
+  const closedSet = new Set(((data as any).closedDays || []).map((c: any) => c.closed_date));
+  const taskById = new Map<string, any>(tasks.map((t: any) => [t.id, t]));
+
+  // Build set of dates that have any log activity
+  const dates = Array.from(new Set(logs.map((l: any) => l.log_date))).sort() as string[];
+  const dailyTasks = tasks.filter((t: any) => (t.frequency || "daily").toLowerCase() === "daily");
+
+  if (dates.length > 0 && dailyTasks.length > 0) {
+    for (const date of dates) {
+      const isClosed = closedSet.has(date);
+      const dateLogs = logs.filter((l: any) => l.log_date === date);
+      for (const task of dailyTasks) {
+        const log = dateLogs.find((l: any) => l.task_id === task.id);
+        let status: string;
+        if (isClosed) status = "Exempt";
+        else if (log?.done) status = "Done";
+        else status = "Missed";
+        rows.push([
+          format(parseISO(date), "dd/MM/yyyy"),
+          task.task || "—",
+          task.area || "—",
+          task.frequency || "daily",
+          status,
+          log?.completed_by_name || "—",
+          log?.completed_at ? format(new Date(log.completed_at), "dd/MM/yyyy HH:mm") : "—",
+        ]);
+      }
+    }
+  } else if (logs.length > 0) {
+    for (const log of logs) {
+      const task = taskById.get(log.task_id);
       rows.push([
-        log.log_date ? format(new Date(log.log_date), "dd/MM/yyyy") : "—",
-        log.task_name || "—",
-        log.area || "—",
-        log.frequency || "daily",
-        log.done ? "Done" : "Missed",
+        log.log_date ? format(parseISO(log.log_date), "dd/MM/yyyy") : "—",
+        task?.task || "—",
+        task?.area || "—",
+        task?.frequency || "daily",
+        closedSet.has(log.log_date) ? "Exempt" : log.done ? "Done" : "Missed",
         log.completed_by_name || "—",
         log.completed_at ? format(new Date(log.completed_at), "dd/MM/yyyy HH:mm") : "—",
       ]);
     }
   } else {
-    rows.push(["", `${data.cleaningTasksDone} tasks completed of ${data.cleaningTasksTotal} scheduled`, "", "", "", "", ""]);
-    rows.push(["Note: Detailed cleaning log breakdown not available in this export."]);
+    rows.push(["No cleaning log activity in this period."]);
   }
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
