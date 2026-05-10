@@ -266,7 +266,7 @@ const locked = !isToday; // only past days are read-only — sign-off no longer 
           {isSignedOff ? (
             <Badge className="bg-success text-success-foreground gap-1"><ShieldCheck className="h-3 w-3" /> Signed off</Badge>
           ) : isLockedSheet ? (
-            <Badge className="bg-success text-success-foreground gap-1"><Lock className="h-3 w-3" /> Locked</Badge>
+          <Badge className="bg-success text-success-foreground gap-1"><CheckCircle2 className="h-3 w-3" /> Signed off</Badge>
           ) : !isToday ? (
             <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
               <Lock className="h-3 w-3" /> Read-only
