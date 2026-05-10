@@ -32,18 +32,35 @@ export default function Pricing() {
 
   const isTrialing = subscription?.status === "trialing";
   const hasPaidSub = subscription?.status === "active";
+  const hasBaseAccess = plan.base || plan.bundle;
 
   // During trial: pick a plan = update flags only. No Stripe.
+  // Add-ons stack on top of Base; they cannot be picked standalone.
   const startTrialWithPlan = async (planId: PlanId) => {
     if (!appUser?.organisation_id) return;
+    if ((planId === "compliance" || planId === "business") && !hasBaseAccess) {
+      toast.error("Add-ons require the Base plan. Pick Base or the Full Bundle first.");
+      return;
+    }
     setSelecting(planId);
-    const flags = {
-      base_active: planId === "base",
-      compliance_active: planId === "compliance",
-      business_active: planId === "business",
-      bundle_active: planId === "bundle",
-      billing_interval: cycle,
-    };
+
+    // Build flags depending on which card was picked.
+    let flags: Record<string, any> = { billing_interval: cycle };
+    if (planId === "bundle") {
+      flags = { ...flags, base_active: false, compliance_active: false, business_active: false, bundle_active: true };
+    } else if (planId === "base") {
+      // Switching to Base alone clears add-ons / bundle.
+      flags = { ...flags, base_active: true, compliance_active: false, business_active: false, bundle_active: false };
+    } else {
+      // Add-on: keep base on, turn on this add-on, leave the other add-on as-is.
+      flags = {
+        ...flags,
+        base_active: true,
+        bundle_active: false,
+        [`${planId}_active`]: true,
+      };
+    }
+
     const { error } = await supabase
       .from("subscriptions")
       .update(flags)
@@ -53,12 +70,19 @@ export default function Pricing() {
       toast.error("Could not save plan: " + error.message);
       return;
     }
-    toast.success(`Welcome to ${PLANS[planId].name}! Your 14-day free trial has started.`);
+    const msg = planId === "compliance" || planId === "business"
+      ? `${PLANS[planId].name} added to your trial.`
+      : `Welcome to ${PLANS[planId].name}! Your 14-day free trial has started.`;
+    toast.success(msg);
     navigate("/", { replace: true });
   };
 
   // Post-trial / change-of-plan goes via the Account page (Stripe checkout).
   const goToCheckout = (planId: PlanId) => {
+    if ((planId === "compliance" || planId === "business") && !hasBaseAccess) {
+      toast.error("Add-ons require the Base plan. Subscribe to Base or the Full Bundle first.");
+      return;
+    }
     navigate(`/account?checkout=${planId}&cycle=${cycle}`);
   };
 
