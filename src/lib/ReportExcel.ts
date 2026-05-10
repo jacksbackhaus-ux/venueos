@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { ReportData } from "./reports";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
