@@ -45,20 +45,30 @@ export default function Pricing() {
     setSelecting(planId);
 
     // Build flags depending on which card was picked.
-    let flags: Record<string, any> = { billing_interval: cycle };
+    const flags: {
+      billing_interval: BillingCycle;
+      base_active?: boolean;
+      compliance_active?: boolean;
+      business_active?: boolean;
+      bundle_active?: boolean;
+    } = { billing_interval: cycle };
     if (planId === "bundle") {
-      flags = { ...flags, base_active: false, compliance_active: false, business_active: false, bundle_active: true };
+      flags.base_active = false;
+      flags.compliance_active = false;
+      flags.business_active = false;
+      flags.bundle_active = true;
     } else if (planId === "base") {
       // Switching to Base alone clears add-ons / bundle.
-      flags = { ...flags, base_active: true, compliance_active: false, business_active: false, bundle_active: false };
+      flags.base_active = true;
+      flags.compliance_active = false;
+      flags.business_active = false;
+      flags.bundle_active = false;
     } else {
       // Add-on: keep base on, turn on this add-on, leave the other add-on as-is.
-      flags = {
-        ...flags,
-        base_active: true,
-        bundle_active: false,
-        [`${planId}_active`]: true,
-      };
+      flags.base_active = true;
+      flags.bundle_active = false;
+      if (planId === "compliance") flags.compliance_active = true;
+      if (planId === "business") flags.business_active = true;
     }
 
     const { error } = await supabase
