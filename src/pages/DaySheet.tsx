@@ -397,7 +397,7 @@ const locked = !isToday; // only past days are read-only — sign-off no longer 
           <p className="text-xs text-muted-foreground">
             Signed off by <span className="font-medium text-foreground">{daySheet?.signed_off_by || "—"}</span>
             {daySheet?.signed_off_at && <> at {new Date(daySheet.signed_off_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</>}.
-            Tasks are locked.
+      Day sheet signed off — tasks can still be edited if needed.
           </p>
           {isManager && isToday && (
             <Button variant="outline" size="sm" onClick={() => unlockSheet.mutate()} disabled={unlockSheet.isPending}>
