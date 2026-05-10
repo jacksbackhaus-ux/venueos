@@ -376,7 +376,7 @@ const locked = !isToday; // only past days are read-only — sign-off no longer 
                 </Button>
               )}
               <Button variant="outline" className="w-full" disabled={!allDone && !managerNote} onClick={() => lockSheet.mutate()}>
-                <Lock className="h-4 w-4 mr-2" /> {allDone ? "Lock without sign-off" : "Lock with Exception Note"}
+                <CheckCircle2 className="h-4 w-4 mr-2" /> {allDone ? "Sign off without notes" : "Sign off with Exception Note"}
               </Button>
               {!allDone && (
                 <p className="text-xs text-muted-foreground text-center">
