@@ -238,6 +238,29 @@ const Suppliers = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={supplierDialogOpen} onOpenChange={(o) => { setSupplierDialogOpen(o); if (!o) setEditingSupplier(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle className="font-heading">{editingSupplier ? "Edit Supplier" : "Add Supplier"}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label className="text-sm">Name *</Label><Input placeholder="e.g. Bako Northern" value={supName} onChange={(e) => setSupName(e.target.value)} maxLength={120} /></div>
+            <div><Label className="text-sm">Category</Label><Input placeholder="e.g. Flour, Dairy, Packaging" value={supCategory} onChange={(e) => setSupCategory(e.target.value)} maxLength={60} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-sm">Contact name</Label><Input value={supContactName} onChange={(e) => setSupContactName(e.target.value)} maxLength={120} /></div>
+              <div><Label className="text-sm">Phone</Label><Input value={supContactPhone} onChange={(e) => setSupContactPhone(e.target.value)} maxLength={40} /></div>
+            </div>
+            <div><Label className="text-sm">Email</Label><Input type="email" value={supContactEmail} onChange={(e) => setSupContactEmail(e.target.value)} maxLength={200} /></div>
+            <div><Label className="text-sm">Notes</Label><Textarea value={supNotes} onChange={(e) => setSupNotes(e.target.value)} className="text-sm" maxLength={1000} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-sm">Approved</Label><Select value={supApproved ? "yes" : "no"} onValueChange={(v) => setSupApproved(v === "yes")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">Pending</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-sm">Status</Label><Select value={supActive ? "active" : "inactive"} onValueChange={(v) => setSupActive(v === "active")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
+            </div>
+            <Button className="w-full" disabled={!supName.trim() || upsertSupplier.isPending} onClick={() => upsertSupplier.mutate()}>
+              {upsertSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editingSupplier ? "Save Changes" : "Add Supplier"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
