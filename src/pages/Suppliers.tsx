@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Truck, Plus, CheckCircle2, XCircle, Search, ChevronRight, Clock, Thermometer, Package, AlertTriangle, Camera, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
