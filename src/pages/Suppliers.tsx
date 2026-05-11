@@ -205,15 +205,20 @@ const Suppliers = () => {
             {deliveries.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No deliveries logged yet.</p>}
           </TabsContent>
           <TabsContent value="suppliers" className="mt-4 space-y-3">
-            <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search suppliers..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" /></div>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search suppliers..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" /></div>
+              <Button onClick={openAddSupplier} size="sm" className="gap-2 shrink-0"><Plus className="h-4 w-4" /> Add</Button>
+            </div>
             {suppliers.filter((s: any) => s.name.toLowerCase().includes(searchTerm.toLowerCase())).map((s: any) => (
-              <Card key={s.id}><CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2"><h3 className="font-heading font-semibold text-sm">{s.name}</h3>{s.approved ? <Badge className="bg-success/10 text-success border-0 text-[10px]">Approved</Badge> : <Badge className="bg-warning/10 text-warning border-0 text-[10px]">Pending</Badge>}</div>
-                  <p className="text-xs text-muted-foreground">{s.category}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </CardContent></Card>
+              <Card key={s.id} className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => openEditSupplier(s)}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2"><h3 className="font-heading font-semibold text-sm">{s.name}</h3>{s.approved ? <Badge className="bg-success/10 text-success border-0 text-[10px]">Approved</Badge> : <Badge className="bg-warning/10 text-warning border-0 text-[10px]">Pending</Badge>}</div>
+                    <p className="text-xs text-muted-foreground">{s.category}{s.contact_name ? ` · ${s.contact_name}` : ""}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
             ))}
           </TabsContent>
         </Tabs>
