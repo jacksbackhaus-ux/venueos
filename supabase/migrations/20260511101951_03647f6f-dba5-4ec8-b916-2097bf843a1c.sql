@@ -1,0 +1,1 @@
+ALTER TABLE public.ingredients ADD COLUMN IF NOT EXISTS sub_ingredients jsonb NOT NULL DEFAULT '[]'::jsonb;
