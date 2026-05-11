@@ -83,17 +83,39 @@ const Allergens = () => {
   const saveIngredient = useMutation({
     mutationFn: async () => {
       if (!siteId || !organisationId) throw new Error("No site");
-      const { error } = await supabase.from("ingredients").insert({
-        site_id: siteId, organisation_id: organisationId,
-        name: ingForm.name, supplier_name: ingForm.supplier_name || null, allergens: ingForm.allergens,
-        composition_text: ingForm.composition_text.trim() || null,
-      });
-      if (error) throw error;
+      // Build composition text from structured sub-ingredients if provided; otherwise use the free-text field.
+      const cleanSubs = ingForm.sub_ingredients
+        .map(s => ({ name: (s.name || "").trim(), allergens: s.allergens || [] }))
+        .filter(s => s.name.length > 0);
+      const compositionFromSubs = cleanSubs.map(s => s.name).join(", ");
+      const finalComposition = cleanSubs.length > 0
+        ? compositionFromSubs
+        : (ingForm.composition_text.trim() || null);
+      // Union allergens: manually checked + every allergen declared on a sub-ingredient
+      const allergenSet = new Set<string>(ingForm.allergens);
+      cleanSubs.forEach(s => s.allergens.forEach(a => allergenSet.add(a)));
+      const payload = {
+        site_id: siteId,
+        organisation_id: organisationId,
+        name: ingForm.name,
+        supplier_name: ingForm.supplier_name || null,
+        allergens: Array.from(allergenSet),
+        composition_text: finalComposition,
+        sub_ingredients: cleanSubs,
+      };
+      if (editingIngId) {
+        const { error } = await supabase.from("ingredients").update(payload).eq("id", editingIngId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("ingredients").insert(payload);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success("Ingredient added");
+      toast.success(editingIngId ? "Ingredient updated" : "Ingredient added");
       setShowIngDialog(false);
-      setIngForm({ name: "", supplier_name: "", allergens: [], composition_text: "" });
+      setEditingIngId(null);
+      setIngForm(emptyIngForm);
       qc.invalidateQueries({ queryKey: ["ingredients", siteId] });
       qc.invalidateQueries({ queryKey: ["recipes", siteId] });
     },
