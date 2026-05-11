@@ -32,6 +32,35 @@ const Suppliers = () => {
   const [newUseByOk, setNewUseByOk] = useState(true);
   const [newNote, setNewNote] = useState("");
 
+  // Supplier add/edit dialog
+  const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<any | null>(null);
+  const [supName, setSupName] = useState("");
+  const [supCategory, setSupCategory] = useState("General");
+  const [supApproved, setSupApproved] = useState(true);
+  const [supContactName, setSupContactName] = useState("");
+  const [supContactEmail, setSupContactEmail] = useState("");
+  const [supContactPhone, setSupContactPhone] = useState("");
+  const [supNotes, setSupNotes] = useState("");
+  const [supActive, setSupActive] = useState(true);
+
+  useEffect(() => {
+    if (editingSupplier) {
+      setSupName(editingSupplier.name || "");
+      setSupCategory(editingSupplier.category || "General");
+      setSupApproved(!!editingSupplier.approved);
+      setSupContactName(editingSupplier.contact_name || "");
+      setSupContactEmail(editingSupplier.contact_email || "");
+      setSupContactPhone(editingSupplier.contact_phone || "");
+      setSupNotes(editingSupplier.notes || "");
+      setSupActive(editingSupplier.active ?? true);
+    } else {
+      setSupName(""); setSupCategory("General"); setSupApproved(true);
+      setSupContactName(""); setSupContactEmail(""); setSupContactPhone("");
+      setSupNotes(""); setSupActive(true);
+    }
+  }, [editingSupplier, supplierDialogOpen]);
+
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ["suppliers", siteId],
     queryFn: async () => {
