@@ -27,7 +27,34 @@ const Allergens = () => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
 
   const [showIngDialog, setShowIngDialog] = useState(false);
-  const [ingForm, setIngForm] = useState({ name: "", supplier_name: "", allergens: [] as string[], composition_text: "" });
+  const [editingIngId, setEditingIngId] = useState<string | null>(null);
+  type SubIng = { name: string; allergens: string[] };
+  const emptyIngForm = { name: "", supplier_name: "", allergens: [] as string[], composition_text: "", sub_ingredients: [] as SubIng[] };
+  const [ingForm, setIngForm] = useState(emptyIngForm);
+
+  const openNewIngredient = () => {
+    setEditingIngId(null);
+    setIngForm(emptyIngForm);
+    setShowIngDialog(true);
+  };
+  const openEditIngredient = (ing: any) => {
+    setEditingIngId(ing.id);
+    setIngForm({
+      name: ing.name || "",
+      supplier_name: ing.supplier_name || "",
+      allergens: ing.allergens || [],
+      composition_text: ing.composition_text || "",
+      sub_ingredients: Array.isArray(ing.sub_ingredients) ? ing.sub_ingredients : [],
+    });
+    setShowIngDialog(true);
+  };
+
+  // Derived allergens: union of manually selected + those declared on sub-ingredients
+  const derivedAllergens = (() => {
+    const set = new Set<string>(ingForm.allergens);
+    ingForm.sub_ingredients.forEach(s => (s.allergens || []).forEach(a => set.add(a)));
+    return Array.from(set);
+  })();
 
   const [showRecipeDialog, setShowRecipeDialog] = useState(false);
   const [recipeForm, setRecipeForm] = useState({
@@ -56,17 +83,39 @@ const Allergens = () => {
   const saveIngredient = useMutation({
     mutationFn: async () => {
       if (!siteId || !organisationId) throw new Error("No site");
-      const { error } = await supabase.from("ingredients").insert({
-        site_id: siteId, organisation_id: organisationId,
-        name: ingForm.name, supplier_name: ingForm.supplier_name || null, allergens: ingForm.allergens,
-        composition_text: ingForm.composition_text.trim() || null,
-      });
-      if (error) throw error;
+      // Build composition text from structured sub-ingredients if provided; otherwise use the free-text field.
+      const cleanSubs = ingForm.sub_ingredients
+        .map(s => ({ name: (s.name || "").trim(), allergens: s.allergens || [] }))
+        .filter(s => s.name.length > 0);
+      const compositionFromSubs = cleanSubs.map(s => s.name).join(", ");
+      const finalComposition = cleanSubs.length > 0
+        ? compositionFromSubs
+        : (ingForm.composition_text.trim() || null);
+      // Union allergens: manually checked + every allergen declared on a sub-ingredient
+      const allergenSet = new Set<string>(ingForm.allergens);
+      cleanSubs.forEach(s => s.allergens.forEach(a => allergenSet.add(a)));
+      const payload = {
+        site_id: siteId,
+        organisation_id: organisationId,
+        name: ingForm.name,
+        supplier_name: ingForm.supplier_name || null,
+        allergens: Array.from(allergenSet),
+        composition_text: finalComposition,
+        sub_ingredients: cleanSubs,
+      };
+      if (editingIngId) {
+        const { error } = await supabase.from("ingredients").update(payload).eq("id", editingIngId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("ingredients").insert(payload);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success("Ingredient added");
+      toast.success(editingIngId ? "Ingredient updated" : "Ingredient added");
       setShowIngDialog(false);
-      setIngForm({ name: "", supplier_name: "", allergens: [], composition_text: "" });
+      setEditingIngId(null);
+      setIngForm(emptyIngForm);
       qc.invalidateQueries({ queryKey: ["ingredients", siteId] });
       qc.invalidateQueries({ queryKey: ["recipes", siteId] });
     },
@@ -143,7 +192,7 @@ const Allergens = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowIngDialog(true)}>
+          <Button variant="outline" size="sm" className="gap-1" onClick={openNewIngredient}>
             <Plus className="h-3 w-3" /> Ingredient
           </Button>
           <Button size="sm" className="gap-1" disabled={ingredients.length === 0} onClick={() => setShowRecipeDialog(true)}>
@@ -217,25 +266,31 @@ const Allergens = () => {
 
           <TabsContent value="ingredients" className="mt-4">
             <Card><CardContent className="p-0"><div className="divide-y">
-              {ingredients.map((ing: any) => (
-                <div key={ing.id} className="p-3 space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{ing.name}</p>
-                      {ing.supplier_name && <p className="text-xs text-muted-foreground truncate">{ing.supplier_name}</p>}
+              {ingredients.map((ing: any) => {
+                const subs: SubIng[] = Array.isArray(ing.sub_ingredients) ? ing.sub_ingredients : [];
+                return (
+                  <div key={ing.id} className="p-3 space-y-1.5 hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => openEditIngredient(ing)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{ing.name}</p>
+                        {ing.supplier_name && <p className="text-xs text-muted-foreground truncate">{ing.supplier_name}</p>}
+                      </div>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {(ing.allergens || []).length > 0 ? (ing.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>) : <Badge variant="outline" className="text-[10px] text-success border-success/30">None</Badge>}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <Button variant="ghost" size="sm" className="text-breach hover:text-breach h-7 w-7 p-0 shrink-0" onClick={(e) => { e.stopPropagation(); deleteIngredient.mutate(ing.id); }}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="flex flex-wrap gap-1 justify-end">
-                      {(ing.allergens || []).length > 0 ? (ing.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>) : <Badge variant="outline" className="text-[10px] text-success border-success/30">None</Badge>}
-                    </div>
-                    <Button variant="ghost" size="sm" className="text-breach hover:text-breach h-7 w-7 p-0 shrink-0" onClick={() => deleteIngredient.mutate(ing.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {subs.length > 0 ? (
+                      <p className="text-[11px] text-muted-foreground italic pl-1">contains: {subs.map(s => s.name).join(", ")}</p>
+                    ) : ing.composition_text ? (
+                      <p className="text-[11px] text-muted-foreground italic pl-1">contains: {ing.composition_text}</p>
+                    ) : null}
                   </div>
-                  {ing.composition_text && (
-                    <p className="text-[11px] text-muted-foreground italic pl-1">contains: {ing.composition_text}</p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div></CardContent></Card>
           </TabsContent>
         </Tabs>
@@ -298,36 +353,96 @@ const Allergens = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add ingredient dialog */}
-      <Dialog open={showIngDialog} onOpenChange={setShowIngDialog}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-heading">Add Ingredient</DialogTitle></DialogHeader>
+      {/* Add / edit ingredient dialog */}
+      <Dialog open={showIngDialog} onOpenChange={(open) => { setShowIngDialog(open); if (!open) { setEditingIngId(null); setIngForm(emptyIngForm); } }}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-heading">{editingIngId ? "Edit Ingredient" : "Add Ingredient"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label className="text-sm">Name</Label><Input placeholder="e.g. Plain flour" value={ingForm.name} onChange={(e) => setIngForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label className="text-sm">Supplier (optional)</Label><Input placeholder="e.g. Allinsons" value={ingForm.supplier_name} onChange={(e) => setIngForm(f => ({ ...f, supplier_name: e.target.value }))} /></div>
 
-            <div>
-              <Label className="text-sm">Full ingredients list (optional)</Label>
-              <Textarea
-                rows={3}
-                placeholder="e.g. Tomato (60%), sugar, salt, basil, citric acid"
-                value={ingForm.composition_text}
-                onChange={(e) => setIngForm(f => ({ ...f, composition_text: e.target.value }))}
-              />
-              <p className="text-[11px] text-muted-foreground mt-1">If this ingredient has its own sub-ingredients (e.g. from the supplier's pack), list them here. They'll appear in parentheses after this ingredient on PPDS labels.</p>
+            <div className="rounded-md border p-3 space-y-2 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm">Sub-ingredients (composition)</Label>
+                  <p className="text-[11px] text-muted-foreground">For compound ingredients (e.g. Milk Chocolate). Order matters — list in descending weight as on the supplier pack.</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs"
+                  onClick={() => setIngForm(f => ({ ...f, sub_ingredients: [...f.sub_ingredients, { name: "", allergens: [] }] }))}>
+                  <Plus className="h-3 w-3" /> Add
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {ingForm.sub_ingredients.map((sub, idx) => (
+                  <div key={idx} className="rounded border bg-background p-2 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground w-4 text-right">{idx + 1}.</span>
+                      <Input className="flex-1 h-8 text-sm" placeholder="e.g. Sugar, Cocoa butter, Whole milk powder..."
+                        value={sub.name}
+                        onChange={(e) => setIngForm(f => {
+                          const copy = [...f.sub_ingredients]; copy[idx] = { ...copy[idx], name: e.target.value }; return { ...f, sub_ingredients: copy };
+                        })} />
+                      <Button variant="ghost" size="sm" className="text-breach hover:text-breach h-8 w-8 p-0"
+                        onClick={() => setIngForm(f => ({ ...f, sub_ingredients: f.sub_ingredients.filter((_, i) => i !== idx) }))}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1 pl-6">
+                      {ALLERGENS.map(a => {
+                        const on = sub.allergens.includes(a);
+                        return (
+                          <button type="button" key={a}
+                            onClick={() => setIngForm(f => {
+                              const copy = [...f.sub_ingredients];
+                              const cur = copy[idx].allergens;
+                              copy[idx] = { ...copy[idx], allergens: on ? cur.filter(x => x !== a) : [...cur, a] };
+                              return { ...f, sub_ingredients: copy };
+                            })}
+                            className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${on ? "bg-breach/10 text-breach border-breach/30" : "border-border text-muted-foreground hover:bg-muted"}`}>
+                            {a}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {ingForm.sub_ingredients.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">No sub-ingredients — leave blank for raw single-component ingredients (e.g. Plain flour).</p>
+                )}
+              </div>
             </div>
+
+            {ingForm.sub_ingredients.length === 0 && (
+              <div>
+                <Label className="text-sm">Full ingredients list (free text, optional)</Label>
+                <Textarea
+                  rows={3}
+                  placeholder="e.g. Tomato (60%), sugar, salt, basil, citric acid"
+                  value={ingForm.composition_text}
+                  onChange={(e) => setIngForm(f => ({ ...f, composition_text: e.target.value }))}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Used as-is on PPDS labels. Add structured sub-ingredients above instead for automatic allergen detection.</p>
+              </div>
+            )}
 
             <div>
               <Label className="text-sm mb-2 block">Allergens contained</Label>
               <div className="grid grid-cols-2 gap-1.5">
-                {ALLERGENS.map(a => (
-                  <label key={a} className="flex items-center gap-2 cursor-pointer text-sm">
-                    <Checkbox checked={ingForm.allergens.includes(a)}
-                      onCheckedChange={(checked) => setIngForm(f => ({ ...f, allergens: checked ? [...f.allergens, a] : f.allergens.filter(x => x !== a) }))} />
-                    <span>{a}</span>
-                  </label>
-                ))}
+                {ALLERGENS.map(a => {
+                  const fromSub = ingForm.sub_ingredients.some(s => s.allergens.includes(a));
+                  const checked = ingForm.allergens.includes(a) || fromSub;
+                  return (
+                    <label key={a} className={`flex items-center gap-2 cursor-pointer text-sm ${fromSub ? "opacity-90" : ""}`}>
+                      <Checkbox checked={checked} disabled={fromSub}
+                        onCheckedChange={(c) => setIngForm(f => ({ ...f, allergens: c ? [...f.allergens, a] : f.allergens.filter(x => x !== a) }))} />
+                      <span>{a}{fromSub && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</span>
+                    </label>
+                  );
+                })}
               </div>
+              {derivedAllergens.length > 0 && (
+                <p className="text-[11px] text-muted-foreground mt-2">Final allergens on save: {derivedAllergens.join(", ")}</p>
+              )}
             </div>
           </div>
           <DialogFooter>

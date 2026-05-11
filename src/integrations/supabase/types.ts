@@ -1280,6 +1280,7 @@ export type Database = {
           pack_quantity: number | null
           pack_unit: string | null
           site_id: string
+          sub_ingredients: Json
           supplier_id: string | null
           supplier_item_id: string | null
           supplier_name: string | null
@@ -1304,6 +1305,7 @@ export type Database = {
           pack_quantity?: number | null
           pack_unit?: string | null
           site_id: string
+          sub_ingredients?: Json
           supplier_id?: string | null
           supplier_item_id?: string | null
           supplier_name?: string | null
@@ -1328,6 +1330,7 @@ export type Database = {
           pack_quantity?: number | null
           pack_unit?: string | null
           site_id?: string
+          sub_ingredients?: Json
           supplier_id?: string | null
           supplier_item_id?: string | null
           supplier_name?: string | null
