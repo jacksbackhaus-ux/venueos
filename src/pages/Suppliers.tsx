@@ -105,6 +105,42 @@ const Suppliers = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const upsertSupplier = useMutation({
+    mutationFn: async () => {
+      const trimmed = supName.trim();
+      if (!trimmed) throw new Error("Name is required");
+      const payload: any = {
+        site_id: siteId!,
+        organisation_id: organisationId!,
+        name: trimmed,
+        category: supCategory.trim() || "General",
+        approved: supApproved,
+        contact_name: supContactName.trim() || null,
+        contact_email: supContactEmail.trim() || null,
+        contact_phone: supContactPhone.trim() || null,
+        notes: supNotes.trim() || null,
+        active: supActive,
+      };
+      if (editingSupplier) {
+        const { error } = await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("suppliers").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers", siteId] });
+      setSupplierDialogOpen(false);
+      setEditingSupplier(null);
+      toast.success(editingSupplier ? "Supplier updated" : "Supplier added");
+    },
+    onError: (err: any) => toast.error(err.message ?? "Could not save supplier"),
+  });
+
+  const openAddSupplier = () => { setEditingSupplier(null); setSupplierDialogOpen(true); };
+  const openEditSupplier = (s: any) => { setEditingSupplier(s); setSupplierDialogOpen(true); };
+
   if (!siteId) return <div className="p-6 text-center text-muted-foreground">No site selected.</div>;
 
   return (
