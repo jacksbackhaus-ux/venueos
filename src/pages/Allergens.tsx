@@ -192,7 +192,7 @@ const Allergens = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowIngDialog(true)}>
+          <Button variant="outline" size="sm" className="gap-1" onClick={openNewIngredient}>
             <Plus className="h-3 w-3" /> Ingredient
           </Button>
           <Button size="sm" className="gap-1" disabled={ingredients.length === 0} onClick={() => setShowRecipeDialog(true)}>
