@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Truck, Plus, CheckCircle2, XCircle, Search, ChevronRight, Clock, Thermometer, Package, AlertTriangle, Camera, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,35 @@ const Suppliers = () => {
   const [newPackaging, setNewPackaging] = useState<"good" | "damaged" | "n/a">("good");
   const [newUseByOk, setNewUseByOk] = useState(true);
   const [newNote, setNewNote] = useState("");
+
+  // Supplier add/edit dialog
+  const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<any | null>(null);
+  const [supName, setSupName] = useState("");
+  const [supCategory, setSupCategory] = useState("General");
+  const [supApproved, setSupApproved] = useState(true);
+  const [supContactName, setSupContactName] = useState("");
+  const [supContactEmail, setSupContactEmail] = useState("");
+  const [supContactPhone, setSupContactPhone] = useState("");
+  const [supNotes, setSupNotes] = useState("");
+  const [supActive, setSupActive] = useState(true);
+
+  useEffect(() => {
+    if (editingSupplier) {
+      setSupName(editingSupplier.name || "");
+      setSupCategory(editingSupplier.category || "General");
+      setSupApproved(!!editingSupplier.approved);
+      setSupContactName(editingSupplier.contact_name || "");
+      setSupContactEmail(editingSupplier.contact_email || "");
+      setSupContactPhone(editingSupplier.contact_phone || "");
+      setSupNotes(editingSupplier.notes || "");
+      setSupActive(editingSupplier.active ?? true);
+    } else {
+      setSupName(""); setSupCategory("General"); setSupApproved(true);
+      setSupContactName(""); setSupContactEmail(""); setSupContactPhone("");
+      setSupNotes(""); setSupActive(true);
+    }
+  }, [editingSupplier, supplierDialogOpen]);
 
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ["suppliers", siteId],
@@ -76,6 +105,42 @@ const Suppliers = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const upsertSupplier = useMutation({
+    mutationFn: async () => {
+      const trimmed = supName.trim();
+      if (!trimmed) throw new Error("Name is required");
+      const payload: any = {
+        site_id: siteId!,
+        organisation_id: organisationId!,
+        name: trimmed,
+        category: supCategory.trim() || "General",
+        approved: supApproved,
+        contact_name: supContactName.trim() || null,
+        contact_email: supContactEmail.trim() || null,
+        contact_phone: supContactPhone.trim() || null,
+        notes: supNotes.trim() || null,
+        active: supActive,
+      };
+      if (editingSupplier) {
+        const { error } = await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("suppliers").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers", siteId] });
+      setSupplierDialogOpen(false);
+      setEditingSupplier(null);
+      toast.success(editingSupplier ? "Supplier updated" : "Supplier added");
+    },
+    onError: (err: any) => toast.error(err.message ?? "Could not save supplier"),
+  });
+
+  const openAddSupplier = () => { setEditingSupplier(null); setSupplierDialogOpen(true); };
+  const openEditSupplier = (s: any) => { setEditingSupplier(s); setSupplierDialogOpen(true); };
+
   if (!siteId) return <div className="p-6 text-center text-muted-foreground">No site selected.</div>;
 
   return (
@@ -88,7 +153,10 @@ const Suppliers = () => {
             <p className="text-sm text-muted-foreground">{suppliers.filter((s: any) => s.approved).length} approved suppliers</p>
           </div>
         </div>
-        <Button onClick={() => setShowNewDelivery(true)} className="gap-2"><Plus className="h-4 w-4" /> Log Delivery</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={openAddSupplier} className="gap-2"><Plus className="h-4 w-4" /> Add Supplier</Button>
+          <Button onClick={() => setShowNewDelivery(true)} className="gap-2"><Plus className="h-4 w-4" /> Log Delivery</Button>
+        </div>
       </div>
 
       {isLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
@@ -96,8 +164,9 @@ const Suppliers = () => {
       {!isLoading && suppliers.length === 0 && (
         <Card><CardContent className="p-8 text-center text-muted-foreground">
           <Truck className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No suppliers configured</p>
-          <p className="text-sm mt-1">Add suppliers in Settings to start logging deliveries.</p>
+          <p className="font-medium">No suppliers yet</p>
+          <p className="text-sm mt-1 mb-4">Add your first supplier to start logging deliveries.</p>
+          <Button onClick={openAddSupplier} className="gap-2"><Plus className="h-4 w-4" /> Add Supplier</Button>
         </CardContent></Card>
       )}
 
@@ -136,15 +205,20 @@ const Suppliers = () => {
             {deliveries.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No deliveries logged yet.</p>}
           </TabsContent>
           <TabsContent value="suppliers" className="mt-4 space-y-3">
-            <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search suppliers..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" /></div>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search suppliers..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" /></div>
+              <Button onClick={openAddSupplier} size="sm" className="gap-2 shrink-0"><Plus className="h-4 w-4" /> Add</Button>
+            </div>
             {suppliers.filter((s: any) => s.name.toLowerCase().includes(searchTerm.toLowerCase())).map((s: any) => (
-              <Card key={s.id}><CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2"><h3 className="font-heading font-semibold text-sm">{s.name}</h3>{s.approved ? <Badge className="bg-success/10 text-success border-0 text-[10px]">Approved</Badge> : <Badge className="bg-warning/10 text-warning border-0 text-[10px]">Pending</Badge>}</div>
-                  <p className="text-xs text-muted-foreground">{s.category}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </CardContent></Card>
+              <Card key={s.id} className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => openEditSupplier(s)}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2"><h3 className="font-heading font-semibold text-sm">{s.name}</h3>{s.approved ? <Badge className="bg-success/10 text-success border-0 text-[10px]">Approved</Badge> : <Badge className="bg-warning/10 text-warning border-0 text-[10px]">Pending</Badge>}</div>
+                    <p className="text-xs text-muted-foreground">{s.category}{s.contact_name ? ` · ${s.contact_name}` : ""}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
             ))}
           </TabsContent>
         </Tabs>
@@ -161,6 +235,29 @@ const Suppliers = () => {
             <div><Label className="text-sm">Use-by dates OK?</Label><Select value={newUseByOk ? "yes" : "no"} onValueChange={(v) => setNewUseByOk(v === "yes")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem></SelectContent></Select></div>
             <div><Label className="text-sm">Notes</Label><Textarea placeholder="Optional..." value={newNote} onChange={(e) => setNewNote(e.target.value)} className="text-sm" /></div>
             <Button className="w-full" disabled={!newSupplier || !newItems} onClick={() => insertDelivery.mutate()}>Save Delivery</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={supplierDialogOpen} onOpenChange={(o) => { setSupplierDialogOpen(o); if (!o) setEditingSupplier(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle className="font-heading">{editingSupplier ? "Edit Supplier" : "Add Supplier"}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label className="text-sm">Name *</Label><Input placeholder="e.g. Bako Northern" value={supName} onChange={(e) => setSupName(e.target.value)} maxLength={120} /></div>
+            <div><Label className="text-sm">Category</Label><Input placeholder="e.g. Flour, Dairy, Packaging" value={supCategory} onChange={(e) => setSupCategory(e.target.value)} maxLength={60} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-sm">Contact name</Label><Input value={supContactName} onChange={(e) => setSupContactName(e.target.value)} maxLength={120} /></div>
+              <div><Label className="text-sm">Phone</Label><Input value={supContactPhone} onChange={(e) => setSupContactPhone(e.target.value)} maxLength={40} /></div>
+            </div>
+            <div><Label className="text-sm">Email</Label><Input type="email" value={supContactEmail} onChange={(e) => setSupContactEmail(e.target.value)} maxLength={200} /></div>
+            <div><Label className="text-sm">Notes</Label><Textarea value={supNotes} onChange={(e) => setSupNotes(e.target.value)} className="text-sm" maxLength={1000} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-sm">Approved</Label><Select value={supApproved ? "yes" : "no"} onValueChange={(v) => setSupApproved(v === "yes")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">Pending</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-sm">Status</Label><Select value={supActive ? "active" : "inactive"} onValueChange={(v) => setSupActive(v === "active")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
+            </div>
+            <Button className="w-full" disabled={!supName.trim() || upsertSupplier.isPending} onClick={() => upsertSupplier.mutate()}>
+              {upsertSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editingSupplier ? "Save Changes" : "Add Supplier"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
