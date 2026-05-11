@@ -27,7 +27,34 @@ const Allergens = () => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
 
   const [showIngDialog, setShowIngDialog] = useState(false);
-  const [ingForm, setIngForm] = useState({ name: "", supplier_name: "", allergens: [] as string[], composition_text: "" });
+  const [editingIngId, setEditingIngId] = useState<string | null>(null);
+  type SubIng = { name: string; allergens: string[] };
+  const emptyIngForm = { name: "", supplier_name: "", allergens: [] as string[], composition_text: "", sub_ingredients: [] as SubIng[] };
+  const [ingForm, setIngForm] = useState(emptyIngForm);
+
+  const openNewIngredient = () => {
+    setEditingIngId(null);
+    setIngForm(emptyIngForm);
+    setShowIngDialog(true);
+  };
+  const openEditIngredient = (ing: any) => {
+    setEditingIngId(ing.id);
+    setIngForm({
+      name: ing.name || "",
+      supplier_name: ing.supplier_name || "",
+      allergens: ing.allergens || [],
+      composition_text: ing.composition_text || "",
+      sub_ingredients: Array.isArray(ing.sub_ingredients) ? ing.sub_ingredients : [],
+    });
+    setShowIngDialog(true);
+  };
+
+  // Derived allergens: union of manually selected + those declared on sub-ingredients
+  const derivedAllergens = (() => {
+    const set = new Set<string>(ingForm.allergens);
+    ingForm.sub_ingredients.forEach(s => (s.allergens || []).forEach(a => set.add(a)));
+    return Array.from(set);
+  })();
 
   const [showRecipeDialog, setShowRecipeDialog] = useState(false);
   const [recipeForm, setRecipeForm] = useState({
