@@ -153,7 +153,10 @@ const Suppliers = () => {
             <p className="text-sm text-muted-foreground">{suppliers.filter((s: any) => s.approved).length} approved suppliers</p>
           </div>
         </div>
-        <Button onClick={() => setShowNewDelivery(true)} className="gap-2"><Plus className="h-4 w-4" /> Log Delivery</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={openAddSupplier} className="gap-2"><Plus className="h-4 w-4" /> Add Supplier</Button>
+          <Button onClick={() => setShowNewDelivery(true)} className="gap-2"><Plus className="h-4 w-4" /> Log Delivery</Button>
+        </div>
       </div>
 
       {isLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
@@ -161,8 +164,9 @@ const Suppliers = () => {
       {!isLoading && suppliers.length === 0 && (
         <Card><CardContent className="p-8 text-center text-muted-foreground">
           <Truck className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No suppliers configured</p>
-          <p className="text-sm mt-1">Add suppliers in Settings to start logging deliveries.</p>
+          <p className="font-medium">No suppliers yet</p>
+          <p className="text-sm mt-1 mb-4">Add your first supplier to start logging deliveries.</p>
+          <Button onClick={openAddSupplier} className="gap-2"><Plus className="h-4 w-4" /> Add Supplier</Button>
         </CardContent></Card>
       )}
 
