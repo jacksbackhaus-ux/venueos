@@ -176,6 +176,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/auth" element={<AuthRedirect />} />
       <Route path="/staff-login" element={<StaffLogin />} />
+      <Route path="/landing" element={<Landing />} />
       <Route path="/login/:slug" element={<OrgLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
