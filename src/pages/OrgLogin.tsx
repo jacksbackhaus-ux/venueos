@@ -18,6 +18,12 @@ interface OrgPublic {
   slug: string;
 }
 
+interface OrgBrandingPublic {
+  logo_url: string | null;
+  business_display_name: string | null;
+  primary_colour: string | null;
+}
+
 export default function OrgLogin() {
   const { slug = "" } = useParams<{ slug: string }>();
   const navigate = useNavigate();
