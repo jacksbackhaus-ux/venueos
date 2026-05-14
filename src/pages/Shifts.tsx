@@ -47,6 +47,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CancellationDialog } from "@/components/shifts/CancellationDialog";
 import { SmartFillDialog } from "@/components/shifts/SmartFillDialog";
+import { AIRotaSuggestButton } from "@/components/shifts/AIRotaSuggestButton";
 
 // ---------- Date helpers (local time, Mon-first week) ----------
 const DAY_LABELS_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -466,6 +467,13 @@ const Shifts = () => {
                   <TabsTrigger value="day">Daily</TabsTrigger>
                 </TabsList>
               </Tabs>
+              {canEdit && view === "week" && siteId && organisationId && (
+                <AIRotaSuggestButton
+                  siteId={siteId}
+                  organisationId={organisationId}
+                  weekStart={weekStart}
+                />
+              )}
               {canEdit && (
                 <Button size="sm" onClick={() => openCreate()}>
                   <Plus className="h-4 w-4 mr-1" /> Add shift
