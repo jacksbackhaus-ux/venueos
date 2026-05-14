@@ -150,6 +150,8 @@ export async function fetchReportData(
     incidentsRes, deliveriesRes, suppliersRes,
     pestRes, maintRes, ingredientsRes, recipesRes,
     membershipsRes, closedDaysRes,
+    trainingRecordsRes, trainingReqsRes,
+    haccpPlansRes, ppmTasksRes, ppmCompletionsRes, wasteLogsRes,
   ] = await Promise.all([
     supabase.from("sites").select("name").eq("id", siteId).maybeSingle(),
     supabase.from("organisations").select("name").eq("id", orgId).maybeSingle(),
@@ -167,6 +169,12 @@ export async function fetchReportData(
     supabase.from("recipes").select("*").eq("site_id", siteId).eq("active", true),
     supabase.from("memberships").select("id").eq("active", true).in("site_id", [siteId]),
     supabase.from("closed_days").select("closed_date").eq("site_id", siteId).gte("closed_date", fromDate).lte("closed_date", toDate),
+    supabase.from("training_records").select("*").eq("site_id", siteId),
+    supabase.from("training_requirements").select("*").eq("site_id", siteId),
+    supabase.from("haccp_plans").select("*").eq("site_id", siteId),
+    supabase.from("ppm_tasks").select("*").eq("site_id", siteId).eq("is_active", true),
+    supabase.from("ppm_completions").select("*").eq("site_id", siteId),
+    supabase.from("waste_logs").select("*").eq("site_id", siteId).gte("shift_date", fromDate).lte("shift_date", toDate),
   ]);
 
   const tempLogsRaw = tempRes.data || [];
