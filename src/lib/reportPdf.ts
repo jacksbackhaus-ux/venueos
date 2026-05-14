@@ -37,7 +37,7 @@ function footer(doc: jsPDF, data: ReportData) {
   }
 }
 
-export function generateInspectionPackPdf(data: ReportData) {
+export function generateInspectionPackPdf(data: ReportData, aiNarrative?: string) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pw = doc.internal.pageSize.getWidth();
   const margin = 14;
