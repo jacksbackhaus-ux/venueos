@@ -5,7 +5,7 @@ import {
   LayoutDashboard, CalendarDays, Repeat, Clock, MessageSquare, ClipboardCheck,
   Thermometer, Sparkles, Trash2, Star, Tag, Truck, Bug, Wrench,
   AlertTriangle, Boxes, GraduationCap, FileText, PoundSterling, Coins,
-  FileSpreadsheet, FileWarning, Layers, Users,
+  FileSpreadsheet, FileWarning, Layers, Users, Brain, Wand2, LineChart, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -167,7 +167,7 @@ function Hero() {
               </p>
               <div className="space-y-2.5 mb-6">
                 {[
-                  "All modules unlocked during trial",
+                  "Every module unlocked — full platform access",
                   "Mobile and desktop ready",
                   "Inspection-ready exports included",
                 ].map((t) => (
