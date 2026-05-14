@@ -48,48 +48,71 @@ function passCell(pass: boolean): XLSX.CellObject {
 
 // ─── Sheet builders ───────────────────────────────────────────────────────────
 
-function buildSummarySheet(data: ReportData): XLSX.WorkSheet {
+function buildOverviewSheet(data: ReportData): XLSX.WorkSheet {
+  const readinessLabel =
+    data.readiness === "green" ? "READY" : data.readiness === "amber" ? "PARTIAL READINESS" : "ACTION REQUIRED";
   const rows: any[][] = [
-    ["MiseOS — Food Safety Inspection Pack"],
+    ["MiseOS — EHO Inspection Pack — Overview"],
     [],
     ["Business", data.orgName],
     ["Site", data.siteName],
-    ["Report period", data.range.label],
-    [
-      "Date range",
-      `${format(data.range.from, "d MMM yyyy")} – ${format(data.range.to, "d MMM yyyy")}`,
-    ],
-    ["Generated", format(new Date(), "d MMM yyyy HH:mm")],
+    ["Reporting period", `${format(data.range.from, "d MMM yyyy")} – ${format(data.range.to, "d MMM yyyy")} (${data.range.days} days)`],
+    ["Generated", format(new Date(data.generatedAt), "d MMM yyyy HH:mm")],
+    ["Inspection readiness", readinessLabel],
     [],
-    ["COMPLIANCE SUMMARY"],
-    ["Metric", "Score", "Status"],
-    [
-      "Overall Compliance",
-      `${data.overallScore}%`,
-      data.overallScore >= 80
-        ? "Good"
-        : data.overallScore >= 60
-        ? "Satisfactory"
-        : "Needs Improvement",
-    ],
-    ["Estimated Food Hygiene Rating", `${data.ratingEstimate} / 5`, ""],
-    ["Data Completeness", `${data.dataCompleteness}%`, ""],
+    ["EXECUTIVE SUMMARY"],
+    ["Metric", "Value"],
+    ["Overall compliance", `${data.overallScore}%`],
+    ["Estimated FHRS", `${data.ratingEstimate} / 5`],
+    ["Data completeness", `${data.dataCompleteness}%`],
+    ["High-risk events", `${data.highRiskBreaches}`],
+    ["Closed days excluded", `${data.closedDaysCount}`],
     [],
-    ["FSA PILLARS"],
-    ["Pillar", "Score", "Status"],
-    ...data.pillars.map((p) => [
-      p.name,
-      `${p.score}%`,
-      p.score >= 80 ? "Good" : p.score >= 60 ? "Satisfactory" : "Needs Improvement",
-    ]),
+    ["FHRS-ALIGNED BREAKDOWN"],
+    ["Area", "Score", "Status"],
+    ...data.pillars.map((p) => {
+      const label = p.key === "hygiene" ? "Food Handling Controls"
+        : p.key === "premises" ? "Premises & Structure"
+        : "Confidence in Management";
+      return [label, `${p.score}%`, p.score >= 80 ? "Good" : p.score >= 60 ? "Improvement needed" : "Action required"];
+    }),
     [],
-    ["PRIORITY ACTIONS"],
-    ["#", "Action", "Severity"],
+    ["TOP ISSUES DETECTED"],
+    ["#", "Issue", "Severity"],
     ...data.topFixes.map((f, i) => [i + 1, f.text, f.severity.toUpperCase()]),
+    ...(data.topFixes.length === 0 ? [["—", "No issues detected", ""]] : []),
+    [],
+    ["TOP STRENGTHS"],
+    ["#", "Strength"],
+    ...data.topStrengths.map((s, i) => [i + 1, s.text]),
+    ...(data.topStrengths.length === 0 ? [["—", "No data"]] : []),
   ];
-
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  setColWidths(ws, [32, 28, 20]);
+  setColWidths(ws, [32, 40, 20]);
+  return ws;
+}
+
+function buildEvidenceIndexSheet(): XLSX.WorkSheet {
+  const rows: any[][] = [
+    ["Evidence Index"],
+    ["Each evidence area below is documented in its own worksheet."],
+    [],
+    ["Area", "Worksheet"],
+    ["Daily Controls — Day Sheets", "Day Sheets"],
+    ["Daily Controls — Temperature", "Temperature Logs"],
+    ["Daily Controls — Cleaning", "Cleaning"],
+    ["Deliveries & Supplier Controls", "Deliveries"],
+    ["Approved Supplier List", "Suppliers"],
+    ["Allergens & PPDS Labelling", "Allergen Matrix"],
+    ["Incidents & Corrective Actions", "Incidents"],
+    ["Pest, Maintenance & PPM", "Pest & Maintenance / PPM"],
+    ["Staff Training & Competence", "Training"],
+    ["HACCP Plan", "HACCP"],
+    ["Waste & Continuous Improvement", "Waste"],
+    ["Workplace Safety Addendum", "Workplace Safety"],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  setColWidths(ws, [40, 26]);
   return ws;
 }
 
