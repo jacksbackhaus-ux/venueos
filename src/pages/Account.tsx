@@ -147,13 +147,10 @@ export default function Account() {
       return;
     }
     setSavingAddon("ai");
-    const { error } = await supabase
-      .from("subscriptions")
-      .update({ ai_active: true })
-      .eq("organisation_id", appUser.organisation_id);
+    const { data, error } = await supabase.functions.invoke("activate-ai-trial");
     setSavingAddon(null);
-    if (error) {
-      toast.error("Could not add AI Insights: " + error.message);
+    if (error || (data as any)?.error) {
+      toast.error("Could not add AI Insights: " + (error?.message || (data as any)?.error));
       return;
     }
     await refresh();
