@@ -431,8 +431,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Desktop header */}
           <header className="hidden md:flex h-12 items-center border-b bg-card px-4 shrink-0 gap-3">
             <SidebarTrigger />
+            {logoUrl ? (
+              <img src={logoUrl} alt={businessName} className="h-7 w-7 rounded object-cover" />
+            ) : null}
             <h1 className="font-heading font-semibold text-sm text-foreground">
-              MiseOS
+              {businessName || "MiseOS"}
             </h1>
             {showSiteIndicator && (
               <Badge
