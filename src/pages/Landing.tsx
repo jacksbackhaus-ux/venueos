@@ -224,8 +224,77 @@ function Statement() {
   );
 }
 
-// ───── Problem (no emojis, icons instead) ─────
-function Problem() {
+// ───── AI Capabilities ─────
+function AISection() {
+  const cards = [
+    {
+      icon: Brain,
+      title: "Morning Briefing",
+      body: "Each morning, AI summarises last night's checks, flags anything missed, and tells you exactly what needs attention before service.",
+    },
+    {
+      icon: Wand2,
+      title: "Smart Rota",
+      body: "AI drafts next week's rota from historical patterns, availability and approved holidays — respecting Working Time Directive limits.",
+    },
+    {
+      icon: LineChart,
+      title: "Equipment Drift Detection",
+      body: "AI watches your fridge and freezer trends, predicts failures before they breach, and tells you which unit needs servicing.",
+    },
+    {
+      icon: FileText,
+      title: "Compliance Narrative",
+      body: "AI writes plain-English compliance summaries for your EHO inspection pack — no more stitching reports together by hand.",
+    },
+  ];
+  return (
+    <section className="px-4 py-20 md:py-28">
+      <motion.div
+        {...fadeUp}
+        className="relative max-w-6xl mx-auto rounded-[2rem] overflow-hidden text-white p-8 md:p-14 lg:p-16"
+        style={{ background: `linear-gradient(135deg, ${BRAND_DEEP} 0%, #2a5446 100%)` }}
+      >
+        <div
+          aria-hidden
+          className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full opacity-25 blur-3xl"
+          style={{ background: `radial-gradient(circle, ${BRAND_LIGHT} 0%, transparent 70%)` }}
+        />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-9 h-9 rounded-xl bg-white/15 grid place-items-center backdrop-blur-sm">
+              <Zap className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold uppercase tracking-widest text-white/80">
+              AI built in — no setup, no extra cost
+            </span>
+          </div>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight max-w-3xl mb-4">
+            AI that runs in the background, not in your way
+          </h2>
+          <p className="text-base md:text-lg text-white/80 max-w-2xl leading-relaxed mb-12">
+            MiseOS uses AI to remove the boring parts of running a venue — drafting rotas,
+            spotting equipment drift, summarising compliance — so you can focus on the food
+            and your team.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-5">
+            {cards.map((c) => (
+              <div
+                key={c.title}
+                className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-6"
+              >
+                <c.icon className="w-7 h-7 mb-4 opacity-90" />
+                <h3 className="font-bold text-lg mb-1.5">{c.title}</h3>
+                <p className="text-sm text-white/80 leading-relaxed">{c.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
   const cards = [
     {
       icon: FileWarning,
