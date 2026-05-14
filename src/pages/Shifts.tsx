@@ -47,7 +47,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CancellationDialog } from "@/components/shifts/CancellationDialog";
 import { SmartFillDialog } from "@/components/shifts/SmartFillDialog";
-import { AIRotaSuggestButton } from "@/components/shifts/AIRotaSuggestButton";
+import { SmartRotaPanel } from "@/components/shifts/SmartRotaPanel";
+import { useRole } from "@/hooks/useRole";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { useAIAddedShifts } from "@/lib/aiShiftsTracker";
 
 // ---------- Date helpers (local time, Mon-first week) ----------
 const DAY_LABELS_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
