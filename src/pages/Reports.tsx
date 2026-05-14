@@ -139,7 +139,7 @@ const Reports = () => {
     if (!data) return;
     setExporting(true);
     try {
-      generateInspectionPackPdf(data);
+      generateInspectionPackPdf(data, aiActive ? aiNarrative : undefined);
       toast({ title: "Inspection Pack generated", description: "Your PDF has been downloaded." });
     } catch (err: any) {
       toast({ title: "Export failed", description: err.message, variant: "destructive" });
