@@ -56,7 +56,9 @@ import { Separator } from "@/components/ui/separator";
 import { ModuleManagementSection } from "@/components/ModuleManagementSection";
 import { MessengerSettingsSection } from "@/components/messenger/MessengerSettingsSection";
 import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
-import { ToggleLeft, MessageSquare } from "lucide-react";
+import { BrandingSection } from "@/components/settings/BrandingSection";
+import { useRole } from "@/hooks/useRole";
+import { ToggleLeft, MessageSquare, Palette } from "lucide-react";
 
 // ─── Temperature Units ───
 type TempUnit = {
