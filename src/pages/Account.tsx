@@ -148,6 +148,25 @@ export default function Account() {
         <p className="text-sm text-muted-foreground mt-1">Manage your MiseOS subscription, modules, and invoices.</p>
       </div>
 
+      {/* Embedded checkout */}
+      {showCheckoutFor && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {paidActive ? "Switch / add" : "Subscribe"} — {PLANS[showCheckoutFor].name}
+            </CardTitle>
+            <CardDescription>
+              {formatGBP(checkoutCycle === "year" ? PLANS[showCheckoutFor].yearlyPrice : PLANS[showCheckoutFor].monthlyPrice)} per site / {checkoutCycle === "year" ? "year" : "month"} · {siteCount} site(s) · 15% off from site 2
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border overflow-hidden">
+              <StripeEmbeddedCheckout plan={showCheckoutFor} cycle={checkoutCycle} siteQuantity={siteCount} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Current plan */}
       <Card>
         <CardHeader>
@@ -353,24 +372,6 @@ export default function Account() {
         </Card>
       )}
 
-      {/* Embedded checkout */}
-      {showCheckoutFor && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {paidActive ? "Switch / add" : "Subscribe"} — {PLANS[showCheckoutFor].name}
-            </CardTitle>
-            <CardDescription>
-              {formatGBP(checkoutCycle === "year" ? PLANS[showCheckoutFor].yearlyPrice : PLANS[showCheckoutFor].monthlyPrice)} per site / {checkoutCycle === "year" ? "year" : "month"} · {siteCount} site(s) · 15% off from site 2
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border overflow-hidden">
-              <StripeEmbeddedCheckout plan={showCheckoutFor} cycle={checkoutCycle} siteQuantity={siteCount} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
