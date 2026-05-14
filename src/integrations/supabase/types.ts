@@ -47,6 +47,107 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_insights: {
+        Row: {
+          completion_tokens: number | null
+          content: Json
+          cost_estimate: number | null
+          created_at: string
+          generated_at: string
+          id: string
+          insight_type: string
+          model_used: string | null
+          narrative: string | null
+          organisation_id: string
+          prompt_tokens: number | null
+          site_id: string
+          valid_until: string | null
+        }
+        Insert: {
+          completion_tokens?: number | null
+          content: Json
+          cost_estimate?: number | null
+          created_at?: string
+          generated_at?: string
+          id?: string
+          insight_type: string
+          model_used?: string | null
+          narrative?: string | null
+          organisation_id: string
+          prompt_tokens?: number | null
+          site_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          completion_tokens?: number | null
+          content?: Json
+          cost_estimate?: number | null
+          created_at?: string
+          generated_at?: string
+          id?: string
+          insight_type?: string
+          model_used?: string | null
+          narrative?: string | null
+          organisation_id?: string
+          prompt_tokens?: number | null
+          site_id?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_insights_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage: {
+        Row: {
+          id: string
+          month: string
+          organisation_id: string
+          total_cost: number
+          total_requests: number
+          total_tokens: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          month: string
+          organisation_id: string
+          total_cost?: number
+          total_requests?: number
+          total_tokens?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          month?: string
+          organisation_id?: string
+          total_cost?: number
+          total_requests?: number
+          total_tokens?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_trail: {
         Row: {
           action: string
@@ -3639,6 +3740,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          ai_active: boolean
           base_active: boolean
           billing_interval: string | null
           bundle_active: boolean
@@ -3666,6 +3768,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_active?: boolean
           base_active?: boolean
           billing_interval?: string | null
           bundle_active?: boolean
@@ -3693,6 +3796,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_active?: boolean
           base_active?: boolean
           billing_interval?: string | null
           bundle_active?: boolean
