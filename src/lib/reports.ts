@@ -377,6 +377,41 @@ export async function fetchReportData(
       severity: (d.status === "bad" ? "high" : d.score < 60 ? "medium" : "low") as "high" | "medium" | "low",
     }));
 
+  // Top strengths — best details across pillars (good only)
+  const topStrengths = allDetails
+    .filter((d) => d.status === "good")
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map((d) => ({ text: `${d.label}: ${d.value}` }));
+
+  // High-risk breaches: temp fails + rejected deliveries + open incidents
+  const highRiskBreaches =
+    tempBreaches.length +
+    (deliveries as any[]).filter((d) => d.accepted === false).length +
+    openIncidents;
+
+  // Inspection readiness traffic light
+  const readiness: "green" | "amber" | "red" =
+    overallScore >= 80 && highRiskBreaches <= 2 ? "green" : overallScore >= 60 ? "amber" : "red";
+
+  // Active modules signal (used by audit trail)
+  const activeModules = [
+    daySheets.length > 0 && "Day Sheets",
+    tempLogs.length > 0 && "Temperature Tracking",
+    cleaningTasks.length > 0 && "Cleaning",
+    deliveries.length > 0 && "Deliveries",
+    suppliers.length > 0 && "Suppliers",
+    incidents.length > 0 && "Incidents",
+    pestLogs.length > 0 && "Pest",
+    maintenanceLogs.length > 0 && "Maintenance",
+    ppmTasks.length > 0 && "PPM Schedule",
+    haccpPlans.length > 0 && "HACCP",
+    trainingRecords.length > 0 && "Staff Training",
+    recipes.length > 0 && "Recipes / Allergens",
+    ppdsRecipes.length > 0 && "PPDS Labelling",
+    wasteLogs.length > 0 && "Waste",
+  ].filter(Boolean) as string[];
+
   // === Cost & Margin summary (only when caller is authorised) ===
   let costMargin: CostMarginSummary | undefined;
   if (options.includeCostMargin) {
