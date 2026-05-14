@@ -43,9 +43,9 @@ function Nav() {
   ];
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 h-20 flex items-center justify-between">
         <a href="#top" className="flex items-center">
-          <img src={miseosLogo} alt="MiseOS" className="h-8 w-auto" />
+          <img src={miseosLogo} alt="MiseOS" className="h-12 md:h-14 w-auto" />
         </a>
         <div className="hidden md:flex items-center gap-8">
           {links.map((l) => (
@@ -404,7 +404,7 @@ function Footer() {
     <footer className="border-t border-slate-200 py-10 px-4">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600">
         <div className="flex items-center gap-2">
-          <img src={miseosLogo} alt="MiseOS" className="h-6 w-auto" />
+          <img src={miseosLogo} alt="MiseOS" className="h-10 w-auto" />
           <span>© 2026</span>
         </div>
         <div className="flex gap-5">
