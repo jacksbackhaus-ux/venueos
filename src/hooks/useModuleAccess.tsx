@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
+import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { ALL_MODULES, type ModuleName } from "@/lib/plans";
 
 export interface ModuleActivationRow {
@@ -20,6 +21,7 @@ export interface ModuleActivationRow {
  */
 export function useModuleAccess() {
   const { currentSite } = useSite();
+  const { trialActive } = useOrgAccess();
   const siteId = currentSite?.id || null;
   const [rows, setRows] = useState<ModuleActivationRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,8 +69,9 @@ export function useModuleAccess() {
   const activeMap: Record<string, boolean> = {};
   rows.forEach(r => { activeMap[r.module_name] = r.is_active; });
 
-  const isActive = (mod: ModuleName) => !!activeMap[mod];
-  const activeModules = ALL_MODULES.filter(m => activeMap[m]);
+  // During an active free trial, unlock every module — trial users get everything.
+  const isActive = (mod: ModuleName) => trialActive ? true : !!activeMap[mod];
+  const activeModules = trialActive ? [...ALL_MODULES] : ALL_MODULES.filter(m => activeMap[m]);
 
   return { loading, rows, isActive, activeModules, refresh };
 }
