@@ -32,6 +32,7 @@ import {
   loadTMEContext, calcRecipeBreakdown, tmeLineCost,
   type TMEContext, type TMERecipe, type TMERecipeIngredient, type TMEIngredient,
 } from "@/lib/trueMargin";
+import { MarginWatchdogCard } from "@/components/cost-margin/MarginWatchdogCard";
 
 const PACK_UNITS = ["g", "kg", "ml", "l", "each"] as const;
 const RECIPE_UNITS = ["g", "ml", "each"] as const;
@@ -93,6 +94,8 @@ export default function CostMargin() {
           Recipe costing with VAT, yield, nested prep and derived labour.
         </p>
       </div>
+
+      <MarginWatchdogCard siteId={siteId} ctx={ctx} recipes={allRecipes} />
 
       <Tabs defaultValue="menu" className="space-y-4">
         <TabsList className="flex-wrap h-auto">
