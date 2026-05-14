@@ -35,8 +35,9 @@ Deno.serve(async (req) => {
     // Resolve org + verify the caller is org_owner
     const { data: appUser, error: auErr } = await admin
       .from("users")
-      .select("organisation_id")
-      .eq("id", user.id)
+      .select("id, organisation_id")
+      .eq("auth_user_id", user.id)
+      .eq("status", "active")
       .maybeSingle();
     if (auErr || !appUser?.organisation_id) {
       return new Response(JSON.stringify({ error: "No organisation" }), {
@@ -45,10 +46,11 @@ Deno.serve(async (req) => {
     }
 
     const { data: roleRow } = await admin
-      .from("organisation_roles")
+      .from("org_users")
       .select("org_role")
-      .eq("user_id", user.id)
+      .eq("user_id", appUser.id)
       .eq("organisation_id", appUser.organisation_id)
+      .eq("active", true)
       .maybeSingle();
     if (roleRow?.org_role !== "org_owner") {
       return new Response(JSON.stringify({ error: "Only the organisation owner can do this" }), {
