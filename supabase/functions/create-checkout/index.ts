@@ -12,15 +12,21 @@ import { createStripeClient, type StripeEnv } from "../_shared/stripe.ts";
  * The site quantity is passed as the `quantity` on the line item (per-site pricing).
  */
 
-type PlanId = "base" | "compliance" | "business" | "bundle" | "ai";
+type PlanId = "base" | "compliance" | "business" | "bundle" | "ai" | "essentials" | "professional" | "business_tier" | "intelligence";
 type Cycle = "month" | "year";
 
 const LOOKUP: Record<PlanId, { month: string; year: string }> = {
-  base:       { month: "venueos_base_monthly",       year: "venueos_base_yearly" },
-  compliance: { month: "venueos_compliance_monthly", year: "venueos_compliance_yearly" },
-  business:   { month: "venueos_business_monthly",   year: "venueos_business_yearly" },
-  bundle:     { month: "venueos_bundle_monthly",     year: "venueos_bundle_yearly" },
-  ai:         { month: "venueos_ai_monthly",         year: "venueos_ai_yearly" },
+  // Legacy add-on style — kept so existing customers can still upgrade/extend their current Stripe sub.
+  base:          { month: "venueos_base_monthly",          year: "venueos_base_yearly" },
+  compliance:    { month: "venueos_compliance_monthly",    year: "venueos_compliance_yearly" },
+  business:      { month: "venueos_business_monthly",      year: "venueos_business_yearly" },
+  bundle:        { month: "venueos_bundle_monthly",        year: "venueos_bundle_yearly" },
+  ai:            { month: "venueos_ai_monthly",            year: "venueos_ai_yearly" },
+  // New 4-tier model used by all new signups.
+  essentials:    { month: "miseos_essentials_monthly",     year: "miseos_essentials_yearly" },
+  professional:  { month: "miseos_professional_monthly",   year: "miseos_professional_yearly" },
+  business_tier: { month: "miseos_business_tier_monthly",  year: "miseos_business_tier_yearly" },
+  intelligence:  { month: "miseos_intelligence_monthly",   year: "miseos_intelligence_yearly" },
 };
 
 serve(async (req) => {
