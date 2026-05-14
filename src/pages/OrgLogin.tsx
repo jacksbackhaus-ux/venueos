@@ -123,7 +123,7 @@ export default function OrgLogin() {
           </TabsList>
 
           <TabsContent value="login"><EmailLoginForm /></TabsContent>
-          <TabsContent value="staff"><OrgStaffLoginForm orgSlug={org.slug} orgName={org.name} /></TabsContent>
+          <TabsContent value="staff"><OrgStaffLoginForm orgSlug={org.slug} orgName={displayName} /></TabsContent>
         </Tabs>
 
         <p className="text-center text-[11px] text-muted-foreground mt-6">
