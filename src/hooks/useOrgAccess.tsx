@@ -109,7 +109,8 @@ export function useOrgAccess() {
     const compliance = !!subscription?.compliance_active;
     const business = !!subscription?.business_active;
     const bundle = !!subscription?.bundle_active;
-    const hasAnyPlan = base || compliance || business || bundle;
+    const ai = !!subscription?.ai_active;
+    const hasAnyPlan = base || compliance || business || bundle || ai;
     let primary: PlanId | null = null;
     let label = "No plan";
     if (bundle) { primary = "bundle"; label = "Full Bundle"; }
@@ -119,7 +120,9 @@ export function useOrgAccess() {
     else if (base) { primary = "base"; label = "Base Platform"; }
     else if (compliance) { primary = "compliance"; label = "Compliance Add-on"; }
     else if (business) { primary = "business"; label = "Business Add-on"; }
-    return { base, compliance, business, bundle, hasAnyPlan, label, primary };
+    else if (ai) { primary = "ai"; label = "AI Insights"; }
+    if (ai && primary !== "ai") label += " + AI";
+    return { base, compliance, business, bundle, ai, hasAnyPlan, label, primary };
   })();
 
   return {
