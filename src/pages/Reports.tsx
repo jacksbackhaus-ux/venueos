@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   FileText, Download, ShieldCheck, ClipboardCheck, SprayCan, Thermometer,
   Truck, AlertTriangle, Wheat, Bug, Users, CheckCircle2, BarChart3,
-  ArrowRight, Info, Calendar, Loader2,
+  ArrowRight, Info, Calendar, Loader2, Sparkles, RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { toast } from "@/hooks/use-toast";
 import { buildRange, fetchReportData, type DateRangeKey, type ReportData } from "@/lib/reports";
 import { generateInspectionPackPdf } from "@/lib/reportPdf";
 import { generateInspectionPackExcel } from "@/lib/ReportExcel";
 import { format } from "date-fns";
 import { Calculator } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusColor = (s: string) => {
   switch (s) {
