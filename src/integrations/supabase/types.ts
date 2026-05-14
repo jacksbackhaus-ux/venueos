@@ -3763,7 +3763,7 @@ export type Database = {
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
-          tier: Database["public"]["Enums"]["subscription_tier"] | null
+          tier: string | null
           trial_end: string | null
           updated_at: string
         }
@@ -3791,7 +3791,7 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
-          tier?: Database["public"]["Enums"]["subscription_tier"] | null
+          tier?: string | null
           trial_end?: string | null
           updated_at?: string
         }
@@ -3819,7 +3819,7 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
-          tier?: Database["public"]["Enums"]["subscription_tier"] | null
+          tier?: string | null
           trial_end?: string | null
           updated_at?: string
         }
@@ -4731,7 +4731,6 @@ export type Database = {
         | "expired"
       shift_request_type: "swap" | "cover"
       site_role: "owner" | "supervisor" | "staff" | "read_only"
-      subscription_tier: "starter" | "pro" | "multisite"
       user_status: "active" | "suspended"
     }
     CompositeTypes: {
@@ -4877,7 +4876,6 @@ export const Constants = {
       ],
       shift_request_type: ["swap", "cover"],
       site_role: ["owner", "supervisor", "staff", "read_only"],
-      subscription_tier: ["starter", "pro", "multisite"],
       user_status: ["active", "suspended"],
     },
   },
