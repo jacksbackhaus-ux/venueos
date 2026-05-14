@@ -17,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import miseosLogo from "@/assets/miseos-logo.png";
 
-const AUTH_URL = "https://mise-os.lovable.app/auth";
+const AUTH_URL = "/auth";
 
 // Brand palette
 const BRAND_DEEP = "#1f3a32";
