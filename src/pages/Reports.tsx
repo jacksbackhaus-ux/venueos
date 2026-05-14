@@ -245,6 +245,57 @@ const Reports = () => {
         </div>
       ) : (
         <>
+          {/* Inspection Pack Overview — readiness traffic light + strengths + evidence index */}
+          <Card className={`border-2 ${data.readiness === "green" ? "border-success/40 bg-success/5" : data.readiness === "amber" ? "border-warning/40 bg-warning/5" : "border-breach/40 bg-breach/5"}`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-heading flex items-center justify-between">
+                <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Inspection Pack Overview</span>
+                <Badge className={data.readiness === "green" ? "bg-success text-success-foreground" : data.readiness === "amber" ? "bg-warning text-warning-foreground" : "bg-breach text-breach-foreground"}>
+                  {data.readiness === "green" ? "READY" : data.readiness === "amber" ? "PARTIAL" : "ACTION REQUIRED"}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-md border bg-card p-2">
+                  <p className="text-[10px] text-muted-foreground uppercase">Compliance</p>
+                  <p className="text-lg font-heading font-bold">{data.overallScore}%</p>
+                </div>
+                <div className="rounded-md border bg-card p-2">
+                  <p className="text-[10px] text-muted-foreground uppercase">High-risk</p>
+                  <p className="text-lg font-heading font-bold text-breach">{data.highRiskBreaches}</p>
+                </div>
+                <div className="rounded-md border bg-card p-2">
+                  <p className="text-[10px] text-muted-foreground uppercase">Closed days</p>
+                  <p className="text-lg font-heading font-bold text-muted-foreground">{data.closedDaysCount}</p>
+                </div>
+              </div>
+              {data.topStrengths.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold mb-1 flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-success" /> Top strengths</p>
+                  <ul className="text-xs text-muted-foreground space-y-0.5">
+                    {data.topStrengths.slice(0, 3).map((s, i) => <li key={i}>• {s.text}</li>)}
+                  </ul>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-semibold mb-1">Evidence sections in the export</p>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                  <span>• Daily Controls (sheets, temps, cleaning)</span>
+                  <span>• Deliveries & supplier controls</span>
+                  <span>• Allergens & PPDS labelling</span>
+                  <span>• Incidents & corrective actions</span>
+                  <span>• Pest, maintenance & PPM</span>
+                  <span>• Staff training & competence</span>
+                  <span>• HACCP plan</span>
+                  <span>• Waste & continuous improvement</span>
+                  <span>• Workplace Safety Addendum</span>
+                  <span>• Audit trail</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Rating Estimate */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="bg-primary/5 border-primary/20">
