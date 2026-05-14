@@ -15,6 +15,7 @@ import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import miseosLogo from "@/assets/miseos-logo.png";
 
 const AUTH_URL = "https://mise-os.lovable.app/auth";
 
@@ -43,9 +44,8 @@ function Nav() {
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <a href="#top" className="flex items-center gap-2 font-bold text-lg">
-          <span className="w-8 h-8 rounded-lg bg-[#3d8a6a] text-white grid place-items-center font-bold">M</span>
-          <span>MiseOS</span>
+        <a href="#top" className="flex items-center">
+          <img src={miseosLogo} alt="MiseOS" className="h-8 w-auto" />
         </a>
         <div className="hidden md:flex items-center gap-8">
           {links.map((l) => (
@@ -381,7 +381,7 @@ function FAQ() {
 // ───── Final CTA ─────
 function FinalCTA() {
   return (
-    <section className="bg-slate-900 text-white py-20 md:py-28 px-4">
+    <section className="bg-[#1f3a32] text-white py-20 md:py-28 px-4">
       <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
         <h2 className="text-3xl md:text-5xl font-bold mb-5">Ready to run your venue properly?</h2>
         <p className="text-lg text-slate-300 mb-10 leading-relaxed">
@@ -404,8 +404,8 @@ function Footer() {
     <footer className="border-t border-slate-200 py-10 px-4">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600">
         <div className="flex items-center gap-2">
-          <span className="w-7 h-7 rounded-md bg-[#3d8a6a] text-white grid place-items-center font-bold text-xs">M</span>
-          <span>MiseOS © 2026</span>
+          <img src={miseosLogo} alt="MiseOS" className="h-6 w-auto" />
+          <span>© 2026</span>
         </div>
         <div className="flex gap-5">
           <a href="#" className="hover:text-slate-900">Privacy Policy</a>
