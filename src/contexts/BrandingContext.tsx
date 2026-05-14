@@ -131,6 +131,20 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
       "--brand-secondary-foreground",
       shouldUseDarkText(value.secondaryColour) ? "#0f172a" : "#ffffff",
     );
+
+    // Override semantic primary tokens so Switches, Progress bars, AI summary highlights,
+    // ring/focus styles, sidebar accents etc. all pick up the brand colour automatically.
+    // Status colours (success/warning/breach) are intentionally untouched.
+    const primaryHsl = hexToHslString(value.primaryColour);
+    const primaryFg = shouldUseDarkText(value.primaryColour) ? "222 47% 11%" : "0 0% 100%";
+    if (primaryHsl) {
+      root.style.setProperty("--primary", primaryHsl);
+      root.style.setProperty("--primary-foreground", primaryFg);
+      root.style.setProperty("--ring", primaryHsl);
+      root.style.setProperty("--sidebar-primary", primaryHsl);
+      root.style.setProperty("--sidebar-primary-foreground", primaryFg);
+      root.style.setProperty("--sidebar-ring", primaryHsl);
+    }
   }, [value.primaryColour, value.secondaryColour]);
 
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;
