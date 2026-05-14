@@ -68,6 +68,7 @@ const Reports = () => {
   const { orgRole } = useAuth();
   const { plan, trialActive, compedActive } = useOrgAccess();
   const { isActive } = useModuleAccess();
+  const branding = useBranding();
   const aiActive = isActive("ai_insights");
   const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRangeKey>("4weeks");
