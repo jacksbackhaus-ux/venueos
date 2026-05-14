@@ -53,6 +53,12 @@ export interface ReportData {
   ratingEstimate: number;
   dataCompleteness: number;
   topFixes: { text: string; link: string; severity: "high" | "medium" | "low" }[];
+  topStrengths: { text: string }[];
+  readiness: "green" | "amber" | "red";
+  highRiskBreaches: number;
+  closedDaysCount: number;
+  generatedAt: string;
+  activeModules: string[];
   // Raw evidence tables for PDF
   tempLogs: any[];
   tempBreaches: any[];
@@ -77,7 +83,19 @@ export interface ReportData {
   openMaintenance: number;
   ingredients: any[];
   recipes: any[];
+  ppdsRecipes: any[];
   staffCount: number;
+  // Extended evidence
+  trainingRecords: any[];
+  trainingRequirements: any[];
+  trainingExpiringSoon: number;
+  trainingExpired: number;
+  haccpPlans: any[];
+  ppmTasks: any[];
+  ppmCompletions: any[];
+  ppmOverdue: number;
+  wasteLogs: any[];
+  wasteCostTotal: number;
   // Cost & Margin summary (only populated when caller has access)
   costMargin?: CostMarginSummary;
 }
@@ -132,6 +150,8 @@ export async function fetchReportData(
     incidentsRes, deliveriesRes, suppliersRes,
     pestRes, maintRes, ingredientsRes, recipesRes,
     membershipsRes, closedDaysRes,
+    trainingRecordsRes, trainingReqsRes,
+    haccpPlansRes, ppmTasksRes, ppmCompletionsRes, wasteLogsRes,
   ] = await Promise.all([
     supabase.from("sites").select("name").eq("id", siteId).maybeSingle(),
     supabase.from("organisations").select("name").eq("id", orgId).maybeSingle(),
@@ -149,6 +169,12 @@ export async function fetchReportData(
     supabase.from("recipes").select("*").eq("site_id", siteId).eq("active", true),
     supabase.from("memberships").select("id").eq("active", true).in("site_id", [siteId]),
     supabase.from("closed_days").select("closed_date").eq("site_id", siteId).gte("closed_date", fromDate).lte("closed_date", toDate),
+    supabase.from("training_records").select("*").eq("site_id", siteId),
+    supabase.from("training_requirements").select("*").eq("site_id", siteId),
+    supabase.from("haccp_plans").select("*").eq("site_id", siteId),
+    supabase.from("ppm_tasks").select("*").eq("site_id", siteId).eq("is_active", true),
+    supabase.from("ppm_completions").select("*").eq("site_id", siteId),
+    supabase.from("waste_logs").select("*").eq("site_id", siteId).gte("shift_date", fromDate).lte("shift_date", toDate),
   ]);
 
   const tempLogsRaw = tempRes.data || [];
@@ -167,6 +193,24 @@ export async function fetchReportData(
   const ingredients = ingredientsRes.data || [];
   const recipes = recipesRes.data || [];
   const memberships = membershipsRes.data || [];
+  const trainingRecords = trainingRecordsRes.data || [];
+  const trainingRequirements = trainingReqsRes.data || [];
+  const haccpPlans = haccpPlansRes.data || [];
+  const ppmTasks = ppmTasksRes.data || [];
+  const ppmCompletions = ppmCompletionsRes.data || [];
+  const wasteLogs = wasteLogsRes.data || [];
+  const ppdsRecipes = (recipes as any[]).filter((r) => (r.label_type || "").toUpperCase() === "PPDS");
+  const wasteCostTotal = (wasteLogs as any[]).reduce((s, w) => s + (Number(w.estimated_cost) || 0), 0);
+  // Training expiry windows
+  const now = new Date();
+  const in30 = new Date(now.getTime() + 30 * 86400000);
+  const trainingExpired = (trainingRecords as any[]).filter((t) => t.expiry_date && new Date(t.expiry_date) < now).length;
+  const trainingExpiringSoon = (trainingRecords as any[]).filter((t) => t.expiry_date && new Date(t.expiry_date) >= now && new Date(t.expiry_date) <= in30).length;
+  const ppmOverdue = (ppmTasks as any[]).filter((t) => {
+    const last = (ppmCompletions as any[]).filter((c) => c.task_id === t.id).sort((a, b) => (a.completed_date < b.completed_date ? 1 : -1))[0];
+    if (!last?.next_due_date) return false;
+    return new Date(last.next_due_date) < now;
+  }).length;
 
   const closedDays = closedDaysRes.data || [];
   const closedSet = new Set((closedDays as any[]).map((c) => c.closed_date));
@@ -333,6 +377,41 @@ export async function fetchReportData(
       severity: (d.status === "bad" ? "high" : d.score < 60 ? "medium" : "low") as "high" | "medium" | "low",
     }));
 
+  // Top strengths — best details across pillars (good only)
+  const topStrengths = allDetails
+    .filter((d) => d.status === "good")
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map((d) => ({ text: `${d.label}: ${d.value}` }));
+
+  // High-risk breaches: temp fails + rejected deliveries + open incidents
+  const highRiskBreaches =
+    tempBreaches.length +
+    (deliveries as any[]).filter((d) => d.accepted === false).length +
+    openIncidents;
+
+  // Inspection readiness traffic light
+  const readiness: "green" | "amber" | "red" =
+    overallScore >= 80 && highRiskBreaches <= 2 ? "green" : overallScore >= 60 ? "amber" : "red";
+
+  // Active modules signal (used by audit trail)
+  const activeModules = [
+    daySheets.length > 0 && "Day Sheets",
+    tempLogs.length > 0 && "Temperature Tracking",
+    cleaningTasks.length > 0 && "Cleaning",
+    deliveries.length > 0 && "Deliveries",
+    suppliers.length > 0 && "Suppliers",
+    incidents.length > 0 && "Incidents",
+    pestLogs.length > 0 && "Pest",
+    maintenanceLogs.length > 0 && "Maintenance",
+    ppmTasks.length > 0 && "PPM Schedule",
+    haccpPlans.length > 0 && "HACCP",
+    trainingRecords.length > 0 && "Staff Training",
+    recipes.length > 0 && "Recipes / Allergens",
+    ppdsRecipes.length > 0 && "PPDS Labelling",
+    wasteLogs.length > 0 && "Waste",
+  ].filter(Boolean) as string[];
+
   // === Cost & Margin summary (only when caller is authorised) ===
   let costMargin: CostMarginSummary | undefined;
   if (options.includeCostMargin) {
@@ -374,6 +453,12 @@ export async function fetchReportData(
     ratingEstimate,
     dataCompleteness,
     topFixes,
+    topStrengths,
+    readiness,
+    highRiskBreaches,
+    closedDaysCount: closedInRange,
+    generatedAt: new Date().toISOString(),
+    activeModules,
     tempLogs,
     tempBreaches,
     cleaningCompletionPct,
@@ -397,7 +482,18 @@ export async function fetchReportData(
     openMaintenance,
     ingredients,
     recipes,
+    ppdsRecipes,
     staffCount: memberships.length,
+    trainingRecords,
+    trainingRequirements,
+    trainingExpiringSoon,
+    trainingExpired,
+    haccpPlans,
+    ppmTasks,
+    ppmCompletions,
+    ppmOverdue,
+    wasteLogs,
+    wasteCostTotal,
     costMargin,
   };
 }
