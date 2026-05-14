@@ -6,6 +6,13 @@
 
 @layer base {
   :root {
+    /* Brand (custom per-organisation; overridden at runtime by BrandingProvider) */
+    --brand-primary: #0D9488;
+    --brand-primary-hover: #0B7F75;
+    --brand-primary-foreground: #ffffff;
+    --brand-secondary: #F59E0B;
+    --brand-secondary-foreground: #0f172a;
+
     --background: 210 33% 98%;
     --foreground: 222 47% 11%;
 
