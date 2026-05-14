@@ -471,10 +471,11 @@ const Shifts = () => {
                 </TabsList>
               </Tabs>
               {canEdit && view === "week" && siteId && organisationId && (
-                <AIRotaSuggestButton
+                <SmartRotaTrigger
                   siteId={siteId}
                   organisationId={organisationId}
                   weekStart={weekStart}
+                  weekEnd={addDays(weekStart, 6)}
                 />
               )}
               {canEdit && (
