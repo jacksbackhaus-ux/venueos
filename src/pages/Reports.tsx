@@ -314,6 +314,55 @@ const Reports = () => {
             })}
           </div>
 
+          {/* AI Compliance Assessment */}
+          {aiActive && (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-heading flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  AI Compliance Assessment
+                  <div className="ml-auto">
+                    {aiNarrative && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={regenerateAi}
+                        disabled={aiGenerate.isPending}
+                        className="h-7 px-2"
+                      >
+                        <RotateCcw className={`h-3.5 w-3.5 ${aiGenerate.isPending ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {aiNarrative ? (
+                  <>
+                    <p className="text-sm whitespace-pre-wrap text-foreground">{aiNarrative}</p>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      AI-generated · {(aiCached as any)?.generated_at
+                        ? format(new Date((aiCached as any).generated_at), "d MMM yyyy 'at' HH:mm")
+                        : format(new Date(), "d MMM yyyy 'at' HH:mm")}
+                    </p>
+                  </>
+                ) : aiGenerate.isError ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground">Assessment unavailable</p>
+                    <Button size="sm" variant="outline" onClick={() => aiGenerate.mutate()} disabled={aiGenerate.isPending}>
+                      Try again
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating compliance assessment...
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Quick stats grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card><CardContent className="p-3">
