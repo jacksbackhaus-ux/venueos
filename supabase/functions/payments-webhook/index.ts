@@ -97,26 +97,40 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
   let base = false, compliance = false, business = false, bundle = false, ai = false;
   let interval = "month";
   let siteQty = 1;
+  let tier: TierId | null = null;
   for (const item of sub.items?.data || []) {
     const lookup = item.price?.lookup_key || "";
     interval = item.price?.recurring?.interval || interval;
     siteQty = Math.max(siteQty, Number(item.quantity || 1));
     const m = flagsForLookup(lookup);
     if (!m) continue;
-    if (m.plan === "base") base = true;
-    if (m.plan === "compliance") compliance = true;
-    if (m.plan === "business") business = true;
-    if (m.plan === "bundle") bundle = true;
-    if (m.plan === "ai") ai = true;
+    if (m.legacyPlan) {
+      // Legacy add-on style — flip flags ON, never off.
+      if (m.legacyPlan === "base") base = true;
+      if (m.legacyPlan === "compliance") compliance = true;
+      if (m.legacyPlan === "business") business = true;
+      if (m.legacyPlan === "bundle") bundle = true;
+      if (m.legacyPlan === "ai") ai = true;
+    } else if (m.tier && m.flagDelta) {
+      // New tier — explicit flag set; overrides legacy combinations on the same item.
+      tier = m.tier;
+      const d = m.flagDelta;
+      if (d.base !== undefined) base = d.base;
+      if (d.compliance !== undefined) compliance = d.compliance;
+      if (d.business !== undefined) business = d.business;
+      if (d.bundle !== undefined) bundle = d.bundle;
+      if (d.ai !== undefined) ai = d.ai;
+    }
   }
 
   const { data: existing } = await supabase
     .from("subscriptions")
-    .select("id, ai_active")
+    .select("id, ai_active, tier")
     .eq("organisation_id", orgId)
     .maybeSingle();
 
-  const isAiOnlyCheckout = ai && !base && !compliance && !business && !bundle;
+  // Legacy AI-only add-on: only flips ai_active, leaves tier untouched.
+  const isAiOnlyCheckout = ai && !base && !compliance && !business && !bundle && !tier;
   const aiActive = ["active", "trialing", "past_due"].includes(sub.status);
   if (isAiOnlyCheckout && existing?.id) {
     await supabase.from("subscriptions").update({
@@ -146,7 +160,8 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     compliance_active: compliance,
     business_active: business,
     bundle_active: bundle,
-    ai_active: ai || !!existing?.ai_active,
+    ai_active: ai || (tier ? false : !!existing?.ai_active),
+    tier: tier ?? existing?.tier ?? null,
     locked_at: null,
     environment: env,
     updated_at: new Date().toISOString(),
