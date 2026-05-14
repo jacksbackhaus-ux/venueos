@@ -193,6 +193,24 @@ export async function fetchReportData(
   const ingredients = ingredientsRes.data || [];
   const recipes = recipesRes.data || [];
   const memberships = membershipsRes.data || [];
+  const trainingRecords = trainingRecordsRes.data || [];
+  const trainingRequirements = trainingReqsRes.data || [];
+  const haccpPlans = haccpPlansRes.data || [];
+  const ppmTasks = ppmTasksRes.data || [];
+  const ppmCompletions = ppmCompletionsRes.data || [];
+  const wasteLogs = wasteLogsRes.data || [];
+  const ppdsRecipes = (recipes as any[]).filter((r) => (r.label_type || "").toUpperCase() === "PPDS");
+  const wasteCostTotal = (wasteLogs as any[]).reduce((s, w) => s + (Number(w.estimated_cost) || 0), 0);
+  // Training expiry windows
+  const now = new Date();
+  const in30 = new Date(now.getTime() + 30 * 86400000);
+  const trainingExpired = (trainingRecords as any[]).filter((t) => t.expiry_date && new Date(t.expiry_date) < now).length;
+  const trainingExpiringSoon = (trainingRecords as any[]).filter((t) => t.expiry_date && new Date(t.expiry_date) >= now && new Date(t.expiry_date) <= in30).length;
+  const ppmOverdue = (ppmTasks as any[]).filter((t) => {
+    const last = (ppmCompletions as any[]).filter((c) => c.task_id === t.id).sort((a, b) => (a.completed_date < b.completed_date ? 1 : -1))[0];
+    if (!last?.next_due_date) return false;
+    return new Date(last.next_due_date) < now;
+  }).length;
 
   const closedDays = closedDaysRes.data || [];
   const closedSet = new Set((closedDays as any[]).map((c) => c.closed_date));
