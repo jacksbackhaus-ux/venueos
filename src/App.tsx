@@ -184,7 +184,7 @@ function AppRoutes() {
       <Route path="/locked" element={<AuthGuard><LockedAccount /></AuthGuard>} />
       <Route path="/select-site" element={<AuthGuard><AccessGuard><SitePicker /></AccessGuard></AuthGuard>} />
 
-      <Route path="/" element={<RootRoute siteRoute={siteRoute} />} />
+      <Route path="/" element={<RootRoute>{siteRoute(<Dashboard />)}</RootRoute>} />
       <Route path="/shifts" element={moduleRoute("shifts", <Shifts />)} />
       
       <Route path="/temperatures" element={moduleRoute("temperatures", <TemperatureTracking />)} />
