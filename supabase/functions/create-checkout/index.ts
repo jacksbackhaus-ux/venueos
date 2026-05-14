@@ -12,7 +12,7 @@ import { createStripeClient, type StripeEnv } from "../_shared/stripe.ts";
  * The site quantity is passed as the `quantity` on the line item (per-site pricing).
  */
 
-type PlanId = "base" | "compliance" | "business" | "bundle";
+type PlanId = "base" | "compliance" | "business" | "bundle" | "ai";
 type Cycle = "month" | "year";
 
 const LOOKUP: Record<PlanId, { month: string; year: string }> = {
@@ -20,6 +20,7 @@ const LOOKUP: Record<PlanId, { month: string; year: string }> = {
   compliance: { month: "venueos_compliance_monthly", year: "venueos_compliance_yearly" },
   business:   { month: "venueos_business_monthly",   year: "venueos_business_yearly" },
   bundle:     { month: "venueos_bundle_monthly",     year: "venueos_bundle_yearly" },
+  ai:         { month: "venueos_ai_monthly",         year: "venueos_ai_yearly" },
 };
 
 serve(async (req) => {
