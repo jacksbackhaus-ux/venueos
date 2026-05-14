@@ -152,7 +152,7 @@ const Reports = () => {
     if (!data) return;
     setExporting(true);
     try {
-      generateInspectionPackExcel(data);
+      generateInspectionPackExcel(data, aiActive ? aiNarrative : undefined);
       toast({ title: "Excel report generated", description: "Your inspection pack has been downloaded." });
     } catch (err: any) {
       toast({ title: "Export failed", description: err.message, variant: "destructive" });
