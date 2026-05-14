@@ -35,8 +35,9 @@ Deno.serve(async (req) => {
     // Resolve org + verify the caller is org_owner
     const { data: appUser, error: auErr } = await admin
       .from("users")
-      .select("organisation_id")
-      .eq("id", user.id)
+      .select("id, organisation_id")
+      .eq("auth_user_id", user.id)
+      .eq("status", "active")
       .maybeSingle();
     if (auErr || !appUser?.organisation_id) {
       return new Response(JSON.stringify({ error: "No organisation" }), {
