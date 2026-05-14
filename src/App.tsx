@@ -144,6 +144,14 @@ function AuthRedirect() {
   return <Auth />;
 }
 
+/** Root path: show Landing for unauthenticated visitors, Dashboard for signed-in users. */
+function RootRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, staffSession } = useAuth();
+  if (isLoading) return <FullScreenLoader />;
+  if (!isAuthenticated && !staffSession) return <Landing />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   const { isLoading } = useAuth();
   if (isLoading) return <FullScreenLoader />;
@@ -184,7 +192,7 @@ function AppRoutes() {
       <Route path="/locked" element={<AuthGuard><LockedAccount /></AuthGuard>} />
       <Route path="/select-site" element={<AuthGuard><AccessGuard><SitePicker /></AccessGuard></AuthGuard>} />
 
-      <Route path="/" element={siteRoute(<Dashboard />)} />
+      <Route path="/" element={<RootRoute>{siteRoute(<Dashboard />)}</RootRoute>} />
       <Route path="/shifts" element={moduleRoute("shifts", <Shifts />)} />
       
       <Route path="/temperatures" element={moduleRoute("temperatures", <TemperatureTracking />)} />
