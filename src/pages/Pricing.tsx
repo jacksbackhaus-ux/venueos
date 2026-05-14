@@ -35,7 +35,7 @@ export default function Pricing() {
   const hasBaseAccess = plan.base || plan.bundle;
 
   // During trial: pick a plan = update flags only. No Stripe.
-  // Add-ons stack on top of Base; they cannot be picked standalone.
+  // Add-ons stack on top of Base; they cannot be picked standalone (except AI).
   const startTrialWithPlan = async (planId: PlanId) => {
     if (!appUser?.organisation_id) return;
     if ((planId === "compliance" || planId === "business") && !hasBaseAccess) {
@@ -51,8 +51,12 @@ export default function Pricing() {
       compliance_active?: boolean;
       business_active?: boolean;
       bundle_active?: boolean;
+      ai_active?: boolean;
     } = { billing_interval: cycle };
-    if (planId === "bundle") {
+    if (planId === "ai") {
+      // AI is independent — flip ai_active only, leave everything else as-is.
+      flags.ai_active = true;
+    } else if (planId === "bundle") {
       flags.base_active = false;
       flags.compliance_active = false;
       flags.business_active = false;
@@ -80,7 +84,8 @@ export default function Pricing() {
       toast.error("Could not save plan: " + error.message);
       return;
     }
-    const msg = planId === "compliance" || planId === "business"
+    const isAddon = planId === "compliance" || planId === "business" || planId === "ai";
+    const msg = isAddon
       ? `${PLANS[planId].name} added to your trial.`
       : `Welcome to ${PLANS[planId].name}! Your 14-day free trial has started.`;
     toast.success(msg);
@@ -97,7 +102,7 @@ export default function Pricing() {
   };
 
 
-  const planIds: PlanId[] = ["base", "compliance", "business", "bundle"];
+  const planIds: PlanId[] = ["base", "compliance", "business", "bundle", "ai"];
 
   return (
     <div className="min-h-screen bg-background">
