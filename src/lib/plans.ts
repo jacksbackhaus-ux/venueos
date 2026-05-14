@@ -41,6 +41,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
   cost_margin: "Cost & Margin",
   tip_tracker: "Tip Tracker",
   reports: "Reports",
+  ai_insights: "AI Insights",
 };
 
 // Module → URL path for navigation
