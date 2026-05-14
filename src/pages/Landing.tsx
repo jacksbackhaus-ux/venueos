@@ -121,15 +121,15 @@ function Hero() {
           {/* Left: copy */}
           <div className="lg:col-span-3 flex flex-col justify-center">
             <Badge className="self-start mb-6 bg-white/15 hover:bg-white/15 text-white border border-white/20 px-3.5 py-1.5 rounded-full font-medium backdrop-blur-sm">
-              Built for UK food businesses
+              14-day free trial — no card required
             </Badge>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] mb-6">
-              Powering how independent venues deliver food safety
+              Run your bakery, café or restaurant from one platform
             </h1>
             <p className="text-base md:text-lg text-white/80 max-w-xl leading-relaxed mb-8">
-              MiseOS replaces clipboards, spreadsheets and disconnected apps with one
-              interconnected platform — designed for artisan bakeries, cafés and small
-              restaurants who take their craft seriously.
+              MiseOS is food safety and compliance software built for independent food businesses
+              in the UK. Temperature logs, cleaning schedules, HACCP plans, shift rotas, recipe
+              costing and team messaging — all in one place, on any device.
             </p>
             <div className="flex flex-wrap gap-3">
               <a href={AUTH_URL}>
@@ -139,7 +139,7 @@ function Hero() {
               </a>
               <a href="#features">
                 <Button size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white h-12 px-7 text-base">
-                  See how it works
+                  See features
                 </Button>
               </a>
             </div>
@@ -197,9 +197,9 @@ function Hero() {
       <div className="max-w-6xl mx-auto mt-10 grid grid-cols-2 md:grid-cols-4 gap-5">
         {[
           { icon: ShieldCheck, text: "FSA Safer Food Better Business aligned" },
-          { icon: Smartphone, text: "Mobile-first — works on any device" },
-          { icon: Archive, text: "7-year retention — EHO inspection ready" },
-          { icon: Scale, text: "Built for UK food safety law" },
+          { icon: FileSpreadsheet, text: "EHO inspection pack built in" },
+          { icon: Tag, text: "Natasha's Law compliant labelling" },
+          { icon: Archive, text: "7-year data retention" },
         ].map((b, i) => (
           <div key={i} className="flex items-start gap-2.5 text-xs md:text-sm text-slate-600">
             <b.icon className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: BRAND_SAGE }} />
@@ -300,24 +300,24 @@ function Problem() {
   const cards = [
     {
       icon: FileWarning,
-      title: "Drowning in paper",
-      body: "Temperature logs on clipboards, cleaning schedules on laminated sheets, day sheets in a ring binder no one looks at until the EHO turns up.",
+      title: "Paper logs nobody checks",
+      body: "Temperature clipboards, laminated cleaning sheets, ring-binder day sheets. They work until the Environmental Health Officer asks for three months of records and you're digging through a drawer.",
     },
     {
       icon: Layers,
-      title: "Five apps that don't talk to each other",
-      body: "One app for rotas, another for messaging, a spreadsheet for costing, a folder for training certificates. Nothing connects. You're the glue.",
+      title: "Five apps that don't connect",
+      body: "A rota app, a messaging app, a costing spreadsheet, a folder of training certificates. Nothing talks to anything else. You're the one holding it all together.",
     },
     {
       icon: PoundSterling,
-      title: "Paying for features you'll never use",
-      body: "Enterprise platforms charge hundreds a month for tools designed for chains with fifty locations. You have one bakery and three staff.",
+      title: "Software built for chains, priced for chains",
+      body: "Enterprise platforms charge per user, lock features behind expensive tiers, and ship tools you'll never touch. You have one site and three staff. You need less software, not more.",
     },
   ];
   return (
     <Section id="problem" className="bg-[#faf6ee]">
       <h2 className="text-3xl md:text-5xl font-bold text-center text-slate-900 mb-14 tracking-tight">
-        Sound familiar?
+        You're spending more time on paperwork than on food
       </h2>
       <div className="grid md:grid-cols-3 gap-6 mb-12">
         {cards.map((c, i) => (
@@ -334,8 +334,8 @@ function Problem() {
         ))}
       </div>
       <p className="text-center text-lg text-slate-700 max-w-3xl mx-auto leading-relaxed">
-        MiseOS was built by an operator who lived these problems. It does what you need,
-        nothing you don't, and costs less than your Netflix subscription.
+        MiseOS was built by a bakery owner who had exactly these problems. It does what you need,
+        nothing you don't, and starts at less than the price of two coffees a week.
       </p>
     </Section>
   );
@@ -572,10 +572,10 @@ function Features() {
     <Section id="features" className="bg-[#faf6ee]">
       <div className="text-center mb-10">
         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-          Everything you need to run your venue
+          Food safety, operations and business tools in one platform
         </h2>
         <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-          Activate only what you need. No dead screens, no feature bloat.
+          Every module connects to every other. Activate what you need. Turn off what you don't.
         </p>
       </div>
       <Tabs defaultValue="daily" className="w-full">
@@ -604,62 +604,62 @@ function Pricing() {
       monthly: 7.99, yearly: 79.90,
       tagline: "Run your daily operations.",
       bullets: [
-        "Dashboard, Shifts, Timesheets",
-        "Day Sheet, Temperatures, Cleaning",
-        "Waste Log, Customer Feedback, Messenger",
+        "Dashboard, Shifts & Rota, Shift Hive, Timesheets",
+        "Messenger, Day Sheet, Temperatures, Cleaning",
+        "Waste Log, Customer Feedback",
       ],
     },
     {
       name: "Professional",
       monthly: 9.99, yearly: 99.90,
-      tagline: "Everything in Essentials + Compliance.",
+      tagline: "Stay inspection-ready.",
       bullets: [
-        "Allergens & Labels (Natasha's Law)",
-        "Suppliers, Pest, PPM, Incidents",
-        "Batch Tracking, Staff Training, HACCP",
+        "Everything in Essentials, plus:",
+        "Allergens & Labels, Suppliers, Pest, PPM",
+        "Incidents, Batch Tracking, Training, HACCP",
       ],
       featured: true,
     },
     {
       name: "Business",
       monthly: 12.99, yearly: 129.90,
-      tagline: "Everything in Professional + business tools.",
+      tagline: "Track costs and grow profit.",
       bullets: [
+        "Everything in Professional, plus:",
         "Cost & Margin (True Margin Engine)",
-        "Tip Tracker",
-        "Reports — EHO Inspection Pack",
+        "Tip Tracker, Reports (EHO Inspection Pack)",
       ],
     },
     {
       name: "Intelligence",
       monthly: 16.99, yearly: 169.90,
-      tagline: "Everything in Business + AI.",
+      tagline: "Your operations, made smarter.",
       bullets: [
-        "AI Morning Briefing",
-        "Smart Rota & Equipment Drift",
-        "AI Compliance Narrative",
+        "Everything in Business, plus:",
+        "Morning Briefing, Smart Rota, Equipment Health",
+        "Compliance Assessment, Waste Insights, Margin Watchdog",
       ],
       ai: true,
     },
   ];
   const perks = [
-    "Free trial unlocks every module",
-    "15% multi-site discount from second site",
+    "14-day free trial on all plans — no card required",
+    "15% multi-site discount from the second site",
     "Data retained 7 years after cancellation",
-    "Cancel anytime",
+    "Cancel anytime — keep access until end of billing period",
   ];
   return (
     <Section id="pricing">
       <div className="text-center mb-4">
         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-          Simple, transparent pricing
+          Simple pricing. No surprises.
         </h2>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Per site, per month. Annual billing saves two months. No hidden fees, no contracts.
+          Per site, per month. No hidden fees, no contracts, cancel anytime.
         </p>
       </div>
       <p className="text-center text-sm font-medium max-w-2xl mx-auto mb-10" style={{ color: BRAND_SAGE }}>
-        Your 14-day free trial includes every module — no card required. Pick the tier that fits when the trial ends.
+        14-day free trial on all plans — no card required. Every module unlocked during the trial.
       </p>
       <div className="flex items-center justify-center gap-3 mb-10">
         <span className={`text-sm font-medium ${!annual ? "text-slate-900" : "text-slate-500"}`}>Monthly</span>
@@ -763,11 +763,12 @@ function Compliance() {
     <Section id="compliance" className="bg-[#faf6ee]">
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-          Built for UK food safety from day one
+          Built around UK food safety law
         </h2>
         <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
-          MiseOS isn't a generic task manager with a food label slapped on. Every module is designed
-          around FSA Safer Food Better Business principles and FIC regulations.
+          MiseOS is not a generic task manager with a food safety label added on. Every module is built
+          around FSA Safer Food Better Business principles, the Food Information to Consumers regulation,
+          and Natasha's Law.
         </p>
       </div>
       <div className="grid md:grid-cols-3 gap-6">
@@ -791,13 +792,14 @@ function Compliance() {
 // ───── FAQ ─────
 function FAQ() {
   const items: [string, string][] = [
-    ["Do I need a card to start the trial?", "No. Your 14-day trial starts when you pick a plan. No card details required until you decide to subscribe."],
-    ["Can I change plans later?", "Yes. Upgrade, downgrade or add modules at any time from Account & Billing."],
-    ["How do my staff log in?", "Staff use a PIN-based kiosk login. Share your unique URL or QR code. They enter Site ID and Staff ID — no email needed."],
-    ["Is my data safe?", "Yes. Encrypted in transit and at rest. Hosted on Supabase (AWS). Data retained 7 years for compliance."],
-    ["Can I use it on my phone?", "Absolutely. MiseOS is mobile-first — works in any browser on any device."],
-    ["What if I have multiple sites?", "Multi-site is built in. 15% discount per additional site. HQ Dashboard for cross-site compliance."],
-    ["Does it replace my EPOS?", "No. MiseOS handles operations and compliance, not payments. It sits alongside your existing EPOS."],
+    ["Do I need a card to start the trial?", "No. Your 14-day trial starts when you pick a plan. No payment details needed until you subscribe."],
+    ["Can I change plans later?", "Yes. Upgrade or downgrade at any time from Account and Billing. Changes take effect immediately."],
+    ["How do my staff log in?", "Staff use a PIN-based kiosk login. You share your unique login URL or QR code. They enter the site ID and their staff ID. No email or app download required."],
+    ["Is my data safe?", "Yes. All data is encrypted in transit and at rest. Hosted on AWS infrastructure. Data is retained for seven years after cancellation for compliance purposes."],
+    ["Can I use MiseOS on my phone?", "Yes. MiseOS is mobile-first. It works in any browser on any device. A native app with push notifications is on the roadmap."],
+    ["What if I have multiple sites?", "Multi-site is built in from day one. Each additional site gets a 15 percent discount. The HQ Dashboard gives you compliance visibility across all locations."],
+    ["Does MiseOS replace my till or EPOS system?", "No. MiseOS handles operations and compliance, not payments or orders. It works alongside your existing EPOS."],
+    ["What is the Intelligence plan?", "The Intelligence plan adds smart operational features powered by AI — daily morning briefing, automated rota suggestions, equipment health monitoring, compliance assessments, waste analysis and recipe margin alerts. All based on your actual data, not generic advice."],
   ];
   return (
     <Section id="faq">
@@ -833,10 +835,10 @@ function FinalCTA() {
           style={{ background: `radial-gradient(circle, ${BRAND_LIGHT} 0%, transparent 70%)` }}
         />
         <div className="relative max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-bold mb-5 tracking-tight">Ready to run your venue properly?</h2>
+          <h2 className="text-3xl md:text-5xl font-bold mb-5 tracking-tight">Stop managing your venue from a clipboard</h2>
           <p className="text-lg text-white/85 mb-10 leading-relaxed">
             Join the bakeries and cafés replacing paper, spreadsheets and guesswork with one
-            platform that actually works.
+            platform built for UK food safety.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <a href={AUTH_URL}>
