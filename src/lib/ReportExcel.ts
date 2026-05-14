@@ -167,12 +167,12 @@ function buildCleaningSheet(data: ReportData): XLSX.WorkSheet {
   const closedSet = new Set(((data as any).closedDays || []).map((c: any) => c.closed_date));
   const taskById = new Map<string, any>(tasks.map((t: any) => [t.id, t]));
 
-  // Build set of dates that have any log activity
-  const dates = Array.from(new Set(logs.map((l: any) => l.log_date))).sort() as string[];
+  // Generate ALL dates in the report period for daily tasks
+  const allDates = eachDayOfInterval({ start: data.range.from, end: data.range.to }).map((d) => format(d, "yyyy-MM-dd"));
   const dailyTasks = tasks.filter((t: any) => (t.frequency || "daily").toLowerCase() === "daily");
 
-  if (dates.length > 0 && dailyTasks.length > 0) {
-    for (const date of dates) {
+  if (allDates.length > 0 && dailyTasks.length > 0) {
+    for (const date of allDates) {
       const isClosed = closedSet.has(date);
       const dateLogs = logs.filter((l: any) => l.log_date === date);
       for (const task of dailyTasks) {
