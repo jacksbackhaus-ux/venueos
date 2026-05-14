@@ -35,7 +35,7 @@ export default function Pricing() {
   const hasBaseAccess = plan.base || plan.bundle;
 
   // During trial: pick a plan = update flags only. No Stripe.
-  // Add-ons stack on top of Base; they cannot be picked standalone.
+  // Add-ons stack on top of Base; they cannot be picked standalone (except AI).
   const startTrialWithPlan = async (planId: PlanId) => {
     if (!appUser?.organisation_id) return;
     if ((planId === "compliance" || planId === "business") && !hasBaseAccess) {
@@ -51,8 +51,12 @@ export default function Pricing() {
       compliance_active?: boolean;
       business_active?: boolean;
       bundle_active?: boolean;
+      ai_active?: boolean;
     } = { billing_interval: cycle };
-    if (planId === "bundle") {
+    if (planId === "ai") {
+      // AI is independent — flip ai_active only, leave everything else as-is.
+      flags.ai_active = true;
+    } else if (planId === "bundle") {
       flags.base_active = false;
       flags.compliance_active = false;
       flags.business_active = false;
@@ -80,7 +84,8 @@ export default function Pricing() {
       toast.error("Could not save plan: " + error.message);
       return;
     }
-    const msg = planId === "compliance" || planId === "business"
+    const isAddon = planId === "compliance" || planId === "business" || planId === "ai";
+    const msg = isAddon
       ? `${PLANS[planId].name} added to your trial.`
       : `Welcome to ${PLANS[planId].name}! Your 14-day free trial has started.`;
     toast.success(msg);
@@ -97,7 +102,7 @@ export default function Pricing() {
   };
 
 
-  const planIds: PlanId[] = ["base", "compliance", "business", "bundle"];
+  const planIds: PlanId[] = ["base", "compliance", "business", "bundle", "ai"];
 
   return (
     <div className="min-h-screen bg-background">
@@ -138,27 +143,43 @@ export default function Pricing() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {planIds.map((planId) => {
             const p = PLANS[planId];
+            const isAi = planId === "ai";
             const isCurrent =
               (planId === "bundle" && plan.bundle) ||
               (planId === "base" && plan.base && !plan.bundle) ||
               (planId === "compliance" && plan.compliance && !plan.bundle) ||
-              (planId === "business" && plan.business && !plan.bundle);
+              (planId === "business" && plan.business && !plan.bundle) ||
+              (isAi && plan.ai);
             const price = cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
             const monthlyEquivalent = cycle === "year" ? p.yearlyPrice / 12 : null;
+
+            const aiFeatures = [
+              "AI Morning Briefing on your dashboard",
+              "Equipment health alerts on temperature tracking",
+              "AI compliance assessment in reports",
+              "Waste pattern insights (coming soon)",
+              "Recipe margin watchdog (coming soon)",
+              "Smart rota suggestions (coming soon)",
+            ];
 
             return (
               <Card
                 key={planId}
                 className={`relative flex flex-col ${
                   p.highlight ? "border-primary border-2 shadow-lg" : ""
-                }`}
+                } ${isAi ? "border-2 border-indigo-400/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/10 shadow-md shadow-indigo-500/5" : ""}`}
               >
                 {p.highlight && (
                   <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
                     Best value
+                  </Badge>
+                )}
+                {isAi && !isCurrent && (
+                  <Badge variant="secondary" className="absolute -top-2.5 right-3">
+                    New
                   </Badge>
                 )}
                 {isCurrent && (
@@ -167,7 +188,10 @@ export default function Pricing() {
                   </Badge>
                 )}
                 <CardHeader>
-                  <CardTitle className="font-heading text-lg">{p.name}</CardTitle>
+                  <CardTitle className="font-heading text-lg flex items-center gap-2">
+                    {isAi && <Sparkles className="h-4 w-4 text-indigo-500" />}
+                    {p.name}
+                  </CardTitle>
                   <CardDescription className="text-xs">{p.tagline}</CardDescription>
                   <div className="pt-2">
                     <span className="text-3xl font-bold text-foreground">{formatGBP(price)}</span>
@@ -181,10 +205,10 @@ export default function Pricing() {
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col gap-4">
                   <ul className="space-y-1.5 text-sm flex-1">
-                    {p.modules.map((m) => (
-                      <li key={m} className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                        <span>{MODULE_LABELS[m]}</span>
+                    {(isAi ? aiFeatures : p.modules.map((m) => MODULE_LABELS[m])).map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <Check className={`h-4 w-4 shrink-0 mt-0.5 ${isAi ? "text-indigo-500" : "text-success"}`} />
+                        <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -201,8 +225,8 @@ export default function Pricing() {
                     else if (needsBaseFirst) label = "Requires Base plan";
                     else if (isCurrentPaid) label = "Current plan";
                     else if (isCurrentTrial) label = "Subscribe now";
-                    else if (trialSwitch) label = isAddon ? "Add to trial" : "Switch & continue trial";
-                    else if (hasPaidSub) label = isAddon ? "Add to plan" : "Switch to this plan";
+                    else if (trialSwitch) label = (isAddon || isAi) ? "Add to trial" : "Switch & continue trial";
+                    else if (hasPaidSub) label = (isAddon || isAi) ? "Add to plan" : "Switch to this plan";
 
                     const onClick = () => {
                       if (trialSwitch) startTrialWithPlan(planId);

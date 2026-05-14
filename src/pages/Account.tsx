@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import {
   PLANS, MODULE_LABELS, formatGBP, calcTotalCost,
   type PlanId, type BillingCycle, type ModuleName,
-  BASE_MODULES, COMPLIANCE_MODULES, BUSINESS_MODULES,
+  BASE_MODULES, COMPLIANCE_MODULES, BUSINESS_MODULES, AI_MODULES,
 } from "@/lib/plans";
 import { LoginUrlCard } from "@/components/LoginUrlCard";
 
@@ -105,13 +105,16 @@ export default function Account() {
   }
 
   // Active modules covered by current plan
-  const activeModuleNames: ModuleName[] = plan.bundle
-    ? [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES]
-    : [
-        ...(plan.base ? BASE_MODULES : []),
-        ...(plan.compliance ? COMPLIANCE_MODULES : []),
-        ...(plan.business ? BUSINESS_MODULES : []),
-      ];
+  const activeModuleNames: ModuleName[] = [
+    ...(plan.bundle
+      ? [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES]
+      : [
+          ...(plan.base ? BASE_MODULES : []),
+          ...(plan.compliance ? COMPLIANCE_MODULES : []),
+          ...(plan.business ? BUSINESS_MODULES : []),
+        ]),
+    ...(plan.ai ? AI_MODULES : []),
+  ];
 
   const switchCycle = async (next: BillingCycle) => {
     if (!appUser?.organisation_id || next === cycle) return;
@@ -283,30 +286,39 @@ export default function Account() {
         </Card>
       )}
 
-      {/* Add-ons (only if not on bundle) */}
-      {plan.hasAnyPlan && !plan.bundle && (
+      {/* Add-ons */}
+      {plan.hasAnyPlan && (
         <Card>
           <CardHeader><CardTitle className="text-base">Add-ons</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {!plan.compliance && (
+            {!plan.bundle && !plan.compliance && (
               <AddOnRow
                 planId="compliance"
                 cycle={cycle}
                 onAdd={() => navigate(`/account?checkout=compliance&cycle=${cycle}`)}
               />
             )}
-            {!plan.business && (
+            {!plan.bundle && !plan.business && (
               <AddOnRow
                 planId="business"
                 cycle={cycle}
                 onAdd={() => navigate(`/account?checkout=business&cycle=${cycle}`)}
               />
             )}
-            <div className="pt-2">
-              <Button variant="default" size="sm" onClick={() => navigate(`/account?checkout=bundle&cycle=${cycle}`)}>
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" />Upgrade to Full Bundle
-              </Button>
-            </div>
+            {!plan.ai && (
+              <AddOnRow
+                planId="ai"
+                cycle={cycle}
+                onAdd={() => navigate(`/account?checkout=ai&cycle=${cycle}`)}
+              />
+            )}
+            {!plan.bundle && (
+              <div className="pt-2">
+                <Button variant="default" size="sm" onClick={() => navigate(`/account?checkout=bundle&cycle=${cycle}`)}>
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />Upgrade to Full Bundle
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -363,7 +375,7 @@ export default function Account() {
   );
 }
 
-function AddOnRow({ planId, cycle, onAdd }: { planId: "compliance" | "business"; cycle: BillingCycle; onAdd: () => void }) {
+function AddOnRow({ planId, cycle, onAdd }: { planId: "compliance" | "business" | "ai"; cycle: BillingCycle; onAdd: () => void }) {
   const p = PLANS[planId];
   const price = cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
   return (
