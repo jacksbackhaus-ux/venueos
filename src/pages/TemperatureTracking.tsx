@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DateNavigator } from "@/components/DateNavigator";
+import { EquipmentHealthAlert } from "@/components/temperature/EquipmentHealthAlert";
 import { cn } from "@/lib/utils";
 
 type TempUnit = {
