@@ -105,13 +105,16 @@ export default function Account() {
   }
 
   // Active modules covered by current plan
-  const activeModuleNames: ModuleName[] = plan.bundle
-    ? [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES]
-    : [
-        ...(plan.base ? BASE_MODULES : []),
-        ...(plan.compliance ? COMPLIANCE_MODULES : []),
-        ...(plan.business ? BUSINESS_MODULES : []),
-      ];
+  const activeModuleNames: ModuleName[] = [
+    ...(plan.bundle
+      ? [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES]
+      : [
+          ...(plan.base ? BASE_MODULES : []),
+          ...(plan.compliance ? COMPLIANCE_MODULES : []),
+          ...(plan.business ? BUSINESS_MODULES : []),
+        ]),
+    ...(plan.ai ? AI_MODULES : []),
+  ];
 
   const switchCycle = async (next: BillingCycle) => {
     if (!appUser?.organisation_id || next === cycle) return;
