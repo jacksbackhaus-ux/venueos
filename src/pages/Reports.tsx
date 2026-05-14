@@ -16,6 +16,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { useBranding } from "@/contexts/BrandingContext";
 import { toast } from "@/hooks/use-toast";
 import { buildRange, fetchReportData, type DateRangeKey, type ReportData } from "@/lib/reports";
 import { generateInspectionPackPdf } from "@/lib/reportPdf";
@@ -24,6 +25,20 @@ import { format } from "date-fns";
 import { Calculator } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+async function urlToDataUrl(url: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return undefined;
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = () => resolve(undefined);
+      r.readAsDataURL(blob);
+    });
+  } catch { return undefined; }
+}
 
 const statusColor = (s: string) => {
   switch (s) {
