@@ -72,7 +72,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         .eq("organisation_id", organisationId!)
         .maybeSingle();
       if (error && error.code !== "PGRST116") throw error;
-      return (data as OrgBranding | null) ?? null;
+      return (data as unknown as OrgBranding | null) ?? null;
     },
   });
 
