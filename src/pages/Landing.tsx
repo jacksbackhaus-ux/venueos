@@ -818,6 +818,7 @@ export default function Landing() {
       <ProductBento />
       <AltRows />
       <Features />
+      <AISection />
       <Pricing />
       <Compliance />
       <FAQ />
