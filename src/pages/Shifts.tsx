@@ -1111,3 +1111,40 @@ function DayView({
   );
 }
 export default Shifts;
+
+// ---------- Smart Rota trigger ----------
+function SmartRotaTrigger({
+  siteId,
+  organisationId,
+  weekStart,
+  weekEnd,
+}: {
+  siteId: string;
+  organisationId: string;
+  weekStart: string;
+  weekEnd: string;
+}) {
+  const { isSupervisorPlus } = useRole();
+  const { isActive } = useModuleAccess();
+  const [open, setOpen] = useState(false);
+  if (!isSupervisorPlus || !isActive("ai_insights")) return null;
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+        <Sparkles className="h-4 w-4 mr-1" /> AI Suggest
+      </Button>
+      {open && (
+        <SmartRotaPanel
+          open={open}
+          onOpenChange={setOpen}
+          siteId={siteId}
+          organisationId={organisationId}
+          weekStart={weekStart}
+          weekEnd={weekEnd}
+          shiftHiveActive={isActive("shifts")}
+          messengerActive={isActive("messenger")}
+        />
+      )}
+    </>
+  );
+}
