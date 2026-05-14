@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   FileText, Download, ShieldCheck, ClipboardCheck, SprayCan, Thermometer,
   Truck, AlertTriangle, Wheat, Bug, Users, CheckCircle2, BarChart3,
-  ArrowRight, Info, Calendar, Loader2,
+  ArrowRight, Info, Calendar, Loader2, Sparkles, RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { toast } from "@/hooks/use-toast";
 import { buildRange, fetchReportData, type DateRangeKey, type ReportData } from "@/lib/reports";
 import { generateInspectionPackPdf } from "@/lib/reportPdf";
 import { generateInspectionPackExcel } from "@/lib/ReportExcel";
 import { format } from "date-fns";
 import { Calculator } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusColor = (s: string) => {
   switch (s) {
@@ -49,6 +52,9 @@ const Reports = () => {
   const { currentSite, organisationId } = useSite();
   const { orgRole } = useAuth();
   const { plan, trialActive, compedActive } = useOrgAccess();
+  const { isActive } = useModuleAccess();
+  const aiActive = isActive("ai_insights");
+  const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRangeKey>("4weeks");
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +63,63 @@ const Reports = () => {
   const isCostManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
   const hasCostAccess =
     isCostManager && (plan.business || plan.bundle || trialActive || compedActive);
+
+  const siteId = currentSite?.id ?? null;
+
+  // ── AI compliance narrative ──────────────────────────────────────────────
+  const aiQueryKey = ["compliance-narrative", siteId, dateRange] as const;
+  const { data: aiCached, isLoading: aiCacheLoading } = useQuery({
+    queryKey: aiQueryKey,
+    enabled: !!siteId && aiActive,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("ai_insights")
+        .select("id, narrative, generated_at, content")
+        .eq("site_id", siteId!)
+        .eq("insight_type", "compliance_narrative")
+        .gt("valid_until", new Date().toISOString())
+        .order("generated_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      const match = (rows ?? []).find((r: any) => r.content?.date_range === dateRange);
+      return match ?? null;
+    },
+  });
+
+  const aiGenerate = useMutation({
+    mutationFn: async () => {
+      if (!siteId) throw new Error("No site");
+      const { data, error } = await supabase.functions.invoke(
+        "generate-compliance-narrative",
+        { body: { site_id: siteId, date_range: dateRange } },
+      );
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: aiQueryKey });
+    },
+  });
+
+  useEffect(() => {
+    if (!aiActive || !siteId || aiCacheLoading) return;
+    if (aiCached) return;
+    if (aiGenerate.isPending || aiGenerate.isError) return;
+    aiGenerate.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiActive, siteId, dateRange, aiCacheLoading, aiCached]);
+
+  const aiNarrative: string | undefined =
+    (aiCached as any)?.narrative ?? (aiGenerate.data as any)?.narrative ?? undefined;
+
+  const regenerateAi = async () => {
+    if (!siteId) return;
+    if ((aiCached as any)?.id) {
+      await supabase.from("ai_insights").delete().eq("id", (aiCached as any).id);
+    }
+    queryClient.invalidateQueries({ queryKey: aiQueryKey });
+    aiGenerate.mutate();
+  };
 
   useEffect(() => {
     if (!currentSite || !organisationId) return;
@@ -76,7 +139,7 @@ const Reports = () => {
     if (!data) return;
     setExporting(true);
     try {
-      generateInspectionPackPdf(data);
+      generateInspectionPackPdf(data, aiActive ? aiNarrative : undefined);
       toast({ title: "Inspection Pack generated", description: "Your PDF has been downloaded." });
     } catch (err: any) {
       toast({ title: "Export failed", description: err.message, variant: "destructive" });
@@ -89,7 +152,7 @@ const Reports = () => {
     if (!data) return;
     setExporting(true);
     try {
-      generateInspectionPackExcel(data);
+      generateInspectionPackExcel(data, aiActive ? aiNarrative : undefined);
       toast({ title: "Excel report generated", description: "Your inspection pack has been downloaded." });
     } catch (err: any) {
       toast({ title: "Export failed", description: err.message, variant: "destructive" });
@@ -250,6 +313,55 @@ const Reports = () => {
               );
             })}
           </div>
+
+          {/* AI Compliance Assessment */}
+          {aiActive && (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-heading flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  AI Compliance Assessment
+                  <div className="ml-auto">
+                    {aiNarrative && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={regenerateAi}
+                        disabled={aiGenerate.isPending}
+                        className="h-7 px-2"
+                      >
+                        <RotateCcw className={`h-3.5 w-3.5 ${aiGenerate.isPending ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {aiNarrative ? (
+                  <>
+                    <p className="text-sm whitespace-pre-wrap text-foreground">{aiNarrative}</p>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      AI-generated · {(aiCached as any)?.generated_at
+                        ? format(new Date((aiCached as any).generated_at), "d MMM yyyy 'at' HH:mm")
+                        : format(new Date(), "d MMM yyyy 'at' HH:mm")}
+                    </p>
+                  </>
+                ) : aiGenerate.isError ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground">Assessment unavailable</p>
+                    <Button size="sm" variant="outline" onClick={() => aiGenerate.mutate()} disabled={aiGenerate.isPending}>
+                      Try again
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating compliance assessment...
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick stats grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
