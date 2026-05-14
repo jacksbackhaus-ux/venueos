@@ -58,6 +58,29 @@ export function darkenHex(hex: string, amount = 0.1): string {
   return `#${f(0)}${f(2)}${f(4)}`;
 }
 
+/** Convert hex to "H S% L%" string suitable for hsl(var(--token)). */
+export function hexToHslString(hex: string): string | null {
+  const c = hex.replace("#", "");
+  if (c.length !== 6) return null;
+  const r = parseInt(c.slice(0, 2), 16) / 255;
+  const g = parseInt(c.slice(2, 4), 16) / 255;
+  const b = parseInt(c.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0, s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60;
+  }
+  return `${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
 export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const { organisationId, currentSite } = useSite();
   const qc = useQueryClient();
@@ -108,6 +131,20 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
       "--brand-secondary-foreground",
       shouldUseDarkText(value.secondaryColour) ? "#0f172a" : "#ffffff",
     );
+
+    // Override semantic primary tokens so Switches, Progress bars, AI summary highlights,
+    // ring/focus styles, sidebar accents etc. all pick up the brand colour automatically.
+    // Status colours (success/warning/breach) are intentionally untouched.
+    const primaryHsl = hexToHslString(value.primaryColour);
+    const primaryFg = shouldUseDarkText(value.primaryColour) ? "222 47% 11%" : "0 0% 100%";
+    if (primaryHsl) {
+      root.style.setProperty("--primary", primaryHsl);
+      root.style.setProperty("--primary-foreground", primaryFg);
+      root.style.setProperty("--ring", primaryHsl);
+      root.style.setProperty("--sidebar-primary", primaryHsl);
+      root.style.setProperty("--sidebar-primary-foreground", primaryFg);
+      root.style.setProperty("--sidebar-ring", primaryHsl);
+    }
   }, [value.primaryColour, value.secondaryColour]);
 
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;
