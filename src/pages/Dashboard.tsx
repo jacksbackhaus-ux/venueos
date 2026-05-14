@@ -493,6 +493,8 @@ const Dashboard = () => {
         </div>
       </motion.section>
 
+      {isToday && !isClosed && <MorningBriefingCard />}
+
       {/* ============================================================
           DATE NAV + CLOSED-DAY CONTROL (kept for past-day review)
           ============================================================ */}
