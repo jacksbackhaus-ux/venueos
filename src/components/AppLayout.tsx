@@ -10,6 +10,7 @@ import {
   SprayCan, Sparkles, ChevronRight, Plus, ChevronDown, Check,
 } from "lucide-react";
 import { useSite } from "@/contexts/SiteContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useRole } from "@/hooks/useRole";
