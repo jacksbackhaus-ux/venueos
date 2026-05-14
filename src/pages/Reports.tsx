@@ -52,6 +52,9 @@ const Reports = () => {
   const { currentSite, organisationId } = useSite();
   const { orgRole } = useAuth();
   const { plan, trialActive, compedActive } = useOrgAccess();
+  const { isActive } = useModuleAccess();
+  const aiActive = isActive("ai_insights");
+  const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRangeKey>("4weeks");
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +63,63 @@ const Reports = () => {
   const isCostManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
   const hasCostAccess =
     isCostManager && (plan.business || plan.bundle || trialActive || compedActive);
+
+  const siteId = currentSite?.id ?? null;
+
+  // ── AI compliance narrative ──────────────────────────────────────────────
+  const aiQueryKey = ["compliance-narrative", siteId, dateRange] as const;
+  const { data: aiCached, isLoading: aiCacheLoading } = useQuery({
+    queryKey: aiQueryKey,
+    enabled: !!siteId && aiActive,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("ai_insights")
+        .select("id, narrative, generated_at, content")
+        .eq("site_id", siteId!)
+        .eq("insight_type", "compliance_narrative")
+        .gt("valid_until", new Date().toISOString())
+        .order("generated_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      const match = (rows ?? []).find((r: any) => r.content?.date_range === dateRange);
+      return match ?? null;
+    },
+  });
+
+  const aiGenerate = useMutation({
+    mutationFn: async () => {
+      if (!siteId) throw new Error("No site");
+      const { data, error } = await supabase.functions.invoke(
+        "generate-compliance-narrative",
+        { body: { site_id: siteId, date_range: dateRange } },
+      );
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: aiQueryKey });
+    },
+  });
+
+  useEffect(() => {
+    if (!aiActive || !siteId || aiCacheLoading) return;
+    if (aiCached) return;
+    if (aiGenerate.isPending || aiGenerate.isError) return;
+    aiGenerate.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiActive, siteId, dateRange, aiCacheLoading, aiCached]);
+
+  const aiNarrative: string | undefined =
+    (aiCached as any)?.narrative ?? (aiGenerate.data as any)?.narrative ?? undefined;
+
+  const regenerateAi = async () => {
+    if (!siteId) return;
+    if ((aiCached as any)?.id) {
+      await supabase.from("ai_insights").delete().eq("id", (aiCached as any).id);
+    }
+    queryClient.invalidateQueries({ queryKey: aiQueryKey });
+    aiGenerate.mutate();
+  };
 
   useEffect(() => {
     if (!currentSite || !organisationId) return;
