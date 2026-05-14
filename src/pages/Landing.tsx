@@ -295,6 +295,8 @@ function AISection() {
   );
 }
 
+// ───── Problem (no emojis, icons instead) ─────
+function Problem() {
   const cards = [
     {
       icon: FileWarning,
