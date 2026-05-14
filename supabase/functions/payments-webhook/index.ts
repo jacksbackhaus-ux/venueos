@@ -11,8 +11,8 @@ const supabase = createClient(
  * Maps a Stripe price lookup_key to the per-plan boolean flags on subscriptions.
  * Returns null for unknown keys.
  */
-function flagsForLookup(lookup: string): { plan: "base" | "compliance" | "business" | "bundle"; cycle: "month" | "year" } | null {
-  const map: Record<string, { plan: "base" | "compliance" | "business" | "bundle"; cycle: "month" | "year" }> = {
+function flagsForLookup(lookup: string): { plan: "base" | "compliance" | "business" | "bundle" | "ai"; cycle: "month" | "year" } | null {
+  const map: Record<string, { plan: "base" | "compliance" | "business" | "bundle" | "ai"; cycle: "month" | "year" }> = {
     venueos_base_monthly:        { plan: "base",       cycle: "month" },
     venueos_base_yearly:         { plan: "base",       cycle: "year"  },
     venueos_compliance_monthly:  { plan: "compliance", cycle: "month" },
@@ -21,6 +21,8 @@ function flagsForLookup(lookup: string): { plan: "base" | "compliance" | "busine
     venueos_business_yearly:     { plan: "business",   cycle: "year"  },
     venueos_bundle_monthly:      { plan: "bundle",     cycle: "month" },
     venueos_bundle_yearly:       { plan: "bundle",     cycle: "year"  },
+    venueos_ai_monthly:          { plan: "ai",         cycle: "month" },
+    venueos_ai_yearly:           { plan: "ai",         cycle: "year"  },
   };
   return map[lookup] || null;
 }
@@ -66,7 +68,7 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     return;
   }
 
-  let base = false, compliance = false, business = false, bundle = false;
+  let base = false, compliance = false, business = false, bundle = false, ai = false;
   let interval = "month";
   let siteQty = 1;
   for (const item of sub.items?.data || []) {
@@ -79,6 +81,24 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     if (m.plan === "compliance") compliance = true;
     if (m.plan === "business") business = true;
     if (m.plan === "bundle") bundle = true;
+    if (m.plan === "ai") ai = true;
+  }
+
+  const { data: existing } = await supabase
+    .from("subscriptions")
+    .select("id, ai_active")
+    .eq("organisation_id", orgId)
+    .maybeSingle();
+
+  const isAiOnlyCheckout = ai && !base && !compliance && !business && !bundle;
+  const aiActive = ["active", "trialing", "past_due"].includes(sub.status);
+  if (isAiOnlyCheckout && existing?.id) {
+    await supabase.from("subscriptions").update({
+      stripe_customer_id: sub.customer,
+      ai_active: aiActive,
+      updated_at: new Date().toISOString(),
+    }).eq("organisation_id", orgId);
+    return;
   }
 
   const periodStart = sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null;
@@ -100,6 +120,7 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     compliance_active: compliance,
     business_active: business,
     bundle_active: bundle,
+    ai_active: ai || !!existing?.ai_active,
     locked_at: null,
     environment: env,
     updated_at: new Date().toISOString(),

@@ -27,11 +27,12 @@ export default function Account() {
   const { orgRole, appUser } = useAuth();
   const {
     subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft,
-    plan, cycle, paidActive,
+    plan, cycle, paidActive, refresh,
   } = useOrgAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const [siteCount, setSiteCount] = useState<number>(1);
   const [savingCycle, setSavingCycle] = useState(false);
+  const [savingAddon, setSavingAddon] = useState<PlanId | null>(null);
 
   const checkoutPlan = searchParams.get("checkout") as PlanId | "success" | null;
   const checkoutCycle = (searchParams.get("cycle") as BillingCycle | null) ?? cycle;
@@ -139,6 +140,26 @@ export default function Account() {
     else toast.success("Cancellation scheduled. You'll keep access until your period ends.");
   };
 
+  const handleAddAi = async () => {
+    if (!appUser?.organisation_id) return;
+    if (!trialActive && !compedActive) {
+      navigate(`/account?checkout=ai&cycle=${cycle}`);
+      return;
+    }
+    setSavingAddon("ai");
+    const { error } = await supabase
+      .from("subscriptions")
+      .update({ ai_active: true })
+      .eq("organisation_id", appUser.organisation_id);
+    setSavingAddon(null);
+    if (error) {
+      toast.error("Could not add AI Insights: " + error.message);
+      return;
+    }
+    await refresh();
+    toast.success(compedActive ? "AI Insights added to your account." : "AI Insights added to your trial.");
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto pb-24">
       <div>
@@ -147,6 +168,25 @@ export default function Account() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Manage your MiseOS subscription, modules, and invoices.</p>
       </div>
+
+      {/* Embedded checkout */}
+      {showCheckoutFor && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {paidActive ? "Switch / add" : "Subscribe"} — {PLANS[showCheckoutFor].name}
+            </CardTitle>
+            <CardDescription>
+              {formatGBP(checkoutCycle === "year" ? PLANS[showCheckoutFor].yearlyPrice : PLANS[showCheckoutFor].monthlyPrice)} per site / {checkoutCycle === "year" ? "year" : "month"} · {siteCount} site(s) · 15% off from site 2
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border overflow-hidden">
+              <StripeEmbeddedCheckout plan={showCheckoutFor} cycle={checkoutCycle} siteQuantity={siteCount} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Current plan */}
       <Card>
@@ -309,7 +349,8 @@ export default function Account() {
               <AddOnRow
                 planId="ai"
                 cycle={cycle}
-                onAdd={() => navigate(`/account?checkout=ai&cycle=${cycle}`)}
+                loading={savingAddon === "ai"}
+                onAdd={handleAddAi}
               />
             )}
             {!plan.bundle && (
@@ -353,29 +394,11 @@ export default function Account() {
         </Card>
       )}
 
-      {/* Embedded checkout */}
-      {showCheckoutFor && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {paidActive ? "Switch / add" : "Subscribe"} — {PLANS[showCheckoutFor].name}
-            </CardTitle>
-            <CardDescription>
-              {formatGBP(checkoutCycle === "year" ? PLANS[showCheckoutFor].yearlyPrice : PLANS[showCheckoutFor].monthlyPrice)} per site / {checkoutCycle === "year" ? "year" : "month"} · {siteCount} site(s) · 15% off from site 2
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border overflow-hidden">
-              <StripeEmbeddedCheckout plan={showCheckoutFor} cycle={checkoutCycle} siteQuantity={siteCount} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
 
-function AddOnRow({ planId, cycle, onAdd }: { planId: "compliance" | "business" | "ai"; cycle: BillingCycle; onAdd: () => void }) {
+function AddOnRow({ planId, cycle, onAdd, loading = false }: { planId: "compliance" | "business" | "ai"; cycle: BillingCycle; onAdd: () => void; loading?: boolean }) {
   const p = PLANS[planId];
   const price = cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
   return (
@@ -386,8 +409,9 @@ function AddOnRow({ planId, cycle, onAdd }: { planId: "compliance" | "business" 
       </div>
       <div className="text-right shrink-0">
         <p className="font-semibold text-sm">{formatGBP(price)}<span className="text-xs text-muted-foreground">/{cycle === "year" ? "yr" : "mo"}</span></p>
-        <Button size="sm" variant="outline" className="mt-1" onClick={onAdd}>
-          <Plus className="h-3.5 w-3.5 mr-1" />Add
+        <Button size="sm" variant="outline" className="mt-1" onClick={onAdd} disabled={loading}>
+          {loading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+          Add
         </Button>
       </div>
     </div>

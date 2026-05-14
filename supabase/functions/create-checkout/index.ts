@@ -106,7 +106,7 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      ui_mode: "embedded",
+      ui_mode: "embedded_page",
       line_items: [{ price: stripePrice.id, quantity: qty }],
       ...(discounts.length ? { discounts } : {}),
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
