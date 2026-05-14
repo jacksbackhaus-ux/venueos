@@ -19,6 +19,7 @@ export interface OrgSubscription {
   compliance_active: boolean;
   business_active: boolean;
   bundle_active: boolean;
+  ai_active: boolean;
   locked_at: string | null;
 }
 
