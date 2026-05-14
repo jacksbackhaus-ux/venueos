@@ -27,11 +27,12 @@ export default function Account() {
   const { orgRole, appUser } = useAuth();
   const {
     subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft,
-    plan, cycle, paidActive,
+    plan, cycle, paidActive, refresh,
   } = useOrgAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const [siteCount, setSiteCount] = useState<number>(1);
   const [savingCycle, setSavingCycle] = useState(false);
+  const [savingAddon, setSavingAddon] = useState<PlanId | null>(null);
 
   const checkoutPlan = searchParams.get("checkout") as PlanId | "success" | null;
   const checkoutCycle = (searchParams.get("cycle") as BillingCycle | null) ?? cycle;
@@ -137,6 +138,26 @@ export default function Account() {
       .eq("organisation_id", appUser.organisation_id);
     if (error) toast.error(error.message);
     else toast.success("Cancellation scheduled. You'll keep access until your period ends.");
+  };
+
+  const handleAddAi = async () => {
+    if (!appUser?.organisation_id) return;
+    if (!trialActive) {
+      navigate(`/account?checkout=ai&cycle=${cycle}`);
+      return;
+    }
+    setSavingAddon("ai");
+    const { error } = await supabase
+      .from("subscriptions")
+      .update({ ai_active: true })
+      .eq("organisation_id", appUser.organisation_id);
+    setSavingAddon(null);
+    if (error) {
+      toast.error("Could not add AI Insights: " + error.message);
+      return;
+    }
+    await refresh();
+    toast.success("AI Insights added to your trial.");
   };
 
   return (
@@ -328,7 +349,8 @@ export default function Account() {
               <AddOnRow
                 planId="ai"
                 cycle={cycle}
-                onAdd={() => navigate(`/account?checkout=ai&cycle=${cycle}`)}
+                loading={savingAddon === "ai"}
+                onAdd={handleAddAi}
               />
             )}
             {!plan.bundle && (
