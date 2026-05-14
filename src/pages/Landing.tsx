@@ -602,14 +602,14 @@ function Pricing() {
     { name: "Full Bundle", monthly: 12.99, yearly: 129.90, tagline: "Everything you need.", note: "", featured: true },
   ];
   const perks = [
-    "14-day free trial — no card required",
+    "Free trial unlocks every module",
     "15% multi-site discount from second site",
     "Data retained 7 years after cancellation",
     "Cancel anytime",
   ];
   return (
     <Section id="pricing">
-      <div className="text-center mb-10">
+      <div className="text-center mb-4">
         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
           Simple, transparent pricing
         </h2>
@@ -617,6 +617,9 @@ function Pricing() {
           Per site, per month. Annual billing saves two months. No hidden fees, no contracts.
         </p>
       </div>
+      <p className="text-center text-sm font-medium max-w-2xl mx-auto mb-10" style={{ color: BRAND_SAGE }}>
+        Your 14-day free trial includes every module — no card required. Pick the plan that fits when the trial ends.
+      </p>
       <div className="flex items-center justify-center gap-3 mb-10">
         <span className={`text-sm font-medium ${!annual ? "text-slate-900" : "text-slate-500"}`}>Monthly</span>
         <Switch checked={annual} onCheckedChange={setAnnual} />
