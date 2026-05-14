@@ -227,6 +227,8 @@ const TemperatureTracking = () => {
         <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} minDate={currentSite?.created_at?.slice(0, 10)} />
       </div>
 
+      {isToday && <EquipmentHealthAlert />}
+
       {(unitsLoading || logsLoading) && (
         <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
       )}
