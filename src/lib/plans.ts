@@ -1,7 +1,7 @@
 // MiseOS pricing — Base / Compliance / Business / Bundle.
 // All prices in GBP per site per month. Annual = monthly × 10 (2 months free).
 
-export type PlanId = "base" | "compliance" | "business" | "bundle";
+export type PlanId = "base" | "compliance" | "business" | "bundle" | "ai";
 export type BillingCycle = "month" | "year";
 export type ModuleName =
   | "temperatures" | "day_sheet" | "cleaning" | "shifts" | "timesheets" | "messenger" | "waste_log" | "customer_feedback"
