@@ -29,6 +29,7 @@ export interface PlanState {
   compliance: boolean;
   business: boolean;
   bundle: boolean;
+  ai: boolean;
   /** Convenience: which named plans are "owned" */
   hasAnyPlan: boolean;
   /** Best label for current selection. */
