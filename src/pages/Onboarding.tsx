@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BrandingSection } from "@/components/settings/BrandingSection";
 
 /**
  * Shown after a verified user signs in but has no profile yet.
@@ -20,7 +21,7 @@ export default function Onboarding() {
   const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState<"form" | "welcome">("form");
+  const [step, setStep] = useState<"form" | "welcome" | "branding">("form");
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string>("");
   const [copied, setCopied] = useState(false);
@@ -104,6 +105,7 @@ export default function Onboarding() {
     void refreshAppUser();
   };
 
+  const goToBranding = () => setStep("branding");
   const continueToPricing = () => {
     navigate("/pricing", { replace: true });
   };
@@ -179,9 +181,37 @@ export default function Onboarding() {
                 </p>
               )}
 
-              <Button onClick={continueToPricing} className="w-full mt-2">
-                Continue to plan setup <ArrowRight className="h-4 w-4 ml-1" />
+              <Button onClick={goToBranding} className="w-full mt-2">
+                Next: add your branding <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "branding") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl">
+          <Card>
+            <CardHeader>
+              <CardTitle>Add your branding</CardTitle>
+              <CardDescription>
+                Optional — upload your logo and choose your brand colours so {orgName || "your business"} feels at home. You can change this any time from Settings → Branding.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <BrandingSection embedded />
+              <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
+                <Button onClick={continueToPricing} className="flex-1">
+                  Continue to plan setup <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+                <Button variant="ghost" onClick={continueToPricing} className="sm:w-auto">
+                  Skip for now
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

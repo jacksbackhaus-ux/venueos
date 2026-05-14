@@ -10,6 +10,7 @@ import {
   SprayCan, Sparkles, ChevronRight, Plus, ChevronDown, Check,
 } from "lucide-react";
 import { useSite } from "@/contexts/SiteContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useRole } from "@/hooks/useRole";
@@ -377,6 +378,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { currentSite, hasSelectedSite, sites } = useSite();
   const { isHQ } = useAuth();
   const { isActive: isModuleActive } = useModuleAccess();
+  const { logoUrl, businessName } = useBranding();
 
   const showSiteIndicator = hasSelectedSite && currentSite;
   const isMultiSite = sites.length > 1;
@@ -429,8 +431,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Desktop header */}
           <header className="hidden md:flex h-12 items-center border-b bg-card px-4 shrink-0 gap-3">
             <SidebarTrigger />
+            {logoUrl ? (
+              <img src={logoUrl} alt={businessName} className="h-7 w-7 rounded object-cover" />
+            ) : null}
             <h1 className="font-heading font-semibold text-sm text-foreground">
-              MiseOS
+              {businessName || "MiseOS"}
             </h1>
             {showSiteIndicator && (
               <Badge
@@ -450,11 +455,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile header */}
           <header className="md:hidden flex h-14 items-center border-b bg-card px-4 shrink-0 gap-3">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-4 w-4 text-primary-foreground" />
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt={businessName} className="h-7 w-7 rounded-lg object-cover shrink-0" />
+            ) : (
+              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+                <ShieldCheck className="h-4 w-4 text-primary-foreground" />
+              </div>
+            )}
             <h1 className="font-heading font-semibold text-sm text-foreground">
-              MiseOS
+              {businessName || "MiseOS"}
             </h1>
 
             {/* Site badge — tappable for multi-site, static for single */}

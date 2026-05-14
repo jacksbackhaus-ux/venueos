@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SiteProvider, useSite } from "@/contexts/SiteContext";
+import { BrandingProvider } from "@/contexts/BrandingContext";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "./pages/Auth";
 import StaffLogin from "./pages/StaffLogin";
@@ -252,11 +253,13 @@ const App = () => (
         <ImpersonationProvider>
           <AuthProvider>
             <SiteProvider>
-              <ImpersonationBanner />
-              <PaymentTestModeBanner />
-              <Suspense fallback={<FullScreenLoader />}>
-                <AppRoutes />
-              </Suspense>
+              <BrandingProvider>
+                <ImpersonationBanner />
+                <PaymentTestModeBanner />
+                <Suspense fallback={<FullScreenLoader />}>
+                  <AppRoutes />
+                </Suspense>
+              </BrandingProvider>
             </SiteProvider>
           </AuthProvider>
         </ImpersonationProvider>

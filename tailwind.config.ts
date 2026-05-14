@@ -64,6 +64,15 @@ export default {
           DEFAULT: "hsl(var(--breach))",
           foreground: "hsl(var(--breach-foreground))",
         },
+        "brand-primary": {
+          DEFAULT: "var(--brand-primary)",
+          foreground: "var(--brand-primary-foreground)",
+          hover: "var(--brand-primary-hover)",
+        },
+        "brand-secondary": {
+          DEFAULT: "var(--brand-secondary)",
+          foreground: "var(--brand-secondary-foreground)",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

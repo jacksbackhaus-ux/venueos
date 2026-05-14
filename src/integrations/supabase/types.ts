@@ -2229,6 +2229,47 @@ export type Database = {
           },
         ]
       }
+      org_branding: {
+        Row: {
+          business_display_name: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          organisation_id: string
+          primary_colour: string | null
+          secondary_colour: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_display_name?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          organisation_id: string
+          primary_colour?: string | null
+          secondary_colour?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_display_name?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          organisation_id?: string
+          primary_colour?: string | null
+          secondary_colour?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_branding_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_cost_settings: {
         Row: {
           business_vat_registered: boolean
