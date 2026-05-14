@@ -143,27 +143,43 @@ export default function Pricing() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {planIds.map((planId) => {
             const p = PLANS[planId];
+            const isAi = planId === "ai";
             const isCurrent =
               (planId === "bundle" && plan.bundle) ||
               (planId === "base" && plan.base && !plan.bundle) ||
               (planId === "compliance" && plan.compliance && !plan.bundle) ||
-              (planId === "business" && plan.business && !plan.bundle);
+              (planId === "business" && plan.business && !plan.bundle) ||
+              (isAi && plan.ai);
             const price = cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
             const monthlyEquivalent = cycle === "year" ? p.yearlyPrice / 12 : null;
+
+            const aiFeatures = [
+              "AI Morning Briefing on your dashboard",
+              "Equipment health alerts on temperature tracking",
+              "AI compliance assessment in reports",
+              "Waste pattern insights (coming soon)",
+              "Recipe margin watchdog (coming soon)",
+              "Smart rota suggestions (coming soon)",
+            ];
 
             return (
               <Card
                 key={planId}
                 className={`relative flex flex-col ${
                   p.highlight ? "border-primary border-2 shadow-lg" : ""
-                }`}
+                } ${isAi ? "border-2 border-indigo-400/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/10 shadow-md shadow-indigo-500/5" : ""}`}
               >
                 {p.highlight && (
                   <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
                     Best value
+                  </Badge>
+                )}
+                {isAi && !isCurrent && (
+                  <Badge variant="secondary" className="absolute -top-2.5 right-3">
+                    New
                   </Badge>
                 )}
                 {isCurrent && (
@@ -172,7 +188,10 @@ export default function Pricing() {
                   </Badge>
                 )}
                 <CardHeader>
-                  <CardTitle className="font-heading text-lg">{p.name}</CardTitle>
+                  <CardTitle className="font-heading text-lg flex items-center gap-2">
+                    {isAi && <Sparkles className="h-4 w-4 text-indigo-500" />}
+                    {p.name}
+                  </CardTitle>
                   <CardDescription className="text-xs">{p.tagline}</CardDescription>
                   <div className="pt-2">
                     <span className="text-3xl font-bold text-foreground">{formatGBP(price)}</span>
@@ -186,10 +205,10 @@ export default function Pricing() {
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col gap-4">
                   <ul className="space-y-1.5 text-sm flex-1">
-                    {p.modules.map((m) => (
-                      <li key={m} className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                        <span>{MODULE_LABELS[m]}</span>
+                    {(isAi ? aiFeatures : p.modules.map((m) => MODULE_LABELS[m])).map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <Check className={`h-4 w-4 shrink-0 mt-0.5 ${isAi ? "text-indigo-500" : "text-success"}`} />
+                        <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -206,8 +225,8 @@ export default function Pricing() {
                     else if (needsBaseFirst) label = "Requires Base plan";
                     else if (isCurrentPaid) label = "Current plan";
                     else if (isCurrentTrial) label = "Subscribe now";
-                    else if (trialSwitch) label = isAddon ? "Add to trial" : "Switch & continue trial";
-                    else if (hasPaidSub) label = isAddon ? "Add to plan" : "Switch to this plan";
+                    else if (trialSwitch) label = (isAddon || isAi) ? "Add to trial" : "Switch & continue trial";
+                    else if (hasPaidSub) label = (isAddon || isAi) ? "Add to plan" : "Switch to this plan";
 
                     const onClick = () => {
                       if (trialSwitch) startTrialWithPlan(planId);
