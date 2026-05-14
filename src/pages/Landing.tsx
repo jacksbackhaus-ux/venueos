@@ -15,6 +15,7 @@ import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import miseosLogo from "@/assets/miseos-logo.png";
 
 const AUTH_URL = "https://mise-os.lovable.app/auth";
 
@@ -43,9 +44,8 @@ function Nav() {
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <a href="#top" className="flex items-center gap-2 font-bold text-lg">
-          <span className="w-8 h-8 rounded-lg bg-[#006AFF] text-white grid place-items-center font-bold">M</span>
-          <span>MiseOS</span>
+        <a href="#top" className="flex items-center">
+          <img src={miseosLogo} alt="MiseOS" className="h-8 w-auto" />
         </a>
         <div className="hidden md:flex items-center gap-8">
           {links.map((l) => (
@@ -59,7 +59,7 @@ function Nav() {
             <Button variant="outline" size="sm">Log In</Button>
           </a>
           <a href={AUTH_URL}>
-            <Button size="sm" className="bg-[#006AFF] hover:bg-[#005ad9]">Start Free Trial</Button>
+            <Button size="sm" className="bg-[#3d8a6a] hover:bg-[#2f6d54]">Start Free Trial</Button>
           </a>
         </div>
         <button className="md:hidden p-2" onClick={() => setOpen(!open)} aria-label="Menu">
@@ -75,7 +75,7 @@ function Nav() {
           ))}
           <div className="pt-3 border-t border-slate-200 flex flex-col gap-2">
             <a href={AUTH_URL}><Button variant="outline" className="w-full">Log In</Button></a>
-            <a href={AUTH_URL}><Button className="w-full bg-[#006AFF] hover:bg-[#005ad9]">Start Free Trial</Button></a>
+            <a href={AUTH_URL}><Button className="w-full bg-[#3d8a6a] hover:bg-[#2f6d54]">Start Free Trial</Button></a>
           </div>
         </div>
       )}
@@ -106,7 +106,7 @@ function Hero() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
           <a href={AUTH_URL}>
-            <Button size="lg" className="bg-[#006AFF] hover:bg-[#005ad9] text-base px-8 h-12 w-full sm:w-auto">
+            <Button size="lg" className="bg-[#3d8a6a] hover:bg-[#2f6d54] text-base px-8 h-12 w-full sm:w-auto">
               Start Free Trial <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </a>
@@ -119,7 +119,7 @@ function Hero() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
           {trustBadges.map((b, i) => (
             <div key={i} className="flex flex-col md:flex-row items-center gap-2 text-xs md:text-sm text-slate-600 text-center md:text-left">
-              <b.icon className="w-5 h-5 text-[#006AFF] flex-shrink-0" />
+              <b.icon className="w-5 h-5 text-[#3d8a6a] flex-shrink-0" />
               <span>{b.text}</span>
             </div>
           ))}
@@ -191,9 +191,9 @@ function FeatureGrid({ items }: { items: typeof FEATURES.daily }) {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
       {items.map((f, i) => (
-        <Card key={i} className="p-5 rounded-2xl border-slate-200 hover:border-[#006AFF]/40 hover:shadow-md transition-all">
-          <div className="w-10 h-10 rounded-lg bg-[#006AFF]/10 grid place-items-center mb-3">
-            <f.icon className="w-5 h-5 text-[#006AFF]" />
+        <Card key={i} className="p-5 rounded-2xl border-slate-200 hover:border-[#3d8a6a]/40 hover:shadow-md transition-all">
+          <div className="w-10 h-10 rounded-lg bg-[#3d8a6a]/10 grid place-items-center mb-3">
+            <f.icon className="w-5 h-5 text-[#3d8a6a]" />
           </div>
           <h3 className="font-semibold text-slate-900 mb-1.5">{f.title}</h3>
           <p className="text-sm text-slate-600 leading-relaxed">{f.desc}</p>
@@ -240,7 +240,7 @@ function HowItWorks() {
       <div className="grid md:grid-cols-3 gap-6">
         {steps.map((s) => (
           <Card key={s.n} className="p-6 rounded-2xl border-slate-200">
-            <div className="w-11 h-11 rounded-full bg-[#006AFF] text-white grid place-items-center font-bold mb-4">{s.n}</div>
+            <div className="w-11 h-11 rounded-full bg-[#3d8a6a] text-white grid place-items-center font-bold mb-4">{s.n}</div>
             <h3 className="font-semibold text-lg text-slate-900 mb-2">{s.title}</h3>
             <p className="text-slate-600 text-sm leading-relaxed">{s.body}</p>
           </Card>
@@ -285,11 +285,11 @@ function Pricing() {
           <Card
             key={p.name}
             className={`p-6 rounded-2xl flex flex-col relative ${
-              p.featured ? "border-2 border-[#006AFF] shadow-lg" : "border-slate-200"
+              p.featured ? "border-2 border-[#3d8a6a] shadow-lg" : "border-slate-200"
             }`}
           >
             {p.featured && (
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#006AFF] hover:bg-[#006AFF] text-white border-0">
+              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#3d8a6a] hover:bg-[#3d8a6a] text-white border-0">
                 Best value
               </Badge>
             )}
@@ -302,7 +302,7 @@ function Pricing() {
             {p.note && <p className="text-xs text-slate-500 mb-4">{p.note}</p>}
             {!p.note && <div className="mb-4 h-4" />}
             <a href={AUTH_URL} className="mt-auto">
-              <Button className={`w-full ${p.featured ? "bg-[#006AFF] hover:bg-[#005ad9]" : ""}`} variant={p.featured ? "default" : "outline"}>
+              <Button className={`w-full ${p.featured ? "bg-[#3d8a6a] hover:bg-[#2f6d54]" : ""}`} variant={p.featured ? "default" : "outline"}>
                 Start Free Trial
               </Button>
             </a>
@@ -381,7 +381,7 @@ function FAQ() {
 // ───── Final CTA ─────
 function FinalCTA() {
   return (
-    <section className="bg-slate-900 text-white py-20 md:py-28 px-4">
+    <section className="bg-[#1f3a32] text-white py-20 md:py-28 px-4">
       <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
         <h2 className="text-3xl md:text-5xl font-bold mb-5">Ready to run your venue properly?</h2>
         <p className="text-lg text-slate-300 mb-10 leading-relaxed">
@@ -389,7 +389,7 @@ function FinalCTA() {
           platform that actually works.
         </p>
         <a href={AUTH_URL}>
-          <Button size="lg" className="bg-[#006AFF] hover:bg-[#005ad9] text-base px-8 h-12">
+          <Button size="lg" className="bg-[#3d8a6a] hover:bg-[#2f6d54] text-base px-8 h-12">
             Start Your Free Trial <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </a>
@@ -404,8 +404,8 @@ function Footer() {
     <footer className="border-t border-slate-200 py-10 px-4">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600">
         <div className="flex items-center gap-2">
-          <span className="w-7 h-7 rounded-md bg-[#006AFF] text-white grid place-items-center font-bold text-xs">M</span>
-          <span>MiseOS © 2026</span>
+          <img src={miseosLogo} alt="MiseOS" className="h-6 w-auto" />
+          <span>© 2026</span>
         </div>
         <div className="flex gap-5">
           <a href="#" className="hover:text-slate-900">Privacy Policy</a>
