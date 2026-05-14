@@ -136,7 +136,7 @@ function buildDaySheetSheet(data: ReportData): XLSX.WorkSheet {
 
   for (const ds of data.daySheets) {
     rows.push([
-      ds.date ? format(new Date(ds.date), "dd/MM/yyyy") : "—",
+      ds.sheet_date ? format(new Date(ds.sheet_date), "dd/MM/yyyy") : "—",
       ds.locked ? "Locked" : "Open",
       ds.locked ? "Yes" : "No",
       ds.locked_by_name || "—",
