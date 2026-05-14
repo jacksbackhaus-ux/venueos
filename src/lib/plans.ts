@@ -112,9 +112,19 @@ export const PLANS: Record<PlanId, PlanDef> = {
     yearlyPrice: 129.90,
     monthlyPriceId: "venueos_bundle_monthly",
     yearlyPriceId: "venueos_bundle_yearly",
-    modules: ALL_MODULES,
+    modules: [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES],
     highlight: true,
     tagline: "Everything you need to run a venue.",
+  },
+  ai: {
+    id: "ai",
+    name: "AI Insights",
+    monthlyPrice: 4.99,
+    yearlyPrice: 49.90,
+    monthlyPriceId: "venueos_ai_monthly",
+    yearlyPriceId: "venueos_ai_yearly",
+    modules: AI_MODULES,
+    tagline: "Intelligent operations — briefings, alerts, and recommendations.",
   },
 };
 
@@ -133,10 +143,11 @@ export function calcTotalCost(opts: {
   compliance: boolean;
   business: boolean;
   bundle: boolean;
+  ai?: boolean;
   cycle: BillingCycle;
   sites: number;
 }): { perSite: number; total: number; discountedSiteCost: number; saving: number } {
-  const { base, compliance, business, bundle, cycle, sites } = opts;
+  const { base, compliance, business, bundle, ai, cycle, sites } = opts;
   const price = (p: PlanDef) => cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
   let perSite = 0;
   if (bundle) {
@@ -146,6 +157,7 @@ export function calcTotalCost(opts: {
     if (compliance) perSite += price(PLANS.compliance);
     if (business) perSite += price(PLANS.business);
   }
+  if (ai) perSite += price(PLANS.ai);
   const discountedSiteCost = perSite * (1 - MULTI_SITE_DISCOUNT_PCT / 100);
   const extraSites = Math.max(0, sites - 1);
   const total = perSite + extraSites * discountedSiteCost;
@@ -154,12 +166,16 @@ export function calcTotalCost(opts: {
 }
 
 /** Resolve the set of modules that *should* be active for a given subscription. */
-export function modulesForFlags(flags: { base: boolean; compliance: boolean; business: boolean; bundle: boolean }): Set<ModuleName> {
-  if (flags.bundle) return new Set(ALL_MODULES);
+export function modulesForFlags(flags: { base: boolean; compliance: boolean; business: boolean; bundle: boolean; ai?: boolean }): Set<ModuleName> {
   const out = new Set<ModuleName>();
-  if (flags.base) BASE_MODULES.forEach(m => out.add(m));
-  if (flags.compliance) COMPLIANCE_MODULES.forEach(m => out.add(m));
-  if (flags.business) BUSINESS_MODULES.forEach(m => out.add(m));
+  if (flags.bundle) {
+    [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES].forEach(m => out.add(m));
+  } else {
+    if (flags.base) BASE_MODULES.forEach(m => out.add(m));
+    if (flags.compliance) COMPLIANCE_MODULES.forEach(m => out.add(m));
+    if (flags.business) BUSINESS_MODULES.forEach(m => out.add(m));
+  }
+  if (flags.ai) AI_MODULES.forEach(m => out.add(m));
   return out;
 }
 
@@ -167,5 +183,6 @@ export function modulesForFlags(flags: { base: boolean; compliance: boolean; bus
 export function planForModule(mod: ModuleName): PlanId {
   if (BASE_MODULES.includes(mod)) return "base";
   if (COMPLIANCE_MODULES.includes(mod)) return "compliance";
+  if (AI_MODULES.includes(mod)) return "ai";
   return "business";
 }
