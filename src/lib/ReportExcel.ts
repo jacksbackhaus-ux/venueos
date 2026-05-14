@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { format, parseISO } from "date-fns";
+import { eachDayOfInterval, format, parseISO } from "date-fns";
 import type { ReportData } from "./reports";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
