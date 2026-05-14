@@ -252,11 +252,13 @@ const App = () => (
         <ImpersonationProvider>
           <AuthProvider>
             <SiteProvider>
-              <ImpersonationBanner />
-              <PaymentTestModeBanner />
-              <Suspense fallback={<FullScreenLoader />}>
-                <AppRoutes />
-              </Suspense>
+              <BrandingProvider>
+                <ImpersonationBanner />
+                <PaymentTestModeBanner />
+                <Suspense fallback={<FullScreenLoader />}>
+                  <AppRoutes />
+                </Suspense>
+              </BrandingProvider>
             </SiteProvider>
           </AuthProvider>
         </ImpersonationProvider>
