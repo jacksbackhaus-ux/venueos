@@ -155,7 +155,17 @@ const Reports = () => {
     if (!data) return;
     setExporting(true);
     try {
-      generateInspectionPackPdf(data, aiActive ? aiNarrative : undefined);
+      const logoDataUrl = branding.logoUrl ? await urlToDataUrl(branding.logoUrl) : undefined;
+      generateInspectionPackPdf(
+        data,
+        aiActive ? aiNarrative : undefined,
+        {
+          primary: branding.primaryColour,
+          secondary: branding.secondaryColour,
+          businessName: branding.businessName,
+          logoDataUrl,
+        },
+      );
       toast({ title: "Inspection Pack generated", description: "Your PDF has been downloaded." });
     } catch (err: any) {
       toast({ title: "Export failed", description: err.message, variant: "destructive" });
