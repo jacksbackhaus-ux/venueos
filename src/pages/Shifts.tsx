@@ -47,7 +47,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CancellationDialog } from "@/components/shifts/CancellationDialog";
 import { SmartFillDialog } from "@/components/shifts/SmartFillDialog";
-import { AIRotaSuggestButton } from "@/components/shifts/AIRotaSuggestButton";
+import { SmartRotaPanel } from "@/components/shifts/SmartRotaPanel";
+import { useRole } from "@/hooks/useRole";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { useAIAddedShifts } from "@/lib/aiShiftsTracker";
 
 // ---------- Date helpers (local time, Mon-first week) ----------
 const DAY_LABELS_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -468,10 +471,11 @@ const Shifts = () => {
                 </TabsList>
               </Tabs>
               {canEdit && view === "week" && siteId && organisationId && (
-                <AIRotaSuggestButton
+                <SmartRotaTrigger
                   siteId={siteId}
                   organisationId={organisationId}
                   weekStart={weekStart}
+                  weekEnd={addDays(weekStart, 6)}
                 />
               )}
               {canEdit && (
@@ -1107,3 +1111,40 @@ function DayView({
   );
 }
 export default Shifts;
+
+// ---------- Smart Rota trigger ----------
+function SmartRotaTrigger({
+  siteId,
+  organisationId,
+  weekStart,
+  weekEnd,
+}: {
+  siteId: string;
+  organisationId: string;
+  weekStart: string;
+  weekEnd: string;
+}) {
+  const { isSupervisorPlus } = useRole();
+  const { isActive } = useModuleAccess();
+  const [open, setOpen] = useState(false);
+  if (!isSupervisorPlus || !isActive("ai_insights")) return null;
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+        <Sparkles className="h-4 w-4 mr-1" /> AI Suggest
+      </Button>
+      {open && (
+        <SmartRotaPanel
+          open={open}
+          onOpenChange={setOpen}
+          siteId={siteId}
+          organisationId={organisationId}
+          weekStart={weekStart}
+          weekEnd={weekEnd}
+          shiftHiveActive={isActive("shifts")}
+          messengerActive={isActive("messenger")}
+        />
+      )}
+    </>
+  );
+}
