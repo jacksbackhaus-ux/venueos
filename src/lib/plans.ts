@@ -132,6 +132,140 @@ export function formatGBP(amount: number): string {
   return `£${amount.toFixed(2)}`;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW 4-TIER MODEL (2026)
+// Cumulative tiers: Essentials → Professional → Business → Intelligence.
+// Each tier is a single Stripe product. Existing flag columns are reused so
+// the rest of the access-control system (module_activation, RLS, useOrgAccess)
+// keeps working without changes — see `flagSet` per tier.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type TierId = "essentials" | "professional" | "business_tier" | "intelligence";
+
+export interface TierFlagSet {
+  base: boolean;
+  compliance: boolean;
+  business: boolean;
+  bundle: boolean;
+  ai: boolean;
+}
+
+export interface TierDef {
+  id: TierId;
+  name: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  monthlyPriceId: string;
+  yearlyPriceId: string;
+  modules: ModuleName[];
+  /** Flag combination written to the `subscriptions` table for this tier. */
+  flagSet: TierFlagSet;
+  tagline: string;
+  /** Headline bullets for marketing cards. */
+  highlights: string[];
+  highlight?: boolean;
+  ai?: boolean;
+}
+
+const PROFESSIONAL_MODULES: ModuleName[] = [...BASE_MODULES, ...COMPLIANCE_MODULES];
+const BUSINESS_TIER_MODULES: ModuleName[] = [...PROFESSIONAL_MODULES, ...BUSINESS_MODULES];
+
+export const TIERS: Record<TierId, TierDef> = {
+  essentials: {
+    id: "essentials",
+    name: "Essentials",
+    monthlyPrice: 7.99,
+    yearlyPrice: 79.90,
+    monthlyPriceId: "miseos_essentials_monthly",
+    yearlyPriceId: "miseos_essentials_yearly",
+    modules: BASE_MODULES,
+    flagSet: { base: true, compliance: false, business: false, bundle: false, ai: false },
+    tagline: "Run your daily operations.",
+    highlights: [
+      "Dashboard, Shifts & Timesheets",
+      "Day Sheet, Temperatures, Cleaning",
+      "Waste Log, Customer Feedback, Messenger",
+    ],
+  },
+  professional: {
+    id: "professional",
+    name: "Professional",
+    monthlyPrice: 9.99,
+    yearlyPrice: 99.90,
+    monthlyPriceId: "miseos_professional_monthly",
+    yearlyPriceId: "miseos_professional_yearly",
+    modules: PROFESSIONAL_MODULES,
+    flagSet: { base: true, compliance: true, business: false, bundle: false, ai: false },
+    tagline: "Everything in Essentials + full compliance.",
+    highlights: [
+      "Allergens & Labels (Natasha's Law)",
+      "Suppliers, Pest, PPM, Incidents",
+      "Batch Tracking, Staff Training, HACCP",
+    ],
+    highlight: true,
+  },
+  business_tier: {
+    id: "business_tier",
+    name: "Business",
+    monthlyPrice: 12.99,
+    yearlyPrice: 129.90,
+    monthlyPriceId: "miseos_business_tier_monthly",
+    yearlyPriceId: "miseos_business_tier_yearly",
+    modules: BUSINESS_TIER_MODULES,
+    flagSet: { base: false, compliance: false, business: false, bundle: true, ai: false },
+    tagline: "Everything in Professional + business tools.",
+    highlights: [
+      "Cost & Margin (True Margin Engine)",
+      "Tip Tracker",
+      "Reports — EHO Inspection Pack",
+    ],
+  },
+  intelligence: {
+    id: "intelligence",
+    name: "Intelligence",
+    monthlyPrice: 16.99,
+    yearlyPrice: 169.90,
+    monthlyPriceId: "miseos_intelligence_monthly",
+    yearlyPriceId: "miseos_intelligence_yearly",
+    modules: ALL_MODULES,
+    flagSet: { base: false, compliance: false, business: false, bundle: true, ai: true },
+    tagline: "Everything in Business + AI superpowers.",
+    highlights: [
+      "AI Morning Briefing",
+      "Smart Rota & Equipment Drift Detection",
+      "AI Compliance Narrative",
+    ],
+    ai: true,
+  },
+};
+
+export const TIER_ORDER: TierId[] = ["essentials", "professional", "business_tier", "intelligence"];
+
+/**
+ * Derive the closest 4-tier name for any subscription — works for both new
+ * tier-based subs (where `tier` column is set) and legacy flag-based subs
+ * (Bundle, Base+Compliance, etc.) by inspecting the flag combination.
+ */
+export function deriveTierFromFlags(flags: {
+  base?: boolean; compliance?: boolean; business?: boolean; bundle?: boolean; ai?: boolean;
+}): TierId | null {
+  const bundleLike = flags.bundle || (flags.base && flags.compliance && flags.business);
+  if (flags.ai && bundleLike) return "intelligence";
+  if (bundleLike) return "business_tier";
+  if (flags.base && flags.compliance) return "professional";
+  if (flags.base) return "essentials";
+  if (flags.ai) return "intelligence"; // AI-only legacy → closest is Intelligence
+  return null;
+}
+
+export function tierPrice(tier: TierDef, cycle: BillingCycle): number {
+  return cycle === "year" ? tier.yearlyPrice : tier.monthlyPrice;
+}
+
+export function tierPriceId(tier: TierDef, cycle: BillingCycle): string {
+  return cycle === "year" ? tier.yearlyPriceId : tier.monthlyPriceId;
+}
+
 export const MULTI_SITE_DISCOUNT_PCT = 15;
 
 /**

@@ -6,20 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Check, Sparkles, Loader2, ShieldCheck } from "lucide-react";
-import { PLANS, MODULE_LABELS, formatGBP, type PlanId, type BillingCycle } from "@/lib/plans";
+import {
+  TIERS, TIER_ORDER, MODULE_LABELS, formatGBP, deriveTierFromFlags,
+  type TierId, type BillingCycle,
+} from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
 
 /**
- * Pricing page — shown after onboarding and reachable from Account & Billing.
- * 14-day trial starts the moment a plan is picked. No card required.
+ * Pricing page — 4-tier model. Trial users can switch tiers freely
+ * (flag-set on the subscriptions row); paid users go via Stripe checkout.
  */
 export default function Pricing() {
   const navigate = useNavigate();
   const { appUser, isLoading: authLoading } = useAuth();
   const { subscription, loading, plan, trialActive, trialDaysLeft } = useOrgAccess();
-  const [selecting, setSelecting] = useState<PlanId | null>(null);
+  const [selecting, setSelecting] = useState<TierId | null>(null);
   const [cycle, setCycle] = useState<BillingCycle>("month");
 
   if (authLoading || loading) {
@@ -32,77 +35,38 @@ export default function Pricing() {
 
   const isTrialing = subscription?.status === "trialing";
   const hasPaidSub = subscription?.status === "active";
-  const hasBaseAccess = plan.base || plan.bundle;
+  const currentTier: TierId | null =
+    (subscription as { tier?: TierId | null } | null)?.tier ?? deriveTierFromFlags(plan);
 
-  // During trial: pick a plan = update flags only. No Stripe.
-  // Add-ons stack on top of Base; they cannot be picked standalone (except AI).
-  const startTrialWithPlan = async (planId: PlanId) => {
+  // During trial: pick a tier = update flags only. No Stripe.
+  const startTrialWithTier = async (tierId: TierId) => {
     if (!appUser?.organisation_id) return;
-    if ((planId === "compliance" || planId === "business") && !hasBaseAccess) {
-      toast.error("Add-ons require the Base plan. Pick Base or the Full Bundle first.");
-      return;
-    }
-    setSelecting(planId);
-
-    // Build flags depending on which card was picked.
-    const flags: {
-      billing_interval: BillingCycle;
-      base_active?: boolean;
-      compliance_active?: boolean;
-      business_active?: boolean;
-      bundle_active?: boolean;
-      ai_active?: boolean;
-    } = { billing_interval: cycle };
-    if (planId === "ai") {
-      // AI is independent — flip ai_active only, leave everything else as-is.
-      flags.ai_active = true;
-    } else if (planId === "bundle") {
-      flags.base_active = false;
-      flags.compliance_active = false;
-      flags.business_active = false;
-      flags.bundle_active = true;
-    } else if (planId === "base") {
-      // Switching to Base alone clears add-ons / bundle.
-      flags.base_active = true;
-      flags.compliance_active = false;
-      flags.business_active = false;
-      flags.bundle_active = false;
-    } else {
-      // Add-on: keep base on, turn on this add-on, leave the other add-on as-is.
-      flags.base_active = true;
-      flags.bundle_active = false;
-      if (planId === "compliance") flags.compliance_active = true;
-      if (planId === "business") flags.business_active = true;
-    }
-
+    setSelecting(tierId);
+    const tier = TIERS[tierId];
     const { error } = await supabase
       .from("subscriptions")
-      .update(flags)
+      .update({
+        billing_interval: cycle,
+        base_active: tier.flagSet.base,
+        compliance_active: tier.flagSet.compliance,
+        business_active: tier.flagSet.business,
+        bundle_active: tier.flagSet.bundle,
+        ai_active: tier.flagSet.ai,
+        tier: tierId,
+      })
       .eq("organisation_id", appUser.organisation_id);
     setSelecting(null);
     if (error) {
       toast.error("Could not save plan: " + error.message);
       return;
     }
-    const isAddon = planId === "compliance" || planId === "business" || planId === "ai";
-    const msg = isAddon
-      ? `${PLANS[planId].name} added to your trial.`
-      : `Welcome to ${PLANS[planId].name}! Your 14-day free trial has started.`;
-    toast.success(msg);
+    toast.success(`Welcome to ${tier.name} — your free trial continues.`);
     navigate("/", { replace: true });
   };
 
-  // Post-trial / change-of-plan goes via the Account page (Stripe checkout).
-  const goToCheckout = (planId: PlanId) => {
-    if ((planId === "compliance" || planId === "business") && !hasBaseAccess) {
-      toast.error("Add-ons require the Base plan. Subscribe to Base or the Full Bundle first.");
-      return;
-    }
-    navigate(`/account?checkout=${planId}&cycle=${cycle}`);
+  const goToCheckout = (tierId: TierId) => {
+    navigate(`/account?checkout=${tierId}&cycle=${cycle}`);
   };
-
-
-  const planIds: PlanId[] = ["base", "compliance", "business", "bundle", "ai"];
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,10 +77,10 @@ export default function Pricing() {
             14-day free trial — no card required
           </div>
           <h1 className="font-heading text-3xl md:text-4xl font-bold">
-            Choose what your venue needs
+            Choose your tier
           </h1>
           <p className="text-muted-foreground">
-            All plans are per site, per {cycle === "month" ? "month" : "year"}. Add or remove anytime.
+            Per site, per {cycle === "month" ? "month" : "year"}. Each tier builds on the last.
             {isTrialing && trialDaysLeft !== null && trialDaysLeft > 0 && (
               <span className="block mt-1 text-foreground font-medium">
                 You have {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left on your trial.
@@ -124,7 +88,6 @@ export default function Pricing() {
             )}
           </p>
 
-          {/* Billing cycle toggle */}
           <div className="inline-flex items-center gap-3 rounded-full border bg-card p-1 px-4">
             <span className={`text-sm font-medium ${cycle === "month" ? "text-foreground" : "text-muted-foreground"}`}>
               Monthly
@@ -137,49 +100,34 @@ export default function Pricing() {
             <span className={`text-sm font-medium flex items-center gap-2 ${cycle === "year" ? "text-foreground" : "text-muted-foreground"}`}>
               Annual
               <Badge variant="outline" className="border-success/40 bg-success/10 text-success text-[10px]">
-                2 months free
+                ~17% off
               </Badge>
             </span>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          {planIds.map((planId) => {
-            const p = PLANS[planId];
-            const isAi = planId === "ai";
-            const isCurrent =
-              (planId === "bundle" && plan.bundle) ||
-              (planId === "base" && plan.base && !plan.bundle) ||
-              (planId === "compliance" && plan.compliance && !plan.bundle) ||
-              (planId === "business" && plan.business && !plan.bundle) ||
-              (isAi && plan.ai);
-            const price = cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
-            const monthlyEquivalent = cycle === "year" ? p.yearlyPrice / 12 : null;
-
-            const aiFeatures = [
-              "AI Morning Briefing on your dashboard",
-              "Equipment health alerts on temperature tracking",
-              "AI compliance assessment in reports",
-              "Waste pattern insights (coming soon)",
-              "Recipe margin watchdog (coming soon)",
-              "Smart rota suggestions (coming soon)",
-            ];
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {TIER_ORDER.map((tierId) => {
+            const t = TIERS[tierId];
+            const isCurrent = currentTier === tierId;
+            const price = cycle === "year" ? t.yearlyPrice : t.monthlyPrice;
+            const monthlyEquivalent = cycle === "year" ? t.yearlyPrice / 12 : null;
 
             return (
               <Card
-                key={planId}
+                key={tierId}
                 className={`relative flex flex-col ${
-                  p.highlight ? "border-primary border-2 shadow-lg" : ""
-                } ${isAi ? "border-2 border-indigo-400/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/10 shadow-md shadow-indigo-500/5" : ""}`}
+                  t.highlight ? "border-primary border-2 shadow-lg" : ""
+                } ${t.ai ? "border-2 border-indigo-400/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/10 shadow-md" : ""}`}
               >
-                {p.highlight && (
+                {t.highlight && (
                   <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
-                    Best value
+                    Most popular
                   </Badge>
                 )}
-                {isAi && !isCurrent && (
+                {t.ai && !isCurrent && (
                   <Badge variant="secondary" className="absolute -top-2.5 right-3">
-                    New
+                    AI
                   </Badge>
                 )}
                 {isCurrent && (
@@ -189,10 +137,10 @@ export default function Pricing() {
                 )}
                 <CardHeader>
                   <CardTitle className="font-heading text-lg flex items-center gap-2">
-                    {isAi && <Sparkles className="h-4 w-4 text-indigo-500" />}
-                    {p.name}
+                    {t.ai && <Sparkles className="h-4 w-4 text-indigo-500" />}
+                    {t.name}
                   </CardTitle>
-                  <CardDescription className="text-xs">{p.tagline}</CardDescription>
+                  <CardDescription className="text-xs">{t.tagline}</CardDescription>
                   <div className="pt-2">
                     <span className="text-3xl font-bold text-foreground">{formatGBP(price)}</span>
                     <span className="text-sm text-muted-foreground"> / site / {cycle === "year" ? "yr" : "mo"}</span>
@@ -205,39 +153,43 @@ export default function Pricing() {
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col gap-4">
                   <ul className="space-y-1.5 text-sm flex-1">
-                    {(isAi ? aiFeatures : p.modules.map((m) => MODULE_LABELS[m])).map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className={`h-4 w-4 shrink-0 mt-0.5 ${isAi ? "text-indigo-500" : "text-success"}`} />
-                        <span>{feature}</span>
+                    {t.highlights.map((h) => (
+                      <li key={h} className="flex items-start gap-2">
+                        <Check className={`h-4 w-4 shrink-0 mt-0.5 ${t.ai ? "text-indigo-500" : "text-success"}`} />
+                        <span>{h}</span>
                       </li>
                     ))}
                   </ul>
+                  <details className="text-xs text-muted-foreground">
+                    <summary className="cursor-pointer hover:text-foreground">All modules</summary>
+                    <ul className="mt-2 space-y-0.5 pl-2">
+                      {t.modules.map((m) => (
+                        <li key={m}>• {MODULE_LABELS[m]}</li>
+                      ))}
+                    </ul>
+                  </details>
 
                   {(() => {
-                    const isAddon = planId === "compliance" || planId === "business";
-                    const needsBaseFirst = isAddon && !hasBaseAccess;
                     const isCurrentPaid = isCurrent && hasPaidSub;
-                    const isCurrentTrial = isCurrent && isTrialing;
                     const trialSwitch = isTrialing && !isCurrent;
 
                     let label: React.ReactNode = "Subscribe now";
-                    if (selecting === planId) label = <Loader2 className="h-4 w-4 animate-spin" />;
-                    else if (needsBaseFirst) label = "Requires Base plan";
+                    if (selecting === tierId) label = <Loader2 className="h-4 w-4 animate-spin" />;
                     else if (isCurrentPaid) label = "Current plan";
-                    else if (isCurrentTrial) label = "Subscribe now";
-                    else if (trialSwitch) label = (isAddon || isAi) ? "Add to trial" : "Switch & continue trial";
-                    else if (hasPaidSub) label = (isAddon || isAi) ? "Add to plan" : "Switch to this plan";
+                    else if (isCurrent && isTrialing) label = "Subscribe now";
+                    else if (trialSwitch) label = "Switch & continue trial";
+                    else if (hasPaidSub) label = "Switch to this tier";
 
                     const onClick = () => {
-                      if (trialSwitch) startTrialWithPlan(planId);
-                      else goToCheckout(planId);
+                      if (trialSwitch) startTrialWithTier(tierId);
+                      else goToCheckout(tierId);
                     };
 
                     return (
                       <Button
                         className="w-full"
-                        variant={p.highlight ? "default" : "outline"}
-                        disabled={isCurrentPaid || needsBaseFirst || selecting !== null}
+                        variant={t.highlight ? "default" : "outline"}
+                        disabled={isCurrentPaid || selecting !== null}
                         onClick={onClick}
                       >
                         {label}

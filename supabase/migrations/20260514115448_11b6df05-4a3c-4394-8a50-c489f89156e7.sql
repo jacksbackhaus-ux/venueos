@@ -1,0 +1,2 @@
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS tier text;
+COMMENT ON COLUMN public.subscriptions.tier IS 'New 4-tier model: essentials | professional | business_tier | intelligence. Null for legacy subs.';

@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { Building2, Plus, ExternalLink, Loader2, CheckCircle2, AlertTriangle, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { PLANS, formatGBP, type PlanId, type BillingCycle } from "@/lib/plans";
+import {
+  PLANS, TIERS, formatGBP, type PlanId, type TierId, type BillingCycle,
+} from "@/lib/plans";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { openCustomerPortal } from "@/lib/stripe";
 
@@ -27,15 +29,20 @@ type SiteRow = {
   created_at: string;
 };
 
-/**
- * Resolve the customer's "current plan" for the purpose of buying another site.
- * Bundle wins if active. Otherwise pick base if base_active. If only an add-on
- * is active (edge case) we fall back to base so the price line is sensible.
- */
-function resolveCurrentPlan(sub: {
+type SubLike = {
   base_active: boolean; compliance_active: boolean; business_active: boolean; bundle_active: boolean;
-} | null): PlanId | null {
+  ai_active?: boolean;
+  tier?: TierId | null;
+} | null;
+
+/**
+ * Plan id used by Stripe checkout when the customer adds a site.
+ * - New tier subs → use the tier id directly.
+ * - Legacy subs → fall back to base/compliance/business/bundle from flags.
+ */
+function resolveCurrentPlan(sub: SubLike): PlanId | null {
   if (!sub) return null;
+  if (sub.tier && (sub.tier as string) in TIERS) return sub.tier as unknown as PlanId;
   if (sub.bundle_active) return "bundle";
   if (sub.base_active) return "base";
   if (sub.compliance_active) return "compliance";
@@ -43,21 +50,20 @@ function resolveCurrentPlan(sub: {
   return null;
 }
 
-/**
- * Per-site cost per period for the customer's combined active modules.
- * (Sum of every active line in PLANS — matches how Stripe per-site quantity bills.)
- */
-function perSiteCost(
-  sub: { base_active: boolean; compliance_active: boolean; business_active: boolean; bundle_active: boolean } | null,
-  cycle: BillingCycle,
-): number {
+/** Per-site cost per period — tier price if set, else legacy module stack. */
+function perSiteCost(sub: SubLike, cycle: BillingCycle): number {
   if (!sub) return 0;
-  const price = (id: PlanId) => (cycle === "year" ? PLANS[id].yearlyPrice : PLANS[id].monthlyPrice);
-  if (sub.bundle_active) return price("bundle");
+  if (sub.tier && (sub.tier as string) in TIERS) {
+    const t = TIERS[sub.tier];
+    return cycle === "year" ? t.yearlyPrice : t.monthlyPrice;
+  }
+  const legacyPrice = (id: "base" | "compliance" | "business" | "bundle") =>
+    cycle === "year" ? PLANS[id].yearlyPrice : PLANS[id].monthlyPrice;
+  if (sub.bundle_active) return legacyPrice("bundle");
   let total = 0;
-  if (sub.base_active) total += price("base");
-  if (sub.compliance_active) total += price("compliance");
-  if (sub.business_active) total += price("business");
+  if (sub.base_active) total += legacyPrice("base");
+  if (sub.compliance_active) total += legacyPrice("compliance");
+  if (sub.business_active) total += legacyPrice("business");
   return total;
 }
 
@@ -299,8 +305,9 @@ export function SitesBillingSection() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Based on your current plan
-                    {subscription?.bundle_active && " (Full Bundle)"}
-                    {!subscription?.bundle_active && (
+                    {subscription?.tier && (subscription.tier as string) in TIERS && ` (${TIERS[subscription.tier as TierId].name})`}
+                    {!subscription?.tier && subscription?.bundle_active && " (Full Bundle)"}
+                    {!subscription?.tier && !subscription?.bundle_active && (
                       <>
                         {" ("}
                         {[

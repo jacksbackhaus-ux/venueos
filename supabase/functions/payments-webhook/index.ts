@@ -7,24 +7,50 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-/**
- * Maps a Stripe price lookup_key to the per-plan boolean flags on subscriptions.
- * Returns null for unknown keys.
- */
-function flagsForLookup(lookup: string): { plan: "base" | "compliance" | "business" | "bundle" | "ai"; cycle: "month" | "year" } | null {
-  const map: Record<string, { plan: "base" | "compliance" | "business" | "bundle" | "ai"; cycle: "month" | "year" }> = {
-    venueos_base_monthly:        { plan: "base",       cycle: "month" },
-    venueos_base_yearly:         { plan: "base",       cycle: "year"  },
-    venueos_compliance_monthly:  { plan: "compliance", cycle: "month" },
-    venueos_compliance_yearly:   { plan: "compliance", cycle: "year"  },
-    venueos_business_monthly:    { plan: "business",   cycle: "month" },
-    venueos_business_yearly:     { plan: "business",   cycle: "year"  },
-    venueos_bundle_monthly:      { plan: "bundle",     cycle: "month" },
-    venueos_bundle_yearly:       { plan: "bundle",     cycle: "year"  },
-    venueos_ai_monthly:          { plan: "ai",         cycle: "month" },
-    venueos_ai_yearly:           { plan: "ai",         cycle: "year"  },
-  };
-  return map[lookup] || null;
+type LegacyPlan = "base" | "compliance" | "business" | "bundle" | "ai";
+type TierId = "essentials" | "professional" | "business_tier" | "intelligence";
+
+interface FlagDelta {
+  base?: boolean; compliance?: boolean; business?: boolean; bundle?: boolean; ai?: boolean;
+}
+
+interface LookupResult {
+  cycle: "month" | "year";
+  legacyPlan?: LegacyPlan;
+  tier?: TierId;
+  flagDelta?: FlagDelta;
+}
+
+const LEGACY_MAP: Record<string, { plan: LegacyPlan; cycle: "month" | "year" }> = {
+  venueos_base_monthly:        { plan: "base",       cycle: "month" },
+  venueos_base_yearly:         { plan: "base",       cycle: "year"  },
+  venueos_compliance_monthly:  { plan: "compliance", cycle: "month" },
+  venueos_compliance_yearly:   { plan: "compliance", cycle: "year"  },
+  venueos_business_monthly:    { plan: "business",   cycle: "month" },
+  venueos_business_yearly:     { plan: "business",   cycle: "year"  },
+  venueos_bundle_monthly:      { plan: "bundle",     cycle: "month" },
+  venueos_bundle_yearly:       { plan: "bundle",     cycle: "year"  },
+  venueos_ai_monthly:          { plan: "ai",         cycle: "month" },
+  venueos_ai_yearly:           { plan: "ai",         cycle: "year"  },
+};
+
+const TIER_MAP: Record<string, { tier: TierId; cycle: "month" | "year"; flagDelta: FlagDelta }> = {
+  miseos_essentials_monthly:    { tier: "essentials",    cycle: "month", flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
+  miseos_essentials_yearly:     { tier: "essentials",    cycle: "year",  flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
+  miseos_professional_monthly:  { tier: "professional",  cycle: "month", flagDelta: { base: true,  compliance: true,  business: false, bundle: false } },
+  miseos_professional_yearly:   { tier: "professional",  cycle: "year",  flagDelta: { base: true,  compliance: true,  business: false, bundle: false } },
+  miseos_business_tier_monthly: { tier: "business_tier", cycle: "month", flagDelta: { base: false, compliance: false, business: false, bundle: true  } },
+  miseos_business_tier_yearly:  { tier: "business_tier", cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true  } },
+  miseos_intelligence_monthly:  { tier: "intelligence",  cycle: "month", flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
+  miseos_intelligence_yearly:   { tier: "intelligence",  cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
+};
+
+function flagsForLookup(lookup: string): LookupResult | null {
+  const tier = TIER_MAP[lookup];
+  if (tier) return { cycle: tier.cycle, tier: tier.tier, flagDelta: tier.flagDelta };
+  const legacy = LEGACY_MAP[lookup];
+  if (legacy) return { cycle: legacy.cycle, legacyPlan: legacy.plan };
+  return null;
 }
 
 serve(async (req) => {
@@ -71,26 +97,40 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
   let base = false, compliance = false, business = false, bundle = false, ai = false;
   let interval = "month";
   let siteQty = 1;
+  let tier: TierId | null = null;
   for (const item of sub.items?.data || []) {
     const lookup = item.price?.lookup_key || "";
     interval = item.price?.recurring?.interval || interval;
     siteQty = Math.max(siteQty, Number(item.quantity || 1));
     const m = flagsForLookup(lookup);
     if (!m) continue;
-    if (m.plan === "base") base = true;
-    if (m.plan === "compliance") compliance = true;
-    if (m.plan === "business") business = true;
-    if (m.plan === "bundle") bundle = true;
-    if (m.plan === "ai") ai = true;
+    if (m.legacyPlan) {
+      // Legacy add-on style — flip flags ON, never off.
+      if (m.legacyPlan === "base") base = true;
+      if (m.legacyPlan === "compliance") compliance = true;
+      if (m.legacyPlan === "business") business = true;
+      if (m.legacyPlan === "bundle") bundle = true;
+      if (m.legacyPlan === "ai") ai = true;
+    } else if (m.tier && m.flagDelta) {
+      // New tier — explicit flag set; overrides legacy combinations on the same item.
+      tier = m.tier;
+      const d = m.flagDelta;
+      if (d.base !== undefined) base = d.base;
+      if (d.compliance !== undefined) compliance = d.compliance;
+      if (d.business !== undefined) business = d.business;
+      if (d.bundle !== undefined) bundle = d.bundle;
+      if (d.ai !== undefined) ai = d.ai;
+    }
   }
 
   const { data: existing } = await supabase
     .from("subscriptions")
-    .select("id, ai_active")
+    .select("id, ai_active, tier")
     .eq("organisation_id", orgId)
     .maybeSingle();
 
-  const isAiOnlyCheckout = ai && !base && !compliance && !business && !bundle;
+  // Legacy AI-only add-on: only flips ai_active, leaves tier untouched.
+  const isAiOnlyCheckout = ai && !base && !compliance && !business && !bundle && !tier;
   const aiActive = ["active", "trialing", "past_due"].includes(sub.status);
   if (isAiOnlyCheckout && existing?.id) {
     await supabase.from("subscriptions").update({
@@ -120,7 +160,8 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     compliance_active: compliance,
     business_active: business,
     bundle_active: bundle,
-    ai_active: ai || !!existing?.ai_active,
+    ai_active: ai || (tier ? false : !!existing?.ai_active),
+    tier: tier ?? existing?.tier ?? null,
     locked_at: null,
     environment: env,
     updated_at: new Date().toISOString(),

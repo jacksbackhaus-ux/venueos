@@ -595,11 +595,52 @@ function Features() {
 // ───── Pricing ─────
 function Pricing() {
   const [annual, setAnnual] = useState(false);
-  const plans = [
-    { name: "Base Platform", monthly: 7.99, yearly: 79.90, tagline: "Run your daily operations.", note: "" },
-    { name: "Compliance Add-on", monthly: 3.99, yearly: 39.90, tagline: "Stay inspection-ready.", note: "Requires Base" },
-    { name: "Business Add-on", monthly: 3.99, yearly: 39.90, tagline: "Track costs and profit.", note: "Requires Base" },
-    { name: "Full Bundle", monthly: 12.99, yearly: 129.90, tagline: "Everything you need.", note: "", featured: true },
+  const plans: Array<{
+    name: string; monthly: number; yearly: number; tagline: string;
+    bullets: string[]; featured?: boolean; ai?: boolean;
+  }> = [
+    {
+      name: "Essentials",
+      monthly: 7.99, yearly: 79.90,
+      tagline: "Run your daily operations.",
+      bullets: [
+        "Dashboard, Shifts, Timesheets",
+        "Day Sheet, Temperatures, Cleaning",
+        "Waste Log, Customer Feedback, Messenger",
+      ],
+    },
+    {
+      name: "Professional",
+      monthly: 9.99, yearly: 99.90,
+      tagline: "Everything in Essentials + Compliance.",
+      bullets: [
+        "Allergens & Labels (Natasha's Law)",
+        "Suppliers, Pest, PPM, Incidents",
+        "Batch Tracking, Staff Training, HACCP",
+      ],
+      featured: true,
+    },
+    {
+      name: "Business",
+      monthly: 12.99, yearly: 129.90,
+      tagline: "Everything in Professional + business tools.",
+      bullets: [
+        "Cost & Margin (True Margin Engine)",
+        "Tip Tracker",
+        "Reports — EHO Inspection Pack",
+      ],
+    },
+    {
+      name: "Intelligence",
+      monthly: 16.99, yearly: 169.90,
+      tagline: "Everything in Business + AI.",
+      bullets: [
+        "AI Morning Briefing",
+        "Smart Rota & Equipment Drift",
+        "AI Compliance Narrative",
+      ],
+      ai: true,
+    },
   ];
   const perks = [
     "Free trial unlocks every module",
@@ -618,7 +659,7 @@ function Pricing() {
         </p>
       </div>
       <p className="text-center text-sm font-medium max-w-2xl mx-auto mb-10" style={{ color: BRAND_SAGE }}>
-        Your 14-day free trial includes every module — no card required. Pick the plan that fits when the trial ends.
+        Your 14-day free trial includes every module — no card required. Pick the tier that fits when the trial ends.
       </p>
       <div className="flex items-center justify-center gap-3 mb-10">
         <span className={`text-sm font-medium ${!annual ? "text-slate-900" : "text-slate-500"}`}>Monthly</span>
@@ -632,29 +673,54 @@ function Pricing() {
           <Card
             key={p.name}
             className={`p-6 rounded-2xl flex flex-col relative ${p.featured ? "shadow-lg" : "border-slate-200"}`}
-            style={p.featured ? { borderColor: BRAND_SAGE, borderWidth: 2 } : undefined}
+            style={
+              p.featured ? { borderColor: BRAND_SAGE, borderWidth: 2 }
+              : p.ai ? { borderColor: BRAND_LIGHT, borderWidth: 2, background: "linear-gradient(180deg, rgba(107,174,142,0.06), transparent)" }
+              : undefined
+            }
           >
             {p.featured && (
               <Badge
                 className="absolute -top-3 left-1/2 -translate-x-1/2 text-white border-0"
                 style={{ backgroundColor: BRAND_SAGE }}
               >
-                Best value
+                Most popular
+              </Badge>
+            )}
+            {p.ai && (
+              <Badge
+                className="absolute -top-3 right-4 text-white border-0"
+                style={{ backgroundColor: BRAND_DEEP }}
+              >
+                <Sparkles className="w-3 h-3 mr-1" /> AI
               </Badge>
             )}
             <h3 className="font-semibold text-slate-900 mb-1">{p.name}</h3>
             <p className="text-sm text-slate-600 mb-4">{p.tagline}</p>
             <div className="mb-1">
               <span className="text-3xl font-bold text-slate-900">£{annual ? p.yearly.toFixed(2) : p.monthly.toFixed(2)}</span>
-              <span className="text-slate-500 text-sm">/{annual ? "yr" : "mo"}</span>
+              <span className="text-slate-500 text-sm">/site/{annual ? "yr" : "mo"}</span>
             </div>
-            {p.note && <p className="text-xs text-slate-500 mb-4">{p.note}</p>}
-            {!p.note && <div className="mb-4 h-4" />}
+            <p className="text-xs text-slate-500 mb-4">
+              {annual ? `≈ £${(p.yearly / 12).toFixed(2)}/mo` : `£${(p.monthly * 10).toFixed(2)}/yr if paid annually`}
+            </p>
+            <ul className="space-y-1.5 text-sm text-slate-700 mb-5 flex-1">
+              {p.bullets.map((b) => (
+                <li key={b} className="flex items-start gap-2">
+                  <Check className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: p.ai ? BRAND_DEEP : BRAND_SAGE }} />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
             <a href={AUTH_URL} className="mt-auto">
               <Button
-                className={`w-full ${p.featured ? "text-white" : ""}`}
-                style={p.featured ? { backgroundColor: BRAND_SAGE } : undefined}
-                variant={p.featured ? "default" : "outline"}
+                className={`w-full ${p.featured || p.ai ? "text-white" : ""}`}
+                style={
+                  p.featured ? { backgroundColor: BRAND_SAGE }
+                  : p.ai ? { backgroundColor: BRAND_DEEP }
+                  : undefined
+                }
+                variant={p.featured || p.ai ? "default" : "outline"}
               >
                 Start Free Trial
               </Button>
