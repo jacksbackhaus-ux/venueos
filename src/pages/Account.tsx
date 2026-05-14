@@ -142,7 +142,7 @@ export default function Account() {
 
   const handleAddAi = async () => {
     if (!appUser?.organisation_id) return;
-    if (!trialActive) {
+    if (!trialActive && !compedActive) {
       navigate(`/account?checkout=ai&cycle=${cycle}`);
       return;
     }
@@ -157,7 +157,7 @@ export default function Account() {
       return;
     }
     await refresh();
-    toast.success("AI Insights added to your trial.");
+    toast.success(compedActive ? "AI Insights added to your account." : "AI Insights added to your trial.");
   };
 
   return (
