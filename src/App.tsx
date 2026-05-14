@@ -144,6 +144,14 @@ function AuthRedirect() {
   return <Auth />;
 }
 
+/** Root path: show Landing for unauthenticated visitors, Dashboard for signed-in users. */
+function RootRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, staffSession } = useAuth();
+  if (isLoading) return <FullScreenLoader />;
+  if (!isAuthenticated && !staffSession) return <Landing />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   const { isLoading } = useAuth();
   if (isLoading) return <FullScreenLoader />;
