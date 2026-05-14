@@ -21,7 +21,7 @@ export default function Onboarding() {
   const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState<"form" | "welcome">("form");
+  const [step, setStep] = useState<"form" | "welcome" | "branding">("form");
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string>("");
   const [copied, setCopied] = useState(false);
