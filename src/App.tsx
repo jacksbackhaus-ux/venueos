@@ -52,6 +52,7 @@ import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { StaffLayout } from "./components/staff/StaffLayout";
 import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
