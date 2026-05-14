@@ -105,6 +105,7 @@ export default function Onboarding() {
     void refreshAppUser();
   };
 
+  const goToBranding = () => setStep("branding");
   const continueToPricing = () => {
     navigate("/pricing", { replace: true });
   };
