@@ -294,14 +294,14 @@ export function SmartRotaPanel({
         .eq("auth_user_id", user!.id)
         .maybeSingle();
       const content = `🔔 Reminder${w.staff_name ? ` for ${w.staff_name}` : ""}: ${w.message}`;
-      const { error } = await supabase.from("messenger_messages").insert({
+      const { error } = await supabase.from("messenger_messages").insert([{
         channel_id: channel.id,
         site_id: siteId,
         sender_id: appUser?.id ?? null,
         sender_name_snapshot: appUser?.display_name ?? "Manager",
         content,
-        message_type: "text",
-      });
+        message_type: "user",
+      }]);
       if (error) throw error;
       toast.success("Reminder sent");
     } catch (e: any) {
