@@ -437,23 +437,181 @@ function buildAiAssessmentSheet(narrative: string): XLSX.WorkSheet {
   return ws;
 }
 
+// ─── Extra evidence sheets ────────────────────────────────────────────────────
+
+function buildTrainingSheet(data: ReportData): XLSX.WorkSheet {
+  const rows: any[][] = [
+    ["Staff Training & Competence"],
+    [`Generated: ${format(new Date(data.generatedAt), "d MMM yyyy")}`],
+    [`${data.trainingRecords.length} records · ${data.trainingExpired} expired · ${data.trainingExpiringSoon} expiring within 30 days`],
+    [],
+    ["Training", "Type", "Completed", "Expires", "Status", "Notes"],
+  ];
+  for (const t of data.trainingRecords) {
+    const exp = t.expiry_date ? new Date(t.expiry_date) : null;
+    const status = !exp ? "—" : exp < new Date() ? "EXPIRED" : (exp.getTime() - Date.now()) / 86400000 <= 30 ? "Expiring" : "Valid";
+    rows.push([
+      t.training_name || "—",
+      t.training_type || "—",
+      t.completed_date ? format(new Date(t.completed_date), "dd/MM/yyyy") : "—",
+      exp ? format(exp, "dd/MM/yyyy") : "—",
+      status,
+      t.notes || "",
+    ]);
+  }
+  if (data.trainingRecords.length === 0) rows.push(["No training records found for this period."]);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  setColWidths(ws, [28, 18, 14, 14, 12, 36]);
+  return ws;
+}
+
+function buildHaccpSheet(data: ReportData): XLSX.WorkSheet {
+  const rows: any[][] = [
+    ["HACCP Plans"],
+    [`Generated: ${format(new Date(data.generatedAt), "d MMM yyyy")}`],
+    [`${data.haccpPlans.length} plan(s) · ${data.haccpPlans.filter((h: any) => h.status === "published").length} published`],
+    [],
+    ["Plan", "Business type", "Status", "Last reviewed", "Next review"],
+  ];
+  for (const h of data.haccpPlans as any[]) {
+    rows.push([
+      h.name || "—",
+      h.food_business_type || "—",
+      (h.status || "draft").toUpperCase(),
+      h.last_reviewed_at ? format(new Date(h.last_reviewed_at), "dd/MM/yyyy") : "—",
+      h.review_due_at ? format(new Date(h.review_due_at), "dd/MM/yyyy") : "—",
+    ]);
+  }
+  if (data.haccpPlans.length === 0) rows.push(["No HACCP plans found for this period."]);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  setColWidths(ws, [32, 22, 14, 16, 16]);
+  return ws;
+}
+
+function buildPpmSheet(data: ReportData): XLSX.WorkSheet {
+  const rows: any[][] = [
+    ["Planned Preventative Maintenance (PPM)"],
+    [`Generated: ${format(new Date(data.generatedAt), "d MMM yyyy")}`],
+    [`${data.ppmTasks.length} active tasks · ${data.ppmOverdue} overdue`],
+    [],
+    ["Task", "Category", "Frequency", "Assigned to / Contractor", "Last completed", "Next due", "Status"],
+  ];
+  for (const t of data.ppmTasks as any[]) {
+    const last = (data.ppmCompletions as any[])
+      .filter((c) => c.task_id === t.id)
+      .sort((a, b) => (a.completed_date < b.completed_date ? 1 : -1))[0];
+    const nextDue = last?.next_due_date ? new Date(last.next_due_date) : null;
+    const status = nextDue ? (nextDue < new Date() ? "OVERDUE" : "On schedule") : "Not started";
+    rows.push([
+      t.task_name || "—",
+      t.category || "—",
+      t.frequency || "—",
+      t.contractor_name || t.assigned_to || "—",
+      last?.completed_date ? format(new Date(last.completed_date), "dd/MM/yyyy") : "—",
+      nextDue ? format(nextDue, "dd/MM/yyyy") : "—",
+      status,
+    ]);
+  }
+  if (data.ppmTasks.length === 0) rows.push(["No PPM tasks configured for this period."]);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  setColWidths(ws, [28, 16, 14, 24, 14, 14, 14]);
+  return ws;
+}
+
+function buildWasteSheet(data: ReportData): XLSX.WorkSheet {
+  const rows: any[][] = [
+    ["Waste & Continuous Improvement"],
+    [`Period: ${data.range.label}`],
+    [`${data.wasteLogs.length} entries · Total estimated cost £${data.wasteCostTotal.toFixed(2)}`],
+    [],
+    ["Date", "Category", "Item", "Qty", "Unit", "Cost (£)", "Logged by", "Notes"],
+  ];
+  for (const w of data.wasteLogs as any[]) {
+    rows.push([
+      w.shift_date ? format(parseISO(w.shift_date), "dd/MM/yyyy") : "—",
+      w.category || "—",
+      w.item_name || "—",
+      w.quantity ?? "",
+      w.unit || "",
+      w.estimated_cost != null ? Number(w.estimated_cost).toFixed(2) : "—",
+      w.logged_by_name || "—",
+      w.notes || "",
+    ]);
+  }
+  if (data.wasteLogs.length === 0) rows.push(["No waste logged for this period."]);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  setColWidths(ws, [14, 16, 24, 8, 8, 12, 20, 32]);
+  return ws;
+}
+
+function buildWorkplaceSafetySheet(data: ReportData): XLSX.WorkSheet {
+  const rows: any[][] = [
+    ["Workplace Safety Addendum"],
+    ["This addendum supports general workplace safety visibility but is not a full Health & Safety management system."],
+    ["It re-presents existing operational records (maintenance, incidents, training, cleaning, PPM) under H&S-style headings."],
+    [],
+    ["Area", "Source", "Open / Issue", "Total"],
+    ["Workplace hazards logged", "Maintenance log", String(data.openMaintenance), String(data.maintenanceLogs.length)],
+    ["Incident reporting & corrective actions", "Incidents", String(data.openIncidents), String(data.incidents.length)],
+    ["Competence & training records", "Training records", `${data.trainingExpired} expired`, String(data.trainingRecords.length)],
+    ["Workplace hygiene & housekeeping", "Cleaning logs", `${data.cleaningCompletionPct}% complete`, String(data.cleaningTasksTotal)],
+    ["Planned preventative maintenance", "PPM schedule", `${data.ppmOverdue} overdue`, String(data.ppmTasks.length)],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  setColWidths(ws, [40, 22, 22, 12]);
+  return ws;
+}
+
+function buildAuditTrailSheet(data: ReportData): XLSX.WorkSheet {
+  const readinessLabel =
+    data.readiness === "green" ? "READY" : data.readiness === "amber" ? "PARTIAL READINESS" : "ACTION REQUIRED";
+  const rows: any[][] = [
+    ["Audit Trail & Methodology"],
+    [],
+    ["Generated by", "MiseOS — Reports & Inspection Pack"],
+    ["Generated at", format(new Date(data.generatedAt), "d MMM yyyy 'at' HH:mm")],
+    ["Site", `${data.orgName} — ${data.siteName}`],
+    ["Reporting period", `${format(data.range.from, "d MMM yyyy")} – ${format(data.range.to, "d MMM yyyy")} (${data.range.days} days)`],
+    ["Closed days excluded", String(data.closedDaysCount)],
+    ["Estimated FHRS", `${data.ratingEstimate} / 5`],
+    ["Overall compliance", `${data.overallScore}%`],
+    ["Inspection readiness", readinessLabel],
+    ["Data retention", "Records retained for 7 years in line with food safety record-keeping practice."],
+    [],
+    ["Modules active during the period:"],
+    [data.activeModules.length > 0 ? data.activeModules.join(" • ") : "No active modules detected."],
+    [],
+    ["Closed-days exclusion: closed days are removed from both numerator and denominator of every completion calculation, so a venue is not penalised for not logging records on a day it was legitimately closed."],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  setColWidths(ws, [28, 80]);
+  return ws;
+}
+
 // ─── Main export function ─────────────────────────────────────────────────────
 
 export function generateInspectionPackExcel(data: ReportData, aiNarrative?: string) {
   const wb = XLSX.utils.book_new();
 
-  XLSX.utils.book_append_sheet(wb, buildSummarySheet(data), "Summary");
+  XLSX.utils.book_append_sheet(wb, buildOverviewSheet(data), "Overview");
+  XLSX.utils.book_append_sheet(wb, buildEvidenceIndexSheet(), "Evidence Index");
   if (aiNarrative && aiNarrative.trim().length > 0) {
     XLSX.utils.book_append_sheet(wb, buildAiAssessmentSheet(aiNarrative), "AI Assessment");
   }
-  XLSX.utils.book_append_sheet(wb, buildTemperatureSheet(data), "Temperature Logs");
   XLSX.utils.book_append_sheet(wb, buildDaySheetSheet(data), "Day Sheets");
+  XLSX.utils.book_append_sheet(wb, buildTemperatureSheet(data), "Temperature Logs");
   XLSX.utils.book_append_sheet(wb, buildCleaningSheet(data), "Cleaning");
-  XLSX.utils.book_append_sheet(wb, buildIncidentsSheet(data), "Incidents");
   XLSX.utils.book_append_sheet(wb, buildDeliveriesSheet(data), "Deliveries");
-  XLSX.utils.book_append_sheet(wb, buildPestSheet(data), "Pest & Maintenance");
   XLSX.utils.book_append_sheet(wb, buildSuppliersSheet(data), "Suppliers");
   XLSX.utils.book_append_sheet(wb, buildAllergensSheet(data), "Allergen Matrix");
+  XLSX.utils.book_append_sheet(wb, buildIncidentsSheet(data), "Incidents");
+  XLSX.utils.book_append_sheet(wb, buildPestSheet(data), "Pest & Maintenance");
+  XLSX.utils.book_append_sheet(wb, buildPpmSheet(data), "PPM");
+  XLSX.utils.book_append_sheet(wb, buildTrainingSheet(data), "Training");
+  XLSX.utils.book_append_sheet(wb, buildHaccpSheet(data), "HACCP");
+  XLSX.utils.book_append_sheet(wb, buildWasteSheet(data), "Waste");
+  XLSX.utils.book_append_sheet(wb, buildWorkplaceSafetySheet(data), "Workplace Safety");
+  XLSX.utils.book_append_sheet(wb, buildAuditTrailSheet(data), "Audit Trail");
 
   const filename = `MiseOS_Inspection_Pack_${data.siteName.replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.xlsx`;
   XLSX.writeFile(wb, filename);
