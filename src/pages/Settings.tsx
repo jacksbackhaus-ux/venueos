@@ -57,7 +57,6 @@ import { ModuleManagementSection } from "@/components/ModuleManagementSection";
 import { MessengerSettingsSection } from "@/components/messenger/MessengerSettingsSection";
 import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
 import { BrandingSection } from "@/components/settings/BrandingSection";
-import { useRole } from "@/hooks/useRole";
 import { ToggleLeft, MessageSquare, Palette } from "lucide-react";
 
 // ─── Temperature Units ───
