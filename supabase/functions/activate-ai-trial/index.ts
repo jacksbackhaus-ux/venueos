@@ -46,10 +46,11 @@ Deno.serve(async (req) => {
     }
 
     const { data: roleRow } = await admin
-      .from("organisation_roles")
+      .from("org_users")
       .select("org_role")
-      .eq("user_id", user.id)
+      .eq("user_id", appUser.id)
       .eq("organisation_id", appUser.organisation_id)
+      .eq("active", true)
       .maybeSingle();
     if (roleRow?.org_role !== "org_owner") {
       return new Response(JSON.stringify({ error: "Only the organisation owner can do this" }), {
