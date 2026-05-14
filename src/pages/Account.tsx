@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import {
   PLANS, MODULE_LABELS, formatGBP, calcTotalCost,
   type PlanId, type BillingCycle, type ModuleName,
-  BASE_MODULES, COMPLIANCE_MODULES, BUSINESS_MODULES,
+  BASE_MODULES, COMPLIANCE_MODULES, BUSINESS_MODULES, AI_MODULES,
 } from "@/lib/plans";
 import { LoginUrlCard } from "@/components/LoginUrlCard";
 
