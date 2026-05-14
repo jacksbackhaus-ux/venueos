@@ -1,5 +1,5 @@
 import { encode } from "https://deno.land/std@0.168.0/encoding/hex.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import Stripe from "https://esm.sh/stripe@22.0.2";
 
 export type StripeEnv = "sandbox" | "live";
 
@@ -19,6 +19,7 @@ export function createStripeClient(env: StripeEnv): Stripe {
   if (!lovableApiKey) throw new Error("LOVABLE_API_KEY is not configured");
 
   return new Stripe(connectionApiKey, {
+    apiVersion: "2026-03-25.dahlia",
     httpClient: Stripe.createFetchHttpClient((url: string | URL, init?: RequestInit) => {
       const gatewayUrl = url.toString().replace("https://api.stripe.com", GATEWAY_STRIPE_BASE);
       return fetch(gatewayUrl, {
