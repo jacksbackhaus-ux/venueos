@@ -95,6 +95,8 @@ export default function CostMargin() {
         </p>
       </div>
 
+      <MarginWatchdogCard siteId={siteId} ctx={ctx} recipes={allRecipes} />
+
       <Tabs defaultValue="menu" className="space-y-4">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="menu"><ChefHat className="h-4 w-4 mr-2" />Menu items</TabsTrigger>
