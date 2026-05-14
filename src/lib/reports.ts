@@ -53,6 +53,12 @@ export interface ReportData {
   ratingEstimate: number;
   dataCompleteness: number;
   topFixes: { text: string; link: string; severity: "high" | "medium" | "low" }[];
+  topStrengths: { text: string }[];
+  readiness: "green" | "amber" | "red";
+  highRiskBreaches: number;
+  closedDaysCount: number;
+  generatedAt: string;
+  activeModules: string[];
   // Raw evidence tables for PDF
   tempLogs: any[];
   tempBreaches: any[];
@@ -77,7 +83,19 @@ export interface ReportData {
   openMaintenance: number;
   ingredients: any[];
   recipes: any[];
+  ppdsRecipes: any[];
   staffCount: number;
+  // Extended evidence
+  trainingRecords: any[];
+  trainingRequirements: any[];
+  trainingExpiringSoon: number;
+  trainingExpired: number;
+  haccpPlans: any[];
+  ppmTasks: any[];
+  ppmCompletions: any[];
+  ppmOverdue: number;
+  wasteLogs: any[];
+  wasteCostTotal: number;
   // Cost & Margin summary (only populated when caller has access)
   costMargin?: CostMarginSummary;
 }
