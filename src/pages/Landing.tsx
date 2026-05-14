@@ -420,7 +420,7 @@ function Footer() {
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 scroll-smooth" style={{ fontFamily: "Inter, system-ui, -apple-system, sans-serif" }}>
+    <div className="min-h-screen bg-white text-slate-900 scroll-smooth font-body">
       <Nav />
       <Hero />
       <Problem />
