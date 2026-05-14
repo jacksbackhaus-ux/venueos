@@ -378,6 +378,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { currentSite, hasSelectedSite, sites } = useSite();
   const { isHQ } = useAuth();
   const { isActive: isModuleActive } = useModuleAccess();
+  const { logoUrl, businessName } = useBranding();
 
   const showSiteIndicator = hasSelectedSite && currentSite;
   const isMultiSite = sites.length > 1;
