@@ -65,6 +65,7 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   cost_margin: "/cost-margin",
   tip_tracker: "/tip-tracker",
   reports: "/reports",
+  ai_insights: "/dashboard",
 };
 
 export const BASE_MODULES: ModuleName[] = ["temperatures", "day_sheet", "cleaning", "shifts", "timesheets", "messenger", "waste_log", "customer_feedback"];
