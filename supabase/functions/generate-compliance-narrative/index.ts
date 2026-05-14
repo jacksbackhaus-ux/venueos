@@ -245,7 +245,7 @@ serve(async (req) => {
     let outputTokens = 0;
     try {
       const resp = await anthropic.messages.create({
-        model: "claude-haiku-4-5-20250415",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 800,
         temperature: 0.3,
         messages: [{ role: "user", content: userPrompt }],
@@ -274,7 +274,7 @@ serve(async (req) => {
       narrative,
       generated_at: generatedAt,
       valid_until: validUntil,
-      model_used: "claude-haiku-4-5",
+      model_used: "claude-haiku-4-5-20251001",
       prompt_tokens: inputTokens,
       completion_tokens: outputTokens,
       cost_estimate,
