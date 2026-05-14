@@ -375,7 +375,7 @@ export default function Account() {
   );
 }
 
-function AddOnRow({ planId, cycle, onAdd }: { planId: "compliance" | "business"; cycle: BillingCycle; onAdd: () => void }) {
+function AddOnRow({ planId, cycle, onAdd }: { planId: "compliance" | "business" | "ai"; cycle: BillingCycle; onAdd: () => void }) {
   const p = PLANS[planId];
   const price = cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
   return (
