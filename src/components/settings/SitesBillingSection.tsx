@@ -305,8 +305,9 @@ export function SitesBillingSection() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Based on your current plan
-                    {subscription?.bundle_active && " (Full Bundle)"}
-                    {!subscription?.bundle_active && (
+                    {subscription?.tier && (subscription.tier as string) in TIERS && ` (${TIERS[subscription.tier as TierId].name})`}
+                    {!subscription?.tier && subscription?.bundle_active && " (Full Bundle)"}
+                    {!subscription?.tier && !subscription?.bundle_active && (
                       <>
                         {" ("}
                         {[
