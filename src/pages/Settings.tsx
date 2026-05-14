@@ -600,8 +600,17 @@ const Settings = () => {
           <TabsTrigger value="messenger" className="text-xs gap-1"><MessageSquare className="h-3 w-3" /> Messenger</TabsTrigger>
           <TabsTrigger value="site" className="text-xs gap-1"><Building2 className="h-3 w-3" /> Site</TabsTrigger>
           <TabsTrigger value="sites" className="text-xs gap-1"><Plus className="h-3 w-3" /> Sites</TabsTrigger>
+          {(orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
+            <TabsTrigger value="branding" className="text-xs gap-1"><Palette className="h-3 w-3" /> Branding</TabsTrigger>
+          )}
           <TabsTrigger value="account" className="text-xs gap-1"><Shield className="h-3 w-3" /> Account</TabsTrigger>
         </TabsList>
+
+        {(orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
+          <TabsContent value="branding" className="mt-4 space-y-4">
+            <BrandingSection />
+          </TabsContent>
+        )}
 
         <TabsContent value="sites" className="mt-4 space-y-4">
           <SitesBillingSection />
