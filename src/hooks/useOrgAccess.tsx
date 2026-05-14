@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import type { BillingCycle, PlanId } from "@/lib/plans";
+import type { BillingCycle, PlanId, TierId } from "@/lib/plans";
 
 export interface OrgSubscription {
   id: string;
@@ -20,6 +20,7 @@ export interface OrgSubscription {
   business_active: boolean;
   bundle_active: boolean;
   ai_active: boolean;
+  tier: TierId | null;
   locked_at: string | null;
 }
 
