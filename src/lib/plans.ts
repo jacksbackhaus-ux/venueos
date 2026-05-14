@@ -6,7 +6,8 @@ export type BillingCycle = "month" | "year";
 export type ModuleName =
   | "temperatures" | "day_sheet" | "cleaning" | "shifts" | "timesheets" | "messenger" | "waste_log" | "customer_feedback"
   | "allergens" | "suppliers" | "pest_maintenance" | "incidents" | "batch_tracking" | "staff_training" | "haccp" | "ppm_schedule"
-  | "cost_margin" | "tip_tracker" | "reports";
+  | "cost_margin" | "tip_tracker" | "reports"
+  | "ai_insights";
 
 export interface PlanDef {
   id: PlanId;
@@ -40,6 +41,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
   cost_margin: "Cost & Margin",
   tip_tracker: "Tip Tracker",
   reports: "Reports",
+  ai_insights: "AI Insights",
 };
 
 // Module → URL path for navigation
@@ -63,6 +65,7 @@ export const MODULE_ROUTES: Record<ModuleName, string> = {
   cost_margin: "/cost-margin",
   tip_tracker: "/tip-tracker",
   reports: "/reports",
+  ai_insights: "/dashboard",
 };
 
 export const BASE_MODULES: ModuleName[] = ["temperatures", "day_sheet", "cleaning", "shifts", "timesheets", "messenger", "waste_log", "customer_feedback"];

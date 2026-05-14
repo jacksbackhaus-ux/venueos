@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { useSite } from "@/contexts/SiteContext";
 import { LabourVsWasteCard } from "@/components/dashboard/LabourVsWasteCard";
 import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
+import { MorningBriefingCard } from "@/components/dashboard/MorningBriefingCard";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -491,6 +492,8 @@ const Dashboard = () => {
           ))}
         </div>
       </motion.section>
+
+      {isToday && !isClosed && <MorningBriefingCard />}
 
       {/* ============================================================
           DATE NAV + CLOSED-DAY CONTROL (kept for past-day review)
