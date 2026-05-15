@@ -278,10 +278,10 @@ const TemperatureTracking = () => {
                     <button
                       className="w-full text-left"
                       onClick={() => {
-                        if (!isToday) return;
+                        if (!canEdit) return;
                         if (isExpanded) { resetUnit(); } else { setExpandedUnit(unit.id); setUnitTemp(""); setUnitStep("keypad"); setUnitCorrectiveAction(""); }
                       }}
-                      disabled={!isToday}
+                      disabled={!canEdit}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
@@ -452,11 +452,11 @@ const TemperatureTracking = () => {
             return (
               <button
                 key={pc.type}
-                onClick={() => { if (!isToday) return; setProcessDialog(pc.type); setFoodItem(""); setProcessTemp(""); setProcessStep("food"); setProcessCorrectiveAction(""); }}
-                disabled={!isToday}
+                onClick={() => { if (!canEdit) return; setProcessDialog(pc.type); setFoodItem(""); setProcessTemp(""); setProcessStep("food"); setProcessCorrectiveAction(""); }}
+                disabled={!canEdit}
                 className={cn(
                   "flex flex-col items-center gap-2 p-3 rounded-xl border text-left transition-all",
-                  isToday ? "hover:shadow-md cursor-pointer" : "cursor-default opacity-60",
+                  canEdit ? "hover:shadow-md cursor-pointer" : "cursor-default opacity-60",
                   pc.color
                 )}
               >
