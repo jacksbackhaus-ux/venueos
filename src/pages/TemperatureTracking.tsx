@@ -481,6 +481,9 @@ const TemperatureTracking = () => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{log.food_item}</span>
                       <Badge variant="outline" className="text-[10px]">{log.log_type}</Badge>
+                      {log.is_retrospective && (
+                        <Badge variant="outline" className="text-[10px] border-warning text-warning" title={log.retrospective_note || undefined}>Retrospective</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {Number(log.value)}°C · {new Date(log.logged_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {log.logged_by_name}
@@ -514,6 +517,9 @@ const TemperatureTracking = () => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{log.food_item || getUnitName(log.unit_id)}</span>
                       <Badge variant="outline" className="text-[10px]">{log.log_type}</Badge>
+                      {log.is_retrospective && (
+                        <Badge variant="outline" className="text-[10px] border-warning text-warning" title={log.retrospective_note || undefined}>Retrospective</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {Number(log.value)}°C · {new Date(log.logged_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {log.logged_by_name}
