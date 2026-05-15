@@ -444,9 +444,13 @@ export type Database = {
           created_at: string
           done: boolean
           id: string
+          is_retrospective: boolean
           log_date: string
           note: string | null
           organisation_id: string
+          retrospective_at: string | null
+          retrospective_by: string | null
+          retrospective_note: string | null
           site_id: string
           task_id: string
         }
@@ -457,9 +461,13 @@ export type Database = {
           created_at?: string
           done?: boolean
           id?: string
+          is_retrospective?: boolean
           log_date: string
           note?: string | null
           organisation_id: string
+          retrospective_at?: string | null
+          retrospective_by?: string | null
+          retrospective_note?: string | null
           site_id: string
           task_id: string
         }
@@ -470,9 +478,13 @@ export type Database = {
           created_at?: string
           done?: boolean
           id?: string
+          is_retrospective?: boolean
           log_date?: string
           note?: string | null
           organisation_id?: string
+          retrospective_at?: string | null
+          retrospective_by?: string | null
+          retrospective_note?: string | null
           site_id?: string
           task_id?: string
         }
@@ -496,6 +508,20 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_logs_retrospective_by_fkey"
+            columns: ["retrospective_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_logs_retrospective_by_fkey"
+            columns: ["retrospective_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -613,8 +639,12 @@ export type Database = {
           day_sheet_id: string
           done: boolean
           id: string
+          is_retrospective: boolean
           item_id: string
           note: string | null
+          retrospective_at: string | null
+          retrospective_by: string | null
+          retrospective_note: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -624,8 +654,12 @@ export type Database = {
           day_sheet_id: string
           done?: boolean
           id?: string
+          is_retrospective?: boolean
           item_id: string
           note?: string | null
+          retrospective_at?: string | null
+          retrospective_by?: string | null
+          retrospective_note?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -635,8 +669,12 @@ export type Database = {
           day_sheet_id?: string
           done?: boolean
           id?: string
+          is_retrospective?: boolean
           item_id?: string
           note?: string | null
+          retrospective_at?: string | null
+          retrospective_by?: string | null
+          retrospective_note?: string | null
         }
         Relationships: [
           {
@@ -665,6 +703,20 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "day_sheet_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheet_entries_retrospective_by_fkey"
+            columns: ["retrospective_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheet_entries_retrospective_by_fkey"
+            columns: ["retrospective_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -759,6 +811,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_retrospective: boolean
           locked: boolean
           locked_at: string | null
           locked_by_name: string | null
@@ -766,6 +819,9 @@ export type Database = {
           manager_note: string | null
           organisation_id: string
           problem_notes: string | null
+          retrospective_at: string | null
+          retrospective_by: string | null
+          retrospective_note: string | null
           sheet_date: string
           signed_off: boolean
           signed_off_at: string | null
@@ -775,6 +831,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_retrospective?: boolean
           locked?: boolean
           locked_at?: string | null
           locked_by_name?: string | null
@@ -782,6 +839,9 @@ export type Database = {
           manager_note?: string | null
           organisation_id: string
           problem_notes?: string | null
+          retrospective_at?: string | null
+          retrospective_by?: string | null
+          retrospective_note?: string | null
           sheet_date: string
           signed_off?: boolean
           signed_off_at?: string | null
@@ -791,6 +851,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_retrospective?: boolean
           locked?: boolean
           locked_at?: string | null
           locked_by_name?: string | null
@@ -798,6 +859,9 @@ export type Database = {
           manager_note?: string | null
           organisation_id?: string
           problem_notes?: string | null
+          retrospective_at?: string | null
+          retrospective_by?: string | null
+          retrospective_note?: string | null
           sheet_date?: string
           signed_off?: boolean
           signed_off_at?: string | null
@@ -824,6 +888,20 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheets_retrospective_by_fkey"
+            columns: ["retrospective_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_sheets_retrospective_by_fkey"
+            columns: ["retrospective_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -4014,12 +4092,16 @@ export type Database = {
           created_at: string
           food_item: string | null
           id: string
+          is_retrospective: boolean
           log_type: string
           logged_at: string
           logged_by_name: string
           logged_by_user_id: string | null
           organisation_id: string
           pass: boolean
+          retrospective_at: string | null
+          retrospective_by: string | null
+          retrospective_note: string | null
           site_id: string
           unit_id: string | null
           value: number
@@ -4029,12 +4111,16 @@ export type Database = {
           created_at?: string
           food_item?: string | null
           id?: string
+          is_retrospective?: boolean
           log_type?: string
           logged_at?: string
           logged_by_name?: string
           logged_by_user_id?: string | null
           organisation_id: string
           pass: boolean
+          retrospective_at?: string | null
+          retrospective_by?: string | null
+          retrospective_note?: string | null
           site_id: string
           unit_id?: string | null
           value: number
@@ -4044,12 +4130,16 @@ export type Database = {
           created_at?: string
           food_item?: string | null
           id?: string
+          is_retrospective?: boolean
           log_type?: string
           logged_at?: string
           logged_by_name?: string
           logged_by_user_id?: string | null
           organisation_id?: string
           pass?: boolean
+          retrospective_at?: string | null
+          retrospective_by?: string | null
+          retrospective_note?: string | null
           site_id?: string
           unit_id?: string | null
           value?: number
@@ -4074,6 +4164,20 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_logs_retrospective_by_fkey"
+            columns: ["retrospective_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_logs_retrospective_by_fkey"
+            columns: ["retrospective_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -4675,6 +4779,7 @@ export type Database = {
       is_internal_staff: { Args: never; Returns: boolean }
       is_org_manager_or_hq: { Args: { _org_id: string }; Returns: boolean }
       is_org_owner: { Args: { _org_id: string }; Returns: boolean }
+      is_site_manager: { Args: { _site_id: string }; Returns: boolean }
       is_site_supervisor_or_owner: {
         Args: { _site_id: string }
         Returns: boolean
