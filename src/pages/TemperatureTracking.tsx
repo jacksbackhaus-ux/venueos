@@ -289,7 +289,7 @@ const TemperatureTracking = () => {
                             <Badge variant="secondary" className={cn("text-xs", typeColors[unit.type])}>{unit.type}</Badge>
                             <span className="font-heading font-semibold text-sm">{unit.name}</span>
                           </div>
-                          {isToday && (
+                          {canEdit && (
                             <Badge variant="outline" className={cn("text-[10px]", nextCheck === "Spot Check" && "border-success/40 text-success")}>
                               {nextCheck === "Spot Check" ? "✓ Both done" : `Log ${nextCheck}`}
                             </Badge>
@@ -314,7 +314,7 @@ const TemperatureTracking = () => {
                           ) : (
                             <div className="flex items-center gap-2 text-muted-foreground">
                               <Clock className="h-4 w-4" />
-                              <span className="text-sm">{isToday ? "No reading yet" : "No reading"}</span>
+                              <span className="text-sm">{canEdit ? "No reading yet" : "No reading"}</span>
                             </div>
                           )}
                         </div>
