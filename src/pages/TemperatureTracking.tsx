@@ -19,6 +19,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DateNavigator } from "@/components/DateNavigator";
 import { EquipmentHealthAlert } from "@/components/temperature/EquipmentHealthAlert";
+import { RetrospectiveBanner } from "@/components/RetrospectiveBanner";
+import { useRetrospective } from "@/hooks/useRetrospective";
 import { cn } from "@/lib/utils";
 
 type TempUnit = {
@@ -30,6 +32,7 @@ type TempLog = {
   id: string; unit_id: string | null; food_item: string | null;
   value: number; pass: boolean; log_type: string;
   corrective_action: string | null; logged_by_name: string; logged_at: string;
+  is_retrospective?: boolean; retrospective_note?: string | null;
 };
 
 type ProcessType = "Cooking" | "Reheating" | "Hot Holding" | "Cooling" | "Delivery";
