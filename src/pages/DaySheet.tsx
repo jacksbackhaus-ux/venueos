@@ -14,6 +14,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DateNavigator } from "@/components/DateNavigator";
+import { RetrospectiveBanner } from "@/components/RetrospectiveBanner";
+import { useRetrospective } from "@/hooks/useRetrospective";
 
 const DaySheet = () => {
   const { currentSite, organisationId } = useSite();
@@ -24,7 +26,7 @@ const DaySheet = () => {
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
   const todayStr = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const isToday = selectedDate === todayStr;
+  const { isToday, isRetrospective, canEdit } = useRetrospective(selectedDate);
   const today = selectedDate; // all queries below are scoped to the selected date
 
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -128,10 +130,11 @@ const DaySheet = () => {
 
   const ensureDaySheet = async () => {
     if (daySheet) return daySheet.id;
-    if (!isToday) throw new Error("Cannot edit a past day sheet");
+    if (!canEdit) throw new Error("Cannot edit a past day sheet");
     const { data, error } = await supabase.from("day_sheets").insert({
       site_id: siteId!, organisation_id: organisationId!, sheet_date: today,
-    }).select("id").single();
+      is_retrospective: isRetrospective,
+    } as any).select("id").single();
     if (error) throw error;
     queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
     return data.id;
@@ -140,25 +143,33 @@ const DaySheet = () => {
   const toggleItem = useMutation({
     mutationFn: async (itemId: string) => {
       const dsId = await ensureDaySheet();
+      const completedAt = isRetrospective
+        ? new Date(`${selectedDate}T12:00:00`).toISOString()
+        : new Date().toISOString();
       const existing = entries.find((e: any) => e.item_id === itemId);
       if (existing?.done) {
-        const { error } = await supabase.from("day_sheet_entries").update({ done: false, completed_at: null, completed_by_user_id: null }).eq("id", existing.id);
+        const { error } = await supabase.from("day_sheet_entries").update({
+          done: false, completed_at: null, completed_by_user_id: null,
+          is_retrospective: isRetrospective,
+        } as any).eq("id", existing.id);
         if (error) throw error;
       } else if (existing) {
      const { error } = await supabase.from("day_sheet_entries").update({
           done: true,
-          completed_at: new Date().toISOString(),
+          completed_at: completedAt,
           completed_by_user_id: appUser?.id || null,
           completed_by_name: userName,
-        }).eq("id", existing.id);
+          is_retrospective: isRetrospective,
+        } as any).eq("id", existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("day_sheet_entries").insert({
           day_sheet_id: dsId, item_id: itemId, done: true,
           completed_by_user_id: appUser?.id || null,
           completed_by_name: userName,
-          completed_at: new Date().toISOString(),
-        });
+          completed_at: completedAt,
+          is_retrospective: isRetrospective,
+        } as any);
         if (error) throw error;
       }
     },
@@ -225,7 +236,7 @@ const DaySheet = () => {
 
   const isSignedOff = daySheet?.signed_off || false;
   const isLockedSheet = daySheet?.locked || isSignedOff;
-const locked = !isToday; // only past days are read-only — sign-off no longer prevents editing
+const locked = !canEdit; // staff/supervisors locked on past days; managers can retrospectively edit
   const doneItemIds = new Set(entries.filter((e: any) => e.done).map((e: any) => e.item_id));
   const allItems = sections.flatMap((s: any) => s.day_sheet_items || []);
   const totalItems = allItems.length;
@@ -267,13 +278,19 @@ const locked = !isToday; // only past days are read-only — sign-off no longer 
             <Badge className="bg-success text-success-foreground gap-1"><ShieldCheck className="h-3 w-3" /> Signed off</Badge>
           ) : isLockedSheet ? (
           <Badge className="bg-success text-success-foreground gap-1"><CheckCircle2 className="h-3 w-3" /> Signed off</Badge>
-          ) : !isToday ? (
+          ) : !isToday && !canEdit ? (
             <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
               <Lock className="h-3 w-3" /> Read-only
             </Badge>
           ) : null}
         </div>
         <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} minDate={currentSite?.created_at?.slice(0, 10)} />
+        {isRetrospective && <RetrospectiveBanner date={selectedDate} />}
+        {daySheet?.is_retrospective && !isRetrospective && (
+          <Badge variant="outline" className="border-warning text-warning gap-1 w-fit" title={daySheet.retrospective_note || undefined}>
+            <AlertTriangle className="h-3 w-3" /> Contains retrospective entries
+          </Badge>
+        )}
       </div>
 
       {sectionsLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}

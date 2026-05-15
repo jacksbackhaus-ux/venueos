@@ -19,6 +19,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DateNavigator } from "@/components/DateNavigator";
 import { EquipmentHealthAlert } from "@/components/temperature/EquipmentHealthAlert";
+import { RetrospectiveBanner } from "@/components/RetrospectiveBanner";
+import { useRetrospective } from "@/hooks/useRetrospective";
 import { cn } from "@/lib/utils";
 
 type TempUnit = {
@@ -30,6 +32,7 @@ type TempLog = {
   id: string; unit_id: string | null; food_item: string | null;
   value: number; pass: boolean; log_type: string;
   corrective_action: string | null; logged_by_name: string; logged_at: string;
+  is_retrospective?: boolean; retrospective_note?: string | null;
 };
 
 type ProcessType = "Cooking" | "Reheating" | "Hot Holding" | "Cooling" | "Delivery";
@@ -68,7 +71,7 @@ const TemperatureTracking = () => {
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(todayStr);
-  const isToday = selectedDate === todayStr;
+  const { isToday, isRetrospective, canEdit } = useRetrospective(selectedDate);
 
   // Unit keypad state — inline expansion
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
@@ -110,12 +113,18 @@ const TemperatureTracking = () => {
 
   const insertLog = useMutation({
     mutationFn: async (log: { unit_id: string | null; food_item: string | null; value: number; pass: boolean; log_type: string; corrective_action?: string }) => {
+      // For retrospective entries, log against noon of the selected past date so triggers tag the row.
+      const loggedAt = isRetrospective
+        ? new Date(`${selectedDate}T12:00:00`).toISOString()
+        : new Date().toISOString();
       const { error } = await supabase.from("temp_logs").insert({
         site_id: siteId!, organisation_id: organisationId!,
         unit_id: log.unit_id, food_item: log.food_item,
         value: log.value, pass: log.pass, log_type: log.log_type,
         corrective_action: log.corrective_action || null,
         logged_by_user_id: appUser?.id || null, logged_by_name: userName,
+        logged_at: loggedAt,
+        is_retrospective: isRetrospective,
       } as any);
       if (error) throw error;
     },
@@ -218,7 +227,7 @@ const TemperatureTracking = () => {
               </p>
             </div>
           </div>
-          {!isToday && (
+          {!isToday && !canEdit && (
             <Badge variant="outline" className="gap-1 text-muted-foreground">
               <Clock className="h-3 w-3" /> Read-only
             </Badge>
@@ -226,6 +235,8 @@ const TemperatureTracking = () => {
         </div>
         <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} minDate={currentSite?.created_at?.slice(0, 10)} />
       </div>
+
+      {isRetrospective && <RetrospectiveBanner date={selectedDate} />}
 
       {isToday && <EquipmentHealthAlert />}
 
@@ -267,10 +278,10 @@ const TemperatureTracking = () => {
                     <button
                       className="w-full text-left"
                       onClick={() => {
-                        if (!isToday) return;
+                        if (!canEdit) return;
                         if (isExpanded) { resetUnit(); } else { setExpandedUnit(unit.id); setUnitTemp(""); setUnitStep("keypad"); setUnitCorrectiveAction(""); }
                       }}
-                      disabled={!isToday}
+                      disabled={!canEdit}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
@@ -278,7 +289,7 @@ const TemperatureTracking = () => {
                             <Badge variant="secondary" className={cn("text-xs", typeColors[unit.type])}>{unit.type}</Badge>
                             <span className="font-heading font-semibold text-sm">{unit.name}</span>
                           </div>
-                          {isToday && (
+                          {canEdit && (
                             <Badge variant="outline" className={cn("text-[10px]", nextCheck === "Spot Check" && "border-success/40 text-success")}>
                               {nextCheck === "Spot Check" ? "✓ Both done" : `Log ${nextCheck}`}
                             </Badge>
@@ -303,7 +314,7 @@ const TemperatureTracking = () => {
                           ) : (
                             <div className="flex items-center gap-2 text-muted-foreground">
                               <Clock className="h-4 w-4" />
-                              <span className="text-sm">{isToday ? "No reading yet" : "No reading"}</span>
+                              <span className="text-sm">{canEdit ? "No reading yet" : "No reading"}</span>
                             </div>
                           )}
                         </div>
@@ -441,11 +452,11 @@ const TemperatureTracking = () => {
             return (
               <button
                 key={pc.type}
-                onClick={() => { if (!isToday) return; setProcessDialog(pc.type); setFoodItem(""); setProcessTemp(""); setProcessStep("food"); setProcessCorrectiveAction(""); }}
-                disabled={!isToday}
+                onClick={() => { if (!canEdit) return; setProcessDialog(pc.type); setFoodItem(""); setProcessTemp(""); setProcessStep("food"); setProcessCorrectiveAction(""); }}
+                disabled={!canEdit}
                 className={cn(
                   "flex flex-col items-center gap-2 p-3 rounded-xl border text-left transition-all",
-                  isToday ? "hover:shadow-md cursor-pointer" : "cursor-default opacity-60",
+                  canEdit ? "hover:shadow-md cursor-pointer" : "cursor-default opacity-60",
                   pc.color
                 )}
               >
@@ -470,6 +481,9 @@ const TemperatureTracking = () => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{log.food_item}</span>
                       <Badge variant="outline" className="text-[10px]">{log.log_type}</Badge>
+                      {log.is_retrospective && (
+                        <Badge variant="outline" className="text-[10px] border-warning text-warning" title={log.retrospective_note || undefined}>Retrospective</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {Number(log.value)}°C · {new Date(log.logged_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {log.logged_by_name}
@@ -503,6 +517,9 @@ const TemperatureTracking = () => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{log.food_item || getUnitName(log.unit_id)}</span>
                       <Badge variant="outline" className="text-[10px]">{log.log_type}</Badge>
+                      {log.is_retrospective && (
+                        <Badge variant="outline" className="text-[10px] border-warning text-warning" title={log.retrospective_note || undefined}>Retrospective</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {Number(log.value)}°C · {new Date(log.logged_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {log.logged_by_name}

@@ -347,7 +347,7 @@ export function generateInspectionPackPdf(
         d.locked ? "Yes" : "No",
         d.signed_off ? (d.signed_off_by_name || d.signed_off_by || "—") : "—",
         d.signed_off_at ? format(new Date(d.signed_off_at), "d MMM HH:mm") : "—",
-        (d.manager_note || d.problem_notes || "—").slice(0, 80),
+        ((d.manager_note || d.problem_notes || "—") + (d.is_retrospective ? ` [Retrospective: ${d.retrospective_note || ""}]` : "")).slice(0, 100),
       ]),
     {
       whatControlled: "Daily opening, in-shift and closing checks captured by managers.",
@@ -367,10 +367,10 @@ export function generateInspectionPackPdf(
       .map((t: any) => [
         format(new Date(t.logged_at), "d MMM HH:mm"),
         t.log_type || "—",
-        t.temp_units?.name || t.food_item || "—",
+        (t.temp_units?.name || t.food_item || "—") + (t.is_retrospective ? " [Retro]" : ""),
         `${t.value}°C`,
         t.pass ? "PASS" : "FAIL",
-        (t.corrective_action || "—").slice(0, 60),
+        ((t.corrective_action || "—") + (t.is_retrospective && t.retrospective_note ? ` — ${t.retrospective_note}` : "")).slice(0, 80),
       ]),
     {
       whatControlled: "Equipment and food temperature checks against safe ranges.",
@@ -402,7 +402,7 @@ export function generateInspectionPackPdf(
         format(parseISO(date), "dd/MM/yyyy"),
         task.task || "—",
         task.area || "—",
-        status,
+        status + (log?.is_retrospective ? " (Retro)" : ""),
         log?.completed_by_name || (status === "Done" ? "—" : ""),
         log?.completed_at ? format(new Date(log.completed_at), "d MMM HH:mm") : "",
       ]);
