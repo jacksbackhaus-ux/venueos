@@ -14,6 +14,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DateNavigator } from "@/components/DateNavigator";
+import { RetrospectiveBanner } from "@/components/RetrospectiveBanner";
+import { useRetrospective } from "@/hooks/useRetrospective";
 
 const DaySheet = () => {
   const { currentSite, organisationId } = useSite();
@@ -24,7 +26,7 @@ const DaySheet = () => {
   const userName = appUser?.display_name || staffSession?.display_name || "Unknown";
   const todayStr = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const isToday = selectedDate === todayStr;
+  const { isToday, isRetrospective, canEdit } = useRetrospective(selectedDate);
   const today = selectedDate; // all queries below are scoped to the selected date
 
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -128,10 +130,11 @@ const DaySheet = () => {
 
   const ensureDaySheet = async () => {
     if (daySheet) return daySheet.id;
-    if (!isToday) throw new Error("Cannot edit a past day sheet");
+    if (!canEdit) throw new Error("Cannot edit a past day sheet");
     const { data, error } = await supabase.from("day_sheets").insert({
       site_id: siteId!, organisation_id: organisationId!, sheet_date: today,
-    }).select("id").single();
+      is_retrospective: isRetrospective,
+    } as any).select("id").single();
     if (error) throw error;
     queryClient.invalidateQueries({ queryKey: ["day_sheet", siteId, today] });
     return data.id;
