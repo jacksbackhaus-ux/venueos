@@ -71,7 +71,7 @@ const TemperatureTracking = () => {
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(todayStr);
-  const isToday = selectedDate === todayStr;
+  const { isToday, isRetrospective, canEdit } = useRetrospective(selectedDate);
 
   // Unit keypad state — inline expansion
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
