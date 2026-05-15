@@ -121,10 +121,10 @@ function buildTemperatureSheet(data: ReportData): XLSX.WorkSheet {
     ["Temperature Logs"],
     [`Period: ${data.range.label}`],
     [],
-    ["Date", "Time", "Unit / Food Item", "Check Type", "Temperature (°C)", "Result", "Logged By", "Corrective Action"],
+    ["Date", "Time", "Unit / Food Item", "Check Type", "Temperature (°C)", "Result", "Logged By", "Corrective Action", "Retrospective", "Retrospective Note"],
   ];
 
-  for (const log of data.tempLogs) {
+  for (const log of data.tempLogs as any[]) {
     const dt = new Date(log.logged_at);
     const unitName = log.temp_units?.name || log.food_item || "—";
     rows.push([
@@ -136,15 +136,18 @@ function buildTemperatureSheet(data: ReportData): XLSX.WorkSheet {
       log.pass ? "PASS" : "FAIL",
       log.logged_by_name || "—",
       log.corrective_action || "",
+      log.is_retrospective ? "Yes" : "No",
+      log.retrospective_note || "",
     ]);
   }
 
   if (data.tempLogs.length === 0) rows.push(["No temperature logs in this period."]);
 
-  rows.push([], ["SUMMARY"], ["Total logs", data.tempLogs.length], ["Breaches", data.tempBreaches.length]);
+  const retroCount = (data.tempLogs as any[]).filter((l) => l.is_retrospective).length;
+  rows.push([], ["SUMMARY"], ["Total logs", data.tempLogs.length], ["Breaches", data.tempBreaches.length], ["Retrospective entries", retroCount]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  setColWidths(ws, [14, 8, 24, 16, 18, 8, 20, 36]);
+  setColWidths(ws, [14, 8, 24, 16, 18, 8, 20, 36, 14, 36]);
   return ws;
 }
 
@@ -154,10 +157,10 @@ function buildDaySheetSheet(data: ReportData): XLSX.WorkSheet {
     [`Period: ${data.range.label}`],
     [`Completion: ${data.daySheetCompletionPct}% (closed days excluded)`],
     [],
-    ["Date", "Status", "Locked", "Locked By", "Locked At", "Problem Notes", "Manager Note"],
+    ["Date", "Status", "Locked", "Locked By", "Locked At", "Problem Notes", "Manager Note", "Retrospective", "Retrospective Note"],
   ];
 
-  for (const ds of data.daySheets) {
+  for (const ds of data.daySheets as any[]) {
     rows.push([
       ds.sheet_date ? format(new Date(ds.sheet_date), "dd/MM/yyyy") : "—",
       ds.locked ? "Locked" : "Open",
@@ -166,13 +169,15 @@ function buildDaySheetSheet(data: ReportData): XLSX.WorkSheet {
       ds.locked_at ? format(new Date(ds.locked_at), "dd/MM/yyyy HH:mm") : "—",
       ds.problem_notes || "",
       ds.manager_note || "",
+      ds.is_retrospective ? "Yes" : "No",
+      ds.retrospective_note || "",
     ]);
   }
 
   if (data.daySheets.length === 0) rows.push(["No day sheet records in this period."]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  setColWidths(ws, [14, 12, 8, 20, 20, 40, 40]);
+  setColWidths(ws, [14, 12, 8, 20, 20, 40, 40, 14, 36]);
   return ws;
 }
 
@@ -182,7 +187,7 @@ function buildCleaningSheet(data: ReportData): XLSX.WorkSheet {
     [`Period: ${data.range.label}`],
     [`Completion: ${data.cleaningTasksDone} of ${data.cleaningTasksTotal} scheduled tasks completed`],
     [],
-    ["Date", "Task", "Area", "Frequency", "Status", "Completed By", "Completed At"],
+    ["Date", "Task", "Area", "Frequency", "Status", "Completed By", "Completed At", "Retrospective", "Retrospective Note"],
   ];
 
   const tasks = (data as any).cleaningTasks || [];
@@ -212,6 +217,8 @@ function buildCleaningSheet(data: ReportData): XLSX.WorkSheet {
           status,
           log?.completed_by_name || "—",
           log?.completed_at ? format(new Date(log.completed_at), "dd/MM/yyyy HH:mm") : "—",
+          log?.is_retrospective ? "Yes" : "No",
+          log?.retrospective_note || "",
         ]);
       }
     }
@@ -226,6 +233,8 @@ function buildCleaningSheet(data: ReportData): XLSX.WorkSheet {
         closedSet.has(log.log_date) ? "Exempt" : log.done ? "Done" : "Missed",
         log.completed_by_name || "—",
         log.completed_at ? format(new Date(log.completed_at), "dd/MM/yyyy HH:mm") : "—",
+        log.is_retrospective ? "Yes" : "No",
+        log.retrospective_note || "",
       ]);
     }
   } else {
@@ -233,7 +242,7 @@ function buildCleaningSheet(data: ReportData): XLSX.WorkSheet {
   }
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  setColWidths(ws, [14, 32, 20, 12, 10, 20, 20]);
+  setColWidths(ws, [14, 32, 20, 12, 10, 20, 20, 14, 36]);
   return ws;
 }
 
