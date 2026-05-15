@@ -263,6 +263,9 @@ const Cleaning = () => {
                                       {log.completed_by_name ? ` · ${log.completed_by_name}` : ""}
                                     </Badge>
                                   )}
+                                  {isDone && log?.is_retrospective && (
+                                    <Badge variant="outline" className="text-[10px] border-warning text-warning" title={log.retrospective_note || undefined}>Retrospective</Badge>
+                                  )}
                                   {allClosed && !isDone && (
                                     <Badge variant="outline" className="text-[10px] text-warning border-warning/40">Exempt — closed</Badge>
                                   )}
