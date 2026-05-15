@@ -227,7 +227,7 @@ const TemperatureTracking = () => {
               </p>
             </div>
           </div>
-          {!isToday && (
+          {!isToday && !canEdit && (
             <Badge variant="outline" className="gap-1 text-muted-foreground">
               <Clock className="h-3 w-3" /> Read-only
             </Badge>
@@ -235,6 +235,8 @@ const TemperatureTracking = () => {
         </div>
         <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} minDate={currentSite?.created_at?.slice(0, 10)} />
       </div>
+
+      {isRetrospective && <RetrospectiveBanner date={selectedDate} />}
 
       {isToday && <EquipmentHealthAlert />}
 
