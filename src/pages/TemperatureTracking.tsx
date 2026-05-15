@@ -113,12 +113,18 @@ const TemperatureTracking = () => {
 
   const insertLog = useMutation({
     mutationFn: async (log: { unit_id: string | null; food_item: string | null; value: number; pass: boolean; log_type: string; corrective_action?: string }) => {
+      // For retrospective entries, log against noon of the selected past date so triggers tag the row.
+      const loggedAt = isRetrospective
+        ? new Date(`${selectedDate}T12:00:00`).toISOString()
+        : new Date().toISOString();
       const { error } = await supabase.from("temp_logs").insert({
         site_id: siteId!, organisation_id: organisationId!,
         unit_id: log.unit_id, food_item: log.food_item,
         value: log.value, pass: log.pass, log_type: log.log_type,
         corrective_action: log.corrective_action || null,
         logged_by_user_id: appUser?.id || null, logged_by_name: userName,
+        logged_at: loggedAt,
+        is_retrospective: isRetrospective,
       } as any);
       if (error) throw error;
     },
