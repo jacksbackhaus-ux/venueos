@@ -15,6 +15,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DateNavigator } from "@/components/DateNavigator";
+import { RetrospectiveBanner } from "@/components/RetrospectiveBanner";
+import { useRetrospective } from "@/hooks/useRetrospective";
 import {
   startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   format, eachDayOfInterval, parseISO, subDays,
@@ -42,7 +44,7 @@ const Cleaning = () => {
 
   const todayStr = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const isToday = selectedDate === todayStr;
+  const { isToday, isRetrospective, canEdit } = useRetrospective(selectedDate);
 
   const [historyDays, setHistoryDays] = useState(14);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
@@ -117,8 +119,11 @@ const Cleaning = () => {
 
   const toggleTask = useMutation({
     mutationFn: async (taskId: string) => {
-      if (!isToday) throw new Error("Past cleaning records are read-only");
+      if (!canEdit) throw new Error("Past cleaning records are read-only");
       if (allClosed) throw new Error("This day is marked as closed");
+      const completedAt = isRetrospective
+        ? new Date(`${selectedDate}T12:00:00`).toISOString()
+        : new Date().toISOString();
       const existing = (logs as any[]).find((l) => l.task_id === taskId);
       if (existing) {
         const { error } = await supabase.from("cleaning_logs").delete().eq("id", existing.id);
@@ -126,11 +131,12 @@ const Cleaning = () => {
       } else {
         const { error } = await supabase.from("cleaning_logs").insert({
           site_id: siteId!, organisation_id: organisationId!, task_id: taskId,
-          log_date: todayStr, done: true,
+          log_date: selectedDate, done: true,
           completed_by_user_id: appUser?.id || null,
           completed_by_name: userName,
-          completed_at: new Date().toISOString(),
-        });
+          completed_at: completedAt,
+          is_retrospective: isRetrospective,
+        } as any);
         if (error) throw error;
       }
     },
@@ -170,7 +176,7 @@ const Cleaning = () => {
               </p>
             </div>
           </div>
-          {!isToday && topTab !== "history" && (
+          {!isToday && !canEdit && topTab !== "history" && (
             <Badge variant="outline" className="gap-1 text-muted-foreground">
               <Lock className="h-3 w-3" /> Read-only
             </Badge>
@@ -179,6 +185,7 @@ const Cleaning = () => {
         {topTab !== "history" && (
           <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} minDate={currentSite?.created_at?.slice(0, 10)} />
         )}
+        {topTab !== "history" && isRetrospective && <RetrospectiveBanner date={selectedDate} />}
       </div>
 
       {tasksLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
@@ -237,7 +244,7 @@ const Cleaning = () => {
                         {filtered.filter((t) => t.area === area).map((task: any) => {
                           const isDone = doneIds.has(task.id);
                           const log = (logs as any[]).find((l) => l.task_id === task.id && l.done);
-                          const disabled = !isToday || allClosed;
+                          const disabled = !canEdit || allClosed;
                           return (
                             <button key={task.id} onClick={() => !disabled && toggleTask.mutate(task.id)} disabled={disabled}
                               className={`w-full flex items-start gap-3 p-2.5 rounded-md text-left transition-colors ${!disabled ? "hover:bg-muted/50 cursor-pointer" : "cursor-default"}`}>
