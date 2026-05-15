@@ -143,25 +143,33 @@ const DaySheet = () => {
   const toggleItem = useMutation({
     mutationFn: async (itemId: string) => {
       const dsId = await ensureDaySheet();
+      const completedAt = isRetrospective
+        ? new Date(`${selectedDate}T12:00:00`).toISOString()
+        : new Date().toISOString();
       const existing = entries.find((e: any) => e.item_id === itemId);
       if (existing?.done) {
-        const { error } = await supabase.from("day_sheet_entries").update({ done: false, completed_at: null, completed_by_user_id: null }).eq("id", existing.id);
+        const { error } = await supabase.from("day_sheet_entries").update({
+          done: false, completed_at: null, completed_by_user_id: null,
+          is_retrospective: isRetrospective,
+        } as any).eq("id", existing.id);
         if (error) throw error;
       } else if (existing) {
      const { error } = await supabase.from("day_sheet_entries").update({
           done: true,
-          completed_at: new Date().toISOString(),
+          completed_at: completedAt,
           completed_by_user_id: appUser?.id || null,
           completed_by_name: userName,
-        }).eq("id", existing.id);
+          is_retrospective: isRetrospective,
+        } as any).eq("id", existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("day_sheet_entries").insert({
           day_sheet_id: dsId, item_id: itemId, done: true,
           completed_by_user_id: appUser?.id || null,
           completed_by_name: userName,
-          completed_at: new Date().toISOString(),
-        });
+          completed_at: completedAt,
+          is_retrospective: isRetrospective,
+        } as any);
         if (error) throw error;
       }
     },
