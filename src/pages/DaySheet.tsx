@@ -278,13 +278,19 @@ const locked = !canEdit; // staff/supervisors locked on past days; managers can 
             <Badge className="bg-success text-success-foreground gap-1"><ShieldCheck className="h-3 w-3" /> Signed off</Badge>
           ) : isLockedSheet ? (
           <Badge className="bg-success text-success-foreground gap-1"><CheckCircle2 className="h-3 w-3" /> Signed off</Badge>
-          ) : !isToday ? (
+          ) : !isToday && !canEdit ? (
             <Badge variant="outline" className="gap-1 border-muted-foreground/30 text-muted-foreground">
               <Lock className="h-3 w-3" /> Read-only
             </Badge>
           ) : null}
         </div>
         <DateNavigator selectedDate={selectedDate} onChange={setSelectedDate} minDate={currentSite?.created_at?.slice(0, 10)} />
+        {isRetrospective && <RetrospectiveBanner date={selectedDate} />}
+        {daySheet?.is_retrospective && !isRetrospective && (
+          <Badge variant="outline" className="border-warning text-warning gap-1 w-fit" title={daySheet.retrospective_note || undefined}>
+            <AlertTriangle className="h-3 w-3" /> Contains retrospective entries
+          </Badge>
+        )}
       </div>
 
       {sectionsLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
