@@ -307,13 +307,16 @@ export type Database = {
           organisation_id: string
           product_name: string
           quantity_produced: number | null
+          quantity_unit: string | null
           recipe_id: string | null
           recipe_ref: string | null
           site_id: string
           status: Database["public"]["Enums"]["batch_status"]
           template_id: string | null
           total_production_cost: number | null
+          tray_count: number | null
           unit_cost_snapshot: number | null
+          updated_at: string
           use_by_date: string | null
         }
         Insert: {
@@ -327,13 +330,16 @@ export type Database = {
           organisation_id: string
           product_name: string
           quantity_produced?: number | null
+          quantity_unit?: string | null
           recipe_id?: string | null
           recipe_ref?: string | null
           site_id: string
           status?: Database["public"]["Enums"]["batch_status"]
           template_id?: string | null
           total_production_cost?: number | null
+          tray_count?: number | null
           unit_cost_snapshot?: number | null
+          updated_at?: string
           use_by_date?: string | null
         }
         Update: {
@@ -347,13 +353,16 @@ export type Database = {
           organisation_id?: string
           product_name?: string
           quantity_produced?: number | null
+          quantity_unit?: string | null
           recipe_id?: string | null
           recipe_ref?: string | null
           site_id?: string
           status?: Database["public"]["Enums"]["batch_status"]
           template_id?: string | null
           total_production_cost?: number | null
+          tray_count?: number | null
           unit_cost_snapshot?: number | null
+          updated_at?: string
           use_by_date?: string | null
         }
         Relationships: [
