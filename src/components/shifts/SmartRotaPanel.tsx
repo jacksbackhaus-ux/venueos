@@ -11,6 +11,9 @@ import {
   RotateCcw,
   ChevronDown,
   Megaphone,
+  CalendarDays,
+  PoundSterling,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Dialog,
@@ -21,7 +24,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -101,6 +103,8 @@ export function SmartRotaPanel({
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({});
   const [staffRates, setStaffRates] = useState<Record<string, number | null>>({});
+  const [gapsOpen, setGapsOpen] = useState(true);
+  const [warningsOpen, setWarningsOpen] = useState(true);
 
   const fetchData = async (force = false) => {
     setLoading(true);
@@ -124,7 +128,6 @@ export function SmartRotaPanel({
       setWarnings(d.warnings ?? []);
       setSummary(d.summary ?? "");
       setGeneratedAt(d.generated_at ?? null);
-      // open all day groups by default
       const days: Record<string, boolean> = {};
       sugg.forEach((s) => (days[s.date] = true));
       setOpenDays(days);
@@ -136,11 +139,9 @@ export function SmartRotaPanel({
     }
   };
 
-  // Load on open
   useEffect(() => {
     if (open) {
       void fetchData(false);
-      // fetch hourly_rates for cost calc
       supabase
         .from("memberships")
         .select("user_id, users:user_id(hourly_rate)")
@@ -195,7 +196,7 @@ export function SmartRotaPanel({
       );
       qc.invalidateQueries({ queryKey: ["rota-assignments"] });
       qc.invalidateQueries({ queryKey: ["shifts"] });
-      toast.success(`Shift added for ${s.staff_name}`);
+      toast.success(`Added ${s.staff_name} to the rota`);
     }
   };
 
@@ -221,7 +222,7 @@ export function SmartRotaPanel({
     );
     qc.invalidateQueries({ queryKey: ["rota-assignments"] });
     qc.invalidateQueries({ queryKey: ["shifts"] });
-    toast.success(`${count} shifts added to rota`);
+    toast.success(`${count} shifts added to the rota`);
   };
 
   const rejectAll = () => setSuggestions([]);
@@ -229,7 +230,6 @@ export function SmartRotaPanel({
   const postGapToShiftHive = async (gap: Gap) => {
     if (!shiftHiveActive) return;
     try {
-      // 1) get current app user id
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -239,7 +239,6 @@ export function SmartRotaPanel({
         .eq("auth_user_id", user!.id)
         .maybeSingle();
       if (!appUser?.id) throw new Error("Could not resolve user");
-      // 2) create placeholder rota_assignment owned by manager
       const { data: shift, error: e1 } = await supabase
         .from("rota_assignments")
         .insert({
@@ -254,7 +253,6 @@ export function SmartRotaPanel({
         .select("id")
         .single();
       if (e1 || !shift) throw e1 ?? new Error("Failed to create shift");
-      // 3) create open cover request
       const { error: e2 } = await supabase.from("shift_requests").insert({
         site_id: siteId,
         organisation_id: organisationId,
@@ -310,10 +308,11 @@ export function SmartRotaPanel({
   };
 
   // ---- Derived ----
-  const acceptedCount = useMemo(
-    () => suggestions.filter((s) => s._accepted).length,
+  const pendingCount = useMemo(
+    () => suggestions.filter((s) => !s._accepted).length,
     [suggestions],
   );
+  const acceptedCount = suggestions.length - pendingCount;
 
   const grouped = useMemo(() => {
     const m = new Map<string, { day: string; date: string; items: Suggestion[] }>();
@@ -336,19 +335,6 @@ export function SmartRotaPanel({
     return total;
   }, [suggestions, staffRates]);
 
-  const operatingDaysCovered = useMemo(() => {
-    const dates = new Set<string>();
-    suggestions.filter((s) => s._accepted).forEach((s) => dates.add(s.date));
-    return dates.size;
-  }, [suggestions]);
-  const totalOperatingDays = useMemo(() => {
-    const dates = new Set<string>();
-    [...suggestions, ...gaps].forEach((s: any) => dates.add(s.date));
-    return dates.size;
-  }, [suggestions, gaps]);
-  const coveragePct =
-    totalOperatingDays > 0 ? Math.round((operatingDaysCovered / totalOperatingDays) * 100) : 0;
-
   const weekRangeLabel = useMemo(() => {
     const a = new Date(`${weekStart}T00:00:00`);
     const b = new Date(`${weekEnd}T00:00:00`);
@@ -357,72 +343,137 @@ export function SmartRotaPanel({
     return `${fmt(a)} – ${fmt(b)}`;
   }, [weekStart, weekEnd]);
 
+  const severeWarnings = warnings.filter(
+    (w) => w.type === "overtime_risk" || w.type === "insufficient_rest",
+  ).length;
+
+  // Friendly one-liner headline
+  const headline = useMemo(() => {
+    if (loading) return "Building your week…";
+    if (!suggestions.length && !gaps.length)
+      return "Looks good — nothing to suggest for this week.";
+    const parts: string[] = [];
+    if (pendingCount > 0)
+      parts.push(
+        `${pendingCount} suggested shift${pendingCount === 1 ? "" : "s"} ready to review`,
+      );
+    if (gaps.length)
+      parts.push(`${gaps.length} open gap${gaps.length === 1 ? "" : "s"}`);
+    if (severeWarnings)
+      parts.push(
+        `${severeWarnings} compliance flag${severeWarnings === 1 ? "" : "s"}`,
+      );
+    return parts.join(" • ");
+  }, [loading, suggestions.length, pendingCount, gaps.length, severeWarnings]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-3 border-b shrink-0">
+      <DialogContent className="max-w-3xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0">
+        {/* Header */}
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Smart Rota
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </span>
+            <div className="flex flex-col items-start">
+              <span className="font-heading">Smart Rota</span>
+              <span className="text-xs font-normal text-muted-foreground flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" /> Week of {weekRangeLabel}
+              </span>
+            </div>
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">Week of {weekRangeLabel}</p>
         </DialogHeader>
 
+        {/* Body */}
         {loading ? (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Reading availability, rest rules and recent shifts…
+            </p>
           </div>
         ) : (
-          <Tabs defaultValue="suggestions" className="flex-1 flex flex-col min-h-0">
-            <TabsList className="mx-6 mt-4 self-start">
-              <TabsTrigger value="suggestions">
-                Suggestions
-                {suggestions.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">{suggestions.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="gaps">
-                Gaps
-                {gaps.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">{gaps.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="warnings">
-                Warnings
-                {warnings.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">{warnings.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-            </TabsList>
-
-            {/* SUGGESTIONS */}
-            <TabsContent value="suggestions" className="flex-1 min-h-0 mt-3 px-6 pb-3">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm text-muted-foreground">
-                  {acceptedCount} of {suggestions.length} suggestions accepted
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={rejectAll}>
-                    Reject All
-                  </Button>
-                  <Button size="sm" onClick={acceptAll} disabled={!suggestions.length}>
-                    Accept All
-                  </Button>
-                </div>
-              </div>
-              <ScrollArea className="h-[calc(90vh-280px)] pr-3">
-                {grouped.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-12">
-                    No suggestions to review.
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="px-6 py-5 space-y-5">
+              {/* Hero summary */}
+              <Card className="bg-muted/40 border-border">
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-medium">{headline}</p>
+                  {summary && (
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {summary}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Based on each person's availability, recent shifts and UK rest
+                    rules.
                   </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                    <Stat
+                      icon={<Sparkles className="h-3.5 w-3.5" />}
+                      label="Suggested"
+                      value={suggestions.length.toString()}
+                    />
+                    <Stat
+                      icon={<Check className="h-3.5 w-3.5" />}
+                      label="Accepted"
+                      value={`${acceptedCount}/${suggestions.length || 0}`}
+                    />
+                    <Stat
+                      icon={<AlertTriangle className="h-3.5 w-3.5" />}
+                      label="Gaps"
+                      value={gaps.length.toString()}
+                      tone={gaps.length ? "warn" : undefined}
+                    />
+                    <Stat
+                      icon={<PoundSterling className="h-3.5 w-3.5" />}
+                      label="Accepted cost"
+                      value={`£${labourCost.toFixed(0)}`}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Suggestions */}
+              <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    Suggested shifts
+                    {pendingCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {pendingCount} to review
+                      </Badge>
+                    )}
+                  </h3>
+                  {suggestions.length > 0 && (
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={rejectAll}>
+                        Clear all
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={acceptAll}
+                        disabled={pendingCount === 0}
+                      >
+                        <Check className="h-4 w-4 mr-1" /> Accept all
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {grouped.length === 0 ? (
+                  <EmptyHint>
+                    No shifts suggested. Try regenerating, or add shifts manually.
+                  </EmptyHint>
                 ) : (
                   <div className="space-y-3">
                     {grouped.map((g) => (
-                      <Card key={g.date}>
+                      <div key={g.date} className="rounded-lg border bg-card">
                         <button
                           type="button"
-                          className="w-full flex items-center justify-between p-3"
+                          className="w-full flex items-center justify-between px-4 py-3"
                           onClick={() =>
                             setOpenDays((p) => ({ ...p, [g.date]: !p[g.date] }))
                           }
@@ -430,16 +481,23 @@ export function SmartRotaPanel({
                           <div className="flex items-center gap-2">
                             <ChevronDown
                               className={cn(
-                                "h-4 w-4 transition-transform",
+                                "h-4 w-4 transition-transform text-muted-foreground",
                                 !openDays[g.date] && "-rotate-90",
                               )}
                             />
-                            <span className="font-semibold">{g.day}</span>
-                            <span className="text-xs text-muted-foreground">{g.date}</span>
+                            <span className="font-semibold text-sm">{g.day}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(g.date + "T00:00:00").toLocaleDateString(
+                                "en-GB",
+                                { day: "numeric", month: "short" },
+                              )}
+                            </span>
                           </div>
-                          <Badge variant="secondary">{g.items.length}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {g.items.length} shift{g.items.length === 1 ? "" : "s"}
+                          </Badge>
                         </button>
-                        <AnimatePresence>
+                        <AnimatePresence initial={false}>
                           {openDays[g.date] && (
                             <motion.div
                               initial={{ height: 0, opacity: 0 }}
@@ -447,7 +505,7 @@ export function SmartRotaPanel({
                               exit={{ height: 0, opacity: 0 }}
                               className="overflow-hidden"
                             >
-                              <div className="px-3 pb-3 space-y-2">
+                              <div className="px-3 pb-3 space-y-2 border-t pt-3">
                                 <AnimatePresence>
                                   {g.items.map((s) => (
                                     <motion.div
@@ -457,57 +515,11 @@ export function SmartRotaPanel({
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, x: 20 }}
                                     >
-                                      <Card
-                                        className={cn(
-                                          "p-3 transition-colors",
-                                          s._accepted && "bg-green-50 border-green-200",
-                                        )}
-                                      >
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="font-medium">{s.staff_name}</span>
-                                              <Badge variant="secondary" className="text-xs">
-                                                {s.start_time}–{s.end_time}
-                                              </Badge>
-                                              {s.position && (
-                                                <span className="text-xs text-muted-foreground">
-                                                  {s.position}
-                                                </span>
-                                              )}
-                                            </div>
-                                            {s.reason && (
-                                              <p className="text-xs text-muted-foreground italic mt-1">
-                                                {s.reason}
-                                              </p>
-                                            )}
-                                          </div>
-                                          <div className="flex items-center gap-1 shrink-0">
-                                            {s._accepted ? (
-                                              <Check className="h-4 w-4 text-green-600" />
-                                            ) : (
-                                              <>
-                                                <Button
-                                                  size="icon"
-                                                  variant="ghost"
-                                                  className="h-7 w-7 text-green-600 hover:bg-green-50"
-                                                  onClick={() => acceptOne(s._key!)}
-                                                >
-                                                  <Check className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                  size="icon"
-                                                  variant="ghost"
-                                                  className="h-7 w-7 text-red-600 hover:bg-red-50"
-                                                  onClick={() => rejectOne(s._key!)}
-                                                >
-                                                  <X className="h-4 w-4" />
-                                                </Button>
-                                              </>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </Card>
+                                      <SuggestionRow
+                                        s={s}
+                                        onAccept={() => acceptOne(s._key!)}
+                                        onReject={() => rejectOne(s._key!)}
+                                      />
                                     </motion.div>
                                   ))}
                                 </AnimatePresence>
@@ -515,36 +527,48 @@ export function SmartRotaPanel({
                             </motion.div>
                           )}
                         </AnimatePresence>
-                      </Card>
+                      </div>
                     ))}
                   </div>
                 )}
-              </ScrollArea>
-            </TabsContent>
+              </section>
 
-            {/* GAPS */}
-            <TabsContent value="gaps" className="flex-1 min-h-0 mt-3 px-6 pb-3">
-              <ScrollArea className="h-[calc(90vh-240px)] pr-3">
-                {gaps.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-12">
-                    No gaps — every shift has a suggestion.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
+              {/* Gaps */}
+              {gaps.length > 0 && (
+                <CollapsibleSection
+                  title="Open gaps"
+                  count={gaps.length}
+                  tone="warn"
+                  open={gapsOpen}
+                  onToggle={() => setGapsOpen((v) => !v)}
+                  description="Shifts the AI couldn't fill — post to Shift Hive so staff can volunteer."
+                >
+                  <div className="space-y-2">
                     {gaps.map((g) => (
-                      <Card key={g._key} className="border-warning/30 bg-warning/5 p-3">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <div
+                        key={g._key}
+                        className="rounded-md border border-warning/30 bg-warning/5 p-3"
+                      >
+                        <div className="flex items-center gap-2 flex-wrap text-sm">
                           <span className="font-medium">{g.day}</span>
-                          <span className="text-xs text-muted-foreground">{g.date}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {g.date}
+                          </span>
                           <Badge variant="secondary" className="text-xs">
                             {g.start_time}–{g.end_time}
                           </Badge>
                           {g.position && (
-                            <span className="text-xs text-muted-foreground">{g.position}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {g.position}
+                            </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">{g.reason}</p>
-                        <div className="mt-3">
+                        {g.reason && (
+                          <p className="text-xs text-muted-foreground mt-1.5">
+                            {g.reason}
+                          </p>
+                        )}
+                        <div className="mt-2.5">
                           {shiftHiveActive ? (
                             <Button
                               size="sm"
@@ -557,26 +581,27 @@ export function SmartRotaPanel({
                             </Button>
                           ) : (
                             <p className="text-xs text-muted-foreground italic">
-                              Enable Shift Hive to let staff volunteer for open shifts
+                              Enable Shift Hive to let staff volunteer.
                             </p>
                           )}
                         </div>
-                      </Card>
+                      </div>
                     ))}
                   </div>
-                )}
-              </ScrollArea>
-            </TabsContent>
+                </CollapsibleSection>
+              )}
 
-            {/* WARNINGS */}
-            <TabsContent value="warnings" className="flex-1 min-h-0 mt-3 px-6 pb-3">
-              <ScrollArea className="h-[calc(90vh-240px)] pr-3">
-                {warnings.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-12">
-                    No warnings — looks good.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
+              {/* Warnings */}
+              {warnings.length > 0 && (
+                <CollapsibleSection
+                  title="Things to check"
+                  count={warnings.length}
+                  tone={severeWarnings ? "danger" : "warn"}
+                  open={warningsOpen}
+                  onToggle={() => setWarningsOpen((v) => !v)}
+                  description="Possible compliance or staffing issues to review before publishing."
+                >
+                  <div className="space-y-2">
                     {warnings.map((w, i) => {
                       const isSevere =
                         w.type === "overtime_risk" || w.type === "insufficient_rest";
@@ -587,10 +612,10 @@ export function SmartRotaPanel({
                             ? Clock
                             : AlertTriangle;
                       return (
-                        <Card
+                        <div
                           key={i}
                           className={cn(
-                            "p-3 flex items-start gap-3",
+                            "rounded-md border p-3 flex items-start gap-3",
                             isSevere
                               ? "border-red-300 bg-red-50"
                               : "border-warning/30 bg-warning/5",
@@ -605,13 +630,17 @@ export function SmartRotaPanel({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <Badge variant="outline" className="text-[10px] uppercase">
-                                {w.type.replace("_", " ")}
+                                {w.type.replace(/_/g, " ")}
                               </Badge>
                               {w.staff_name && (
-                                <span className="text-xs font-medium">{w.staff_name}</span>
+                                <span className="text-xs font-medium">
+                                  {w.staff_name}
+                                </span>
                               )}
                               {w.day && (
-                                <span className="text-xs text-muted-foreground">{w.day}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {w.day}
+                                </span>
                               )}
                             </div>
                             <p className="text-sm mt-1">{w.message}</p>
@@ -626,67 +655,210 @@ export function SmartRotaPanel({
                               </Button>
                             )}
                           </div>
-                        </Card>
+                        </div>
                       );
                     })}
                   </div>
-                )}
-              </ScrollArea>
-            </TabsContent>
-
-            {/* SUMMARY */}
-            <TabsContent value="summary" className="flex-1 min-h-0 mt-3 px-6 pb-3">
-              <ScrollArea className="h-[calc(90vh-240px)] pr-3">
-                <Card className="p-4 mb-4">
-                  <p className="text-sm">{summary || "No summary available."}</p>
-                </Card>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <StatCard label="Suggested shifts" value={suggestions.length.toString()} />
-                  <StatCard label="Gaps found" value={gaps.length.toString()} />
-                  <StatCard label="Warnings" value={warnings.length.toString()} />
-                  <StatCard
-                    label="Est. labour cost"
-                    value={`£${labourCost.toFixed(2)}`}
-                    sub="from accepted"
-                  />
-                  <StatCard label="Coverage" value={`${coveragePct}%`} />
-                </div>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
+                </CollapsibleSection>
+              )}
+            </div>
+          </ScrollArea>
         )}
 
-        <div className="border-t px-6 py-3 flex items-center justify-between shrink-0">
+        {/* Sticky footer */}
+        <div className="border-t bg-background px-6 py-3 flex items-center justify-between shrink-0 gap-3 flex-wrap">
           <span className="text-xs text-muted-foreground">
             {generatedAt
-              ? `AI-generated ${new Date(generatedAt).toLocaleString("en-GB")}`
+              ? `Generated ${new Date(generatedAt).toLocaleString("en-GB", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  day: "numeric",
+                  month: "short",
+                })}`
               : "Not yet generated"}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={regenerate}
-            disabled={generating || loading}
-          >
-            {generating ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <RotateCcw className="h-4 w-4 mr-1" />
-            )}
-            Regenerate
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={regenerate}
+              disabled={generating || loading}
+            >
+              {generating ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4 mr-1" />
+              )}
+              Regenerate
+            </Button>
+            <Button size="sm" onClick={() => onOpenChange(false)}>
+              Done
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+// ---------- helpers ----------
+
+function Stat({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone?: "warn";
+}) {
   return (
-    <Card className="p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-2xl font-semibold mt-1">{value}</div>
-      {sub && <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>}
-    </Card>
+    <div
+      className={cn(
+        "rounded-md border bg-background px-3 py-2",
+        tone === "warn" && "border-warning/40 bg-warning/5",
+      )}
+    >
+      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+        {icon} {label}
+      </div>
+      <div className="text-base font-semibold mt-0.5">{value}</div>
+    </div>
+  );
+}
+
+function EmptyHint({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+      {children}
+    </div>
+  );
+}
+
+function CollapsibleSection({
+  title,
+  count,
+  tone,
+  open,
+  onToggle,
+  description,
+  children,
+}: {
+  title: string;
+  count: number;
+  tone?: "warn" | "danger";
+  open: boolean;
+  onToggle: () => void;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between"
+      >
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          {title}
+          <Badge
+            variant="secondary"
+            className={cn(
+              "text-xs",
+              tone === "danger" && "bg-red-100 text-red-800",
+              tone === "warn" && "bg-amber-100 text-amber-800",
+            )}
+          >
+            {count}
+          </Badge>
+        </h3>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 transition-transform text-muted-foreground",
+            !open && "-rotate-90",
+          )}
+        />
+      </button>
+      {description && open && (
+        <p className="text-xs text-muted-foreground">{description}</p>
+      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-1">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+function SuggestionRow({
+  s,
+  onAccept,
+  onReject,
+}: {
+  s: Suggestion;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-start justify-between gap-3 rounded-md border bg-background px-3 py-2.5 transition-colors",
+        s._accepted && "bg-green-50 border-green-200",
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="font-semibold text-sm truncate">{s.staff_name}</span>
+          <span className="text-sm text-muted-foreground">
+            {s.start_time}–{s.end_time}
+          </span>
+          {s.position && (
+            <Badge variant="outline" className="text-[10px]">
+              {s.position}
+            </Badge>
+          )}
+        </div>
+        {s.reason && (
+          <p className="text-xs text-muted-foreground mt-1 leading-snug">
+            {s.reason}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        {s._accepted ? (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 px-2 py-1">
+            <Check className="h-4 w-4" /> Added
+          </span>
+        ) : (
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+              onClick={onReject}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              className="h-8 px-3"
+              onClick={onAccept}
+            >
+              <Check className="h-4 w-4 mr-1" /> Accept
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
