@@ -1130,8 +1130,14 @@ function SmartRotaTrigger({
   if (!isSupervisorPlus || !isActive("ai_insights")) return null;
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-        <Sparkles className="h-4 w-4 mr-1" /> AI Suggest
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className="border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+        title="Let AI draft this week's rota from staff availability and recent shifts"
+      >
+        <Sparkles className="h-4 w-4 mr-1" /> Draft week with AI
       </Button>
       {open && (
         <SmartRotaPanel
