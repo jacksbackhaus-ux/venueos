@@ -29,6 +29,7 @@ interface Batch {
   product_name: string;
   recipe_ref: string | null;
   recipe_id: string | null;
+  recipe_number: number | null;
   quantity_produced: number | null;
   quantity_unit: string | null;
   tray_count: number | null;
