@@ -165,15 +165,12 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
 
 async function markCanceled(sub: any, env: StripeEnv) {
   // Status -> canceled. The grace period (current_period_end) is preserved on the row.
-  // Module flags are turned off so navigation hides modules immediately.
-  // Data is RETAINED — never delete logs/records.
+  // Tier is left intact so the customer still sees their plan label until the grace period ends;
+  // sync_org_modules takes status + period_end into account when deciding what to enable.
   await supabase.from("subscriptions").update({
     status: "canceled",
-    base_active: false,
-    compliance_active: false,
-    business_active: false,
-    bundle_active: false,
     locked_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }).eq("stripe_subscription_id", sub.id).eq("environment", env);
 }
+
