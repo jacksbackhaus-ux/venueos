@@ -117,7 +117,15 @@ serve(async (req) => {
       ...(discounts.length ? { discounts } : {}),
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       ...(userEmail && { customer_email: userEmail }),
-      metadata: { organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
+      // Full end-to-end compliance handling: Stripe calculates/collects/files/remits tax
+      // for buyers in ~80 supported countries, plus fraud + dispute + transaction support.
+      // Customer bank statements will show "LINK.COM* <descriptor>". Additional fee: +3.5%.
+      managed_payments: { enabled: true },
+      metadata: {
+        organisation_id: organisationId, plan, cycle,
+        add_site_mode: addSiteMode ? "true" : "false",
+        managed_payments: "true",
+      },
       subscription_data: {
         metadata: { organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
       },
