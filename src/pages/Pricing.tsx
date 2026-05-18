@@ -38,7 +38,8 @@ export default function Pricing() {
   const currentTier: TierId | null =
     (subscription as { tier?: TierId | null } | null)?.tier ?? deriveTierFromFlags(plan);
 
-  // During trial: pick a tier = update flags only. No Stripe.
+  // During trial: pick a tier = set tier on the subscription row. No Stripe.
+  // Module activation is updated automatically by trg_sync_modules_on_sub_change.
   const startTrialWithTier = async (tierId: TierId) => {
     if (!appUser?.organisation_id) return;
     setSelecting(tierId);
@@ -47,11 +48,6 @@ export default function Pricing() {
       .from("subscriptions")
       .update({
         billing_interval: cycle,
-        base_active: tier.flagSet.base,
-        compliance_active: tier.flagSet.compliance,
-        business_active: tier.flagSet.business,
-        bundle_active: tier.flagSet.bundle,
-        ai_active: tier.flagSet.ai,
         tier: tierId,
       })
       .eq("organisation_id", appUser.organisation_id);

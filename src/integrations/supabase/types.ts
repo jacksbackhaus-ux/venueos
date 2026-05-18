@@ -309,6 +309,7 @@ export type Database = {
           quantity_produced: number | null
           quantity_unit: string | null
           recipe_id: string | null
+          recipe_number: number | null
           recipe_ref: string | null
           site_id: string
           status: Database["public"]["Enums"]["batch_status"]
@@ -332,6 +333,7 @@ export type Database = {
           quantity_produced?: number | null
           quantity_unit?: string | null
           recipe_id?: string | null
+          recipe_number?: number | null
           recipe_ref?: string | null
           site_id: string
           status?: Database["public"]["Enums"]["batch_status"]
@@ -355,6 +357,7 @@ export type Database = {
           quantity_produced?: number | null
           quantity_unit?: string | null
           recipe_id?: string | null
+          recipe_number?: number | null
           recipe_ref?: string | null
           site_id?: string
           status?: Database["public"]["Enums"]["batch_status"]
@@ -4808,6 +4811,7 @@ export type Database = {
       }
       messenger_mark_read: { Args: { _channel_id: string }; Returns: undefined }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
+      resync_org_modules: { Args: { _org_id: string }; Returns: Json }
       seed_messenger_channels_for_site: {
         Args: { _site_id: string }
         Returns: undefined

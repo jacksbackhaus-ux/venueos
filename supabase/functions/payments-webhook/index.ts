@@ -94,57 +94,56 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     return;
   }
 
-  let base = false, compliance = false, business = false, bundle = false, ai = false;
   let interval = "month";
   let siteQty = 1;
   let tier: TierId | null = null;
+  let isLegacyAiOnly = false;
+  let legacyFlags: { base: boolean; compliance: boolean; business: boolean; bundle: boolean; ai: boolean } = {
+    base: false, compliance: false, business: false, bundle: false, ai: false,
+  };
+
   for (const item of sub.items?.data || []) {
     const lookup = item.price?.lookup_key || "";
     interval = item.price?.recurring?.interval || interval;
     siteQty = Math.max(siteQty, Number(item.quantity || 1));
     const m = flagsForLookup(lookup);
     if (!m) continue;
-    if (m.legacyPlan) {
-      // Legacy add-on style — flip flags ON, never off.
-      if (m.legacyPlan === "base") base = true;
-      if (m.legacyPlan === "compliance") compliance = true;
-      if (m.legacyPlan === "business") business = true;
-      if (m.legacyPlan === "bundle") bundle = true;
-      if (m.legacyPlan === "ai") ai = true;
-    } else if (m.tier && m.flagDelta) {
-      // New tier — explicit flag set; overrides legacy combinations on the same item.
+
+    if (m.tier && m.flagDelta) {
+      // New tier model — the line items directly set the tier.
       tier = m.tier;
-      const d = m.flagDelta;
-      if (d.base !== undefined) base = d.base;
-      if (d.compliance !== undefined) compliance = d.compliance;
-      if (d.business !== undefined) business = d.business;
-      if (d.bundle !== undefined) bundle = d.bundle;
-      if (d.ai !== undefined) ai = d.ai;
+    } else if (m.legacyPlan) {
+      // Legacy lookup_key — map onto the equivalent new tier.
+      if (m.legacyPlan === "base")        { legacyFlags.base = true; tier = tier ?? "essentials"; }
+      else if (m.legacyPlan === "compliance") { legacyFlags.compliance = true; tier = (tier === "intelligence" || tier === "business_tier") ? tier : "professional"; }
+      else if (m.legacyPlan === "business")   { legacyFlags.business = true;   tier = tier === "intelligence" ? tier : "business_tier"; }
+      else if (m.legacyPlan === "bundle")     { legacyFlags.bundle = true;     tier = tier === "intelligence" ? tier : "business_tier"; }
+      else if (m.legacyPlan === "ai") {
+        legacyFlags.ai = true;
+        // Stand-alone legacy AI add-on: leave existing tier intact, only upgrade Business → Intelligence.
+        isLegacyAiOnly = !legacyFlags.base && !legacyFlags.compliance && !legacyFlags.business && !legacyFlags.bundle;
+      }
     }
   }
 
+  // Read current row so we can preserve the tier when a stand-alone AI add-on comes in.
   const { data: existing } = await supabase
     .from("subscriptions")
-    .select("id, ai_active, tier")
+    .select("id, tier")
     .eq("organisation_id", orgId)
     .maybeSingle();
 
-  // Legacy AI-only add-on: only flips ai_active, leaves tier untouched.
-  const isAiOnlyCheckout = ai && !base && !compliance && !business && !bundle && !tier;
-  const aiActive = ["active", "trialing", "past_due"].includes(sub.status);
-  if (isAiOnlyCheckout && existing?.id) {
-    await supabase.from("subscriptions").update({
-      stripe_customer_id: sub.customer,
-      ai_active: aiActive,
-      updated_at: new Date().toISOString(),
-    }).eq("organisation_id", orgId);
-    return;
+  if (isLegacyAiOnly) {
+    // AI add-on on its own: keep the existing tier but escalate Business → Intelligence.
+    if (existing?.tier === "business_tier") tier = "intelligence";
+    else tier = existing?.tier ?? tier;
   }
 
   const periodStart = sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null;
   const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
   const trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null;
 
+  // IMPORTANT: only write the new model fields. Legacy boolean columns are NOT touched here.
   await supabase.from("subscriptions").upsert({
     organisation_id: orgId,
     stripe_subscription_id: sub.id,
@@ -156,30 +155,22 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
     trial_end: trialEnd,
     cancel_at_period_end: sub.cancel_at_period_end || false,
     site_quantity: siteQty,
-    base_active: base,
-    compliance_active: compliance,
-    business_active: business,
-    bundle_active: bundle,
-    ai_active: ai || (tier ? false : !!existing?.ai_active),
-    tier: tier ?? existing?.tier ?? null,
+    tier: tier,
     locked_at: null,
     environment: env,
     updated_at: new Date().toISOString(),
   }, { onConflict: "organisation_id" });
-  // The DB trigger trg_sync_modules_on_sub_change will sync module_activation rows.
+  // The DB trigger trg_sync_modules_on_sub_change will sync module_activation rows from tier.
 }
 
 async function markCanceled(sub: any, env: StripeEnv) {
   // Status -> canceled. The grace period (current_period_end) is preserved on the row.
-  // Module flags are turned off so navigation hides modules immediately.
-  // Data is RETAINED — never delete logs/records.
+  // Tier is left intact so the customer still sees their plan label until the grace period ends;
+  // sync_org_modules takes status + period_end into account when deciding what to enable.
   await supabase.from("subscriptions").update({
     status: "canceled",
-    base_active: false,
-    compliance_active: false,
-    business_active: false,
-    bundle_active: false,
     locked_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }).eq("stripe_subscription_id", sub.id).eq("environment", env);
 }
+

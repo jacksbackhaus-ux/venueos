@@ -15,27 +15,68 @@ export interface OrgSubscription {
   site_quantity: number;
   hq_quantity: number;
   stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  /** @deprecated kept for backwards-compatibility — do not gate on these. Use `tier`. */
   base_active: boolean;
-  compliance_active: boolean;
-  business_active: boolean;
-  bundle_active: boolean;
-  ai_active: boolean;
+  /** @deprecated */ compliance_active: boolean;
+  /** @deprecated */ business_active: boolean;
+  /** @deprecated */ bundle_active: boolean;
+  /** @deprecated */ ai_active: boolean;
   tier: TierId | null;
   locked_at: string | null;
+  organisation_id: string;
+  updated_at: string | null;
 }
 
-/** Snapshot of plan state for the org. */
+/** Snapshot of plan state for the org. Shape preserved for existing consumers; values are now derived from `tier`. */
 export interface PlanState {
+  /** Essentials modules unlocked. */
   base: boolean;
   compliance: boolean;
   business: boolean;
+  /** True for Business or Intelligence tier — keeps existing call sites working. */
   bundle: boolean;
   ai: boolean;
-  /** Convenience: which named plans are "owned" */
   hasAnyPlan: boolean;
-  /** Best label for current selection. */
+  /** Whether the org has an Intelligence tier (AI insights). */
+  intelligence: boolean;
   label: string;
   primary: PlanId | null;
+}
+
+const TIER_LABEL: Record<TierId, string> = {
+  essentials: "Essentials",
+  professional: "Professional",
+  business_tier: "Business",
+  intelligence: "Intelligence",
+};
+
+function planFromTier(tier: TierId | null): PlanState {
+  if (!tier) {
+    return {
+      base: false, compliance: false, business: false, bundle: false, ai: false,
+      hasAnyPlan: false, intelligence: false, label: "No plan", primary: null,
+    };
+  }
+  const hasEssentials = true;
+  const hasCompliance = tier === "professional" || tier === "business_tier" || tier === "intelligence";
+  const hasBusiness   = tier === "business_tier" || tier === "intelligence";
+  const hasIntelligence = tier === "intelligence";
+  // `bundle` historically meant "full set of modules". Treat Business/Intelligence as bundle-equivalent.
+  const bundle = hasBusiness;
+  return {
+    base: hasEssentials,
+    compliance: hasCompliance,
+    business: hasBusiness,
+    bundle,
+    ai: hasIntelligence,
+    intelligence: hasIntelligence,
+    hasAnyPlan: true,
+    label: TIER_LABEL[tier],
+    primary: tier === "intelligence" || tier === "business_tier" ? "bundle"
+           : tier === "professional" ? "compliance"
+           : "base",
+  };
 }
 
 export function useOrgAccess() {
@@ -105,26 +146,10 @@ export function useOrgAccess() {
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - now) / 86400000))
     : null;
 
-  const flags: PlanState = (() => {
-    const base = !!subscription?.base_active;
-    const compliance = !!subscription?.compliance_active;
-    const business = !!subscription?.business_active;
-    const bundle = !!subscription?.bundle_active;
-    const ai = !!subscription?.ai_active;
-    const hasAnyPlan = base || compliance || business || bundle || ai;
-    let primary: PlanId | null = null;
-    let label = "No plan";
-    if (bundle) { primary = "bundle"; label = "Full Bundle"; }
-    else if (base && compliance && business) { primary = "bundle"; label = "Base + Compliance + Business"; }
-    else if (base && compliance) { primary = "base"; label = "Base + Compliance"; }
-    else if (base && business) { primary = "base"; label = "Base + Business"; }
-    else if (base) { primary = "base"; label = "Base Platform"; }
-    else if (compliance) { primary = "compliance"; label = "Compliance Add-on"; }
-    else if (business) { primary = "business"; label = "Business Add-on"; }
-    else if (ai) { primary = "ai"; label = "AI Insights"; }
-    if (ai && primary !== "ai") label += " + AI";
-    return { base, compliance, business, bundle, ai, hasAnyPlan, label, primary };
-  })();
+  // Source of truth: subscriptions.tier. Trial without tier → grant Essentials view.
+  const effectiveTier: TierId | null = subscription?.tier
+    ?? (trialActive ? "essentials" : null);
+  const plan = planFromTier(effectiveTier);
 
   return {
     subscription,
@@ -138,7 +163,8 @@ export function useOrgAccess() {
     canceledWithGrace,
     isLocked,
     refresh,
-    plan: flags,
+    plan,
+    tier: effectiveTier,
     cycle: (subscription?.billing_interval ?? "month") as BillingCycle,
   };
 }

@@ -38,6 +38,7 @@ import Messenger from "./pages/Messenger";
 import TipTracker from "./pages/TipTracker";
 import HQDashboard from "./pages/HQDashboard";
 import Account from "./pages/Account";
+import SubscriptionDiagnostics from "./pages/SubscriptionDiagnostics";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import More from "./pages/More";
@@ -222,6 +223,7 @@ function AppRoutes() {
         </AppLayout></AccessGuard></AuthGuard>
       } />
       <Route path="/account" element={<AuthGuard><AppLayout><RoleGuard require="manageBilling" inline><Account /></RoleGuard></AppLayout></AuthGuard>} />
+      <Route path="/account/diagnostics" element={<AuthGuard><AppLayout><RoleGuard require="manageBilling" inline><SubscriptionDiagnostics /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/admin" element={<AuthGuard><AppLayout><RoleGuard require="viewAdmin" inline><Admin /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/settings" element={
         <AuthGuard><AccessGuard><AppLayout><RequireSite>
