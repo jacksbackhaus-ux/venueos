@@ -38,6 +38,7 @@ import Messenger from "./pages/Messenger";
 import TipTracker from "./pages/TipTracker";
 import HQDashboard from "./pages/HQDashboard";
 import Account from "./pages/Account";
+import SubscriptionDiagnostics from "./pages/SubscriptionDiagnostics";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import More from "./pages/More";
