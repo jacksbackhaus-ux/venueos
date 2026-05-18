@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, differenceInCalendarDays } from "date-fns";
 import { calcBatchProductionCost, loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
+import { displayBatchNumber, formatBatchNumber } from "@/lib/batchNumber";
 
 type BatchStatus = 'in_progress' | 'complete' | 'quarantined' | 'disposed';
 
