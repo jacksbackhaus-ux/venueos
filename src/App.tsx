@@ -223,6 +223,7 @@ function AppRoutes() {
         </AppLayout></AccessGuard></AuthGuard>
       } />
       <Route path="/account" element={<AuthGuard><AppLayout><RoleGuard require="manageBilling" inline><Account /></RoleGuard></AppLayout></AuthGuard>} />
+      <Route path="/account/diagnostics" element={<AuthGuard><AppLayout><RoleGuard require="manageBilling" inline><SubscriptionDiagnostics /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/admin" element={<AuthGuard><AppLayout><RoleGuard require="viewAdmin" inline><Admin /></RoleGuard></AppLayout></AuthGuard>} />
       <Route path="/settings" element={
         <AuthGuard><AccessGuard><AppLayout><RequireSite>
