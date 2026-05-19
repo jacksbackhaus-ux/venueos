@@ -26,16 +26,19 @@ import {
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import { Calculator, Settings as SettingsIcon, ChefHat, Boxes, BarChart3, Plus, Trash2, Receipt, Layers } from "lucide-react";
+import { Calculator, Settings as SettingsIcon, ChefHat, Boxes, BarChart3, Plus, Trash2, Wallet, Beaker, Sliders } from "lucide-react";
 import { toast } from "sonner";
 import {
   loadTMEContext, calcRecipeBreakdown, tmeLineCost,
   type TMEContext, type TMERecipe, type TMERecipeIngredient, type TMEIngredient,
 } from "@/lib/trueMargin";
 import { MarginWatchdogCard } from "@/components/cost-margin/MarginWatchdogCard";
-import OverheadsTab from "@/components/cost-margin/OverheadsTab";
-import ChannelsSettings from "@/components/cost-margin/ChannelsSettings";
 import ChannelPricing from "@/components/cost-margin/ChannelPricing";
+import CashflowTab from "@/components/cost-margin/CashflowTab";
+import PricingLabTab from "@/components/cost-margin/PricingLabTab";
+import InputsTab from "@/components/cost-margin/InputsTab";
+import { useOrgAccess } from "@/hooks/useOrgAccess";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 
 const PACK_UNITS = ["g", "kg", "ml", "l", "each"] as const;
 const RECIPE_UNITS = ["g", "ml", "each"] as const;
