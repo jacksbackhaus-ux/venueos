@@ -36,12 +36,16 @@ const LEGACY_MAP: Record<string, { plan: LegacyPlan; cycle: "month" | "year" }> 
 
 const TIER_MAP: Record<string, { tier: TierId; cycle: "month" | "year"; flagDelta: FlagDelta }> = {
   miseos_essentials_monthly:    { tier: "essentials",    cycle: "month", flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
+  miseos_essentials_annual:     { tier: "essentials",    cycle: "year",  flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
   miseos_essentials_yearly:     { tier: "essentials",    cycle: "year",  flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
   miseos_professional_monthly:  { tier: "professional",  cycle: "month", flagDelta: { base: true,  compliance: true,  business: false, bundle: false } },
+  miseos_professional_annual:   { tier: "professional",  cycle: "year",  flagDelta: { base: true,  compliance: true,  business: false, bundle: false } },
   miseos_professional_yearly:   { tier: "professional",  cycle: "year",  flagDelta: { base: true,  compliance: true,  business: false, bundle: false } },
   miseos_business_tier_monthly: { tier: "business_tier", cycle: "month", flagDelta: { base: false, compliance: false, business: false, bundle: true  } },
+  miseos_business_tier_annual:  { tier: "business_tier", cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true  } },
   miseos_business_tier_yearly:  { tier: "business_tier", cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true  } },
   miseos_intelligence_monthly:  { tier: "intelligence",  cycle: "month", flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
+  miseos_intelligence_annual:   { tier: "intelligence",  cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
   miseos_intelligence_yearly:   { tier: "intelligence",  cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
 };
 
