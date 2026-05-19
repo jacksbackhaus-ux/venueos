@@ -1467,6 +1467,67 @@ export type Database = {
           },
         ]
       }
+      ingredient_price_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          ingredient_id: string
+          new_cost_per_unit: number | null
+          new_pack_price: number | null
+          old_cost_per_unit: number | null
+          old_pack_price: number | null
+          organisation_id: string
+          site_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          ingredient_id: string
+          new_cost_per_unit?: number | null
+          new_pack_price?: number | null
+          old_cost_per_unit?: number | null
+          old_pack_price?: number | null
+          organisation_id: string
+          site_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          ingredient_id?: string
+          new_cost_per_unit?: number | null
+          new_pack_price?: number | null
+          old_cost_per_unit?: number | null
+          old_pack_price?: number | null
+          organisation_id?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_price_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingredient_price_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingredient_price_history_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredients: {
         Row: {
           active: boolean
@@ -3119,6 +3180,226 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_imports: {
+        Row: {
+          created_at: string
+          error: string | null
+          file_name: string
+          id: string
+          imported_at: string | null
+          mapping_id: string | null
+          organisation_id: string
+          row_count: number | null
+          site_id: string
+          source_system: string
+          status: string
+          storage_path: string | null
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          file_name: string
+          id?: string
+          imported_at?: string | null
+          mapping_id?: string | null
+          organisation_id: string
+          row_count?: number | null
+          site_id: string
+          source_system: string
+          status?: string
+          storage_path?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          file_name?: string
+          id?: string
+          imported_at?: string | null
+          mapping_id?: string | null
+          organisation_id?: string
+          row_count?: number | null
+          site_id?: string
+          source_system?: string
+          status?: string
+          storage_path?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_imports_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "sales_mappings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_imports_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_imports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_imports_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_imports_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_line_items: {
+        Row: {
+          channel: string | null
+          created_at: string
+          discounts: number
+          gross_sales: number
+          id: string
+          ignored: boolean
+          import_id: string | null
+          linked_product_id: string | null
+          net_sales: number
+          organisation_id: string
+          product_name_raw: string
+          quantity: number
+          sale_date: string
+          sale_timestamp: string | null
+          site_id: string
+          sku: string | null
+          source_system: string
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          discounts?: number
+          gross_sales?: number
+          id?: string
+          ignored?: boolean
+          import_id?: string | null
+          linked_product_id?: string | null
+          net_sales?: number
+          organisation_id: string
+          product_name_raw: string
+          quantity?: number
+          sale_date: string
+          sale_timestamp?: string | null
+          site_id: string
+          sku?: string | null
+          source_system: string
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          discounts?: number
+          gross_sales?: number
+          id?: string
+          ignored?: boolean
+          import_id?: string | null
+          linked_product_id?: string | null
+          net_sales?: number
+          organisation_id?: string
+          product_name_raw?: string
+          quantity?: number
+          sale_date?: string
+          sale_timestamp?: string | null
+          site_id?: string
+          sku?: string | null
+          source_system?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_line_items_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "sales_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_line_items_linked_product_id_fkey"
+            columns: ["linked_product_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_line_items_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_line_items_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_mappings: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          mapping_json: Json
+          organisation_id: string
+          source_system: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          mapping_json?: Json
+          organisation_id: string
+          source_system: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          mapping_json?: Json
+          organisation_id?: string
+          source_system?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_mappings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
         ]
