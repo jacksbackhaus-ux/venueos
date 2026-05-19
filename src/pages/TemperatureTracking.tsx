@@ -392,7 +392,7 @@ const TemperatureTracking = () => {
                                     {unit.name} outside range ({Number(unit.min_temp)}–{Number(unit.max_temp)}°C)
                                   </p>
                                 </div>
-                                <p className="text-sm font-semibold">Corrective action taken:</p>
+                                <p className="text-sm font-semibold">What you did:</p>
                                 <div className="space-y-1.5">
                                   {["Moved food to another unit", "Called engineer / maintenance", "Adjusted thermostat — rechecking in 30 mins", "Disposed of affected stock"].map((a) => (
                                     <Button key={a} variant={unitCorrectiveAction === a ? "default" : "outline"} size="sm"
@@ -401,7 +401,7 @@ const TemperatureTracking = () => {
                                   ))}
                                 </div>
                                 <Button className="w-full" disabled={!unitCorrectiveAction} onClick={saveUnitLog}>
-                                  Save with Action
+                                  Save fix
                                 </Button>
                               </div>
                             )}
@@ -615,7 +615,7 @@ const TemperatureTracking = () => {
                     {foodItem} — outside safe range for {activeProcess?.label} ({activeProcess?.target})
                   </p>
                 </div>
-                <p className="text-sm font-semibold">Corrective action taken:</p>
+                <p className="text-sm font-semibold">What you did:</p>
                 <div className="space-y-2">
                   {["Continued cooking until safe temp reached", "Disposed of food — not safe to serve", "Returned to supplier", "Re-chilled and rechecked"].map((a) => (
                     <Button key={a} variant={processCorrectiveAction === a ? "default" : "outline"} size="sm"
@@ -624,7 +624,7 @@ const TemperatureTracking = () => {
                   ))}
                 </div>
                 <Textarea placeholder="Additional details (optional)..." onChange={(e) => { if (e.target.value) setProcessCorrectiveAction(e.target.value); }} className="text-sm" />
-                <Button className="w-full" disabled={!processCorrectiveAction} onClick={saveProcessLog}>Save with Action</Button>
+                <Button className="w-full" disabled={!processCorrectiveAction} onClick={saveProcessLog}>Save fix</Button>
               </motion.div>
             )}
 

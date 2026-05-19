@@ -30,8 +30,8 @@ const rootCauses = ["Equipment failure","Human error","Supplier issue","Cleaning
 const statusBadge = (status: string) => {
   switch (status) {
     case "open": return <Badge className="bg-breach/10 text-breach border-0 text-[10px]"><Clock className="h-3 w-3 mr-1" /> Open</Badge>;
-    case "action-taken": return <Badge className="bg-warning/10 text-warning border-0 text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" /> Action Taken</Badge>;
-    case "verified": return <Badge className="bg-success/10 text-success border-0 text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" /> Verified</Badge>;
+    case "action-taken": return <Badge className="bg-warning/10 text-warning border-0 text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" /> Fix applied</Badge>;
+    case "verified": return <Badge className="bg-success/10 text-success border-0 text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" /> Closed</Badge>;
     default: return null;
   }
 };
@@ -92,65 +92,73 @@ const Incidents = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-warning" /></div>
-          <div><h1 className="text-xl font-heading font-bold text-foreground">Incidents & Corrective Actions</h1><p className="text-sm text-muted-foreground">{incidents.filter((i: any) => i.status !== "verified").length} unresolved</p></div>
+          <div>
+            <h1 className="text-xl font-heading font-bold text-foreground">Incidents</h1>
+            <p className="text-sm text-muted-foreground">{incidents.filter((i: any) => i.status !== "verified").length} unresolved</p>
+          </div>
         </div>
-        <Button onClick={() => setShowNew(true)} className="gap-2"><Plus className="h-4 w-4" /> Report Incident</Button>
+        <Button onClick={() => setShowNew(true)} className="gap-2"><Plus className="h-4 w-4" /> Report issue</Button>
       </div>
 
       {isLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
 
-      <div className="flex gap-2">
-        {["all","open","action-taken","verified"].map(f => (
-          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="text-xs capitalize">{f === "action-taken" ? "Action Taken" : f}</Button>
+      <div className="flex gap-2 overflow-x-auto -mx-1 px-1">
+        {[
+          { value: "all", label: "All" },
+          { value: "open", label: "Open" },
+          { value: "action-taken", label: "Fix applied" },
+          { value: "verified", label: "Closed" },
+        ].map(f => (
+          <Button key={f.value} variant={filter === f.value ? "default" : "outline"} size="sm" onClick={() => setFilter(f.value)} className="text-xs shrink-0">{f.label}</Button>
         ))}
       </div>
 
-      {filtered.map((incident: any) => (
-        <motion.div key={incident.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className={incident.status === "open" ? "border-breach/30" : ""}>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  {statusBadge(incident.status)}
-                  <Badge variant="outline" className="text-[10px]">{incidentTypes.find(t=>t.value===incident.type)?.label || incident.type}</Badge>
-                  {incident.module && <Badge variant="secondary" className="text-[10px]">{incident.module}</Badge>}
-                </div>
-                <span className="text-xs text-muted-foreground">{new Date(incident.reported_at).toLocaleDateString("en-GB")}</span>
-              </div>
-              <h3 className="font-heading font-semibold text-sm">{incident.title}</h3>
-              <p className="text-sm text-muted-foreground">{incident.description}</p>
-              <div className="space-y-1.5 pt-2 border-t text-xs">
-                <div><span className="font-semibold text-foreground">Immediate action:</span> {incident.immediate_action}</div>
-                {incident.root_cause && <div><span className="font-semibold text-foreground">Root cause:</span> {incident.root_cause}</div>}
-                {incident.prevention && <div><span className="font-semibold text-foreground">Prevention:</span> {incident.prevention}</div>}
-              </div>
-              <div className="flex items-center justify-between pt-2 text-[10px] text-muted-foreground">
-                <span>Reported by {incident.reported_by_name}</span>
-                {incident.verified_by_name && <span>Verified by {incident.verified_by_name}</span>}
-              </div>
-              {incident.status !== "verified" && (
-                <Button variant="outline" size="sm" className="w-full mt-2 text-xs gap-1"
-                  onClick={() => updateStatus.mutate({ id: incident.id, newStatus: incident.status === "open" ? "action-taken" : "verified" })}>
-                  <ShieldCheck className="h-3 w-3" /> {incident.status === "open" ? "Mark Action Taken" : "Verify & Close"}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
-      {filtered.length === 0 && !isLoading && <p className="text-center text-sm text-muted-foreground py-8">No incidents found.</p>}
+      <div className="space-y-2">
+        {filtered.map((incident: any) => {
+          const isOpen = incident.status === "open";
+          const isFixed = incident.status === "action-taken";
+          return (
+            <motion.div key={incident.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+              <Card className={isOpen ? "border-breach/30" : ""}>
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-heading font-semibold text-sm truncate">{incident.title}</h3>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {incidentTypes.find(t=>t.value===incident.type)?.label || incident.type}
+                        {" · "}
+                        {new Date(incident.reported_at).toLocaleDateString("en-GB")}
+                        {" · "}
+                        {incident.reported_by_name}
+                      </p>
+                    </div>
+                    <div className="shrink-0">{statusBadge(incident.status)}</div>
+                  </div>
+                  {incident.status !== "verified" && (
+                    <Button variant={isOpen ? "default" : "outline"} size="sm" className="w-full text-xs gap-1"
+                      onClick={() => updateStatus.mutate({ id: incident.id, newStatus: isOpen ? "action-taken" : "verified" })}>
+                      <ShieldCheck className="h-3 w-3" /> {isOpen ? "Mark fixed" : "Confirm fixed"}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+        {filtered.length === 0 && !isLoading && <p className="text-center text-sm text-muted-foreground py-8">No incidents found.</p>}
+      </div>
 
       <Dialog open={showNew} onOpenChange={setShowNew}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-heading">Report Incident</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-heading">Report issue</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label className="text-sm">Type</Label><Select value={formType} onValueChange={setFormType}><SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger><SelectContent>{incidentTypes.map(t=><SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
             <div><Label className="text-sm">Title</Label><Input placeholder="Brief summary..." value={formTitle} onChange={e=>setFormTitle(e.target.value)} /></div>
-            <div><Label className="text-sm">Description</Label><Textarea placeholder="What happened?" value={formDesc} onChange={e=>setFormDesc(e.target.value)} className="text-sm" /></div>
-            <div><Label className="text-sm">Immediate action taken</Label><Textarea placeholder="What did you do?" value={formAction} onChange={e=>setFormAction(e.target.value)} className="text-sm" /></div>
-            <div><Label className="text-sm">Root cause</Label><Select value={formRoot} onValueChange={setFormRoot}><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent>{rootCauses.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-            <div><Label className="text-sm">Prevention</Label><Textarea placeholder="What will prevent this?" value={formPrevention} onChange={e=>setFormPrevention(e.target.value)} className="text-sm" /></div>
-            <Button className="w-full" disabled={!formType||!formTitle||!formAction} onClick={()=>saveIncident.mutate()}>Save Incident</Button>
+            <div><Label className="text-sm">What happened</Label><Textarea placeholder="Describe it briefly..." value={formDesc} onChange={e=>setFormDesc(e.target.value)} className="text-sm" /></div>
+            <div><Label className="text-sm">What you did</Label><Textarea placeholder="The immediate fix..." value={formAction} onChange={e=>setFormAction(e.target.value)} className="text-sm" /></div>
+            <div><Label className="text-sm">Why it happened</Label><Select value={formRoot} onValueChange={setFormRoot}><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent>{rootCauses.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label className="text-sm">How to prevent it</Label><Textarea placeholder="What will stop this happening again?" value={formPrevention} onChange={e=>setFormPrevention(e.target.value)} className="text-sm" /></div>
+            <Button className="w-full" disabled={!formType||!formTitle||!formAction} onClick={()=>saveIncident.mutate()}>Save</Button>
           </div>
         </DialogContent>
       </Dialog>
