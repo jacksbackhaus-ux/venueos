@@ -204,6 +204,24 @@ export default function OverheadsTab({
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
 
+          {vatEnabled && (
+            <div className="space-y-1 max-w-[220px]">
+              <Label className="text-xs">VAT rate on overheads (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                value={vatRate}
+                onChange={(e) => setVatRate(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {vatRegistered
+                  ? "Used to estimate reclaimable input VAT in cashflow."
+                  : "Recorded for reference; not reclaimable until VAT registered."}
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end">
             <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save overheads"}</Button>
           </div>
