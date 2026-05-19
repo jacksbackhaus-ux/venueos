@@ -104,12 +104,17 @@ export default function Batches() {
     isCostManager && (plan.business || plan.bundle || trialActive || compedActive);
 
   const [newBatch, setNewBatch] = useState({
-    product_name: '', recipe_ref: '', recipe_id: '',
+    product_name: '', recipe_ref: '', recipe_id: '', recipe_number: '',
     quantity_produced: '', quantity_unit: 'cookies', tray_count: '',
     template_id: '', notes: '',
     date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
   });
   const [creating, setCreating] = useState(false);
+
+  const previewBatchNumber = formatBatchNumber(
+    newBatch.product_name,
+    newBatch.recipe_number ? Number(newBatch.recipe_number) : null,
+  );
 
   const [stageNotes, setStageNotes] = useState('');
   const [completingStage, setCompletingStage] = useState<string | null>(null);
@@ -178,6 +183,7 @@ export default function Batches() {
 
     const selectedRecipe = costRecipes.find(r => r.id === newBatch.recipe_id);
 
+    const recipeNumberValue = newBatch.recipe_number ? Math.max(0, Math.floor(Number(newBatch.recipe_number))) : null;
     const { error } = await supabase.from('batches').insert({
       site_id: siteId,
       organisation_id: organisationId,
@@ -186,6 +192,7 @@ export default function Batches() {
       product_name: newBatch.product_name || selectedRecipe?.name || 'Untitled',
       recipe_ref: newBatch.recipe_ref || selectedRecipe?.name || null,
       recipe_id: newBatch.recipe_id || null,
+      recipe_number: recipeNumberValue,
       quantity_produced: qty,
       quantity_unit: smartUnit,
       tray_count: newBatch.tray_count ? Number(newBatch.tray_count) : null,
@@ -201,7 +208,7 @@ export default function Batches() {
     toast.success(`Logged ${qty} ${unitLabel(smartUnit, qty)}`);
     setShowCreate(false);
     setNewBatch({
-      product_name: '', recipe_ref: '', recipe_id: '',
+      product_name: '', recipe_ref: '', recipe_id: '', recipe_number: '',
       quantity_produced: '', quantity_unit: 'cookies', tray_count: '',
       template_id: '', notes: '',
       date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
@@ -380,8 +387,8 @@ export default function Batches() {
 
                     {/* LINE 4 — de-emphasised meta */}
                     <div className="flex items-center justify-between pt-1 border-t border-border/50">
-                      <span className="text-[10px] font-mono text-muted-foreground/70 tracking-tight">
-                        {batch.batch_code}
+                      <span className="text-xs font-mono font-semibold text-foreground tracking-tight">
+                        {displayBatchNumber(batch.product_name, batch.recipe_number, batch.batch_code)}
                       </span>
                       <span className="text-[10px] text-muted-foreground/70">
                         {format(new Date(batch.created_at), 'd MMM HH:mm')}
@@ -409,6 +416,23 @@ export default function Batches() {
                 value={newBatch.product_name}
                 onChange={e => setNewBatch({ ...newBatch, product_name: e.target.value })}
               />
+            </div>
+
+            <div className="grid grid-cols-[1fr,auto] gap-3 items-end">
+              <div>
+                <Label>Recipe number *</Label>
+                <Input
+                  type="number" step="1" min="0" placeholder="e.g. 6"
+                  value={newBatch.recipe_number}
+                  onChange={e => setNewBatch({ ...newBatch, recipe_number: e.target.value })}
+                />
+              </div>
+              <div className="text-right pb-2">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Batch number</p>
+                <p className="text-sm font-mono font-semibold text-foreground min-h-5">
+                  {previewBatchNumber ?? <span className="text-muted-foreground/60">—</span>}
+                </p>
+              </div>
             </div>
 
             {/* Quantity — hero field */}
@@ -520,7 +544,7 @@ export default function Batches() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={handleCreate}
-              disabled={creating || !newBatch.product_name || !newBatch.quantity_produced}>
+              disabled={creating || !newBatch.product_name || !newBatch.quantity_produced || !newBatch.recipe_number}>
               {creating && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Log batch
             </Button>
           </DialogFooter>
@@ -603,8 +627,14 @@ export default function Batches() {
                         </div>
                       )}
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Batch code</span>
-                        <span className="font-mono text-xs">{selectedBatch.batch_code}</span>
+                        <span className="text-muted-foreground">Batch number</span>
+                        <span className="font-mono text-xs font-semibold">
+                          {displayBatchNumber(selectedBatch.product_name, selectedBatch.recipe_number, selectedBatch.batch_code)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Internal ID</span>
+                        <span className="font-mono text-[11px] text-muted-foreground">{selectedBatch.batch_code}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Created</span>

@@ -32,7 +32,7 @@ export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [siteCount, setSiteCount] = useState<number>(1);
   const [savingCycle, setSavingCycle] = useState(false);
-  const [savingAddon, setSavingAddon] = useState<PlanId | null>(null);
+  
 
   const checkoutPlan = searchParams.get("checkout") as PlanId | "success" | null;
   const checkoutCycle = (searchParams.get("cycle") as BillingCycle | null) ?? cycle;
@@ -140,22 +140,6 @@ export default function Account() {
     else toast.success("Cancellation scheduled. You'll keep access until your period ends.");
   };
 
-  const handleAddAi = async () => {
-    if (!appUser?.organisation_id) return;
-    if (!trialActive && !compedActive) {
-      navigate(`/account?checkout=ai&cycle=${cycle}`);
-      return;
-    }
-    setSavingAddon("ai");
-    const { data, error } = await supabase.functions.invoke("activate-ai-trial");
-    setSavingAddon(null);
-    if (error || (data as any)?.error) {
-      toast.error("Could not add AI Insights: " + (error?.message || (data as any)?.error));
-      return;
-    }
-    await refresh();
-    toast.success(compedActive ? "AI Insights added to your account." : "AI Insights added to your trial.");
-  };
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto pb-24">
@@ -323,43 +307,18 @@ export default function Account() {
         </Card>
       )}
 
-      {/* Add-ons */}
-      {plan.hasAnyPlan && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Add-ons</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {!plan.bundle && !plan.compliance && (
-              <AddOnRow
-                planId="compliance"
-                cycle={cycle}
-                onAdd={() => navigate(`/account?checkout=compliance&cycle=${cycle}`)}
-              />
-            )}
-            {!plan.bundle && !plan.business && (
-              <AddOnRow
-                planId="business"
-                cycle={cycle}
-                onAdd={() => navigate(`/account?checkout=business&cycle=${cycle}`)}
-              />
-            )}
-            {!plan.ai && (
-              <AddOnRow
-                planId="ai"
-                cycle={cycle}
-                loading={savingAddon === "ai"}
-                onAdd={handleAddAi}
-              />
-            )}
-            {!plan.bundle && (
-              <div className="pt-2">
-                <Button variant="default" size="sm" onClick={() => navigate(`/account?checkout=bundle&cycle=${cycle}`)}>
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />Upgrade to Full Bundle
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Diagnostics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Subscription health</CardTitle>
+          <CardDescription>Verify your plan tier is correctly synced to active modules.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" size="sm" onClick={() => navigate("/account/diagnostics")}>
+            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Open subscription diagnostics
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Multi-site */}
       {plan.hasAnyPlan && (
@@ -395,22 +354,3 @@ export default function Account() {
   );
 }
 
-function AddOnRow({ planId, cycle, onAdd, loading = false }: { planId: "compliance" | "business" | "ai"; cycle: BillingCycle; onAdd: () => void; loading?: boolean }) {
-  const p = PLANS[planId];
-  const price = cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
-  return (
-    <div className="flex items-center justify-between gap-2 p-2 rounded-md border">
-      <div>
-        <p className="font-medium">{p.name}</p>
-        <p className="text-xs text-muted-foreground">{p.modules.map(m => MODULE_LABELS[m]).join(" · ")}</p>
-      </div>
-      <div className="text-right shrink-0">
-        <p className="font-semibold text-sm">{formatGBP(price)}<span className="text-xs text-muted-foreground">/{cycle === "year" ? "yr" : "mo"}</span></p>
-        <Button size="sm" variant="outline" className="mt-1" onClick={onAdd} disabled={loading}>
-          {loading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
-          Add
-        </Button>
-      </div>
-    </div>
-  );
-}
