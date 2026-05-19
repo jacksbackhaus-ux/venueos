@@ -111,9 +111,9 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
     setBusy(true);
     try {
       // Save mapping template
-      await supabase.from("sales_mappings").upsert({
-        organisation_id: orgId, source_system: source, mapping_json: mapping,
-      }, { onConflict: "organisation_id,source_system" });
+      await supabase.from("sales_mappings").upsert([{
+        organisation_id: orgId, source_system: source, mapping_json: mapping as any,
+      }], { onConflict: "organisation_id,source_system" });
 
       const transformed = applyMapping(parsed.rows, mapping);
 
