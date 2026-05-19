@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DEFAULT_PROFILES, type Channel, type ChannelProfile,
@@ -18,6 +19,7 @@ import {
   loadTMEContext, calcRecipeBreakdown,
   type TMEContext, type TMERecipe,
 } from "@/lib/trueMargin";
+import { loadSiteTaxSettings, splitGross, vatActive as vatIsActive } from "@/lib/vat";
 import { Beaker, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,6 +33,8 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
   const [recipeId, setRecipeId] = useState<string | null>(null);
   const [channel, setChannel] = useState<Channel>("dtc");
   const [newPrice, setNewPrice] = useState<string>("");
+  const [showVat, setShowVat] = useState(true);
+
 
   const ctxQ = useQuery({
     queryKey: ["tme-ctx", siteId, orgId],
@@ -56,6 +60,14 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
       return data;
     },
   });
+
+  const taxQ = useQuery({
+    queryKey: ["site-tax-settings", siteId],
+    enabled: !!siteId,
+    queryFn: () => loadSiteTaxSettings(siteId),
+  });
+  const vatOn = vatIsActive(taxQ.data);
+  const vatRate = Number(taxQ.data?.default_vat_rate) || 20;
 
   // 30-day units sold for impact estimate
   const salesQ = useQuery({
@@ -189,10 +201,17 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
 
       {recipe && (
         <>
+          {vatOn && (
+            <div className="flex items-center justify-end gap-2">
+              <Label className="text-xs text-muted-foreground">Show VAT breakdown</Label>
+              <Switch checked={showVat} onCheckedChange={setShowVat} />
+            </div>
+          )}
           <div className="grid sm:grid-cols-2 gap-3">
-            <BdCard title="Current" bd={currentBd} price={currentPrice} />
-            <BdCard title="What-if" bd={previewBd} price={previewPrice} tone="primary" />
+            <BdCard title="Current" bd={currentBd} price={currentPrice} vatOn={vatOn && showVat} vatRate={vatRate} />
+            <BdCard title="What-if" bd={previewBd} price={previewPrice} tone="primary" vatOn={vatOn && showVat} vatRate={vatRate} />
           </div>
+
 
           <Card>
             <CardHeader className="pb-2">
@@ -252,18 +271,31 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
   );
 }
 
-function BdCard({ title, bd, price, tone }: { title: string; bd: any; price: number; tone?: "primary" }) {
+function BdCard({ title, bd, price, tone, vatOn, vatRate }: { title: string; bd: any; price: number; tone?: "primary"; vatOn?: boolean; vatRate?: number }) {
+  const split = vatOn && vatRate ? splitGross(price, vatRate) : null;
+  const gpOnNet = split && split.net > 0
+    ? ((split.net - bd.ingredientCost - bd.overheadPerUnit) / split.net) * 100
+    : null;
   return (
     <Card className={tone === "primary" ? "border-primary/50" : ""}>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-1 text-sm">
-        <Row label="Price" value={`£${price.toFixed(2)}`} bold />
+        <Row label={vatOn ? "Gross price" : "Price"} value={`£${price.toFixed(2)}`} bold />
+        {split && (
+          <>
+            <Row label={`Net price (ex VAT ${vatRate}%)`} value={`£${split.net.toFixed(2)}`} />
+            <Row label="VAT amount" value={`£${split.vat.toFixed(2)}`} />
+          </>
+        )}
         <Row label="Cost / unit" value={`£${bd.ingredientCost.toFixed(3)}`} />
         <Row label="Overhead / unit" value={`£${bd.overheadPerUnit.toFixed(3)}`} />
-        <Row label="GP %" value={bd.gpPercent != null ? `${bd.gpPercent.toFixed(1)}%` : "—"}
+        <Row label={vatOn ? "GP % (on gross)" : "GP %"} value={bd.gpPercent != null ? `${bd.gpPercent.toFixed(1)}%` : "—"}
           className={bd.gpPercent != null && bd.gpPercent >= 50 ? "text-success" : bd.gpPercent != null && bd.gpPercent >= 30 ? "text-warning" : "text-destructive"} />
+        {gpOnNet != null && (
+          <Row label="GP % (on net revenue)" value={`${gpOnNet.toFixed(1)}%`} />
+        )}
         <Row label="Contribution after overhead" value={`£${bd.contributionAfterOverhead.toFixed(3)}`} bold />
       </CardContent>
     </Card>

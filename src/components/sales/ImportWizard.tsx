@@ -1,15 +1,17 @@
 // Multi-step import wizard: choose source → upload → mapping → preview → import.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, FileSpreadsheet, Upload, ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { parseSalesFile, applyMapping, MAPPING_FIELDS, type SalesMapping } from "@/lib/salesParse";
+import { loadSiteTaxSettings } from "@/lib/vat";
 
 type SourceSystem = "shopify" | "square" | "sumup" | "csv";
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -36,6 +38,17 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
   const [importId, setImportId] = useState<string | null>(null);
   const [mapping, setMapping] = useState<SalesMapping>(DEFAULT_MAPPING);
   const [busy, setBusy] = useState(false);
+  const [valuesIncludeVat, setValuesIncludeVat] = useState<boolean>(true);
+  const [vatActive, setVatActive] = useState(false);
+
+  // Load site VAT default to pre-fill the toggle.
+  useEffect(() => {
+    if (!open || !siteId) return;
+    loadSiteTaxSettings(siteId).then((s) => {
+      setVatActive(s.vat_enabled);
+      setValuesIncludeVat(s.sales_values_include_vat);
+    });
+  }, [open, siteId]);
 
   const reset = () => {
     setStep(1); setSource("csv"); setFile(null); setParsed(null);
@@ -63,6 +76,7 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
         .insert({
           organisation_id: orgId, site_id: siteId, source_system: source,
           file_name: f.name, storage_path: path, status: "uploaded",
+          values_include_vat: valuesIncludeVat,
         })
         .select("id").single();
       if (impErr) throw impErr;
@@ -71,11 +85,14 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
       // Pre-fill mapping from saved template
       const { data: tpl } = await supabase
         .from("sales_mappings")
-        .select("mapping_json")
+        .select("mapping_json, values_include_vat")
         .eq("organisation_id", orgId)
         .eq("source_system", source)
         .maybeSingle();
       if (tpl?.mapping_json) setMapping({ ...DEFAULT_MAPPING, ...(tpl.mapping_json as any) });
+      if (tpl && typeof (tpl as any).values_include_vat === "boolean") {
+        setValuesIncludeVat((tpl as any).values_include_vat);
+      }
 
       setStep(3);
     } catch (e: any) {
@@ -110,10 +127,16 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
     if (!parsed || !importId) return;
     setBusy(true);
     try {
-      // Save mapping template
+      // Save mapping template (incl. VAT-inclusivity preference)
       await supabase.from("sales_mappings").upsert([{
         organisation_id: orgId, source_system: source, mapping_json: mapping as any,
+        values_include_vat: valuesIncludeVat,
       }], { onConflict: "organisation_id,source_system" });
+
+      // Persist the per-import flag too (in case site default differs later)
+      await supabase.from("sales_imports")
+        .update({ values_include_vat: valuesIncludeVat })
+        .eq("id", importId);
 
       const transformed = applyMapping(parsed.rows, mapping);
 
@@ -177,6 +200,25 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
                   </button>
                 ))}
               </div>
+
+              {vatActive && (
+                <div className="rounded-md border p-3 space-y-2 bg-muted/30">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Label className="text-sm">Sales values include VAT?</Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        If your POS export includes VAT in the sales numbers, turn this on.
+                        If it exports net-of-VAT sales, turn this off.
+                      </p>
+                    </div>
+                    <Switch checked={valuesIncludeVat} onCheckedChange={setValuesIncludeVat} />
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">
+                    {valuesIncludeVat ? "Imported as GROSS" : "Imported as NET"}
+                  </Badge>
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <Button onClick={() => setStep(2)}>Next <ArrowRight className="h-4 w-4 ml-1" /></Button>
               </div>

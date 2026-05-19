@@ -3303,6 +3303,7 @@ export type Database = {
           updated_at: string
           uploaded_at: string
           uploaded_by: string | null
+          values_include_vat: boolean | null
         }
         Insert: {
           created_at?: string
@@ -3320,6 +3321,7 @@ export type Database = {
           updated_at?: string
           uploaded_at?: string
           uploaded_by?: string | null
+          values_include_vat?: boolean | null
         }
         Update: {
           created_at?: string
@@ -3337,6 +3339,7 @@ export type Database = {
           updated_at?: string
           uploaded_at?: string
           uploaded_by?: string | null
+          values_include_vat?: boolean | null
         }
         Relationships: [
           {
@@ -3475,6 +3478,7 @@ export type Database = {
           source_system: string
           timezone: string
           updated_at: string
+          values_include_vat: boolean | null
         }
         Insert: {
           created_at?: string
@@ -3485,6 +3489,7 @@ export type Database = {
           source_system: string
           timezone?: string
           updated_at?: string
+          values_include_vat?: boolean | null
         }
         Update: {
           created_at?: string
@@ -3495,6 +3500,7 @@ export type Database = {
           source_system?: string
           timezone?: string
           updated_at?: string
+          values_include_vat?: boolean | null
         }
         Relationships: [
           {
@@ -4165,6 +4171,7 @@ export type Database = {
           software_subscriptions: number
           updated_at: string
           utilities: number
+          vat_rate_percent: number
         }
         Insert: {
           created_at?: string
@@ -4182,6 +4189,7 @@ export type Database = {
           software_subscriptions?: number
           updated_at?: string
           utilities?: number
+          vat_rate_percent?: number
         }
         Update: {
           created_at?: string
@@ -4199,8 +4207,60 @@ export type Database = {
           software_subscriptions?: number
           updated_at?: string
           utilities?: number
+          vat_rate_percent?: number
         }
         Relationships: []
+      }
+      site_tax_settings: {
+        Row: {
+          created_at: string
+          default_vat_rate: number
+          id: string
+          organisation_id: string
+          sales_values_include_vat: boolean
+          site_id: string
+          updated_at: string
+          vat_enabled: boolean
+          vat_registered: boolean
+        }
+        Insert: {
+          created_at?: string
+          default_vat_rate?: number
+          id?: string
+          organisation_id: string
+          sales_values_include_vat?: boolean
+          site_id: string
+          updated_at?: string
+          vat_enabled?: boolean
+          vat_registered?: boolean
+        }
+        Update: {
+          created_at?: string
+          default_vat_rate?: number
+          id?: string
+          organisation_id?: string
+          sales_values_include_vat?: boolean
+          site_id?: string
+          updated_at?: string
+          vat_enabled?: boolean
+          vat_registered?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_tax_settings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_tax_settings_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sites: {
         Row: {

@@ -16,8 +16,11 @@ import {
   loadCashflow, periodDays, rangeStart, runwayDays, isoDay,
   type PeriodKey, type ChannelFilter,
 } from "@/lib/cashflow";
-import { TrendingUp, TrendingDown, Wallet, AlertCircle } from "lucide-react";
+import { loadSiteTaxSettings, splitGross, vatActive as vatIsActive } from "@/lib/vat";
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, Receipt } from "lucide-react";
 import { CashflowInsightsCard } from "./CashflowInsightsCard";
+
+type ViewMode = "gross" | "net" | "net_vat";
 
 interface Props {
   siteIds: string[];          // one site or many ("all sites")
@@ -29,6 +32,7 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
   const [period, setPeriod] = useState<PeriodKey>("30d");
   const [channel, setChannel] = useState<ChannelFilter>("all");
   const [advanced, setAdvanced] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("gross");
 
   const startIso = rangeStart(period);
   const endIso = isoDay(new Date());
@@ -39,25 +43,82 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
     queryFn: () => loadCashflow({ siteIds, startIso, endIso, channel }),
   });
 
+  const taxQ = useQuery({
+    queryKey: ["site-tax-settings", primarySiteId],
+    enabled: !!primarySiteId,
+    queryFn: () => loadSiteTaxSettings(primarySiteId),
+  });
+  const tax = taxQ.data;
+  const vatOn = vatIsActive(tax);
+  const rate = Number(tax?.default_vat_rate) || 20;
+
   const data = q.data;
   const days = periodDays(period);
 
+  // Compute VAT estimates over the period totals.
+  const vatEstimate = useMemo(() => {
+    if (!vatOn || !data) return null;
+    const salesAreGross = tax?.sales_values_include_vat !== false;
+    // Output VAT — derived from sales totals (data.totals.sales is whatever was stored).
+    let outputVat = 0;
+    let salesNet = data.totals.sales;
+    let salesGross = data.totals.sales;
+    if (salesAreGross) {
+      const split = splitGross(data.totals.sales, rate);
+      salesNet = split.net;
+      salesGross = data.totals.sales;
+      outputVat = split.vat;
+    } else {
+      salesNet = data.totals.sales;
+      salesGross = data.totals.sales * (1 + rate / 100);
+      outputVat = salesGross - salesNet;
+    }
+    // Input VAT — estimate from COGS + overheads at default rate.
+    const cogsSplit = splitGross(data.totals.cogs, rate);
+    const ohSplit = splitGross(data.totals.overheads, rate);
+    const inputVat = cogsSplit.vat + ohSplit.vat;
+    return {
+      outputVat,
+      inputVat,
+      payable: outputVat - inputVat,
+      salesNet,
+      salesGross,
+      cogsNet: cogsSplit.net,
+      cogsVat: cogsSplit.vat,
+      overheadsNet: ohSplit.net,
+      overheadsVat: ohSplit.vat,
+    };
+  }, [vatOn, data, rate, tax?.sales_values_include_vat]);
+
   const chartIn = useMemo(() => {
     if (!data) return [];
+    const transform = (v: number) => {
+      if (!vatOn || viewMode === "gross") return v;
+      // For sales values, split per-row using the rate.
+      return splitGross(v, rate).net;
+    };
     return data.days.map((d) => {
       const r = data.byDay[d];
+      const dtc = (vatOn && viewMode !== "gross") ? transform(r.salesDtc) : r.salesDtc;
+      const ws = (vatOn && viewMode !== "gross") ? transform(r.salesWholesale) : r.salesWholesale;
+      const cogsNet = (vatOn && viewMode !== "gross") ? splitGross(r.cogs, rate).net : r.cogs;
+      const ohNet = (vatOn && viewMode !== "gross") ? splitGross(r.overheads, rate).net : r.overheads;
       return {
         day: d.slice(5),
-        DTC: r.salesDtc,
-        Wholesale: r.salesWholesale,
+        DTC: dtc,
+        Wholesale: ws,
         AdjIn: r.adjustmentsIn,
-        COGS: -r.cogs,
+        VATout: (vatOn && viewMode === "net_vat") ? splitGross(r.salesDtc + r.salesWholesale, rate).vat : 0,
+        COGS: -cogsNet,
         Labour: -r.labour,
-        Overheads: -r.overheads,
+        Overheads: -ohNet,
         AdjOut: -r.adjustmentsOut,
       };
     });
-  }, [data]);
+  }, [data, vatOn, viewMode, rate]);
+
+
+
 
   const balanceSeries = useMemo(() => {
     if (!data) return [];
@@ -96,6 +157,17 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
             </Select>
           )}
 
+          {vatOn && (
+            <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+              <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gross">View: Gross</SelectItem>
+                <SelectItem value="net">View: Net</SelectItem>
+                <SelectItem value="net_vat">View: Net + VAT</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
           <div className="flex items-center gap-2 ml-auto">
             <Label htmlFor="adv-mode" className="text-xs text-muted-foreground">Advanced</Label>
             <Switch id="adv-mode" checked={advanced} onCheckedChange={setAdvanced} />
@@ -104,7 +176,8 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
       </Card>
 
       {/* KPI strip */}
-      <KpiStrip data={data} days={days} loading={q.isLoading} />
+      <KpiStrip data={data} days={days} loading={q.isLoading} vatEstimate={vatEstimate} vatOn={vatOn} />
+
 
       {/* Gentle prompts */}
       {data && !data.hasSales && (
@@ -160,6 +233,9 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
                   <Bar dataKey="DTC" name="Sales" stackId="in" fill="hsl(var(--success))" />
                 )}
                 {advanced && <Bar dataKey="AdjIn" name="Adj in" stackId="in" fill="hsl(var(--accent))" />}
+                {vatOn && viewMode === "net_vat" && (
+                  <Bar dataKey="VATout" name="VAT collected" stackId="in" fill="hsl(var(--muted-foreground))" />
+                )}
                 <Bar dataKey="COGS" stackId="out" fill="hsl(var(--warning))" />
                 <Bar dataKey="Labour" stackId="out" fill="hsl(var(--muted-foreground))" />
                 <Bar dataKey="Overheads" stackId="out" fill="hsl(var(--destructive))" />
@@ -216,7 +292,11 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
   );
 }
 
-function KpiStrip({ data, days, loading }: { data: ReturnType<typeof useQuery>["data"] extends any ? any : never; days: number; loading: boolean }) {
+function KpiStrip({ data, days, loading, vatEstimate, vatOn }: {
+  data: any; days: number; loading: boolean;
+  vatEstimate: { outputVat: number; inputVat: number; payable: number } | null;
+  vatOn: boolean;
+}) {
   if (loading || !data) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -238,7 +318,7 @@ function KpiStrip({ data, days, loading }: { data: ReturnType<typeof useQuery>["
         hint={`over ${days}d`}
       />
       <Kpi
-        label="Revenue (net sales)"
+        label={vatOn ? "Revenue (gross)" : "Revenue (net sales)"}
         value={`£${t.sales.toFixed(0)}`}
         hint={data.hasSales ? "from imported sales" : "no sales data"}
         muted={!data.hasSales}
@@ -253,7 +333,15 @@ function KpiStrip({ data, days, loading }: { data: ReturnType<typeof useQuery>["
         }
         muted={data.cogsMethod === "unavailable"}
       />
-      {data.hasTimesheets ? (
+      {vatOn && vatEstimate ? (
+        <Kpi
+          icon={<Receipt className="h-4 w-4 text-muted-foreground" />}
+          label="VAT payable (estimate)"
+          value={`£${vatEstimate.payable.toFixed(0)}`}
+          tone={vatEstimate.payable > 0 ? "destructive" : "success"}
+          hint={`Out £${vatEstimate.outputVat.toFixed(0)} − In £${vatEstimate.inputVat.toFixed(0)}`}
+        />
+      ) : data.hasTimesheets ? (
         <Kpi label="Labour" value={`£${t.labour.toFixed(0)}`} hint="logged shifts" />
       ) : (
         <Kpi
@@ -267,6 +355,7 @@ function KpiStrip({ data, days, loading }: { data: ReturnType<typeof useQuery>["
     </div>
   );
 }
+
 
 function Kpi({ icon, label, value, hint, tone, muted }: {
   icon?: React.ReactNode; label: string; value: string; hint?: string;
