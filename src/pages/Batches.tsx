@@ -181,9 +181,23 @@ export default function Batches() {
 
     let unitCost: number | null = null;
     let totalCost: number | null = null;
+    let salePriceSnap: number | null = newBatch.sale_price ? Number(newBatch.sale_price) : null;
+    let targetGpSnap: number | null = null;
+    let marginPct: number | null = null;
+    let marginBelowTarget = false;
     if (hasCostAccess && newBatch.recipe_id && qty > 0) {
       const calc = await calcBatchProductionCost(newBatch.recipe_id, qty, organisationId, siteId);
-      if (calc) { unitCost = calc.unitCost; totalCost = calc.totalCost; }
+      if (calc) {
+        unitCost = calc.unitCost;
+        totalCost = calc.totalCost;
+        // Per-batch sale-price override wins; otherwise use the recipe snapshot.
+        if (salePriceSnap == null) salePriceSnap = calc.salePriceExVat;
+        targetGpSnap = calc.targetGpPercent;
+        if (salePriceSnap != null && salePriceSnap > 0 && unitCost != null) {
+          marginPct = ((salePriceSnap - unitCost) / salePriceSnap) * 100;
+          marginBelowTarget = targetGpSnap != null && marginPct < targetGpSnap;
+        }
+      }
     }
 
     const selectedRecipe = costRecipes.find(r => r.id === newBatch.recipe_id);
@@ -203,6 +217,10 @@ export default function Batches() {
       tray_count: newBatch.tray_count ? Number(newBatch.tray_count) : null,
       unit_cost_snapshot: unitCost,
       total_production_cost: totalCost,
+      sale_price_snapshot: salePriceSnap,
+      target_gp_percent_snapshot: targetGpSnap,
+      margin_pct: marginPct,
+      margin_below_target: marginBelowTarget,
       notes: newBatch.notes || null,
       date_produced: newBatch.date_produced || null,
       use_by_date: newBatch.use_by_date || null,
@@ -211,12 +229,20 @@ export default function Batches() {
     setCreating(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Logged ${qty} ${unitLabel(smartUnit, qty)}`);
+    // Margin alert pipeline — surface immediately so the operator sees the hit.
+    if (marginBelowTarget && marginPct != null && targetGpSnap != null) {
+      toast.warning(
+        `Margin below target on this bake: ${marginPct.toFixed(0)}% (target ${targetGpSnap.toFixed(0)}%)`,
+        { description: 'Review sale price or production cost in Cost & Margin.' }
+      );
+    }
     setShowCreate(false);
     setNewBatch({
       product_name: '', recipe_ref: '', recipe_id: '', recipe_number: '',
       quantity_produced: '', quantity_unit: 'cookies', tray_count: '',
       template_id: '', notes: '',
       date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
+      sale_price: '',
     });
     loadBatches();
   };
