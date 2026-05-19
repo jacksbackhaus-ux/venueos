@@ -140,22 +140,6 @@ export default function Account() {
     else toast.success("Cancellation scheduled. You'll keep access until your period ends.");
   };
 
-  const handleAddAi = async () => {
-    if (!appUser?.organisation_id) return;
-    if (!trialActive && !compedActive) {
-      navigate(`/account?checkout=ai&cycle=${cycle}`);
-      return;
-    }
-    setSavingAddon("ai");
-    const { data, error } = await supabase.functions.invoke("activate-ai-trial");
-    setSavingAddon(null);
-    if (error || (data as any)?.error) {
-      toast.error("Could not add AI Insights: " + (error?.message || (data as any)?.error));
-      return;
-    }
-    await refresh();
-    toast.success(compedActive ? "AI Insights added to your account." : "AI Insights added to your trial.");
-  };
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto pb-24">
