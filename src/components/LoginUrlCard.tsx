@@ -88,6 +88,9 @@ export function LoginUrlCard({ organisationId }: Props) {
             {copied ? "Copied" : "Copy URL"}
           </Button>
         </div>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline underline-offset-2 break-all">
+          Open {url}
+        </a>
 
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           <div className="rounded-lg border border-border bg-background p-3 shrink-0">
