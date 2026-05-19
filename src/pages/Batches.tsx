@@ -418,6 +418,23 @@ export default function Batches() {
               />
             </div>
 
+            <div className="grid grid-cols-[1fr,auto] gap-3 items-end">
+              <div>
+                <Label>Recipe number *</Label>
+                <Input
+                  type="number" step="1" min="0" placeholder="e.g. 6"
+                  value={newBatch.recipe_number}
+                  onChange={e => setNewBatch({ ...newBatch, recipe_number: e.target.value })}
+                />
+              </div>
+              <div className="text-right pb-2">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Batch number</p>
+                <p className="text-sm font-mono font-semibold text-foreground min-h-5">
+                  {previewBatchNumber ?? <span className="text-muted-foreground/60">—</span>}
+                </p>
+              </div>
+            </div>
+
             {/* Quantity — hero field */}
             <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-3 space-y-3">
               <div className="grid grid-cols-[1fr,auto] gap-2 items-end">
