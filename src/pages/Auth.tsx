@@ -514,10 +514,16 @@ export function StaffCard({ onBack, orgSlug, orgName }: { onBack: () => void; or
       }
     }
 
-    const { data, error } = await supabase.rpc('link_staff_session', {
-      _site_id: siteCode.trim(),
-      _staff_code: staffCode.trim(),
-    });
+    const { data, error } = orgSlug
+      ? await supabase.rpc('link_staff_session_for_org', {
+          _org_slug: orgSlug,
+          _site_id: siteCode.trim(),
+          _staff_code: staffCode.trim(),
+        })
+      : await supabase.rpc('link_staff_session', {
+          _site_id: siteCode.trim(),
+          _staff_code: staffCode.trim(),
+        });
     setLoading(false);
 
     if (error) {
