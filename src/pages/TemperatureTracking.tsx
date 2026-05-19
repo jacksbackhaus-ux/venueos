@@ -401,7 +401,7 @@ const TemperatureTracking = () => {
                                   ))}
                                 </div>
                                 <Button className="w-full" disabled={!unitCorrectiveAction} onClick={saveUnitLog}>
-                                  Save with Action
+                                  Save fix
                                 </Button>
                               </div>
                             )}
@@ -624,7 +624,7 @@ const TemperatureTracking = () => {
                   ))}
                 </div>
                 <Textarea placeholder="Additional details (optional)..." onChange={(e) => { if (e.target.value) setProcessCorrectiveAction(e.target.value); }} className="text-sm" />
-                <Button className="w-full" disabled={!processCorrectiveAction} onClick={saveProcessLog}>Save with Action</Button>
+                <Button className="w-full" disabled={!processCorrectiveAction} onClick={saveProcessLog}>Save fix</Button>
               </motion.div>
             )}
 
