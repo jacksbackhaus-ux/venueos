@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Thermometer, SprayCan, Users, ClipboardCheck, ChevronRight } from "lucide-react";
+import { classifySection, currentOpsWindow, isToday, parseHHMM } from "@/lib/opsTime";
 
 interface Props { siteId: string | undefined; dateISO: string; }
 
@@ -29,13 +30,14 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
       const dayStart = `${dateISO}T00:00:00`;
       const dayEnd = `${dateISO}T23:59:59`;
 
-      const [closed, tempUnits, tempLogs, cleanTasks, cleanLogs, daySheet, shifts] = await Promise.all([
+      const [closed, tempUnits, tempLogs, cleanTasks, cleanLogs, daySheet, sections, shifts] = await Promise.all([
         supabase.from("closed_days" as any).select("id").eq("site_id", siteId!).eq("closed_date", dateISO).maybeSingle(),
         supabase.from("temp_units").select("id, name").eq("site_id", siteId!).eq("active", true),
         supabase.from("temp_logs").select("unit_id, log_type, pass, logged_at, food_item").eq("site_id", siteId!).gte("logged_at", dayStart).lt("logged_at", dayEnd),
-        supabase.from("cleaning_tasks").select("id").eq("site_id", siteId!).eq("active", true).eq("frequency", "daily"),
+        supabase.from("cleaning_tasks").select("id, due_time, frequency").eq("site_id", siteId!).eq("active", true).eq("frequency", "daily"),
         supabase.from("cleaning_logs").select("task_id, done").eq("site_id", siteId!).eq("log_date", dateISO),
         supabase.from("day_sheets").select("id, signed_off_at, day_sheet_entries(item_id, done, completed_at)").eq("site_id", siteId!).eq("sheet_date", dateISO).maybeSingle(),
+        supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("rota_assignments").select("id, user_id, start_time, end_time").eq("site_id", siteId!).eq("shift_date", dateISO).is("cancelled_at", null),
       ]);
 
@@ -43,10 +45,10 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
         isClosed: !!(closed as any)?.data,
         units: tempUnits.data ?? [],
         tempLogs: tempLogs.data ?? [],
-        cleanTotal: (cleanTasks.data ?? []).length,
-        cleanDone: (cleanLogs.data ?? []).filter((l: any) => l.done).length,
-        cleanMissed: (cleanTasks.data ?? []).length - (cleanLogs.data ?? []).filter((l: any) => l.done).length,
+        cleanTasks: (cleanTasks.data ?? []) as any[],
+        cleanLogs: (cleanLogs.data ?? []) as any[],
         daySheet: daySheet.data as any,
+        sections: (sections.data ?? []) as any[],
         shifts: shifts.data ?? [],
       };
     },
@@ -62,67 +64,104 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
 
   if (data.isClosed) return null;
 
-  // Temperatures
-  const fridgeUnits = data.units;
+  const viewingToday = isToday(dateISO);
+  const window = viewingToday ? currentOpsWindow() : "closing";
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  // -------- TEMPERATURES --------
+  const units = data.units;
   const amDone = new Set(data.tempLogs.filter((l: any) => l.log_type === "AM Check").map((l: any) => l.unit_id));
   const pmDone = new Set(data.tempLogs.filter((l: any) => l.log_type === "PM Check").map((l: any) => l.unit_id));
-  const fridgeDone = Math.min(fridgeUnits.length, amDone.size + pmDone.size === fridgeUnits.length * 2 ? fridgeUnits.length : Math.floor((amDone.size + pmDone.size) / 2));
-  const processChecks = data.tempLogs.filter((l: any) => l.log_type && !["AM Check", "PM Check"].includes(l.log_type)).length;
   const breaches = data.tempLogs.filter((l: any) => l.pass === false).length;
+  const tempLines: Tile["lines"] = [];
+  tempLines.push({
+    text: `AM ${amDone.size}/${units.length}`,
+    tone: units.length === 0 ? "muted" : amDone.size === units.length ? "ok" : "warn",
+  });
+  if (window === "closing") {
+    tempLines.push({
+      text: `PM ${pmDone.size}/${units.length}`,
+      tone: units.length === 0 ? "muted" : pmDone.size === units.length ? "ok" : "warn",
+    });
+  } else {
+    tempLines.push({ text: "PM — not due yet", tone: "muted" });
+  }
+  tempLines.push({ text: `Breaches: ${breaches}`, tone: breaches > 0 ? "bad" : "muted" });
 
-  // Day sheet
+  // -------- CLEANING --------
+  const doneIds = new Set(data.cleanLogs.filter((l: any) => l.done).map((l: any) => l.task_id));
+  const dueNow = viewingToday
+    ? data.cleanTasks.filter((t: any) => {
+        const due = parseHHMM(t.due_time);
+        return due == null || nowMin >= due;
+      })
+    : data.cleanTasks;
+  const overdue = dueNow.filter((t: any) => !doneIds.has(t.id)).length;
+  const doneCount = data.cleanTasks.filter((t: any) => doneIds.has(t.id)).length;
+  const cleanLines: Tile["lines"] = [
+    { text: `Due now: ${dueNow.length}`, tone: "muted" },
+    { text: `Done: ${doneCount}`, tone: doneCount > 0 ? "ok" : "muted" },
+    { text: `Overdue: ${overdue}`, tone: overdue > 0 ? "warn" : "muted" },
+  ];
+
+  // -------- DAY SHEET (split opening / closing) --------
+  const openingItemIds: string[] = [];
+  const closingItemIds: string[] = [];
+  const middayItemIds: string[] = [];
+  for (const s of data.sections) {
+    const cls = classifySection(s);
+    const ids = (s.day_sheet_items ?? []).filter((i: any) => i.active).map((i: any) => i.id as string);
+    if (cls === "opening") openingItemIds.push(...ids);
+    else if (cls === "closing") closingItemIds.push(...ids);
+    else middayItemIds.push(...ids);
+  }
   const dsEntries = (data.daySheet?.day_sheet_entries ?? []) as any[];
-  const dsDone = dsEntries.filter((e) => e.done).length;
-  const dsTotal = dsEntries.length;
-  const dsComplete = !!data.daySheet?.signed_off_at;
-  const lastLog = dsEntries
-    .filter((e) => e.completed_at)
-    .map((e) => new Date(e.completed_at as string))
-    .sort((a, b) => b.getTime() - a.getTime())[0];
-  const minutesAgo = lastLog ? Math.round((Date.now() - lastLog.getTime()) / 60000) : null;
+  const doneEntryIds = new Set(dsEntries.filter((e) => e.done).map((e) => e.item_id));
+  const openDone = openingItemIds.filter((id) => doneEntryIds.has(id)).length;
+  const closeDone = closingItemIds.filter((id) => doneEntryIds.has(id)).length;
 
-  // Shifts
-  const now = new Date();
+  const dsLines: Tile["lines"] = [];
+  if (openingItemIds.length > 0) {
+    dsLines.push({
+      text: `Opening ${openDone}/${openingItemIds.length}`,
+      tone: openDone === openingItemIds.length ? "ok" : "warn",
+    });
+  }
+  if (closingItemIds.length > 0) {
+    if (window === "closing") {
+      dsLines.push({
+        text: `Closing ${closeDone}/${closingItemIds.length}`,
+        tone: closeDone === closingItemIds.length ? "ok" : "warn",
+      });
+    } else {
+      dsLines.push({ text: `Closing — not due yet`, tone: "muted" });
+    }
+  }
+  if (middayItemIds.length > 0 && (window === "midday" || window === "closing")) {
+    const midDone = middayItemIds.filter((id) => doneEntryIds.has(id)).length;
+    dsLines.push({
+      text: `Midday ${midDone}/${middayItemIds.length}`,
+      tone: midDone === middayItemIds.length ? "ok" : "warn",
+    });
+  }
+  if (dsLines.length === 0) dsLines.push({ text: "No tasks scheduled", tone: "muted" });
+
+  // -------- SHIFTS --------
   const onShiftNow = data.shifts.filter((s: any) => {
-    const [sh, sm] = (s.start_time ?? "00:00").split(":").map(Number);
-    const [eh, em] = (s.end_time ?? "00:00").split(":").map(Number);
-    const start = sh * 60 + sm;
-    const end = eh * 60 + em;
-    const cur = now.getHours() * 60 + now.getMinutes();
-    return cur >= start && cur <= end;
+    const start = parseHHMM(s.start_time) ?? 0;
+    const end = parseHHMM(s.end_time) ?? 0;
+    return nowMin >= start && nowMin <= end;
   }).length;
 
   const tiles: Tile[] = [
-    {
-      href: "/temperatures", label: "Temperatures", icon: Thermometer,
-      lines: [
-        { text: `Fridges ${fridgeDone}/${fridgeUnits.length}`, tone: fridgeDone === fridgeUnits.length ? "ok" : "warn" },
-        { text: `Process checks ${processChecks}`, tone: "muted" },
-        { text: `Breaches: ${breaches}`, tone: breaches > 0 ? "bad" : "muted" },
-      ],
-    },
-    {
-      href: "/cleaning", label: "Cleaning", icon: SprayCan,
-      lines: [
-        { text: `Due: ${data.cleanTotal}`, tone: "muted" },
-        { text: `Done: ${data.cleanDone}`, tone: "ok" },
-        { text: `Missed: ${data.cleanMissed}`, tone: data.cleanMissed > 0 ? "warn" : "muted" },
-      ],
-    },
-    {
-      href: "/shifts", label: "Staff", icon: Users,
-      lines: [
-        { text: `On shift: ${onShiftNow}`, tone: "ok" },
-        { text: `Scheduled: ${data.shifts.length}`, tone: "muted" },
-      ],
-    },
-    {
-      href: "/day-sheet", label: "Day Sheet", icon: ClipboardCheck,
-      lines: [
-        { text: dsComplete ? "Complete" : dsTotal > 0 ? `In progress ${dsDone}/${dsTotal}` : "Not started", tone: dsComplete ? "ok" : dsDone > 0 ? "warn" : "muted" },
-        { text: minutesAgo == null ? "No logs yet" : minutesAgo < 60 ? `Last log: ${minutesAgo}m ago` : `Last log: ${Math.round(minutesAgo / 60)}h ago`, tone: "muted" },
-      ],
-    },
+    { href: "/temperatures", label: "Temperatures", icon: Thermometer, lines: tempLines },
+    { href: "/cleaning", label: "Cleaning", icon: SprayCan, lines: cleanLines },
+    { href: "/shifts", label: "Staff", icon: Users, lines: [
+      { text: `On shift: ${onShiftNow}`, tone: onShiftNow > 0 ? "ok" : "muted" },
+      { text: `Scheduled: ${data.shifts.length}`, tone: "muted" },
+    ]},
+    { href: "/day-sheet", label: "Day Sheet", icon: ClipboardCheck, lines: dsLines },
   ];
 
   return (
