@@ -157,7 +157,12 @@ export default function Pricing() {
                     <span className="text-sm text-muted-foreground"> / site / {cycle === "year" ? "yr" : "mo"}</span>
                     {monthlyEquivalent !== null && (
                       <p className="text-[11px] text-muted-foreground mt-1">
-                        ≈ {formatGBP(monthlyEquivalent)}/mo
+                        ≈ {formatGBP(monthlyEquivalent)}/mo · save 15% paying yearly
+                      </p>
+                    )}
+                    {cycle === "month" && (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        12-month minimum, billed monthly
                       </p>
                     )}
                   </div>
