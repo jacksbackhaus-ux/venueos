@@ -1,12 +1,10 @@
-import { motion } from "framer-motion";
-import { Thermometer, Sparkles } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Thermometer } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
-import { useEffect, useState } from "react";
+import { CollapsibleInsight } from "@/components/shared/CollapsibleInsight";
 
 interface CachedAlert {
   id: string;
@@ -20,7 +18,6 @@ export function EquipmentHealthAlert() {
   const { currentSite } = useSite();
   const siteId = currentSite?.id ?? null;
   const queryClient = useQueryClient();
-  const [dismissed, setDismissed] = useState(false);
 
   const aiActive = isActive("ai_insights");
 
@@ -65,31 +62,20 @@ export function EquipmentHealthAlert() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiActive, siteId, isLoading, alert]);
 
-  if (!aiActive || !siteId || dismissed) return null;
+  if (!aiActive || !siteId) return null;
 
   const alerts = (alert?.content as any)?.alerts ?? [];
   if (!alert?.narrative || alerts.length === 0) return null;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-      <Card className="border-warning/30 bg-warning/5">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Thermometer className="h-4 w-4 text-warning" />
-            Equipment Health Alert
-            <Sparkles className="h-3.5 w-3.5 text-warning/70" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm whitespace-pre-wrap text-foreground">{alert.narrative}</p>
-          <div className="flex items-center justify-between mt-3">
-            <p className="text-xs text-muted-foreground">AI-generated</p>
-            <Button size="sm" variant="ghost" onClick={() => setDismissed(true)} className="h-7 px-2 text-xs">
-              Dismiss
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+    <CollapsibleInsight
+      label="Equipment drift warning"
+      hint={`${alerts.length} unit${alerts.length === 1 ? "" : "s"} need attention`}
+      icon={<Thermometer className="h-4 w-4 text-warning" />}
+      tone="warning"
+      defaultOpen
+    >
+      <p className="text-sm whitespace-pre-wrap text-foreground">{alert.narrative}</p>
+    </CollapsibleInsight>
   );
 }
