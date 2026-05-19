@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.96.0";
+import { assertSiteAccess } from "../_shared/siteAuthz.ts";
 
 /**
  * generate-compliance-narrative
@@ -61,6 +62,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    const authzFail = await assertSiteAccess({
+      authUserId: claimsData.claims.sub as string,
+      siteId: site_id,
+      svc,
+      corsHeaders,
+    });
+    if (authzFail) return authzFail;
+
 
     // ---- Cache check: must match date_range stored in content ----
     const nowIso = new Date().toISOString();
