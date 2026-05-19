@@ -141,6 +141,14 @@ export default function CostMargin() {
           <IngredientsTab ingredients={ingredients} onChange={refreshAll} />
         </TabsContent>
 
+        <TabsContent value="overheads">
+          <OverheadsTab siteId={siteId} orgId={orgId} />
+        </TabsContent>
+
+        <TabsContent value="channels">
+          <ChannelsSettings siteId={siteId} orgId={orgId} />
+        </TabsContent>
+
         <TabsContent value="sales">
           <SalesStub />
         </TabsContent>
