@@ -166,6 +166,8 @@ interface RawRecipe extends RecipeCostInput {
   name: string;
   category: string;
   monthly_volume: number;
+  sale_price?: number | null;
+  target_gp_percent?: number | null;
 }
 
 export interface RecipeWithCost extends RawRecipe {
