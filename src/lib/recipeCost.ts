@@ -129,6 +129,7 @@ export async function loadCostContextForOrg(
       .select(`
         id, name, category, packaging_cost, labour_minutes,
         sell_price_ex_vat, vat_rate, monthly_volume, target_margin_override,
+        sale_price, target_gp_percent,
         recipe_ingredients(
           id, ingredient_id, weight, unit, cost_per_unit_override,
           ingredients(id, name, unit, cost_per_unit)
