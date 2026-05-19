@@ -33,6 +33,7 @@ import {
   type TMEContext, type TMERecipe, type TMERecipeIngredient, type TMEIngredient,
 } from "@/lib/trueMargin";
 import { MarginWatchdogCard } from "@/components/cost-margin/MarginWatchdogCard";
+import SalesHealthDashboard from "@/components/cost-margin/SalesHealthDashboard";
 import ChannelPricing from "@/components/cost-margin/ChannelPricing";
 import CashflowTab from "@/components/cost-margin/CashflowTab";
 import PricingLabTab from "@/components/cost-margin/PricingLabTab";
@@ -139,6 +140,13 @@ export default function CostMargin() {
               Overview shows your primary site ({currentSite?.name}). Switch to a single site to edit recipes.
             </CardContent></Card>
           )}
+          <SalesHealthDashboard
+            siteId={siteId}
+            orgId={orgId}
+            ctx={ctx}
+            recipes={allRecipes}
+            intelligence={intelligence}
+          />
           <MarginWatchdogCard siteId={siteId} ctx={ctx} recipes={allRecipes} />
           <Tabs defaultValue="menu" className="space-y-3">
             <TabsList className="flex-wrap h-auto">
