@@ -421,7 +421,7 @@ export function ManagerSignupCard({
 
 /* ──────────────────────────────────────────────────────────── Manager: reset */
 
-function ManagerForgotCard({ onBack }: { onBack: () => void }) {
+export function ManagerForgotCard({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
