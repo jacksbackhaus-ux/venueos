@@ -68,6 +68,9 @@ serve(async (req) => {
     });
     if (authzFail) return authzFail;
 
+    const aiFail = await assertIntelligenceTier({ siteId: site_id, svc, corsHeaders });
+    if (aiFail) return aiFail;
+
 
     const todayStr = payload.generated_for_date || ymd(new Date());
 

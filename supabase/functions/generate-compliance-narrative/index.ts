@@ -72,6 +72,9 @@ serve(async (req) => {
     });
     if (authzFail) return authzFail;
 
+    const aiFail = await assertIntelligenceTier({ siteId: site_id, svc, corsHeaders });
+    if (aiFail) return aiFail;
+
 
     // ---- Cache check: must match date_range stored in content ----
     const nowIso = new Date().toISOString();
