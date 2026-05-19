@@ -201,10 +201,17 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
 
       {recipe && (
         <>
+          {vatOn && (
+            <div className="flex items-center justify-end gap-2">
+              <Label className="text-xs text-muted-foreground">Show VAT breakdown</Label>
+              <Switch checked={showVat} onCheckedChange={setShowVat} />
+            </div>
+          )}
           <div className="grid sm:grid-cols-2 gap-3">
-            <BdCard title="Current" bd={currentBd} price={currentPrice} />
-            <BdCard title="What-if" bd={previewBd} price={previewPrice} tone="primary" />
+            <BdCard title="Current" bd={currentBd} price={currentPrice} vatOn={vatOn && showVat} vatRate={vatRate} />
+            <BdCard title="What-if" bd={previewBd} price={previewPrice} tone="primary" vatOn={vatOn && showVat} vatRate={vatRate} />
           </div>
+
 
           <Card>
             <CardHeader className="pb-2">
