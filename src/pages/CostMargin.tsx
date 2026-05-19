@@ -282,6 +282,8 @@ function RecipesPanel({
           allRecipes={allRecipes}
           onClose={() => setOpenId(null)}
           onChange={onChange}
+          siteId={siteId}
+          orgId={orgId}
         />
       )}
 
