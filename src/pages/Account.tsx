@@ -21,6 +21,7 @@ import {
   BASE_MODULES, COMPLIANCE_MODULES, BUSINESS_MODULES, AI_MODULES,
 } from "@/lib/plans";
 import { LoginUrlCard } from "@/components/LoginUrlCard";
+import { ClimatePledge } from "@/components/StripeClimateBadge";
 
 export default function Account() {
   const navigate = useNavigate();
