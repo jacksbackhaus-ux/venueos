@@ -173,11 +173,12 @@ export function BrandingSection({ embedded, onSaved }: Props) {
   const primaryFg = shouldUseDarkText(primary) ? "#0f172a" : "#ffffff";
 
   return (
-    <Wrap>
+    <div className="space-y-6">
       {!embedded && organisationId && (
         <LoginUrlCard organisationId={organisationId} />
       )}
-      {/* Logo */}
+      <Wrap>
+        {/* Logo */}
       <div className="space-y-3">
         <Label>Logo</Label>
         <div className="flex items-center gap-4">
