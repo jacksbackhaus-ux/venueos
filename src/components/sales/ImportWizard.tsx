@@ -127,10 +127,16 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
     if (!parsed || !importId) return;
     setBusy(true);
     try {
-      // Save mapping template
+      // Save mapping template (incl. VAT-inclusivity preference)
       await supabase.from("sales_mappings").upsert([{
         organisation_id: orgId, source_system: source, mapping_json: mapping as any,
+        values_include_vat: valuesIncludeVat,
       }], { onConflict: "organisation_id,source_system" });
+
+      // Persist the per-import flag too (in case site default differs later)
+      await supabase.from("sales_imports")
+        .update({ values_include_vat: valuesIncludeVat })
+        .eq("id", importId);
 
       const transformed = applyMapping(parsed.rows, mapping);
 
