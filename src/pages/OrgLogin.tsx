@@ -122,7 +122,7 @@ export default function OrgLogin() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="login"><EmailLoginForm /></TabsContent>
+          <TabsContent value="login"><EmailLoginForm expectedOrgId={org.id} orgName={displayName} /></TabsContent>
           <TabsContent value="staff"><OrgStaffLoginForm orgSlug={org.slug} orgName={displayName} /></TabsContent>
         </Tabs>
 

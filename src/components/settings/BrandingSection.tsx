@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, Trash2, Palette, Image as ImageIcon, Save } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LoginUrlCard } from "@/components/LoginUrlCard";
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -172,8 +173,12 @@ export function BrandingSection({ embedded, onSaved }: Props) {
   const primaryFg = shouldUseDarkText(primary) ? "#0f172a" : "#ffffff";
 
   return (
-    <Wrap>
-      {/* Logo */}
+    <div className="space-y-6">
+      {!embedded && organisationId && (
+        <LoginUrlCard organisationId={organisationId} />
+      )}
+      <Wrap>
+        {/* Logo */}
       <div className="space-y-3">
         <Label>Logo</Label>
         <div className="flex items-center gap-4">
@@ -322,7 +327,8 @@ export function BrandingSection({ embedded, onSaved }: Props) {
         {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         Save branding
       </Button>
-    </Wrap>
+      </Wrap>
+    </div>
   );
 }
 
