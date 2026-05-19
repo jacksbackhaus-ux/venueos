@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, Trash2, Palette, Image as ImageIcon, Save } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LoginUrlCard } from "@/components/LoginUrlCard";
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024;
