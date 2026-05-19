@@ -61,6 +61,14 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
     },
   });
 
+  const taxQ = useQuery({
+    queryKey: ["site-tax-settings", siteId],
+    enabled: !!siteId,
+    queryFn: () => loadSiteTaxSettings(siteId),
+  });
+  const vatOn = vatIsActive(taxQ.data);
+  const vatRate = Number(taxQ.data?.default_vat_rate) || 20;
+
   // 30-day units sold for impact estimate
   const salesQ = useQuery({
     queryKey: ["pricing-lab-sales", siteId, recipeId, channel],
