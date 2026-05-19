@@ -4,59 +4,137 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, KeyRound, Building2, Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Briefcase, KeyRound, ArrowLeft, ShieldCheck } from "lucide-react";
 import { SEO } from "@/components/SEO";
 
+type Screen = "choose" | "manager-login" | "manager-signup" | "manager-forgot" | "staff";
 
 export default function Auth() {
-  const [tab, setTab] = useState<"login" | "signup" | "staff">("login");
+  const [screen, setScreen] = useState<Screen>("choose");
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-muted/20 flex flex-col items-center justify-center p-4">
       <SEO
-        title="Sign in or sign up — MiseOS"
-        description="Sign in to your MiseOS account or start a 14-day free trial. Hygiene and batch-tracking for UK food businesses."
+        title="Sign in to MiseOS"
+        description="Sign in to MiseOS or start a 14-day free trial. Run your bakery, café, or kitchen from one calm system."
         path="/auth"
       />
-      {/* Internal-only entrypoint for MiseOS employees. Not advertised to customers. */}
 
-      <Link
-        to="/staff-login"
-        className="absolute top-4 right-4 text-xs text-primary hover:underline font-medium"
-      >
-        Admin Login →
-      </Link>
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-center mb-8">
-          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center mr-3">
-            <span className="text-sm font-bold text-primary-foreground">M</span>
+      <div className="w-full max-w-[420px]">
+        {/* Brand mark */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-sm">
+            <span className="text-base font-bold text-primary-foreground">M</span>
           </div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">MiseOS</h1>
+          <h1 className="font-heading text-xl font-bold text-foreground mt-3">MiseOS</h1>
         </div>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-          <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="login">
-              <Mail className="h-4 w-4 mr-1.5" /> Login
-            </TabsTrigger>
-            <TabsTrigger value="signup">
-              <Building2 className="h-4 w-4 mr-1.5" /> Sign Up
-            </TabsTrigger>
-            <TabsTrigger value="staff">
-              <KeyRound className="h-4 w-4 mr-1.5" /> Staff
-            </TabsTrigger>
-          </TabsList>
+        {screen === "choose" && <RoleChooser onChoose={setScreen} />}
+        {screen === "manager-login" && (
+          <ManagerLoginCard
+            onBack={() => setScreen("choose")}
+            onCreate={() => setScreen("manager-signup")}
+            onForgot={() => setScreen("manager-forgot")}
+          />
+        )}
+        {screen === "manager-signup" && (
+          <ManagerSignupCard
+            onBack={() => setScreen("choose")}
+            onLogin={() => setScreen("manager-login")}
+          />
+        )}
+        {screen === "manager-forgot" && (
+          <ManagerForgotCard onBack={() => setScreen("manager-login")} />
+        )}
+        {screen === "staff" && <StaffCard onBack={() => setScreen("choose")} />}
+      </div>
 
-          <TabsContent value="login"><EmailLoginForm /></TabsContent>
-          <TabsContent value="signup"><SignupForm /></TabsContent>
-          <TabsContent value="staff"><StaffLoginForm /></TabsContent>
-        </Tabs>
+      {/* Quiet admin link at the bottom — not advertised */}
+      <div className="mt-10">
+        <Link
+          to="/staff-login"
+          className="text-[11px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+        >
+          Admin access
+        </Link>
       </div>
     </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── Role chooser */
+
+function RoleChooser({ onChoose }: { onChoose: (s: Screen) => void }) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center space-y-1.5">
+        <h2 className="font-heading text-2xl font-bold text-foreground">Welcome to MiseOS</h2>
+        <p className="text-sm text-muted-foreground">Choose how you want to continue</p>
+      </div>
+
+      <div className="space-y-3">
+        <RoleButton
+          icon={<Briefcase className="h-5 w-5" />}
+          title="Manager / Owner"
+          description="Run your business, manage staff, track compliance and profit"
+          onClick={() => onChoose("manager-login")}
+        />
+        <RoleButton
+          icon={<KeyRound className="h-5 w-5" />}
+          title="Staff Login"
+          description="Clock in, complete tasks, log temperatures and cleaning"
+          onClick={() => onChoose("staff")}
+        />
+      </div>
+    </div>
+  );
+}
+
+function RoleButton({
+  icon, title, description, onClick,
+}: { icon: React.ReactNode; title: string; description: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group w-full text-left bg-card border rounded-xl p-4 hover:border-primary/50 hover:bg-card/80 active:scale-[0.99] transition-all"
+    >
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <div className="font-heading font-semibold text-foreground">{title}</div>
+          <p className="text-sm text-muted-foreground mt-0.5 leading-snug">{description}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────── Shared UI */
+
+function BackLink({ onBack }: { onBack: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" /> Back
+    </button>
+  );
+}
+
+function TrustLine() {
+  return (
+    <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground mt-4">
+      <ShieldCheck className="h-3 w-3" />
+      Safe, secure, and built for real kitchens
+    </p>
   );
 }
 
@@ -78,12 +156,14 @@ export const PasswordInput = forwardRef<HTMLInputElement, {
 });
 PasswordInput.displayName = "PasswordInput";
 
-export function EmailLoginForm() {
+/* ──────────────────────────────────────────────────────────── Manager: login */
+
+function ManagerLoginCard({
+  onBack, onCreate, onForgot,
+}: { onBack: () => void; onCreate: () => void; onForgot: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [forgotMode, setForgotMode] = useState(false);
-  const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,126 +176,86 @@ export function EmailLoginForm() {
     setLoading(false);
     if (error) {
       if (error.message.includes("Email not confirmed")) {
-        toast.error("Please check your email and confirm your account before logging in.");
+        toast.error("Please confirm your email before logging in.");
       } else {
         toast.error(error.message);
       }
     }
   };
 
-  const handleForgot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) {
-      toast.error("Enter your email address first.");
-      return;
-    }
-    setForgotLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setForgotLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("If an account exists for that email, a reset link has been sent.");
-      setForgotMode(false);
-    }
-  };
-
-  if (forgotMode) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Reset your password</CardTitle>
-          <CardDescription>Enter your email and we'll send you a link to set a new password.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleForgot} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="forgot-email">Email address</Label>
-              <Input id="forgot-email" type="email" placeholder="you@bakery.co.uk" value={email}
-                onChange={e => setEmail(e.target.value)} required />
+  return (
+    <div>
+      <BackLink onBack={onBack} />
+      <Card className="border bg-card shadow-none">
+        <CardContent className="p-6 space-y-5">
+          <div>
+            <h2 className="font-heading text-xl font-bold text-foreground">Log in</h2>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="login-email" className="text-xs font-medium">Email</Label>
+              <Input id="login-email" type="email" placeholder="you@bakery.co.uk" value={email}
+                onChange={e => setEmail(e.target.value)} required autoFocus />
             </div>
-            <Button type="submit" className="w-full" disabled={forgotLoading}>
-              {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
-              Send reset link
-            </Button>
-            <Button type="button" variant="ghost" className="w-full" onClick={() => setForgotMode(false)}>
-              Back to login
+            <div className="space-y-1.5">
+              <Label htmlFor="login-password" className="text-xs font-medium">Password</Label>
+              <PasswordInput id="login-password" placeholder="••••••••" value={password}
+                onChange={e => setPassword(e.target.value)} />
+            </div>
+            <Button type="submit" className="w-full rounded-lg" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Log in
             </Button>
           </form>
+
+          <div className="flex items-center justify-between text-xs pt-1">
+            <button type="button" onClick={onCreate}
+              className="text-primary hover:underline font-medium">
+              Create account
+            </button>
+            <button type="button" onClick={onForgot}
+              className="text-muted-foreground hover:text-foreground">
+              Forgot password
+            </button>
+          </div>
         </CardContent>
       </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Manager Login</CardTitle>
-        <CardDescription>Sign in with your email and password.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="login-email">Email address</Label>
-            <Input id="login-email" type="email" placeholder="you@bakery.co.uk" value={email}
-              onChange={e => setEmail(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="login-password">Password</Label>
-              <button type="button" onClick={() => setForgotMode(true)}
-                className="text-xs text-primary hover:underline">
-                Forgot password?
-              </button>
-            </div>
-            <PasswordInput id="login-password" placeholder="••••••••" value={password}
-              onChange={e => setPassword(e.target.value)} />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
-            Log In
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      <TrustLine />
+    </div>
   );
 }
 
-function SignupForm() {
-  const [form, setForm] = useState({
-    email: "", password: "", confirmPassword: "", displayName: ""
-  });
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<"form" | "verify">("form");
+/* ──────────────────────────────────────────────────────────── Manager: signup */
 
-  const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+function ManagerSignupCard({
+  onBack, onLogin,
+}: { onBack: () => void; onLogin: () => void }) {
+  const [form, setForm] = useState({ businessName: "", email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [verifySent, setVerifySent] = useState(false);
+
+  const update = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }));
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.password || !form.displayName) {
-      toast.error("Please fill in all required fields");
+    if (!form.businessName.trim() || !form.email.trim() || !form.password) {
+      toast.error("Please fill in all fields");
       return;
     }
     if (form.password.length < 6) {
       toast.error("Password must be at least 6 characters");
       return;
     }
-    if (form.password !== form.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
     setLoading(true);
-
     const { error } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
       options: {
         emailRedirectTo: window.location.origin,
         data: {
-          display_name: form.displayName,
+          display_name: form.businessName.trim(),
+          business_name: form.businessName.trim(),
         },
       },
     });
@@ -223,63 +263,129 @@ function SignupForm() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Account created! Setting things up...");
+      setVerifySent(true);
+      toast.success("Check your email to confirm your account.");
     }
   };
 
-  if (step === "verify") {
+  if (verifySent) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-center">Verify your email</CardTitle>
-          <CardDescription className="text-center">
-            We've sent a confirmation link to <strong>{form.email}</strong>. Click it to activate your account, then come back and log in.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline" className="w-full" onClick={() => setStep("form")}>
-            Back to sign up
-          </Button>
-        </CardContent>
-      </Card>
+      <div>
+        <BackLink onBack={onBack} />
+        <Card className="border bg-card shadow-none">
+          <CardContent className="p-6 space-y-4 text-center">
+            <h2 className="font-heading text-xl font-bold text-foreground">Check your email</h2>
+            <p className="text-sm text-muted-foreground">
+              We've sent a confirmation link to <strong className="text-foreground">{form.email}</strong>.
+              Click it to activate your account, then log in.
+            </p>
+            <Button onClick={onLogin} className="w-full rounded-lg">Back to log in</Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create Your Account</CardTitle>
-        <CardDescription>You'll set up your organisation and first site after verifying your email.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSignup} className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="s-name">Your Name *</Label>
-            <Input id="s-name" value={form.displayName} onChange={update("displayName")} required />
+    <div>
+      <BackLink onBack={onBack} />
+      <Card className="border bg-card shadow-none">
+        <CardContent className="p-6 space-y-5">
+          <div>
+            <h2 className="font-heading text-xl font-bold text-foreground">Create account</h2>
+            <p className="text-xs text-muted-foreground mt-1">Up and running in minutes. No card required.</p>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="s-email">Email *</Label>
-            <Input id="s-email" type="email" value={form.email} onChange={update("email")} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="s-password">Password *</Label>
-            <PasswordInput id="s-password" placeholder="Min 6 characters" value={form.password} onChange={update("password")} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="s-confirm">Confirm Password *</Label>
-            <PasswordInput id="s-confirm" placeholder="Repeat password" value={form.confirmPassword} onChange={update("confirmPassword")} />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
-            Create Account
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="s-business" className="text-xs font-medium">Business name</Label>
+              <Input id="s-business" placeholder="e.g. Brick Lane Bakery" value={form.businessName}
+                onChange={update("businessName")} required autoFocus />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="s-email" className="text-xs font-medium">Email</Label>
+              <Input id="s-email" type="email" placeholder="you@bakery.co.uk" value={form.email}
+                onChange={update("email")} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="s-password" className="text-xs font-medium">Password</Label>
+              <PasswordInput id="s-password" placeholder="Min 6 characters" value={form.password}
+                onChange={update("password")} />
+            </div>
+            <Button type="submit" className="w-full rounded-lg" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Create account
+            </Button>
+          </form>
+
+          <p className="text-xs text-center text-muted-foreground pt-1">
+            Already have an account?{" "}
+            <button type="button" onClick={onLogin} className="text-primary hover:underline font-medium">
+              Log in
+            </button>
+          </p>
+        </CardContent>
+      </Card>
+      <TrustLine />
+    </div>
   );
 }
 
-function StaffLoginForm() {
+/* ──────────────────────────────────────────────────────────── Manager: reset */
+
+function ManagerForgotCard({ onBack }: { onBack: () => void }) {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Enter your email first.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("If an account exists, a reset link has been sent.");
+      onBack();
+    }
+  };
+
+  return (
+    <div>
+      <BackLink onBack={onBack} />
+      <Card className="border bg-card shadow-none">
+        <CardContent className="p-6 space-y-5">
+          <div>
+            <h2 className="font-heading text-xl font-bold text-foreground">Reset password</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter your email and we'll send a link to set a new password.
+            </p>
+          </div>
+          <form onSubmit={handleForgot} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="forgot-email" className="text-xs font-medium">Email</Label>
+              <Input id="forgot-email" type="email" placeholder="you@bakery.co.uk" value={email}
+                onChange={e => setEmail(e.target.value)} required autoFocus />
+            </div>
+            <Button type="submit" className="w-full rounded-lg" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Send reset link
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────── Staff */
+
+function StaffCard({ onBack }: { onBack: () => void }) {
   const { setStaffSession } = useAuth();
   const [siteCode, setSiteCode] = useState("");
   const [staffCode, setStaffCode] = useState("");
@@ -309,7 +415,6 @@ function StaffLoginForm() {
       }
     };
 
-    // Step 1: ensure we have a Supabase auth session (anonymous) so RLS works.
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
       const { error: anonErr } = await supabase.auth.signInAnonymously();
@@ -320,7 +425,6 @@ function StaffLoginForm() {
       }
     }
 
-    // Step 2: validate the PIN AND link this anon session to the staff user row.
     const { data, error } = await supabase.rpc('link_staff_session', {
       _site_id: siteCode.trim(),
       _staff_code: staffCode.trim(),
@@ -328,7 +432,6 @@ function StaffLoginForm() {
     setLoading(false);
 
     if (error) {
-      // Roll back the anon session so we don't leave a half-logged-in user.
       await supabase.auth.signOut();
       failAttempt("Login failed. Check your codes.");
       return;
@@ -352,31 +455,34 @@ function StaffLoginForm() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Staff Login</CardTitle>
-        <CardDescription>Enter your Site ID and Staff ID. Ask your manager if you don't have these.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleStaffLogin} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="site-code">Site ID</Label>
-            <Input id="site-code" placeholder="e.g. JB4821" value={siteCode}
-              onChange={e => setSiteCode(e.target.value.toUpperCase())}
-              className="font-mono tracking-widest text-center text-lg" required />
+    <div>
+      <BackLink onBack={onBack} />
+      <Card className="border bg-card shadow-none">
+        <CardContent className="p-6 space-y-5">
+          <div className="text-center">
+            <h2 className="font-heading text-xl font-bold text-foreground">Staff Login</h2>
+            <p className="text-xs text-muted-foreground mt-1">Ask your manager if you don't have these.</p>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-code">Staff ID</Label>
-            <Input id="staff-code" placeholder="e.g. J01" value={staffCode}
-              onChange={e => setStaffCode(e.target.value.toUpperCase())}
-              className="font-mono tracking-widest text-center text-lg" required />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
-            Log In
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <form onSubmit={handleStaffLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="site-code" className="text-xs font-medium">Site ID</Label>
+              <Input id="site-code" placeholder="e.g. JB4821" value={siteCode}
+                onChange={e => setSiteCode(e.target.value.toUpperCase())}
+                className="font-mono tracking-widest text-center text-lg h-12" required autoFocus />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="staff-code" className="text-xs font-medium">Staff PIN</Label>
+              <Input id="staff-code" placeholder="e.g. J01" value={staffCode}
+                onChange={e => setStaffCode(e.target.value.toUpperCase())}
+                className="font-mono tracking-widest text-center text-lg h-12" required />
+            </div>
+            <Button type="submit" className="w-full rounded-lg h-11" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Enter
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
