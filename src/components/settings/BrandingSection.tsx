@@ -174,6 +174,9 @@ export function BrandingSection({ embedded, onSaved }: Props) {
 
   return (
     <Wrap>
+      {!embedded && organisationId && (
+        <LoginUrlCard organisationId={organisationId} />
+      )}
       {/* Logo */}
       <div className="space-y-3">
         <Label>Logo</Label>
