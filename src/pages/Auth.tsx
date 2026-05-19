@@ -67,11 +67,14 @@ export default function Auth() {
 
 /* ────────────────────────────────────────────────────────────── Role chooser */
 
-function RoleChooser({ onChoose }: { onChoose: (s: Screen) => void }) {
+export type AuthScreen = Screen;
+
+
+export function RoleChooser({ onChoose, businessName }: { onChoose: (s: Screen) => void; businessName?: string }) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-1.5">
-        <h2 className="font-heading text-2xl font-bold text-foreground">Welcome to MiseOS</h2>
+        <h2 className="font-heading text-2xl font-bold text-foreground">{businessName ? `Welcome to ${businessName}` : "Welcome to MiseOS"}</h2>
         <p className="text-sm text-muted-foreground">Choose how you want to continue</p>
       </div>
 
@@ -228,9 +231,9 @@ export function EmailLoginForm({
 
 /* ──────────────────────────────────────────────────────────── Manager: login */
 
-function ManagerLoginCard({
-  onBack, onCreate, onForgot,
-}: { onBack: () => void; onCreate: () => void; onForgot: () => void }) {
+export function ManagerLoginCard({
+  onBack, onCreate, onForgot, expectedOrgId, orgName,
+}: { onBack: () => void; onCreate: () => void; onForgot: () => void; expectedOrgId?: string; orgName?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -239,18 +242,34 @@ function ManagerLoginCard({
     e.preventDefault();
     if (!email.trim() || !password) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       if (error.message.includes("Email not confirmed")) {
         toast.error("Please confirm your email before logging in.");
       } else {
         toast.error(error.message);
       }
+      return;
     }
+    if (expectedOrgId && data.user) {
+      const { data: appUser } = await supabase
+        .from("users")
+        .select("organisation_id")
+        .eq("auth_user_id", data.user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!appUser || appUser.organisation_id !== expectedOrgId) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        toast.error(`This account is not part of ${orgName || "this business"}. Use the correct login link.`);
+        return;
+      }
+    }
+    setLoading(false);
   };
 
   return (
@@ -297,7 +316,7 @@ function ManagerLoginCard({
 
 /* ──────────────────────────────────────────────────────────── Manager: signup */
 
-function ManagerSignupCard({
+export function ManagerSignupCard({
   onBack, onLogin,
 }: { onBack: () => void; onLogin: () => void }) {
   const [form, setForm] = useState({ businessName: "", email: "", password: "" });
@@ -402,7 +421,7 @@ function ManagerSignupCard({
 
 /* ──────────────────────────────────────────────────────────── Manager: reset */
 
-function ManagerForgotCard({ onBack }: { onBack: () => void }) {
+export function ManagerForgotCard({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -455,7 +474,7 @@ function ManagerForgotCard({ onBack }: { onBack: () => void }) {
 
 /* ────────────────────────────────────────────────────────────────── Staff */
 
-function StaffCard({ onBack }: { onBack: () => void }) {
+export function StaffCard({ onBack, orgSlug, orgName }: { onBack: () => void; orgSlug?: string; orgName?: string }) {
   const { setStaffSession } = useAuth();
   const [siteCode, setSiteCode] = useState("");
   const [staffCode, setStaffCode] = useState("");
@@ -495,10 +514,16 @@ function StaffCard({ onBack }: { onBack: () => void }) {
       }
     }
 
-    const { data, error } = await supabase.rpc('link_staff_session', {
-      _site_id: siteCode.trim(),
-      _staff_code: staffCode.trim(),
-    });
+    const { data, error } = orgSlug
+      ? await supabase.rpc('link_staff_session_for_org', {
+          _org_slug: orgSlug,
+          _site_id: siteCode.trim(),
+          _staff_code: staffCode.trim(),
+        })
+      : await supabase.rpc('link_staff_session', {
+          _site_id: siteCode.trim(),
+          _staff_code: staffCode.trim(),
+        });
     setLoading(false);
 
     if (error) {
@@ -531,7 +556,9 @@ function StaffCard({ onBack }: { onBack: () => void }) {
         <CardContent className="p-6 space-y-5">
           <div className="text-center">
             <h2 className="font-heading text-xl font-bold text-foreground">Staff Login</h2>
-            <p className="text-xs text-muted-foreground mt-1">Ask your manager if you don't have these.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {orgName ? <>Enter the Site ID and PIN for <strong>{orgName}</strong>.</> : "Ask your manager if you don't have these."}
+            </p>
           </div>
           <form onSubmit={handleStaffLogin} className="space-y-4">
             <div className="space-y-1.5">
