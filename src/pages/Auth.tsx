@@ -556,7 +556,9 @@ export function StaffCard({ onBack, orgSlug, orgName }: { onBack: () => void; or
         <CardContent className="p-6 space-y-5">
           <div className="text-center">
             <h2 className="font-heading text-xl font-bold text-foreground">Staff Login</h2>
-            <p className="text-xs text-muted-foreground mt-1">Ask your manager if you don't have these.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {orgName ? <>Enter the Site ID and PIN for <strong>{orgName}</strong>.</> : "Ask your manager if you don't have these."}
+            </p>
           </div>
           <form onSubmit={handleStaffLogin} className="space-y-4">
             <div className="space-y-1.5">
