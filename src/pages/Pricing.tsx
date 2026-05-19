@@ -212,12 +212,19 @@ export default function Pricing() {
           })}
         </div>
 
-        <div className="text-center text-xs text-muted-foreground space-y-1">
+        <div className="text-center text-xs text-muted-foreground space-y-2 max-w-3xl mx-auto">
           <p className="flex items-center justify-center gap-1">
             <ShieldCheck className="h-3.5 w-3.5" />
-            All prices in GBP. Multi-site discount of 15% applies from the second site.
+            All prices in GBP, per site. Unlimited users. Multi-site discount of 15% applies from the second site.
           </p>
-          <p>Cancel anytime — you keep access until the end of your billing period. Data is retained for 7 years.</p>
+          <p>
+            <strong>Monthly plans</strong> are a 12-month minimum term billed monthly and renew for another 12-month term unless cancelled before renewal.
+            <strong> Annual plans</strong> renew yearly unless cancelled. Data is retained for 7 years.
+          </p>
+        </div>
+
+        <div className="pt-4 border-t">
+          <ClimatePledge />
         </div>
       </div>
     </div>
