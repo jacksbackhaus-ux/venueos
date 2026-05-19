@@ -157,7 +157,10 @@ export const PasswordInput = forwardRef<HTMLInputElement, {
 PasswordInput.displayName = "PasswordInput";
 
 /** Standalone login form kept for OrgLogin (per-org branded page). */
-export function EmailLoginForm() {
+export function EmailLoginForm({
+  expectedOrgId,
+  orgName,
+}: { expectedOrgId?: string; orgName?: string } = {}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -166,12 +169,34 @@ export function EmailLoginForm() {
     e.preventDefault();
     if (!email.trim() || !password) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+      return;
+    }
+
+    // Enforce org scoping when used on a branded login page.
+    if (expectedOrgId && data.user) {
+      const { data: appUser } = await supabase
+        .from("users")
+        .select("organisation_id")
+        .eq("auth_user_id", data.user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!appUser || appUser.organisation_id !== expectedOrgId) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        toast.error(
+          `This account is not part of ${orgName || "this business"}. Use the correct login link.`
+        );
+        return;
+      }
+    }
     setLoading(false);
-    if (error) toast.error(error.message);
   };
 
   return (
