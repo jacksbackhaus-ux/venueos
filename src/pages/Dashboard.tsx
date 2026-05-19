@@ -32,6 +32,8 @@ import { useSite } from "@/contexts/SiteContext";
 import { LabourVsWasteCard } from "@/components/dashboard/LabourVsWasteCard";
 import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
 import { MorningBriefingCard } from "@/components/dashboard/MorningBriefingCard";
+import { SafeToTradeHero } from "@/components/dashboard/SafeToTradeHero";
+import { PriorityFeed } from "@/components/dashboard/PriorityFeed";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
