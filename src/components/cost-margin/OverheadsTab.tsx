@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -70,7 +70,7 @@ export default function OverheadsTab({
   const [saving, setSaving] = useState(false);
 
   // Hydrate when query updates
-  useMemo(() => {
+  useEffect(() => {
     const next: Record<string, string> = {};
     for (const f of FIELDS) next[f.key] = current?.[f.key] != null ? String(current[f.key]) : "";
     setValues(next);
