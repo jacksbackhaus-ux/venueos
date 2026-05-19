@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrandingSection } from "@/components/settings/BrandingSection";
+import { buildOrgLoginUrl } from "@/lib/publicAppUrl";
 
 /**
  * Shown after a verified user signs in but has no profile yet.
@@ -112,7 +113,7 @@ export default function Onboarding() {
 
   const copyUrl = async () => {
     if (!orgSlug) return;
-    const url = `${window.location.origin}/login/${orgSlug}`;
+    const url = buildOrgLoginUrl(orgSlug);
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -137,7 +138,7 @@ export default function Onboarding() {
   }
 
   if (step === "welcome") {
-    const url = orgSlug ? `${window.location.origin}/login/${orgSlug}` : null;
+    const url = orgSlug ? buildOrgLoginUrl(orgSlug) : null;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-lg">
