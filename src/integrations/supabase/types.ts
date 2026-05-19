@@ -460,6 +460,60 @@ export type Database = {
           },
         ]
       }
+      cashflow_adjustments: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          direction: string
+          event_date: string
+          id: string
+          notes: string | null
+          organisation_id: string
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          direction: string
+          event_date: string
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          direction?: string
+          event_date?: string
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashflow_adjustments_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashflow_adjustments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cleaning_logs: {
         Row: {
           completed_at: string | null
@@ -3948,6 +4002,51 @@ export type Database = {
             foreignKeyName: "shifts_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_cash_settings: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          organisation_id: string
+          site_id: string
+          starting_cash: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          organisation_id: string
+          site_id: string
+          starting_cash?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          organisation_id?: string
+          site_id?: string
+          starting_cash?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_cash_settings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_cash_settings_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
             referencedRelation: "sites"
             referencedColumns: ["id"]
           },
