@@ -387,8 +387,8 @@ export default function Batches() {
 
                     {/* LINE 4 — de-emphasised meta */}
                     <div className="flex items-center justify-between pt-1 border-t border-border/50">
-                      <span className="text-[10px] font-mono text-muted-foreground/70 tracking-tight">
-                        {batch.batch_code}
+                      <span className="text-xs font-mono font-semibold text-foreground tracking-tight">
+                        {displayBatchNumber(batch.product_name, batch.recipe_number, batch.batch_code)}
                       </span>
                       <span className="text-[10px] text-muted-foreground/70">
                         {format(new Date(batch.created_at), 'd MMM HH:mm')}
