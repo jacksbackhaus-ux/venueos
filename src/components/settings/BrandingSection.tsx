@@ -327,7 +327,8 @@ export function BrandingSection({ embedded, onSaved }: Props) {
         {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         Save branding
       </Button>
-    </Wrap>
+      </Wrap>
+    </div>
   );
 }
 
