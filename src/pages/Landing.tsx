@@ -467,7 +467,8 @@ function Pricing() {
         <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
           Simple pricing. No surprises.
         </h2>
-        <p className="mt-4 text-slate-600 text-lg">Per site, per month. 14-day free trial. Cancel anytime.</p>
+        <p className="mt-4 text-slate-600 text-lg">Per site, per month. Unlimited users. Annual saves 15%.</p>
+        <p className="mt-2 text-slate-500 text-sm">Monthly is a 12-month plan billed monthly. 14-day free trial — no card required.</p>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
         {TIERS.map((t) => (
