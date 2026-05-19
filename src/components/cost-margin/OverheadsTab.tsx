@@ -82,11 +82,6 @@ export default function OverheadsTab({
   const delta = totalPrior > 0 ? ((totalCurrent - totalPrior) / totalPrior) * 100 : null;
   const perDay = totalCurrent / daysInMonth(month);
 
-  const totalCurrent = FIELDS.reduce((s, f) => s + (Number(values[f.key]) || 0), 0);
-  const totalPrior = sumOverheads(prior as any);
-  const delta = totalPrior > 0 ? ((totalCurrent - totalPrior) / totalPrior) * 100 : null;
-  const perDay = totalCurrent / daysInMonth(month);
-
   const save = async () => {
     if (!siteId || !orgId) return;
     setSaving(true);
