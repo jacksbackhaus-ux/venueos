@@ -156,6 +156,48 @@ export const PasswordInput = forwardRef<HTMLInputElement, {
 });
 PasswordInput.displayName = "PasswordInput";
 
+/** Standalone login form kept for OrgLogin (per-org branded page). */
+export function EmailLoginForm() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    setLoading(false);
+    if (error) toast.error(error.message);
+  };
+
+  return (
+    <Card className="border bg-card shadow-none">
+      <CardContent className="p-6 space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="org-login-email" className="text-xs font-medium">Email</Label>
+            <Input id="org-login-email" type="email" placeholder="you@bakery.co.uk" value={email}
+              onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="org-login-password" className="text-xs font-medium">Password</Label>
+            <PasswordInput id="org-login-password" placeholder="••••••••" value={password}
+              onChange={e => setPassword(e.target.value)} />
+          </div>
+          <Button type="submit" className="w-full rounded-lg" disabled={loading}>
+            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Log in
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ──────────────────────────────────────────────────────────── Manager: login */
 
 function ManagerLoginCard({
