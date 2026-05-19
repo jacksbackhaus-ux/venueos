@@ -140,6 +140,13 @@ export default function CostMargin() {
               Overview shows your primary site ({currentSite?.name}). Switch to a single site to edit recipes.
             </CardContent></Card>
           )}
+          <SalesHealthDashboard
+            siteId={siteId}
+            orgId={orgId}
+            ctx={ctx}
+            recipes={allRecipes}
+            intelligence={intelligence}
+          />
           <MarginWatchdogCard siteId={siteId} ctx={ctx} recipes={allRecipes} />
           <Tabs defaultValue="menu" className="space-y-3">
             <TabsList className="flex-wrap h-auto">
