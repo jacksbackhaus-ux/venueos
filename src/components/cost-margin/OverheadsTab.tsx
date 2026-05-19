@@ -67,7 +67,25 @@ export default function OverheadsTab({
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState("");
+  const [vatRate, setVatRate] = useState<string>("20");
   const [saving, setSaving] = useState(false);
+
+  // Tax settings to know if we should surface VAT input
+  const taxQ = useQuery({
+    queryKey: ["site-tax-settings", siteId],
+    enabled: !!siteId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_tax_settings")
+        .select("vat_enabled, vat_registered, default_vat_rate")
+        .eq("site_id", siteId!)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const vatEnabled = !!(taxQ.data?.vat_enabled);
+  const vatRegistered = !!(taxQ.data?.vat_registered);
+  const defaultVatRate = Number((taxQ.data as any)?.default_vat_rate) || 20;
 
   // Hydrate when query updates
   useEffect(() => {
@@ -75,7 +93,12 @@ export default function OverheadsTab({
     for (const f of FIELDS) next[f.key] = current?.[f.key] != null ? String(current[f.key]) : "";
     setValues(next);
     setNotes(current?.notes ?? "");
-  }, [current?.id, month]); // eslint-disable-line react-hooks/exhaustive-deps
+    setVatRate(
+      current?.vat_rate_percent != null
+        ? String(current.vat_rate_percent)
+        : String(defaultVatRate)
+    );
+  }, [current?.id, month, defaultVatRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalCurrent = FIELDS.reduce((s, f) => s + (Number(values[f.key]) || 0), 0);
   const totalPrior = sumOverheads(prior as any);
@@ -91,6 +114,7 @@ export default function OverheadsTab({
         site_id: siteId,
         month,
         notes: notes || null,
+        vat_rate_percent: Number(vatRate) || 0,
       };
       for (const f of FIELDS) payload[f.key] = Number(values[f.key]) || 0;
       const { error } = await supabase
