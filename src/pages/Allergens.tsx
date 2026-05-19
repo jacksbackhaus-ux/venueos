@@ -83,7 +83,6 @@ const Allergens = () => {
   const saveIngredient = useMutation({
     mutationFn: async () => {
       if (!siteId || !organisationId) throw new Error("No site");
-      // Build composition text from structured sub-ingredients if provided; otherwise use the free-text field.
       const cleanSubs = ingForm.sub_ingredients
         .map(s => ({ name: (s.name || "").trim(), allergens: s.allergens || [] }))
         .filter(s => s.name.length > 0);
@@ -91,7 +90,6 @@ const Allergens = () => {
       const finalComposition = cleanSubs.length > 0
         ? compositionFromSubs
         : (ingForm.composition_text.trim() || null);
-      // Union allergens: manually checked + every allergen declared on a sub-ingredient
       const allergenSet = new Set<string>(ingForm.allergens);
       cleanSubs.forEach(s => s.allergens.forEach(a => allergenSet.add(a)));
       const payload = {
@@ -141,10 +139,15 @@ const Allergens = () => {
       if (error) throw error;
       const valid = recipeForm.ingredients.filter(i => i.ingredient_id);
       if (valid.length > 0) {
+        const weightVal = (w: string) => (w ? parseFloat(w) : null);
         const { error: riErr } = await supabase.from("recipe_ingredients").insert(
           valid.map((ri, idx) => ({
-            recipe_id: newRecipe!.id, ingredient_id: ri.ingredient_id,
-            weight: ri.weight ? parseFloat(ri.weight) : null, sort_order: idx,
+            recipe_id: newRecipe!.id,
+            ingredient_id: ri.ingredient_id,
+            line_type: "ingredient",
+            quantity: weightVal(ri.weight),
+            weight: weightVal(ri.weight),
+            sort_order: idx,
           }))
         );
         if (riErr) throw riErr;
@@ -324,7 +327,7 @@ const Allergens = () => {
                           <span>{ri.ingredients?.name}</span>
                           {(ri.ingredients?.allergens || []).map((a: string) => <Badge key={a} variant="outline" className="text-[10px] text-breach border-breach/30">{a}</Badge>)}
                         </div>
-                        {ri.weight && <span className="text-muted-foreground text-xs shrink-0">{ri.weight}g</span>}
+                        {(ri.quantity ?? ri.weight) && <span className="text-muted-foreground text-xs shrink-0">{ri.quantity ?? ri.weight}g</span>}
                       </div>
                       {ri.ingredients?.composition_text && (
                         <p className="text-[11px] text-muted-foreground italic pl-1 mt-0.5">contains: {ri.ingredients.composition_text}</p>
