@@ -323,7 +323,7 @@ function CreateRecipeDialog({
 /* ─────────────── Recipe drawer ─────────────── */
 
 function RecipeDrawer({
-  recipeId, ctx, ingredients, allRecipes, onClose, onChange,
+  recipeId, ctx, ingredients, allRecipes, onClose, onChange, siteId, orgId,
 }: {
   recipeId: string;
   ctx: TMEContext;
@@ -331,6 +331,8 @@ function RecipeDrawer({
   allRecipes: TMERecipe[];
   onClose: () => void;
   onChange: () => void;
+  siteId: string | null;
+  orgId: string | null;
 }) {
   const recipe = allRecipes.find((r) => r.id === recipeId);
   const isMenu = recipe?.recipe_type !== "prep_batch";
