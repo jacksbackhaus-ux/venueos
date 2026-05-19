@@ -427,25 +427,32 @@ function LiveExamples() {
 }
 
 // ───── Pricing ─────
+// Prices mirror src/lib/plans.ts (MISEOS_TIERS). Keep in sync.
 const TIERS = [
   {
-    name: "Starter",
-    price: "£29",
-    desc: "For one small site getting compliant.",
-    features: ["Daily dashboard", "Temperature & cleaning logs", "HACCP & EHO reports", "Up to 5 staff"],
+    name: "Essentials",
+    price: "£7.99",
+    desc: "Daily ops, temps and day sheets for one site.",
+    features: ["Dashboard", "Temperatures", "Day Sheet", "Cleaning", "Shifts", "Up to 5 staff"],
   },
   {
     name: "Professional",
-    price: "£79",
-    desc: "Everything to run a real operation.",
-    features: ["Everything in Starter", "Shifts & tasks", "Cost & margin tracking", "Batch & waste tracking", "Unlimited staff"],
+    price: "£9.99",
+    desc: "Everything in Essentials + full compliance.",
+    features: ["Everything in Essentials", "Incidents", "Allergens & labels", "HACCP & EHO reports", "Unlimited staff"],
     popular: true,
   },
   {
+    name: "Business",
+    price: "£12.99",
+    desc: "Everything in Professional + business tools.",
+    features: ["Everything in Professional", "Batch tracking", "Suppliers & deliveries", "Pest & maintenance", "Cost & margin"],
+  },
+  {
     name: "Intelligence",
-    price: "£149",
-    desc: "Adds automation and insights to your operation.",
-    features: ["Everything in Professional", "Daily morning briefing", "Margin & waste alerts", "Equipment health warnings", "Smart rota suggestions"],
+    price: "£16.99",
+    desc: "Everything in Business + AI superpowers.",
+    features: ["Everything in Business", "Daily morning briefing", "Margin & waste alerts", "Equipment health warnings", "Smart rota suggestions"],
   },
 ];
 
@@ -456,9 +463,9 @@ function Pricing() {
         <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
           Simple pricing. No surprises.
         </h2>
-        <p className="mt-4 text-slate-600 text-lg">Per site, per month. Cancel anytime.</p>
+        <p className="mt-4 text-slate-600 text-lg">Per site, per month. 14-day free trial. Cancel anytime.</p>
       </div>
-      <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
         {TIERS.map((t) => (
           <Card
             key={t.name}
