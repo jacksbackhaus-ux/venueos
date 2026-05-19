@@ -60,8 +60,8 @@ export function ThisWeekSnapshot({ siteId }: Props) {
     enabled: !!siteId && showSection,
     queryFn: async () => {
       const [wasteNow, wastePrev, batchNow, batchPrev] = await Promise.all([
-        isActive("waste_log") ? supabase.from("waste_logs").select("estimated_cost").eq("site_id", siteId!).gte("waste_date", w.from).lt("waste_date", w.to) : Promise.resolve({ data: [] as any[] }),
-        isActive("waste_log") ? supabase.from("waste_logs").select("estimated_cost").eq("site_id", siteId!).gte("waste_date", pw.from).lt("waste_date", pw.to) : Promise.resolve({ data: [] as any[] }),
+        isActive("waste_log") ? supabase.from("waste_logs").select("estimated_cost").eq("site_id", siteId!).gte("shift_date", w.from).lt("shift_date", w.to) : Promise.resolve({ data: [] as any[] }),
+        isActive("waste_log") ? supabase.from("waste_logs").select("estimated_cost").eq("site_id", siteId!).gte("shift_date", pw.from).lt("shift_date", pw.to) : Promise.resolve({ data: [] as any[] }),
         supabase.from("batches").select("quantity_produced").eq("site_id", siteId!).gte("date_produced", w.from).lt("date_produced", w.to),
         supabase.from("batches").select("quantity_produced").eq("site_id", siteId!).gte("date_produced", pw.from).lt("date_produced", pw.to),
       ]);
