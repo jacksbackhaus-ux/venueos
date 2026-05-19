@@ -78,7 +78,7 @@ export default function OverheadsTab({
   }, [current?.id, month]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalCurrent = FIELDS.reduce((s, f) => s + (Number(values[f.key]) || 0), 0);
-  const totalPrior = sumOverheads(prior);
+  const totalPrior = sumOverheads(prior as any);
   const delta = totalPrior > 0 ? ((totalCurrent - totalPrior) / totalPrior) * 100 : null;
   const perDay = totalCurrent / daysInMonth(month);
 
