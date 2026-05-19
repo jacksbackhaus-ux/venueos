@@ -32,6 +32,8 @@ import { useSite } from "@/contexts/SiteContext";
 import { LabourVsWasteCard } from "@/components/dashboard/LabourVsWasteCard";
 import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
 import { MorningBriefingCard } from "@/components/dashboard/MorningBriefingCard";
+import { SafeToTradeHero } from "@/components/dashboard/SafeToTradeHero";
+import { PriorityFeed } from "@/components/dashboard/PriorityFeed";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -390,113 +392,34 @@ const Dashboard = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
       {/* ============================================================
-          COMMAND CENTRE HERO — greeting, date, live progress, actions
+          SAFE TO TRADE — the single answer to "are we OK?"
           ============================================================ */}
-      <motion.section
-        initial="hidden"
-        animate="visible"
-        custom={0}
-        variants={fadeUp}
-        className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-card to-card p-5 md:p-6"
-      >
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary/80">
-              {isToday ? "Today" : "Reviewing"}
-            </p>
-            <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground mt-0.5">
-              {greeting}{appUser?.display_name ? `, ${appUser.display_name.split(" ")[0]}` : ""} 👋
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{dateStr}</p>
-          </div>
+      <SafeToTradeHero
+        siteId={siteId}
+        dateISO={selectedDate}
+        greeting={isToday ? greeting : undefined}
+        displayName={appUser?.display_name ?? (staffSession as any)?.display_name ?? undefined}
+      />
 
-          {/* Live KPI strip */}
-          <div className="flex items-stretch gap-2 shrink-0">
-            <div className="rounded-xl border bg-card/80 backdrop-blur px-3 py-2 text-center min-w-[72px]">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Done</p>
-              <p className="text-xl font-heading font-bold text-success leading-tight">
-                {isClosed ? "—" : completedCount}
-              </p>
-            </div>
-            <div className="rounded-xl border bg-card/80 backdrop-blur px-3 py-2 text-center min-w-[72px]">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Pending</p>
-              <p className="text-xl font-heading font-bold text-foreground leading-tight">
-                {isClosed ? "—" : pendingCount}
-              </p>
-            </div>
-            <div className="rounded-xl border bg-card/80 backdrop-blur px-3 py-2 text-center min-w-[72px]">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Overdue</p>
-              <p className={`text-xl font-heading font-bold leading-tight ${overdueCount > 0 ? "text-breach" : "text-muted-foreground"}`}>
-                {isClosed ? "—" : overdueCount}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Unified day progress bar */}
-        {!isClosed && (
-          <div className="mt-5 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-foreground">
-                Day progress · {completedCount} of {totalCount} tasks
-              </span>
-              <span
-                className={`font-bold tabular-nums ${
-                  progressPct >= 80 ? "text-success" : progressPct >= 60 ? "text-warning" : "text-breach"
-                }`}
-              >
-                {progressPct}%
-              </span>
-            </div>
-            <Progress value={progressPct} className="h-2" />
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                {progressPct >= 80
-                  ? "On track for the day"
-                  : progressPct >= 60
-                  ? "Keep the momentum going"
-                  : "Plenty still to do — let's get moving"}
-              </span>
-              {stats.breaches > 0 && (
-                <span className="inline-flex items-center gap-1 text-breach">
-                  <AlertTriangle className="h-3 w-3" />
-                  {stats.breaches} temp breach{stats.breaches === 1 ? "" : "es"}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {isClosed && (
-          <div className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="h-4 w-4" />
-            Site closed today — tracking paused.
-          </div>
-        )}
-
-        {/* Quick action launcher — at the top, where they belong */}
-        <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {quickActions.map((action) => (
-            <Link key={action.label} to={action.href}>
-              <Button
-                variant="outline"
-                className="w-full h-auto flex-col gap-1.5 py-3 bg-card/80 backdrop-blur border hover:border-primary/40 hover:bg-card transition-all"
-              >
-                <div className={`h-9 w-9 rounded-lg ${action.color} flex items-center justify-center shadow-sm`}>
-                  <action.icon className="h-4.5 w-4.5 text-primary-foreground" />
-                </div>
-                <span className="text-xs font-semibold text-foreground">{action.label}</span>
-              </Button>
-            </Link>
-          ))}
-        </div>
-      </motion.section>
-
-      {isToday && !isClosed && <MorningBriefingCard />}
+      {/* Quick actions — kept tight under the hero */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {quickActions.map((action) => (
+          <Link key={action.label} to={action.href}>
+            <Button
+              variant="outline"
+              className="w-full h-auto flex-col gap-1.5 py-3 bg-card/80 backdrop-blur border hover:border-primary/40 hover:bg-card transition-all"
+            >
+              <div className={`h-9 w-9 rounded-lg ${action.color} flex items-center justify-center shadow-sm`}>
+                <action.icon className="h-4.5 w-4.5 text-primary-foreground" />
+              </div>
+              <span className="text-xs font-semibold text-foreground">{action.label}</span>
+            </Button>
+          </Link>
+        ))}
+      </div>
 
       {/* ============================================================
-          DATE NAV + CLOSED-DAY CONTROL (kept for past-day review)
+          DATE NAV + CLOSED-DAY CONTROL
           ============================================================ */}
       <motion.div initial="hidden" animate="visible" custom={0.5} variants={fadeUp} className="space-y-2">
         <div className="flex items-center justify-between rounded-lg border bg-card px-2 py-1.5">
@@ -569,130 +492,22 @@ const Dashboard = () => {
       </motion.div>
 
       {/* ============================================================
-          ALERTS — surfaced loud, right under the hero
-          ============================================================ */}
-      {alerts.length > 0 && (
-        <motion.div initial="hidden" animate="visible" custom={1} variants={fadeUp}>
-          <Card className="border-breach/30">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-heading flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-breach" />
-                  Needs your attention
-                </CardTitle>
-                <Badge variant="outline" className="text-xs border-breach/40 text-breach">
-                  {alerts.length}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-2">
-              {alerts.map((alert, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                    alert.type === "breach" ? "bg-breach/10 text-breach" : "bg-warning/10 text-warning"
-                  }`}
-                >
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  <span className="flex-1">{alert.message}</span>
-                  <span className="text-xs opacity-70 tabular-nums">{alert.time}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* My messenger tasks — only renders if module active and user has open tasks */}
-      <MyTasksWidget />
-
-      {/* ============================================================
-          THE PLAN — unified timeline of today's tasks + shift
+          PRIORITY FEED — the primary interaction surface
           ============================================================ */}
       <div className="grid md:grid-cols-3 gap-5">
-        {/* Live checklist (left, 2 cols) */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          custom={2}
-          variants={fadeUp}
-          className="md:col-span-2"
-        >
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-heading">
-                  {isToday ? "Today's checklist" : "Checklist for this day"}
-                </CardTitle>
-                {isClosed ? (
-                  <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
-                    <Lock className="h-3 w-3 mr-1" /> Closed
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-xs tabular-nums">
-                    {completedCount}/{totalCount}
-                  </Badge>
-                )}
-              </div>
-              {!isClosed && totalCount > 0 && (
-                <Progress value={progressPct} className="h-1.5 mt-1" />
-              )}
-            </CardHeader>
-            <CardContent className="pt-0">
-              {isClosed ? (
-                <div className="py-8 text-center space-y-1">
-                  <Lock className="h-6 w-6 mx-auto text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">Closed day</p>
-                  <p className="text-xs text-muted-foreground">
-                    {closedDay?.reason || "No tasks expected — this day is excluded from compliance."}
-                  </p>
-                </div>
-              ) : isLoading ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
-              ) : sortedTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">
-                  No tasks set up yet. Configure modules in Settings.
-                </p>
-              ) : (
-                <div className="divide-y -mx-2">
-                  {sortedTasks.map((task) => {
-                    const linked = isTaskLinkedToMe(task);
-                    const isDone = task.status === "done";
-                    return (
-                      <Link
-                        key={task.id}
-                        to={moduleHref(task.module, task.id)}
-                        className={`flex items-center gap-3 py-2.5 px-2 rounded-md hover:bg-muted/50 transition-colors ${
-                          isDone ? "opacity-60" : ""
-                        } ${linked ? "bg-primary/5 ring-1 ring-primary/20" : ""}`}
-                      >
-                        {statusIcon(task.status)}
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${isDone ? "line-through" : ""}`}>
-                            {task.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            <span className="tabular-nums">{task.due}</span> · {task.module}
-                          </p>
-                        </div>
-                        {linked && (
-                          <Badge
-                            variant="default"
-                            className="text-[10px] shrink-0 bg-primary/15 text-primary hover:bg-primary/15 border-0"
-                          >
-                            <Star className="h-3 w-3 mr-0.5" />
-                            Yours
-                          </Badge>
-                        )}
-                        {!isDone && <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+        <div className="md:col-span-2 space-y-5">
+          <PriorityFeed
+            siteId={siteId}
+            dateISO={selectedDate}
+            currentUserId={currentUserId}
+          />
+
+          {/* Messenger tasks assigned to me — kept; complements the feed */}
+          <MyTasksWidget />
+
+          {isToday && !isClosed && <MorningBriefingCard />}
+        </div>
+
 
         {/* Right column: Today's shift + Inspection readiness */}
         <div className="md:col-span-1 space-y-5">
