@@ -513,31 +513,51 @@ export default function Batches() {
             </div>
 
             {hasCostAccess && costRecipes.length > 0 && (
-              <div>
-                <Label className="text-xs">Recipe (links cost data — optional)</Label>
-                <Select
-                  value={newBatch.recipe_id || "__none__"}
-                  onValueChange={(v) => {
-                    const rid = v === "__none__" ? "" : v;
-                    const r = costRecipes.find(x => x.id === rid);
-                    setNewBatch({
-                      ...newBatch,
-                      recipe_id: rid,
-                      product_name: newBatch.product_name || r?.name || '',
-                      recipe_ref: newBatch.recipe_ref || r?.name || '',
-                    });
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder="No recipe" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">No recipe</SelectItem>
-                    {costRecipes.map(r => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.name} — £{r.breakdown.totalCostPerUnit.toFixed(3)}/unit
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs">Recipe (links cost data — optional)</Label>
+                  <Select
+                    value={newBatch.recipe_id || "__none__"}
+                    onValueChange={(v) => {
+                      const rid = v === "__none__" ? "" : v;
+                      const r = costRecipes.find(x => x.id === rid);
+                      setNewBatch({
+                        ...newBatch,
+                        recipe_id: rid,
+                        product_name: newBatch.product_name || r?.name || '',
+                        recipe_ref: newBatch.recipe_ref || r?.name || '',
+                        // Pre-fill per-unit sale price from the recipe; user can override.
+                        sale_price:
+                          r && (r as any).sale_price != null
+                            ? String((r as any).sale_price)
+                            : newBatch.sale_price,
+                      });
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="No recipe" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">No recipe</SelectItem>
+                      {costRecipes.map(r => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name} — £{r.breakdown.totalCostPerUnit.toFixed(3)}/unit
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {newBatch.recipe_id && (
+                  <div>
+                    <Label className="text-xs">Sale price per unit (£, ex-VAT)</Label>
+                    <Input
+                      type="number" step="0.01" min="0" placeholder="e.g. 2.50"
+                      value={newBatch.sale_price}
+                      onChange={e => setNewBatch({ ...newBatch, sale_price: e.target.value })}
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Used to calculate this batch's margin. Pre-filled from the recipe.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
