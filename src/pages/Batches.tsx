@@ -371,6 +371,39 @@ export default function Batches() {
                       </Badge>
                     </div>
 
+                    {/* LINE 1b — Cost & margin snapshot */}
+                    {(batch.unit_cost_snapshot != null || batch.margin_pct != null) && (
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        {batch.unit_cost_snapshot != null && (
+                          <span className="text-muted-foreground tabular-nums">
+                            £{Number(batch.unit_cost_snapshot).toFixed(2)}/unit
+                          </span>
+                        )}
+                        {batch.total_production_cost != null && (
+                          <span className="text-muted-foreground tabular-nums">
+                            · total £{Number(batch.total_production_cost).toFixed(2)}
+                          </span>
+                        )}
+                        {batch.margin_pct != null && (
+                          <Badge
+                            variant="outline"
+                            className={
+                              batch.margin_below_target
+                                ? 'bg-breach/10 text-breach border-breach/30 text-[10px] py-0 px-1.5 tabular-nums'
+                                : 'bg-success/10 text-success border-success/30 text-[10px] py-0 px-1.5 tabular-nums'
+                            }
+                          >
+                            Margin {Number(batch.margin_pct).toFixed(0)}%
+                            {batch.target_gp_percent_snapshot != null && (
+                              <span className="opacity-70 ml-1">
+                                / {Number(batch.target_gp_percent_snapshot).toFixed(0)}%
+                              </span>
+                            )}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
                     {/* LINE 2 — BIG quantity */}
                     <div>
                       {qty != null ? (
