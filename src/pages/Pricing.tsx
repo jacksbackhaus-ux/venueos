@@ -76,7 +76,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-background">
       <SEO
         title="Pricing — MiseOS"
-        description="Simple per-site pricing for UK food businesses. Essentials, Professional, Business and Intelligence plans with a 14-day free trial."
+        description="Simple per-site pricing for UK food businesses. Essentials, Professional, Business and Intelligence plans. Annual saves 15%."
         path="/pricing"
       />
       <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
@@ -87,10 +87,10 @@ export default function Pricing() {
             14-day free trial — no card required
           </div>
           <h1 className="font-heading text-3xl md:text-4xl font-bold">
-            Choose your tier
+            Simple pricing per site. Unlimited users.
           </h1>
           <p className="text-muted-foreground">
-            Per site, per {cycle === "month" ? "month" : "year"}. Each tier builds on the last.
+            Annual upfront saves 15%. Monthly is a 12-month plan billed monthly.
             {isTrialing && trialDaysLeft !== null && trialDaysLeft > 0 && (
               <span className="block mt-1 text-foreground font-medium">
                 You have {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left on your trial.
@@ -100,7 +100,7 @@ export default function Pricing() {
 
           <div className="inline-flex items-center gap-3 rounded-full border bg-card p-1 px-4">
             <span className={`text-sm font-medium ${cycle === "month" ? "text-foreground" : "text-muted-foreground"}`}>
-              Monthly
+              Pay monthly (12-month minimum)
             </span>
             <Switch
               checked={cycle === "year"}
@@ -108,9 +108,9 @@ export default function Pricing() {
               aria-label="Toggle annual billing"
             />
             <span className={`text-sm font-medium flex items-center gap-2 ${cycle === "year" ? "text-foreground" : "text-muted-foreground"}`}>
-              Annual
+              Pay yearly
               <Badge variant="outline" className="border-success/40 bg-success/10 text-success text-[10px]">
-                ~17% off
+                15% off
               </Badge>
             </span>
           </div>
