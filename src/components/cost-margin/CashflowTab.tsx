@@ -289,7 +289,11 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
   );
 }
 
-function KpiStrip({ data, days, loading }: { data: ReturnType<typeof useQuery>["data"] extends any ? any : never; days: number; loading: boolean }) {
+function KpiStrip({ data, days, loading, vatEstimate, vatOn }: {
+  data: any; days: number; loading: boolean;
+  vatEstimate: { outputVat: number; inputVat: number; payable: number } | null;
+  vatOn: boolean;
+}) {
   if (loading || !data) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -311,7 +315,7 @@ function KpiStrip({ data, days, loading }: { data: ReturnType<typeof useQuery>["
         hint={`over ${days}d`}
       />
       <Kpi
-        label="Revenue (net sales)"
+        label={vatOn ? "Revenue (gross)" : "Revenue (net sales)"}
         value={`£${t.sales.toFixed(0)}`}
         hint={data.hasSales ? "from imported sales" : "no sales data"}
         muted={!data.hasSales}
@@ -326,7 +330,15 @@ function KpiStrip({ data, days, loading }: { data: ReturnType<typeof useQuery>["
         }
         muted={data.cogsMethod === "unavailable"}
       />
-      {data.hasTimesheets ? (
+      {vatOn && vatEstimate ? (
+        <Kpi
+          icon={<Receipt className="h-4 w-4 text-muted-foreground" />}
+          label="VAT payable (estimate)"
+          value={`£${vatEstimate.payable.toFixed(0)}`}
+          tone={vatEstimate.payable > 0 ? "destructive" : "success"}
+          hint={`Out £${vatEstimate.outputVat.toFixed(0)} − In £${vatEstimate.inputVat.toFixed(0)}`}
+        />
+      ) : data.hasTimesheets ? (
         <Kpi label="Labour" value={`£${t.labour.toFixed(0)}`} hint="logged shifts" />
       ) : (
         <Kpi
@@ -340,6 +352,7 @@ function KpiStrip({ data, days, loading }: { data: ReturnType<typeof useQuery>["
     </div>
   );
 }
+
 
 function Kpi({ icon, label, value, hint, tone, muted }: {
   icon?: React.ReactNode; label: string; value: string; hint?: string;
