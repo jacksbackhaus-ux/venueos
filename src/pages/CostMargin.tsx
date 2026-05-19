@@ -33,6 +33,7 @@ import {
   type TMEContext, type TMERecipe, type TMERecipeIngredient, type TMEIngredient,
 } from "@/lib/trueMargin";
 import { MarginWatchdogCard } from "@/components/cost-margin/MarginWatchdogCard";
+import SalesHealthDashboard from "@/components/cost-margin/SalesHealthDashboard";
 import ChannelPricing from "@/components/cost-margin/ChannelPricing";
 import CashflowTab from "@/components/cost-margin/CashflowTab";
 import PricingLabTab from "@/components/cost-margin/PricingLabTab";
