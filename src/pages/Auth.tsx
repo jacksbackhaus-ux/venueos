@@ -70,7 +70,7 @@ export default function Auth() {
 export type AuthScreen = Screen;
 
 
-function RoleChooser({ onChoose }: { onChoose: (s: Screen) => void }) {
+export function RoleChooser({ onChoose, businessName }: { onChoose: (s: Screen) => void; businessName?: string }) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-1.5">
