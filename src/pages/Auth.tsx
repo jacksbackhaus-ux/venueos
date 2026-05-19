@@ -316,7 +316,7 @@ export function ManagerLoginCard({
 
 /* ──────────────────────────────────────────────────────────── Manager: signup */
 
-function ManagerSignupCard({
+export function ManagerSignupCard({
   onBack, onLogin,
 }: { onBack: () => void; onLogin: () => void }) {
   const [form, setForm] = useState({ businessName: "", email: "", password: "" });
