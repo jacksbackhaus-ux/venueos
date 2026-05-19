@@ -1,0 +1,14 @@
+# MiseOS
+
+> All-in-one hygiene, compliance and batch-tracking SaaS for independent UK bakeries, cafés and small restaurants.
+
+MiseOS helps independent food businesses log food-safety checks fast, stay inspection-ready for the UK Food Hygiene Rating Scheme, and replace paper and spreadsheets with one mobile-first platform. Modules cover temperature tracking, cleaning schedules, HACCP, allergens, batch tracking, suppliers, incidents, pest & maintenance, staff training, shift rotas, timesheets, tips, waste, cost & margin and team messaging.
+
+## Pages
+
+- [Home](/): Product overview, features and how MiseOS works for UK food businesses.
+- [Pricing](/pricing): Essentials, Professional, Business and Intelligence plans with a 14-day free trial.
+
+## Optional
+
+- [Sign in or sign up](/auth): Account sign-in and trial sign-up for owners.
