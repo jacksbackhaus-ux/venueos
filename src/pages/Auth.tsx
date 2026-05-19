@@ -89,6 +89,9 @@ function RoleChooser({ onChoose }: { onChoose: (s: Screen) => void }) {
           onClick={() => onChoose("staff")}
         />
       </div>
+      <p className="text-center text-[11px] text-muted-foreground pt-1">
+        Tip: Use your branded login link for faster access.
+      </p>
     </div>
   );
 }
