@@ -510,6 +510,18 @@ function Pricing() {
           </Card>
         ))}
       </div>
+      <div className="max-w-3xl mx-auto mt-12 text-center space-y-3">
+        <p className="text-sm text-slate-600">🌱 5% of every subscription goes towards carbon removal via Stripe Climate.</p>
+        <iframe
+          title="Stripe Climate"
+          src="https://climate.stripe.com/badge/Zd5W2t?theme=light&size=small&locale=en-GB"
+          width={380} height={38} style={{ border: 0, maxWidth: "100%", margin: "0 auto" }} loading="lazy"
+        />
+        <p className="text-xs text-slate-500 mt-4">
+          Monthly plans are a 12-month minimum, billed monthly, and renew for another 12-month term unless cancelled.
+          Annual plans renew yearly unless cancelled.
+        </p>
+      </div>
     </Section>
   );
 }
