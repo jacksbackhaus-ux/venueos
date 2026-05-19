@@ -112,6 +112,7 @@ export default function Batches() {
     quantity_produced: '', quantity_unit: 'cookies', tray_count: '',
     template_id: '', notes: '',
     date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
+    sale_price: '', // per-unit ex-VAT; pre-fills from recipe when one is picked
   });
   const [creating, setCreating] = useState(false);
 
