@@ -26,13 +26,16 @@ import {
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import { Calculator, Settings as SettingsIcon, ChefHat, Boxes, BarChart3, Plus, Trash2 } from "lucide-react";
+import { Calculator, Settings as SettingsIcon, ChefHat, Boxes, BarChart3, Plus, Trash2, Receipt, Layers } from "lucide-react";
 import { toast } from "sonner";
 import {
   loadTMEContext, calcRecipeBreakdown, tmeLineCost,
   type TMEContext, type TMERecipe, type TMERecipeIngredient, type TMEIngredient,
 } from "@/lib/trueMargin";
 import { MarginWatchdogCard } from "@/components/cost-margin/MarginWatchdogCard";
+import OverheadsTab from "@/components/cost-margin/OverheadsTab";
+import ChannelsSettings from "@/components/cost-margin/ChannelsSettings";
+import ChannelPricing from "@/components/cost-margin/ChannelPricing";
 
 const PACK_UNITS = ["g", "kg", "ml", "l", "each"] as const;
 const RECIPE_UNITS = ["g", "ml", "each"] as const;
@@ -102,6 +105,8 @@ export default function CostMargin() {
           <TabsTrigger value="menu"><ChefHat className="h-4 w-4 mr-2" />Menu items</TabsTrigger>
           <TabsTrigger value="prep"><Boxes className="h-4 w-4 mr-2" />Prep batches</TabsTrigger>
           <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
+          <TabsTrigger value="overheads"><Receipt className="h-4 w-4 mr-2" />Overheads</TabsTrigger>
+          <TabsTrigger value="channels"><Layers className="h-4 w-4 mr-2" />Channels</TabsTrigger>
           <TabsTrigger value="sales"><BarChart3 className="h-4 w-4 mr-2" />Sales</TabsTrigger>
           <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-2" />Settings</TabsTrigger>
         </TabsList>
@@ -134,6 +139,14 @@ export default function CostMargin() {
 
         <TabsContent value="ingredients">
           <IngredientsTab ingredients={ingredients} onChange={refreshAll} />
+        </TabsContent>
+
+        <TabsContent value="overheads">
+          <OverheadsTab siteId={siteId} orgId={orgId} />
+        </TabsContent>
+
+        <TabsContent value="channels">
+          <ChannelsSettings siteId={siteId} orgId={orgId} />
         </TabsContent>
 
         <TabsContent value="sales">
@@ -269,6 +282,8 @@ function RecipesPanel({
           allRecipes={allRecipes}
           onClose={() => setOpenId(null)}
           onChange={onChange}
+          siteId={siteId}
+          orgId={orgId}
         />
       )}
 
@@ -308,7 +323,7 @@ function CreateRecipeDialog({
 /* ─────────────── Recipe drawer ─────────────── */
 
 function RecipeDrawer({
-  recipeId, ctx, ingredients, allRecipes, onClose, onChange,
+  recipeId, ctx, ingredients, allRecipes, onClose, onChange, siteId, orgId,
 }: {
   recipeId: string;
   ctx: TMEContext;
@@ -316,6 +331,8 @@ function RecipeDrawer({
   allRecipes: TMERecipe[];
   onClose: () => void;
   onChange: () => void;
+  siteId: string | null;
+  orgId: string | null;
 }) {
   const recipe = allRecipes.find((r) => r.id === recipeId);
   const isMenu = recipe?.recipe_type !== "prep_batch";
@@ -471,6 +488,20 @@ function RecipeDrawer({
                 </CardContent>
               </Card>
             </div>
+          )}
+
+          {isMenu && (
+            <ChannelPricing
+              recipeId={recipe.id}
+              siteId={siteId}
+              orgId={orgId}
+              ingredientCostPerPortion={bd.costPerPortionExVat}
+              initialDtcPrice={(recipe as any).dtc_price ?? recipe.sale_price ?? null}
+              initialWholesalePrice={(recipe as any).wholesale_price ?? null}
+              initialTargetGp={Number(targetGp) || 60}
+              defaultChannel={((recipe as any).default_channel as any) || "dtc"}
+              onPriceUpdated={onChange}
+            />
           )}
 
           <div className="flex justify-end gap-2">

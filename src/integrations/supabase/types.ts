@@ -2879,6 +2879,45 @@ export type Database = {
           },
         ]
       }
+      recipe_price_change_log: {
+        Row: {
+          changed_by: string | null
+          channel: string
+          created_at: string
+          id: string
+          new_price: number | null
+          old_price: number | null
+          organisation_id: string
+          reason: string | null
+          recipe_id: string
+          site_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          channel: string
+          created_at?: string
+          id?: string
+          new_price?: number | null
+          old_price?: number | null
+          organisation_id: string
+          reason?: string | null
+          recipe_id: string
+          site_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          channel?: string
+          created_at?: string
+          id?: string
+          new_price?: number | null
+          old_price?: number | null
+          organisation_id?: string
+          reason?: string | null
+          recipe_id?: string
+          site_id?: string
+        }
+        Relationships: []
+      }
       recipes: {
         Row: {
           active: boolean
@@ -2887,6 +2926,8 @@ export type Database = {
           batch_yield_unit: string | null
           category: string
           created_at: string
+          default_channel: string
+          dtc_price: number | null
           id: string
           label_type: string
           labor_estimate_mode: string
@@ -2908,6 +2949,7 @@ export type Database = {
           total_prep_time_minutes: number
           updated_at: string
           vat_rate: string
+          wholesale_price: number | null
         }
         Insert: {
           active?: boolean
@@ -2916,6 +2958,8 @@ export type Database = {
           batch_yield_unit?: string | null
           category?: string
           created_at?: string
+          default_channel?: string
+          dtc_price?: number | null
           id?: string
           label_type?: string
           labor_estimate_mode?: string
@@ -2937,6 +2981,7 @@ export type Database = {
           total_prep_time_minutes?: number
           updated_at?: string
           vat_rate?: string
+          wholesale_price?: number | null
         }
         Update: {
           active?: boolean
@@ -2945,6 +2990,8 @@ export type Database = {
           batch_yield_unit?: string | null
           category?: string
           created_at?: string
+          default_channel?: string
+          dtc_price?: number | null
           id?: string
           label_type?: string
           labor_estimate_mode?: string
@@ -2966,6 +3013,7 @@ export type Database = {
           total_prep_time_minutes?: number
           updated_at?: string
           vat_rate?: string
+          wholesale_price?: number | null
         }
         Relationships: [
           {
@@ -3905,6 +3953,54 @@ export type Database = {
           },
         ]
       }
+      site_channel_profiles: {
+        Row: {
+          channel: string
+          created_at: string
+          default_target_gp_percent: number
+          id: string
+          organisation_id: string
+          packaging_cost_per_unit: number
+          payment_fees_percent: number
+          platform_fees_percent: number
+          shipping_cost_per_unit: number
+          site_id: string
+          updated_at: string
+          wholesale_commission_percent: number
+          wholesale_discount_percent: number
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          default_target_gp_percent?: number
+          id?: string
+          organisation_id: string
+          packaging_cost_per_unit?: number
+          payment_fees_percent?: number
+          platform_fees_percent?: number
+          shipping_cost_per_unit?: number
+          site_id: string
+          updated_at?: string
+          wholesale_commission_percent?: number
+          wholesale_discount_percent?: number
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          default_target_gp_percent?: number
+          id?: string
+          organisation_id?: string
+          packaging_cost_per_unit?: number
+          payment_fees_percent?: number
+          platform_fees_percent?: number
+          shipping_cost_per_unit?: number
+          site_id?: string
+          updated_at?: string
+          wholesale_commission_percent?: number
+          wholesale_discount_percent?: number
+        }
+        Relationships: []
+      }
       site_compensation_settings: {
         Row: {
           default_hourly_rate: number | null
@@ -3952,6 +4048,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_overheads_monthly: {
+        Row: {
+          created_at: string
+          equipment_lease: number
+          id: string
+          insurance: number
+          marketing: number
+          month: string
+          notes: string | null
+          organisation_id: string
+          other: number
+          rent: number
+          repairs_maintenance: number
+          site_id: string
+          software_subscriptions: number
+          updated_at: string
+          utilities: number
+        }
+        Insert: {
+          created_at?: string
+          equipment_lease?: number
+          id?: string
+          insurance?: number
+          marketing?: number
+          month: string
+          notes?: string | null
+          organisation_id: string
+          other?: number
+          rent?: number
+          repairs_maintenance?: number
+          site_id: string
+          software_subscriptions?: number
+          updated_at?: string
+          utilities?: number
+        }
+        Update: {
+          created_at?: string
+          equipment_lease?: number
+          id?: string
+          insurance?: number
+          marketing?: number
+          month?: string
+          notes?: string | null
+          organisation_id?: string
+          other?: number
+          rent?: number
+          repairs_maintenance?: number
+          site_id?: string
+          software_subscriptions?: number
+          updated_at?: string
+          utilities?: number
+        }
+        Relationships: []
       }
       sites: {
         Row: {
