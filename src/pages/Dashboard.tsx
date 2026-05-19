@@ -175,6 +175,9 @@ const Dashboard = () => {
       {/* SECTION 1 — Priority feed */}
       <PriorityFeed siteId={siteId} dateISO={selectedDate} currentUserId={currentUserId} />
 
+      {/* Collapsed AI strip directly under the feed */}
+      <InsightsAccordion />
+
       {/* SECTION 2 — Today at a glance */}
       {!isClosed && <TodayAtAGlance siteId={siteId} dateISO={selectedDate} />}
 
@@ -183,9 +186,6 @@ const Dashboard = () => {
 
       {/* SECTION 3 — This week */}
       <ThisWeekSnapshot siteId={siteId} />
-
-      {/* SECTION 4 — Insights (collapsed) */}
-      <InsightsAccordion />
 
       {/* SECTION 5 — Recent batches */}
       <RecentBatches siteId={siteId} />

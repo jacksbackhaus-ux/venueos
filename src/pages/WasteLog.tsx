@@ -21,6 +21,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { WasteInsightStrip } from "@/components/waste/WasteInsightStrip";
 import {
   startOfWeek, endOfWeek, format, eachDayOfInterval, parseISO,
 } from "date-fns";
@@ -194,6 +195,9 @@ const WasteLog = () => {
           Log Waste
         </Button>
       </div>
+
+      <WasteInsightStrip />
+
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "daily" | "weekly")}>
         <TabsList className="grid grid-cols-2 w-full max-w-sm">
