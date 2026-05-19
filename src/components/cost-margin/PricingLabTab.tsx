@@ -271,18 +271,31 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
   );
 }
 
-function BdCard({ title, bd, price, tone }: { title: string; bd: any; price: number; tone?: "primary" }) {
+function BdCard({ title, bd, price, tone, vatOn, vatRate }: { title: string; bd: any; price: number; tone?: "primary"; vatOn?: boolean; vatRate?: number }) {
+  const split = vatOn && vatRate ? splitGross(price, vatRate) : null;
+  const gpOnNet = split && split.net > 0
+    ? ((split.net - bd.ingredientCost - bd.overheadPerUnit) / split.net) * 100
+    : null;
   return (
     <Card className={tone === "primary" ? "border-primary/50" : ""}>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-1 text-sm">
-        <Row label="Price" value={`£${price.toFixed(2)}`} bold />
+        <Row label={vatOn ? "Gross price" : "Price"} value={`£${price.toFixed(2)}`} bold />
+        {split && (
+          <>
+            <Row label={`Net price (ex VAT ${vatRate}%)`} value={`£${split.net.toFixed(2)}`} />
+            <Row label="VAT amount" value={`£${split.vat.toFixed(2)}`} />
+          </>
+        )}
         <Row label="Cost / unit" value={`£${bd.ingredientCost.toFixed(3)}`} />
         <Row label="Overhead / unit" value={`£${bd.overheadPerUnit.toFixed(3)}`} />
-        <Row label="GP %" value={bd.gpPercent != null ? `${bd.gpPercent.toFixed(1)}%` : "—"}
+        <Row label={vatOn ? "GP % (on gross)" : "GP %"} value={bd.gpPercent != null ? `${bd.gpPercent.toFixed(1)}%` : "—"}
           className={bd.gpPercent != null && bd.gpPercent >= 50 ? "text-success" : bd.gpPercent != null && bd.gpPercent >= 30 ? "text-warning" : "text-destructive"} />
+        {gpOnNet != null && (
+          <Row label="GP % (on net revenue)" value={`${gpOnNet.toFixed(1)}%`} />
+        )}
         <Row label="Contribution after overhead" value={`£${bd.contributionAfterOverhead.toFixed(3)}`} bold />
       </CardContent>
     </Card>
