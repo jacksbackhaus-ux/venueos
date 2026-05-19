@@ -63,6 +63,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const authzFail = await assertSiteAccess({
+      authUserId: claimsData.claims.sub as string,
+      siteId: site_id,
+      svc,
+      corsHeaders,
+    });
+    if (authzFail) return authzFail;
+
+
     // ---- Cache check: must match date_range stored in content ----
     const nowIso = new Date().toISOString();
     const { data: cachedRows } = await svc
