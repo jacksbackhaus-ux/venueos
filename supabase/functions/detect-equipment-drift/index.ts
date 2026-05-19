@@ -3,6 +3,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.96.0";
 import { assertSiteAccess } from "../_shared/siteAuthz.ts";
+import { assertIntelligenceTier } from "../_shared/aiTierGuard.ts";
 
 /**
  * detect-equipment-drift
