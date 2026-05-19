@@ -13,6 +13,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SEO } from "@/components/SEO";
+
 
 /**
  * Pricing page — 4-tier model. Trial users can switch tiers freely
@@ -28,10 +30,16 @@ export default function Pricing() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
+        <SEO
+          title="Pricing — MiseOS"
+          description="Simple per-site pricing for UK food businesses. Essentials, Professional, Business and Intelligence plans with a 14-day free trial."
+          path="/pricing"
+        />
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+
 
   const isTrialing = subscription?.status === "trialing";
   const hasPaidSub = subscription?.status === "active";
@@ -66,7 +74,13 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Pricing — MiseOS"
+        description="Simple per-site pricing for UK food businesses. Essentials, Professional, Business and Intelligence plans with a 14-day free trial."
+        path="/pricing"
+      />
       <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
+
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-semibold">
             <Sparkles className="h-3.5 w-3.5" />
