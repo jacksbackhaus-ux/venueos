@@ -486,6 +486,20 @@ function RecipeDrawer({
             </div>
           )}
 
+          {isMenu && (
+            <ChannelPricing
+              recipeId={recipe.id}
+              siteId={(recipe as any).site_id ?? null}
+              orgId={(recipe as any).organisation_id ?? null}
+              ingredientCostPerPortion={bd.costPerPortionExVat}
+              initialDtcPrice={(recipe as any).dtc_price ?? recipe.sale_price ?? null}
+              initialWholesalePrice={(recipe as any).wholesale_price ?? null}
+              initialTargetGp={Number(targetGp) || 60}
+              defaultChannel={((recipe as any).default_channel as any) || "dtc"}
+              onPriceUpdated={onChange}
+            />
+          )}
+
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>Close</Button>
             <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
