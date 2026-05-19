@@ -67,6 +67,9 @@ export default function Auth() {
 
 /* ────────────────────────────────────────────────────────────── Role chooser */
 
+export type AuthScreen = Screen;
+
+
 function RoleChooser({ onChoose }: { onChoose: (s: Screen) => void }) {
   return (
     <div className="space-y-6">
