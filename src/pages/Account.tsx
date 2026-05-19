@@ -132,13 +132,19 @@ export default function Account() {
 
   const handleCancel = async () => {
     if (!appUser?.organisation_id) return;
-    if (!confirm("Cancel your subscription? You'll keep access until the end of your current billing period. Your data is retained for 7 years.")) return;
+    const termEnd = (subscription as any)?.term_end || subscription?.current_period_end;
+    const interval = (subscription as any)?.billing_interval;
+    const endLabel = termEnd ? format(new Date(termEnd), "d MMM yyyy") : "the end of your current term";
+    const msg = interval === "monthly_term"
+      ? `You're on a 12-month plan billed monthly. Your plan will remain active until ${endLabel}. Continue?`
+      : `Cancel renewal? Your plan stays active until ${endLabel}.`;
+    if (!confirm(msg)) return;
     const { error } = await supabase
       .from("subscriptions")
       .update({ cancel_at_period_end: true })
       .eq("organisation_id", appUser.organisation_id);
     if (error) toast.error(error.message);
-    else toast.success("Cancellation scheduled. You'll keep access until your period ends.");
+    else toast.success(`Cancellation scheduled. You'll keep access until ${endLabel}.`);
   };
 
 
