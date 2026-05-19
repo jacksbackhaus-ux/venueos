@@ -242,18 +242,34 @@ export function ManagerLoginCard({
     e.preventDefault();
     if (!email.trim() || !password) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       if (error.message.includes("Email not confirmed")) {
         toast.error("Please confirm your email before logging in.");
       } else {
         toast.error(error.message);
       }
+      return;
     }
+    if (expectedOrgId && data.user) {
+      const { data: appUser } = await supabase
+        .from("users")
+        .select("organisation_id")
+        .eq("auth_user_id", data.user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!appUser || appUser.organisation_id !== expectedOrgId) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        toast.error(`This account is not part of ${orgName || "this business"}. Use the correct login link.`);
+        return;
+      }
+    }
+    setLoading(false);
   };
 
   return (
