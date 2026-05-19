@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Link2, Copy, Check, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { buildOrgLoginUrl } from "@/lib/publicAppUrl";
 
 interface Props {
   organisationId: string;
@@ -13,7 +14,8 @@ interface Props {
 
 /**
  * Shows the org-specific login URL with copy + QR code.
- * Pulls the current slug from the organisations table at mount.
+ * Pulls the current slug from the organisations table at mount and
+ * backfills it from the org name if it's missing (slug trigger normalises).
  */
 export function LoginUrlCard({ organisationId }: Props) {
   const [slug, setSlug] = useState<string | null>(null);
@@ -24,23 +26,33 @@ export function LoginUrlCard({ organisationId }: Props) {
     let cancelled = false;
     if (!organisationId) return;
     setLoading(true);
-    supabase
-      .from("organisations")
-      .select("slug")
-      .eq("id", organisationId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return;
-        setSlug((data as any)?.slug ?? null);
-        setLoading(false);
-      });
+    (async () => {
+      const { data } = await supabase
+        .from("organisations")
+        .select("slug, name")
+        .eq("id", organisationId)
+        .maybeSingle();
+      let s = (data as any)?.slug as string | null | undefined;
+      if (!s && (data as any)?.name) {
+        // Trigger normalises whatever we send into a unique slug.
+        const { data: updated } = await supabase
+          .from("organisations")
+          .update({ slug: (data as any).name } as any)
+          .eq("id", organisationId)
+          .select("slug")
+          .maybeSingle();
+        s = (updated as any)?.slug ?? null;
+      }
+      if (cancelled) return;
+      setSlug(s ?? null);
+      setLoading(false);
+    })();
     return () => { cancelled = true; };
   }, [organisationId]);
 
   if (loading || !slug) return null;
 
-  // Use the actual current origin so previews & custom domains all work.
-  const url = `${window.location.origin}/login/${slug}`;
+  const url = buildOrgLoginUrl(slug);
 
   const copy = async () => {
     try {
