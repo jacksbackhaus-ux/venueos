@@ -131,3 +131,33 @@
     @apply bg-muted text-muted-foreground;
   }
 }
+
+/* ── Per-org branded login surface ──────────────────────────────────────
+   Scope only to [data-branded] so we never affect the rest of the app
+   or semantic colours (success / warning / breach).
+*/
+[data-branded] .bg-primary {
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-primary-foreground, #fff) !important;
+}
+[data-branded] .bg-primary:hover,
+[data-branded] .hover\:bg-primary\/90:hover,
+[data-branded] .hover\:bg-primary\/80:hover {
+  background-color: var(--brand-primary) !important;
+  filter: brightness(0.92);
+}
+[data-branded] .text-primary {
+  color: var(--brand-primary) !important;
+}
+[data-branded] .border-primary,
+[data-branded] .hover\:border-primary\/50:hover,
+[data-branded] .hover\:border-primary\/40:hover {
+  border-color: var(--brand-primary) !important;
+}
+[data-branded] .bg-primary\/10 {
+  background-color: color-mix(in srgb, var(--brand-primary) 12%, transparent) !important;
+}
+[data-branded] .bg-primary\/15 {
+  background-color: color-mix(in srgb, var(--brand-primary) 16%, transparent) !important;
+}
+
