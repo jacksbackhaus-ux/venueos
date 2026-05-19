@@ -200,6 +200,25 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
                   </button>
                 ))}
               </div>
+
+              {vatActive && (
+                <div className="rounded-md border p-3 space-y-2 bg-muted/30">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Label className="text-sm">Sales values include VAT?</Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        If your POS export includes VAT in the sales numbers, turn this on.
+                        If it exports net-of-VAT sales, turn this off.
+                      </p>
+                    </div>
+                    <Switch checked={valuesIncludeVat} onCheckedChange={setValuesIncludeVat} />
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">
+                    {valuesIncludeVat ? "Imported as GROSS" : "Imported as NET"}
+                  </Badge>
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <Button onClick={() => setStep(2)}>Next <ArrowRight className="h-4 w-4 ml-1" /></Button>
               </div>
