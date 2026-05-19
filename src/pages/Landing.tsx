@@ -485,10 +485,11 @@ function Pricing() {
             <p className={`text-sm font-semibold uppercase tracking-wider mb-2 ${t.popular ? "text-white/70" : "text-slate-500"}`}>
               {t.name}
             </p>
-            <div className="flex items-baseline gap-1 mb-3">
+            <div className="flex items-baseline gap-1 mb-1">
               <span className="text-4xl font-bold">{t.price}</span>
               <span className={t.popular ? "text-white/70" : "text-slate-500"}>/mo</span>
             </div>
+            <p className={`text-xs mb-3 ${t.popular ? "text-white/70" : "text-slate-500"}`}>or {t.annual} (save 15%)</p>
             <p className={`text-sm mb-6 ${t.popular ? "text-white/85" : "text-slate-600"}`}>{t.desc}</p>
             <ul className="space-y-2.5 mb-7">
               {t.features.map((f) => (
