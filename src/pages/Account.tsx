@@ -357,6 +357,12 @@ export default function Account() {
         </Card>
       )}
 
+      <Card>
+        <CardContent className="py-6">
+          <ClimatePledge />
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
