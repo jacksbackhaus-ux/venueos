@@ -33,6 +33,7 @@ import Batches from "./pages/Batches";
 import StaffTraining from "./pages/StaffTraining";
 import Haccp from "./pages/Haccp";
 import CostMargin from "./pages/CostMargin";
+import Sales from "./pages/Sales";
 import Timesheets from "./pages/Timesheets";
 import Messenger from "./pages/Messenger";
 import TipTracker from "./pages/TipTracker";
@@ -212,6 +213,7 @@ function AppRoutes() {
       <Route path="/staff-training" element={moduleRoute("staff_training", <StaffTraining />)} />
       <Route path="/haccp" element={moduleRoute("haccp", <Haccp />)} />
       <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
+      <Route path="/sales" element={moduleRoute("cost_margin", <Sales />)} />
       <Route path="/timesheets" element={moduleRoute("timesheets", <Timesheets />)} />
       <Route path="/messenger" element={moduleRoute("messenger", <Messenger />)} />
       <Route path="/tip-tracker" element={moduleRoute("tip_tracker", <TipTracker />)} />

@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.payments-webhook]
 verify_jwt = false
+
+[functions.suggest-sales-mapping]
+verify_jwt = true
+
+[functions.generate-sales-insights]
+verify_jwt = true
