@@ -1,15 +1,17 @@
 // Multi-step import wizard: choose source → upload → mapping → preview → import.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, FileSpreadsheet, Upload, ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { parseSalesFile, applyMapping, MAPPING_FIELDS, type SalesMapping } from "@/lib/salesParse";
+import { loadSiteTaxSettings } from "@/lib/vat";
 
 type SourceSystem = "shopify" | "square" | "sumup" | "csv";
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -36,6 +38,17 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
   const [importId, setImportId] = useState<string | null>(null);
   const [mapping, setMapping] = useState<SalesMapping>(DEFAULT_MAPPING);
   const [busy, setBusy] = useState(false);
+  const [valuesIncludeVat, setValuesIncludeVat] = useState<boolean>(true);
+  const [vatActive, setVatActive] = useState(false);
+
+  // Load site VAT default to pre-fill the toggle.
+  useEffect(() => {
+    if (!open || !siteId) return;
+    loadSiteTaxSettings(siteId).then((s) => {
+      setVatActive(s.vat_enabled);
+      setValuesIncludeVat(s.sales_values_include_vat);
+    });
+  }, [open, siteId]);
 
   const reset = () => {
     setStep(1); setSource("csv"); setFile(null); setParsed(null);
