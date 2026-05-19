@@ -354,22 +354,3 @@ export default function Account() {
   );
 }
 
-function AddOnRow({ planId, cycle, onAdd, loading = false }: { planId: "compliance" | "business" | "ai"; cycle: BillingCycle; onAdd: () => void; loading?: boolean }) {
-  const p = PLANS[planId];
-  const price = cycle === "year" ? p.yearlyPrice : p.monthlyPrice;
-  return (
-    <div className="flex items-center justify-between gap-2 p-2 rounded-md border">
-      <div>
-        <p className="font-medium">{p.name}</p>
-        <p className="text-xs text-muted-foreground">{p.modules.map(m => MODULE_LABELS[m]).join(" · ")}</p>
-      </div>
-      <div className="text-right shrink-0">
-        <p className="font-semibold text-sm">{formatGBP(price)}<span className="text-xs text-muted-foreground">/{cycle === "year" ? "yr" : "mo"}</span></p>
-        <Button size="sm" variant="outline" className="mt-1" onClick={onAdd} disabled={loading}>
-          {loading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
-          Add
-        </Button>
-      </div>
-    </div>
-  );
-}
