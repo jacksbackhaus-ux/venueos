@@ -231,9 +231,9 @@ export function EmailLoginForm({
 
 /* ──────────────────────────────────────────────────────────── Manager: login */
 
-function ManagerLoginCard({
-  onBack, onCreate, onForgot,
-}: { onBack: () => void; onCreate: () => void; onForgot: () => void }) {
+export function ManagerLoginCard({
+  onBack, onCreate, onForgot, expectedOrgId, orgName,
+}: { onBack: () => void; onCreate: () => void; onForgot: () => void; expectedOrgId?: string; orgName?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
