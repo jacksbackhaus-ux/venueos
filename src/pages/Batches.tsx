@@ -104,12 +104,17 @@ export default function Batches() {
     isCostManager && (plan.business || plan.bundle || trialActive || compedActive);
 
   const [newBatch, setNewBatch] = useState({
-    product_name: '', recipe_ref: '', recipe_id: '',
+    product_name: '', recipe_ref: '', recipe_id: '', recipe_number: '',
     quantity_produced: '', quantity_unit: 'cookies', tray_count: '',
     template_id: '', notes: '',
     date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
   });
   const [creating, setCreating] = useState(false);
+
+  const previewBatchNumber = formatBatchNumber(
+    newBatch.product_name,
+    newBatch.recipe_number ? Number(newBatch.recipe_number) : null,
+  );
 
   const [stageNotes, setStageNotes] = useState('');
   const [completingStage, setCompletingStage] = useState<string | null>(null);
