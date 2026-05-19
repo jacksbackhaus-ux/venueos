@@ -36,6 +36,10 @@ interface Batch {
   tray_count: number | null;
   unit_cost_snapshot: number | null;
   total_production_cost: number | null;
+  sale_price_snapshot: number | null;
+  target_gp_percent_snapshot: number | null;
+  margin_pct: number | null;
+  margin_below_target: boolean | null;
   status: BatchStatus;
   notes: string | null;
   created_at: string;
