@@ -233,6 +233,9 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
                   <Bar dataKey="DTC" name="Sales" stackId="in" fill="hsl(var(--success))" />
                 )}
                 {advanced && <Bar dataKey="AdjIn" name="Adj in" stackId="in" fill="hsl(var(--accent))" />}
+                {vatOn && viewMode === "net_vat" && (
+                  <Bar dataKey="VATout" name="VAT collected" stackId="in" fill="hsl(var(--muted-foreground))" />
+                )}
                 <Bar dataKey="COGS" stackId="out" fill="hsl(var(--warning))" />
                 <Bar dataKey="Labour" stackId="out" fill="hsl(var(--muted-foreground))" />
                 <Bar dataKey="Overheads" stackId="out" fill="hsl(var(--destructive))" />
