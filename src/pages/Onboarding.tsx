@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrandingSection } from "@/components/settings/BrandingSection";
+import { buildOrgLoginUrl } from "@/lib/publicAppUrl";
 
 /**
  * Shown after a verified user signs in but has no profile yet.
