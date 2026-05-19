@@ -16,8 +16,11 @@ import {
   loadCashflow, periodDays, rangeStart, runwayDays, isoDay,
   type PeriodKey, type ChannelFilter,
 } from "@/lib/cashflow";
-import { TrendingUp, TrendingDown, Wallet, AlertCircle } from "lucide-react";
+import { loadSiteTaxSettings, splitGross, vatActive as vatIsActive } from "@/lib/vat";
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, Receipt } from "lucide-react";
 import { CashflowInsightsCard } from "./CashflowInsightsCard";
+
+type ViewMode = "gross" | "net" | "net_vat";
 
 interface Props {
   siteIds: string[];          // one site or many ("all sites")
@@ -29,6 +32,7 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
   const [period, setPeriod] = useState<PeriodKey>("30d");
   const [channel, setChannel] = useState<ChannelFilter>("all");
   const [advanced, setAdvanced] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("gross");
 
   const startIso = rangeStart(period);
   const endIso = isoDay(new Date());
@@ -39,8 +43,80 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
     queryFn: () => loadCashflow({ siteIds, startIso, endIso, channel }),
   });
 
+  const taxQ = useQuery({
+    queryKey: ["site-tax-settings", primarySiteId],
+    enabled: !!primarySiteId,
+    queryFn: () => loadSiteTaxSettings(primarySiteId),
+  });
+  const tax = taxQ.data;
+  const vatOn = vatIsActive(tax);
+  const rate = Number(tax?.default_vat_rate) || 20;
+
   const data = q.data;
   const days = periodDays(period);
+
+  // Compute VAT estimates over the period totals.
+  const vatEstimate = useMemo(() => {
+    if (!vatOn || !data) return null;
+    const salesAreGross = tax?.sales_values_include_vat !== false;
+    // Output VAT — derived from sales totals (data.totals.sales is whatever was stored).
+    let outputVat = 0;
+    let salesNet = data.totals.sales;
+    let salesGross = data.totals.sales;
+    if (salesAreGross) {
+      const split = splitGross(data.totals.sales, rate);
+      salesNet = split.net;
+      salesGross = data.totals.sales;
+      outputVat = split.vat;
+    } else {
+      salesNet = data.totals.sales;
+      salesGross = data.totals.sales * (1 + rate / 100);
+      outputVat = salesGross - salesNet;
+    }
+    // Input VAT — estimate from COGS + overheads at default rate.
+    const cogsSplit = splitGross(data.totals.cogs, rate);
+    const ohSplit = splitGross(data.totals.overheads, rate);
+    const inputVat = cogsSplit.vat + ohSplit.vat;
+    return {
+      outputVat,
+      inputVat,
+      payable: outputVat - inputVat,
+      salesNet,
+      salesGross,
+      cogsNet: cogsSplit.net,
+      cogsVat: cogsSplit.vat,
+      overheadsNet: ohSplit.net,
+      overheadsVat: ohSplit.vat,
+    };
+  }, [vatOn, data, rate, tax?.sales_values_include_vat]);
+
+  const chartIn = useMemo(() => {
+    if (!data) return [];
+    const transform = (v: number) => {
+      if (!vatOn || viewMode === "gross") return v;
+      // For sales values, split per-row using the rate.
+      return splitGross(v, rate).net;
+    };
+    return data.days.map((d) => {
+      const r = data.byDay[d];
+      const dtc = (vatOn && viewMode !== "gross") ? transform(r.salesDtc) : r.salesDtc;
+      const ws = (vatOn && viewMode !== "gross") ? transform(r.salesWholesale) : r.salesWholesale;
+      const cogsNet = (vatOn && viewMode !== "gross") ? splitGross(r.cogs, rate).net : r.cogs;
+      const ohNet = (vatOn && viewMode !== "gross") ? splitGross(r.overheads, rate).net : r.overheads;
+      return {
+        day: d.slice(5),
+        DTC: dtc,
+        Wholesale: ws,
+        AdjIn: r.adjustmentsIn,
+        VATout: (vatOn && viewMode === "net_vat") ? splitGross(r.salesDtc + r.salesWholesale, rate).vat : 0,
+        COGS: -cogsNet,
+        Labour: -r.labour,
+        Overheads: -ohNet,
+        AdjOut: -r.adjustmentsOut,
+      };
+    });
+  }, [data, vatOn, viewMode, rate]);
+
 
   const chartIn = useMemo(() => {
     if (!data) return [];
