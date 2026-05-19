@@ -544,7 +544,7 @@ export default function Batches() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={handleCreate}
-              disabled={creating || !newBatch.product_name || !newBatch.quantity_produced}>
+              disabled={creating || !newBatch.product_name || !newBatch.quantity_produced || !newBatch.recipe_number}>
               {creating && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Log batch
             </Button>
           </DialogFooter>
