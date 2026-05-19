@@ -59,6 +59,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const authzFail = await assertSiteAccess({
+      authUserId: claimsData.claims.sub as string,
+      siteId: site_id,
+      svc,
+      corsHeaders,
+    });
+    if (authzFail) return authzFail;
+
+
     const todayStr = payload.generated_for_date || ymd(new Date());
 
     // Cache check — same site, same day, still valid
