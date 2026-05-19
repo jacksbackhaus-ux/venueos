@@ -62,7 +62,7 @@ export function useSafeToTrade(siteId: string | undefined, dateISO: string) {
         supabase.from("day_sheet_sections").select("id, day_sheet_items(id, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", siteId!).eq("sheet_date", dateISO).maybeSingle(),
         supabase.from("incidents").select("id").eq("site_id", siteId!).eq("status", "open"),
-        supabase.from("batches").select("id, use_by_date, status").eq("site_id", siteId!).neq("status", "discarded"),
+        supabase.from("batches").select("id, use_by_date, status").eq("site_id", siteId!).neq("status", "disposed"),
       ]);
 
       const closedDay = (closedDayRes as any)?.data ?? null;

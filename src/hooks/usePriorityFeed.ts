@@ -65,7 +65,7 @@ export function usePriorityFeed(
         currentUserId
           ? supabase.from("rota_assignments").select("id, start_time, end_time, position").eq("site_id", siteId!).eq("shift_date", dateISO).eq("user_id", currentUserId).is("cancelled_at", null)
           : Promise.resolve({ data: [] as any[] }),
-        supabase.from("batches").select("id, product_name, use_by_date").eq("site_id", siteId!).neq("status", "discarded").lt("use_by_date", dateISO).limit(5),
+        supabase.from("batches").select("id, product_name, use_by_date").eq("site_id", siteId!).neq("status", "disposed").lt("use_by_date", dateISO).limit(5),
       ]);
 
       if ((closedDayRes as any)?.data) return [];
