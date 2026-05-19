@@ -118,22 +118,7 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
   }, [data, vatOn, viewMode, rate]);
 
 
-  const chartIn = useMemo(() => {
-    if (!data) return [];
-    return data.days.map((d) => {
-      const r = data.byDay[d];
-      return {
-        day: d.slice(5),
-        DTC: r.salesDtc,
-        Wholesale: r.salesWholesale,
-        AdjIn: r.adjustmentsIn,
-        COGS: -r.cogs,
-        Labour: -r.labour,
-        Overheads: -r.overheads,
-        AdjOut: -r.adjustmentsOut,
-      };
-    });
-  }, [data]);
+
 
   const balanceSeries = useMemo(() => {
     if (!data) return [];
