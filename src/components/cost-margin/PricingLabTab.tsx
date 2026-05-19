@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DEFAULT_PROFILES, type Channel, type ChannelProfile,
@@ -18,6 +19,7 @@ import {
   loadTMEContext, calcRecipeBreakdown,
   type TMEContext, type TMERecipe,
 } from "@/lib/trueMargin";
+import { loadSiteTaxSettings, splitGross, vatActive as vatIsActive } from "@/lib/vat";
 import { Beaker, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,6 +33,8 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
   const [recipeId, setRecipeId] = useState<string | null>(null);
   const [channel, setChannel] = useState<Channel>("dtc");
   const [newPrice, setNewPrice] = useState<string>("");
+  const [showVat, setShowVat] = useState(true);
+
 
   const ctxQ = useQuery({
     queryKey: ["tme-ctx", siteId, orgId],
