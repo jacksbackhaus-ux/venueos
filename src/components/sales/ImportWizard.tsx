@@ -76,6 +76,7 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
         .insert({
           organisation_id: orgId, site_id: siteId, source_system: source,
           file_name: f.name, storage_path: path, status: "uploaded",
+          values_include_vat: valuesIncludeVat,
         })
         .select("id").single();
       if (impErr) throw impErr;
@@ -84,11 +85,14 @@ export function ImportWizard({ open, onClose, siteId, orgId, intelligence, onImp
       // Pre-fill mapping from saved template
       const { data: tpl } = await supabase
         .from("sales_mappings")
-        .select("mapping_json")
+        .select("mapping_json, values_include_vat")
         .eq("organisation_id", orgId)
         .eq("source_system", source)
         .maybeSingle();
       if (tpl?.mapping_json) setMapping({ ...DEFAULT_MAPPING, ...(tpl.mapping_json as any) });
+      if (tpl && typeof (tpl as any).values_include_vat === "boolean") {
+        setValuesIncludeVat((tpl as any).values_include_vat);
+      }
 
       setStep(3);
     } catch (e: any) {
