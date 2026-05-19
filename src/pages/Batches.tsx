@@ -627,8 +627,14 @@ export default function Batches() {
                         </div>
                       )}
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Batch code</span>
-                        <span className="font-mono text-xs">{selectedBatch.batch_code}</span>
+                        <span className="text-muted-foreground">Batch number</span>
+                        <span className="font-mono text-xs font-semibold">
+                          {displayBatchNumber(selectedBatch.product_name, selectedBatch.recipe_number, selectedBatch.batch_code)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Internal ID</span>
+                        <span className="font-mono text-[11px] text-muted-foreground">{selectedBatch.batch_code}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Created</span>
