@@ -105,6 +105,8 @@ export default function CostMargin() {
           <TabsTrigger value="menu"><ChefHat className="h-4 w-4 mr-2" />Menu items</TabsTrigger>
           <TabsTrigger value="prep"><Boxes className="h-4 w-4 mr-2" />Prep batches</TabsTrigger>
           <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
+          <TabsTrigger value="overheads"><Receipt className="h-4 w-4 mr-2" />Overheads</TabsTrigger>
+          <TabsTrigger value="channels"><Layers className="h-4 w-4 mr-2" />Channels</TabsTrigger>
           <TabsTrigger value="sales"><BarChart3 className="h-4 w-4 mr-2" />Sales</TabsTrigger>
           <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-2" />Settings</TabsTrigger>
         </TabsList>
