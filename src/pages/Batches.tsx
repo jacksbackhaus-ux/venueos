@@ -183,6 +183,7 @@ export default function Batches() {
 
     const selectedRecipe = costRecipes.find(r => r.id === newBatch.recipe_id);
 
+    const recipeNumberValue = newBatch.recipe_number ? Math.max(0, Math.floor(Number(newBatch.recipe_number))) : null;
     const { error } = await supabase.from('batches').insert({
       site_id: siteId,
       organisation_id: organisationId,
@@ -191,6 +192,7 @@ export default function Batches() {
       product_name: newBatch.product_name || selectedRecipe?.name || 'Untitled',
       recipe_ref: newBatch.recipe_ref || selectedRecipe?.name || null,
       recipe_id: newBatch.recipe_id || null,
+      recipe_number: recipeNumberValue,
       quantity_produced: qty,
       quantity_unit: smartUnit,
       tray_count: newBatch.tray_count ? Number(newBatch.tray_count) : null,
@@ -206,7 +208,7 @@ export default function Batches() {
     toast.success(`Logged ${qty} ${unitLabel(smartUnit, qty)}`);
     setShowCreate(false);
     setNewBatch({
-      product_name: '', recipe_ref: '', recipe_id: '',
+      product_name: '', recipe_ref: '', recipe_id: '', recipe_number: '',
       quantity_produced: '', quantity_unit: 'cookies', tray_count: '',
       template_id: '', notes: '',
       date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
