@@ -323,43 +323,18 @@ export default function Account() {
         </Card>
       )}
 
-      {/* Add-ons */}
-      {plan.hasAnyPlan && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Add-ons</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {!plan.bundle && !plan.compliance && (
-              <AddOnRow
-                planId="compliance"
-                cycle={cycle}
-                onAdd={() => navigate(`/account?checkout=compliance&cycle=${cycle}`)}
-              />
-            )}
-            {!plan.bundle && !plan.business && (
-              <AddOnRow
-                planId="business"
-                cycle={cycle}
-                onAdd={() => navigate(`/account?checkout=business&cycle=${cycle}`)}
-              />
-            )}
-            {!plan.ai && (
-              <AddOnRow
-                planId="ai"
-                cycle={cycle}
-                loading={savingAddon === "ai"}
-                onAdd={handleAddAi}
-              />
-            )}
-            {!plan.bundle && (
-              <div className="pt-2">
-                <Button variant="default" size="sm" onClick={() => navigate(`/account?checkout=bundle&cycle=${cycle}`)}>
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />Upgrade to Full Bundle
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Diagnostics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Subscription health</CardTitle>
+          <CardDescription>Verify your plan tier is correctly synced to active modules.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" size="sm" onClick={() => navigate("/account/diagnostics")}>
+            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Open subscription diagnostics
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Multi-site */}
       {plan.hasAnyPlan && (
