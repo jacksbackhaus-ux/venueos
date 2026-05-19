@@ -1,66 +1,81 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { classifySection, currentOpsWindow, isToday, yesterdayISO } from "@/lib/opsTime";
 
 export type Band = "green" | "amber" | "red";
 
 export interface SafeToTradeReason {
   label: string;
-  impact: number; // points subtracted from 100 (positive number)
+  impact: number;
   href: string;
 }
 
 export interface SafeToTradeResult {
-  score: number;             // 0-100
+  score: number;
   band: Band;
-  reasons: SafeToTradeReason[]; // top 3, descending impact
+  reasons: SafeToTradeReason[];
   isClosed: boolean;
   breakdown: {
-    temperatures: number;    // 0-100 completion
-    cleaning: number;
-    daySheet: number;
-    openIncidents: number;   // count
-    activeBreaches: number;  // count
-    expiredBatches: number;  // count
+    temperatures: number;      // % of currently-required temps complete
+    cleaning: number;          // % of currently-due cleaning complete
+    daySheet: number;          // % of currently-required day-sheet items complete
+    openIncidents: number;
+    activeBreaches: number;    // unresolved breaches (no corrective action)
+    expiredBatches: number;
+    yesterdayClosingMissing: number;
+    yesterdayWasClosed: boolean;
+    window: "opening" | "midday" | "closing";
   };
 }
 
 /**
- * Derives a single "Safe to Trade" score from existing data. Closed days
- * short-circuit to a green 100 so the score is honest about non-trading days.
+ * Time-aware Safe-to-Trade.
  *
- * Scoring model (transparent on purpose):
- *   - Each completion domain (temps, cleaning, day sheet) contributes
- *     up to a weighted share of the score. Missed work eats into that share.
- *   - Active temp breaches without corrective action and open incidents are
- *     hard deductions on top — they represent real-time safety risk.
- *   - Expired/use-by batches deduct a smaller fixed amount each, capped.
+ * Morning (opening/midday): only opening checks + AM temps for today,
+ * plus yesterday's closing work (closing items + PM temps), drive the score.
+ * Closing window adds today's closing items + PM temps.
+ * Cleaning tasks only count once their due_time has passed.
  */
 export function useSafeToTrade(siteId: string | undefined, dateISO: string) {
   return useQuery<SafeToTradeResult>({
     queryKey: ["safe-to-trade", siteId, dateISO],
     enabled: !!siteId,
     queryFn: async () => {
+      const viewingToday = isToday(dateISO);
+      // For past dates, evaluate as if the full day window has elapsed.
+      const window = viewingToday ? currentOpsWindow() : "closing";
+      const now = new Date();
+      const yISO = yesterdayISO(dateISO);
+
       const dayStart = `${dateISO}T00:00:00`;
       const dayEnd = `${dateISO}T23:59:59`;
+      const yStart = `${yISO}T00:00:00`;
+      const yEnd = `${yISO}T23:59:59`;
 
       const [
         closedDayRes,
+        closedYRes,
         tempUnitsRes,
         tempLogsRes,
+        tempLogsYRes,
         cleaningTasksRes,
         cleaningLogsRes,
         daySheetSectionsRes,
         daySheetRes,
+        daySheetYRes,
         incidentsRes,
         batchesRes,
       ] = await Promise.all([
         supabase.from("closed_days" as any).select("id").eq("site_id", siteId!).eq("closed_date", dateISO).maybeSingle(),
+        supabase.from("closed_days" as any).select("id").eq("site_id", siteId!).eq("closed_date", yISO).maybeSingle(),
         supabase.from("temp_units").select("id").eq("site_id", siteId!).eq("active", true),
         supabase.from("temp_logs").select("unit_id, pass, log_type, corrective_action").eq("site_id", siteId!).gte("logged_at", dayStart).lt("logged_at", dayEnd),
-        supabase.from("cleaning_tasks").select("id, frequency").eq("site_id", siteId!).eq("active", true),
+        supabase.from("temp_logs").select("unit_id, log_type").eq("site_id", siteId!).gte("logged_at", yStart).lt("logged_at", yEnd),
+        supabase.from("cleaning_tasks").select("id, frequency, due_time").eq("site_id", siteId!).eq("active", true),
         supabase.from("cleaning_logs").select("task_id, done").eq("site_id", siteId!).eq("log_date", dateISO),
-        supabase.from("day_sheet_sections").select("id, day_sheet_items(id, active)").eq("site_id", siteId!).eq("active", true),
+        supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", siteId!).eq("sheet_date", dateISO).maybeSingle(),
+        supabase.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", siteId!).eq("sheet_date", yISO).maybeSingle(),
         supabase.from("incidents").select("id").eq("site_id", siteId!).eq("status", "open"),
         supabase.from("batches").select("id, use_by_date, status").eq("site_id", siteId!).neq("status", "disposed"),
       ]);
@@ -72,97 +87,152 @@ export function useSafeToTrade(siteId: string | undefined, dateISO: string) {
           band: "green" as Band,
           reasons: [],
           isClosed: true,
-          breakdown: { temperatures: 100, cleaning: 100, daySheet: 100, openIncidents: 0, activeBreaches: 0, expiredBatches: 0 },
+          breakdown: {
+            temperatures: 100, cleaning: 100, daySheet: 100,
+            openIncidents: 0, activeBreaches: 0, expiredBatches: 0,
+            yesterdayClosingMissing: 0, yesterdayWasClosed: false, window,
+          },
         };
       }
 
+      const yesterdayWasClosed = !!(closedYRes as any)?.data;
+
       const tempUnits = tempUnitsRes.data ?? [];
       const tempLogs = tempLogsRes.data ?? [];
+      const tempLogsY = tempLogsYRes.data ?? [];
       const cleaningTasks = (cleaningTasksRes.data ?? []).filter((t: any) => t.frequency === "daily");
       const cleaningLogs = cleaningLogsRes.data ?? [];
-      const daySheetSections = daySheetSectionsRes.data ?? [];
-      const daySheetEntries = (daySheetRes.data as any)?.day_sheet_entries ?? [];
+      const sections = (daySheetSectionsRes.data ?? []) as any[];
+      const dsEntries = ((daySheetRes.data as any)?.day_sheet_entries ?? []) as any[];
+      const dsEntriesY = ((daySheetYRes.data as any)?.day_sheet_entries ?? []) as any[];
       const incidents = incidentsRes.data ?? [];
       const batches = batchesRes.data ?? [];
 
-      // Completion ratios (1 = fully done; default 1 when no scheduled work).
+      // --- TEMPERATURES (time-aware) ---
       const amDone = new Set(tempLogs.filter((l: any) => l.log_type === "AM Check").map((l: any) => l.unit_id));
       const pmDone = new Set(tempLogs.filter((l: any) => l.log_type === "PM Check").map((l: any) => l.unit_id));
-      const tempExpected = tempUnits.length * 2;
-      const tempCompletion = tempExpected === 0 ? 1 : (amDone.size + pmDone.size) / tempExpected;
+      const unitCount = tempUnits.length;
+      const pmRequiredToday = window === "closing";
+      const expectedTempCount = unitCount * (pmRequiredToday ? 2 : 1);
+      const doneTempCount = amDone.size + (pmRequiredToday ? pmDone.size : 0);
+      const tempCompletion = expectedTempCount === 0 ? 1 : doneTempCount / expectedTempCount;
 
-      const doneCleaningIds = new Set(cleaningLogs.filter((l: any) => l.done).map((l: any) => l.task_id));
-      const cleaningCompletion = cleaningTasks.length === 0 ? 1 : doneCleaningIds.size / cleaningTasks.length;
-
-      const dsItems = daySheetSections.flatMap((s: any) => (s.day_sheet_items ?? []).filter((i: any) => i.active));
-      const doneItemIds = new Set(daySheetEntries.filter((e: any) => e.done).map((e: any) => e.item_id));
-      const daySheetCompletion = dsItems.length === 0 ? 1 : doneItemIds.size / dsItems.length;
-
-      // Hard deductions
+      // Unresolved breaches today (block trading)
       const activeBreaches = tempLogs.filter((l: any) => l.pass === false && !l.corrective_action).length;
+
+      // --- CLEANING (only count tasks past their due_time) ---
+      const dueCleaning = viewingToday
+        ? cleaningTasks.filter((t: any) => {
+            if (!t.due_time) return true;
+            const [hh, mm] = String(t.due_time).slice(0, 5).split(":").map(Number);
+            if (Number.isNaN(hh)) return true;
+            return now.getHours() * 60 + now.getMinutes() >= hh * 60 + mm;
+          })
+        : cleaningTasks;
+      const doneCleaningIds = new Set(cleaningLogs.filter((l: any) => l.done).map((l: any) => l.task_id));
+      const doneDueCount = dueCleaning.filter((t: any) => doneCleaningIds.has(t.id)).length;
+      const cleaningCompletion = dueCleaning.length === 0 ? 1 : doneDueCount / dueCleaning.length;
+
+      // --- DAY SHEET (split by opening/closing/midday) ---
+      const openingItems: string[] = [];
+      const closingItems: string[] = [];
+      const middayItems: string[] = [];
+      for (const s of sections) {
+        const cls = classifySection(s);
+        const items = (s.day_sheet_items ?? []).filter((i: any) => i.active).map((i: any) => i.id as string);
+        if (cls === "opening") openingItems.push(...items);
+        else if (cls === "closing") closingItems.push(...items);
+        else middayItems.push(...items);
+      }
+      const doneIds = new Set(dsEntries.filter((e: any) => e.done).map((e: any) => e.item_id));
+
+      // Required today depends on window
+      const requiredToday: string[] = [
+        ...openingItems,
+        ...(window === "midday" || window === "closing" ? middayItems : []),
+        ...(window === "closing" ? closingItems : []),
+      ];
+      const doneToday = requiredToday.filter((id) => doneIds.has(id)).length;
+      const daySheetCompletion = requiredToday.length === 0 ? 1 : doneToday / requiredToday.length;
+
+      const openingMissing = Math.max(0, openingItems.length - openingItems.filter((id) => doneIds.has(id)).length);
+
+      // --- YESTERDAY CLOSING (morning/midday only) ---
+      let yesterdayClosingMissing = 0;
+      let yesterdayPmTempsMissing = 0;
+      if (!yesterdayWasClosed && (window === "opening" || window === "midday")) {
+        const doneY = new Set(dsEntriesY.filter((e: any) => e.done).map((e: any) => e.item_id));
+        yesterdayClosingMissing = closingItems.filter((id) => !doneY.has(id)).length;
+        const pmDoneY = new Set(tempLogsY.filter((l: any) => l.log_type === "PM Check").map((l: any) => l.unit_id));
+        yesterdayPmTempsMissing = Math.max(0, unitCount - pmDoneY.size);
+      }
+
+      // --- INCIDENTS / BATCHES ---
       const openIncidents = incidents.length;
       const today = new Date(dateISO);
       const expiredBatches = batches.filter((b: any) => b.use_by_date && new Date(b.use_by_date) < today).length;
 
-      // Weights: completion domains share 60 points, hard issues take the rest.
-      const tempPts = tempCompletion * 25;          // up to 25
-      const cleanPts = cleaningCompletion * 20;     // up to 20
-      const daySheetPts = daySheetCompletion * 15;  // up to 15
-      const baseline = 40;                          // remaining 40 is "no critical issues"
-      const breachPenalty = Math.min(20, activeBreaches * 10);
-      const incidentPenalty = Math.min(15, openIncidents * 5);
-      const expiredPenalty = Math.min(10, expiredBatches * 2);
-
-      const score = Math.max(0, Math.round(
-        tempPts + cleanPts + daySheetPts + baseline - breachPenalty - incidentPenalty - expiredPenalty
-      ));
-
-      const band: Band = score >= 85 ? "green" : score >= 65 ? "amber" : "red";
-
-      // Build reasons — biggest impacts first
+      // --- SCORING (per spec) ---
+      let score = 100;
       const reasons: SafeToTradeReason[] = [];
+
       if (activeBreaches > 0) {
+        const impact = activeBreaches * 25;
+        score -= impact;
         reasons.push({
-          label: `${activeBreaches} temp breach${activeBreaches > 1 ? "es" : ""} without corrective action`,
-          impact: breachPenalty,
-          href: "/temperatures",
+          label: `${activeBreaches} unresolved temp breach${activeBreaches > 1 ? "es" : ""}`,
+          impact, href: "/temperatures",
         });
       }
+
+      if ((window === "opening" || window === "midday") && openingMissing > 0) {
+        const impact = Math.min(30, openingMissing * 10);
+        score -= impact;
+        reasons.push({
+          label: `${openingMissing} opening check${openingMissing > 1 ? "s" : ""} not done`,
+          impact, href: "/day-sheet",
+        });
+      }
+
+      if (window === "closing" && requiredToday.length > 0 && doneToday < requiredToday.length) {
+        const missing = requiredToday.length - doneToday;
+        const impact = Math.min(30, missing * 10);
+        score -= impact;
+        reasons.push({
+          label: `${missing} closing task${missing > 1 ? "s" : ""} outstanding`,
+          impact, href: "/day-sheet",
+        });
+      }
+
+      if (yesterdayClosingMissing > 0) {
+        const impact = Math.min(30, yesterdayClosingMissing * 15);
+        score -= impact;
+        reasons.push({
+          label: `Yesterday closing incomplete (${yesterdayClosingMissing} item${yesterdayClosingMissing > 1 ? "s" : ""})`,
+          impact, href: "/day-sheet",
+        });
+      }
+
+      if (yesterdayPmTempsMissing > 0) {
+        const impact = Math.min(15, yesterdayPmTempsMissing * 5);
+        score -= impact;
+        reasons.push({
+          label: `Yesterday PM temps missing (${yesterdayPmTempsMissing})`,
+          impact, href: "/temperatures",
+        });
+      }
+
       if (openIncidents > 0) {
+        const impact = Math.min(20, openIncidents * 10);
+        score -= impact;
         reasons.push({
           label: `${openIncidents} open incident${openIncidents > 1 ? "s" : ""}`,
-          impact: incidentPenalty,
-          href: "/incidents",
+          impact, href: "/incidents",
         });
       }
-      if (tempCompletion < 1) {
-        reasons.push({
-          label: `Temperature checks ${Math.round(tempCompletion * 100)}% complete`,
-          impact: Math.round((1 - tempCompletion) * 25),
-          href: "/temperatures",
-        });
-      }
-      if (cleaningCompletion < 1) {
-        reasons.push({
-          label: `Cleaning ${Math.round(cleaningCompletion * 100)}% complete`,
-          impact: Math.round((1 - cleaningCompletion) * 20),
-          href: "/cleaning",
-        });
-      }
-      if (daySheetCompletion < 1) {
-        reasons.push({
-          label: `Day sheet ${Math.round(daySheetCompletion * 100)}% complete`,
-          impact: Math.round((1 - daySheetCompletion) * 15),
-          href: "/day-sheet",
-        });
-      }
-      if (expiredBatches > 0) {
-        reasons.push({
-          label: `${expiredBatches} batch${expiredBatches > 1 ? "es" : ""} past use-by`,
-          impact: expiredPenalty,
-          href: "/batches",
-        });
-      }
+
+      score = Math.max(0, Math.min(100, Math.round(score)));
+      const band: Band = score >= 90 ? "green" : score >= 70 ? "amber" : "red";
 
       reasons.sort((a, b) => b.impact - a.impact);
 
@@ -178,6 +248,9 @@ export function useSafeToTrade(siteId: string | undefined, dateISO: string) {
           openIncidents,
           activeBreaches,
           expiredBatches,
+          yesterdayClosingMissing,
+          yesterdayWasClosed,
+          window,
         },
       };
     },
