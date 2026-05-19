@@ -882,7 +882,13 @@ function Footer() {
 export default function Landing() {
   return (
     <div className="min-h-screen bg-white text-slate-900 scroll-smooth font-body">
+      <SEO
+        title="MiseOS — Hygiene & batch-tracking for UK food businesses"
+        description="All-in-one, UK-focused hygiene and batch-tracking for bakeries, cafés and small restaurants. Log checks fast and stay inspection-ready."
+        path="/"
+      />
       <Nav />
+
       <Hero />
       <Statement />
       <Problem />
