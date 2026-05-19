@@ -147,16 +147,38 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
   const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
   const trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null;
 
+  // New billing vocabulary: monthly = 12-month minimum term billed monthly,
+  // year = paid up-front annually. Term end = renewal date.
+  const billingInterval = interval === "year" ? "annual_upfront" : "monthly_term";
+  const startMs = sub.current_period_start
+    ? sub.current_period_start * 1000
+    : Date.now();
+  const termStart = new Date(startMs).toISOString();
+  // Preserve an existing term_end for monthly_term subs so renewals don't reset early.
+  // Default: start + 12 months for monthly_term, current_period_end for annual_upfront.
+  let termEnd: string;
+  if (billingInterval === "annual_upfront") {
+    termEnd = periodEnd ?? new Date(startMs + 365 * 86400000).toISOString();
+  } else {
+    // 12 months from term_start unless one already exists in future
+    const existingTermEnd = (existing as any)?.term_end ? new Date((existing as any).term_end).getTime() : 0;
+    const computed = new Date(startMs);
+    computed.setUTCMonth(computed.getUTCMonth() + 12);
+    termEnd = existingTermEnd > Date.now() ? new Date(existingTermEnd).toISOString() : computed.toISOString();
+  }
+
   // IMPORTANT: only write the new model fields. Legacy boolean columns are NOT touched here.
   await supabase.from("subscriptions").upsert({
     organisation_id: orgId,
     stripe_subscription_id: sub.id,
     stripe_customer_id: sub.customer,
     status: sub.status,
-    billing_interval: interval,
+    billing_interval: billingInterval,
     current_period_start: periodStart,
     current_period_end: periodEnd,
     trial_end: trialEnd,
+    term_start: termStart,
+    term_end: termEnd,
     cancel_at_period_end: sub.cancel_at_period_end || false,
     site_quantity: siteQty,
     tier: tier,
