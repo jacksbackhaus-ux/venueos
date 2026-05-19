@@ -493,8 +493,8 @@ function RecipeDrawer({
           {isMenu && (
             <ChannelPricing
               recipeId={recipe.id}
-              siteId={(recipe as any).site_id ?? null}
-              orgId={(recipe as any).organisation_id ?? null}
+              siteId={siteId}
+              orgId={orgId}
               ingredientCostPerPortion={bd.costPerPortionExVat}
               initialDtcPrice={(recipe as any).dtc_price ?? recipe.sale_price ?? null}
               initialWholesalePrice={(recipe as any).wholesale_price ?? null}
