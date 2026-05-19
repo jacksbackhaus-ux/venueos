@@ -474,7 +474,7 @@ export function ManagerForgotCard({ onBack }: { onBack: () => void }) {
 
 /* ────────────────────────────────────────────────────────────────── Staff */
 
-function StaffCard({ onBack }: { onBack: () => void }) {
+export function StaffCard({ onBack, orgSlug, orgName }: { onBack: () => void; orgSlug?: string; orgName?: string }) {
   const { setStaffSession } = useAuth();
   const [siteCode, setSiteCode] = useState("");
   const [staffCode, setStaffCode] = useState("");
