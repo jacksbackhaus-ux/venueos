@@ -70,12 +70,17 @@ export default function OverheadsTab({
   const [saving, setSaving] = useState(false);
 
   // Hydrate when query updates
-  useMemo(() => {
+  useEffect(() => {
     const next: Record<string, string> = {};
     for (const f of FIELDS) next[f.key] = current?.[f.key] != null ? String(current[f.key]) : "";
     setValues(next);
     setNotes(current?.notes ?? "");
   }, [current?.id, month]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const totalCurrent = FIELDS.reduce((s, f) => s + (Number(values[f.key]) || 0), 0);
+  const totalPrior = sumOverheads(prior as any);
+  const delta = totalPrior > 0 ? ((totalCurrent - totalPrior) / totalPrior) * 100 : null;
+  const perDay = totalCurrent / daysInMonth(month);
 
   const totalCurrent = FIELDS.reduce((s, f) => s + (Number(values[f.key]) || 0), 0);
   const totalPrior = sumOverheads(prior as any);
