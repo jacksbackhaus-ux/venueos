@@ -113,7 +113,7 @@ export default function Onboarding() {
 
   const copyUrl = async () => {
     if (!orgSlug) return;
-    const url = `${window.location.origin}/login/${orgSlug}`;
+    const url = buildOrgLoginUrl(orgSlug);
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
