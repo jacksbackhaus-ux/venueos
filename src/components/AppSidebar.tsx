@@ -2,7 +2,8 @@ import {
   LayoutDashboard, CalendarClock, Thermometer, ClipboardList, SprayCan,
   Wheat, Truck, Bug, AlertTriangle, FileText, Settings, ShieldCheck,
   Package, Building2, CreditCard, MapPin, Calculator, Clock, MessageSquare,
-  PoundSterling, Sparkles, Trash2, GraduationCap, BookCheck, MessageSquareHeart, Wrench,
+  PoundSterling, Sparkles, Trash2, GraduationCap, BookCheck, MessageSquareHeart, Wrench, ShoppingBag,
+
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useInternalStaff } from "@/hooks/useInternalStaff";
@@ -48,6 +49,7 @@ const complianceAll: NavLeaf[] = [
 
 const businessAll: NavLeaf[] = [
   { title: "Cost & Margin", url: "/cost-margin", icon: Calculator, mod: "cost_margin" },
+  { title: "Sales Hub", url: "/sales", icon: ShoppingBag, mod: "cost_margin" },
   { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker" },
   { title: "Reports", url: "/reports", icon: FileText, mod: "reports" },
 ];
