@@ -36,12 +36,16 @@ const LEGACY_MAP: Record<string, { plan: LegacyPlan; cycle: "month" | "year" }> 
 
 const TIER_MAP: Record<string, { tier: TierId; cycle: "month" | "year"; flagDelta: FlagDelta }> = {
   miseos_essentials_monthly:    { tier: "essentials",    cycle: "month", flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
+  miseos_essentials_annual:     { tier: "essentials",    cycle: "year",  flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
   miseos_essentials_yearly:     { tier: "essentials",    cycle: "year",  flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
   miseos_professional_monthly:  { tier: "professional",  cycle: "month", flagDelta: { base: true,  compliance: true,  business: false, bundle: false } },
+  miseos_professional_annual:   { tier: "professional",  cycle: "year",  flagDelta: { base: true,  compliance: true,  business: false, bundle: false } },
   miseos_professional_yearly:   { tier: "professional",  cycle: "year",  flagDelta: { base: true,  compliance: true,  business: false, bundle: false } },
   miseos_business_tier_monthly: { tier: "business_tier", cycle: "month", flagDelta: { base: false, compliance: false, business: false, bundle: true  } },
+  miseos_business_tier_annual:  { tier: "business_tier", cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true  } },
   miseos_business_tier_yearly:  { tier: "business_tier", cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true  } },
   miseos_intelligence_monthly:  { tier: "intelligence",  cycle: "month", flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
+  miseos_intelligence_annual:   { tier: "intelligence",  cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
   miseos_intelligence_yearly:   { tier: "intelligence",  cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
 };
 
@@ -143,16 +147,38 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
   const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
   const trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null;
 
+  // New billing vocabulary: monthly = 12-month minimum term billed monthly,
+  // year = paid up-front annually. Term end = renewal date.
+  const billingInterval = interval === "year" ? "annual_upfront" : "monthly_term";
+  const startMs = sub.current_period_start
+    ? sub.current_period_start * 1000
+    : Date.now();
+  const termStart = new Date(startMs).toISOString();
+  // Preserve an existing term_end for monthly_term subs so renewals don't reset early.
+  // Default: start + 12 months for monthly_term, current_period_end for annual_upfront.
+  let termEnd: string;
+  if (billingInterval === "annual_upfront") {
+    termEnd = periodEnd ?? new Date(startMs + 365 * 86400000).toISOString();
+  } else {
+    // 12 months from term_start unless one already exists in future
+    const existingTermEnd = (existing as any)?.term_end ? new Date((existing as any).term_end).getTime() : 0;
+    const computed = new Date(startMs);
+    computed.setUTCMonth(computed.getUTCMonth() + 12);
+    termEnd = existingTermEnd > Date.now() ? new Date(existingTermEnd).toISOString() : computed.toISOString();
+  }
+
   // IMPORTANT: only write the new model fields. Legacy boolean columns are NOT touched here.
   await supabase.from("subscriptions").upsert({
     organisation_id: orgId,
     stripe_subscription_id: sub.id,
     stripe_customer_id: sub.customer,
     status: sub.status,
-    billing_interval: interval,
+    billing_interval: billingInterval,
     current_period_start: periodStart,
     current_period_end: periodEnd,
     trial_end: trialEnd,
+    term_start: termStart,
+    term_end: termEnd,
     cancel_at_period_end: sub.cancel_at_period_end || false,
     site_quantity: siteQty,
     tier: tier,

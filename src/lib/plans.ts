@@ -170,14 +170,16 @@ export interface TierDef {
 const PROFESSIONAL_MODULES: ModuleName[] = [...BASE_MODULES, ...COMPLIANCE_MODULES];
 const BUSINESS_TIER_MODULES: ModuleName[] = [...PROFESSIONAL_MODULES, ...BUSINESS_MODULES];
 
+// 2026 pricing — per site, unlimited users.
+// Annual = monthly × 12 × 0.85 (15% discount), rounded as agreed.
 export const TIERS: Record<TierId, TierDef> = {
   essentials: {
     id: "essentials",
     name: "Essentials",
-    monthlyPrice: 7.99,
-    yearlyPrice: 79.90,
+    monthlyPrice: 14.99,
+    yearlyPrice: 152.90,
     monthlyPriceId: "miseos_essentials_monthly",
-    yearlyPriceId: "miseos_essentials_yearly",
+    yearlyPriceId: "miseos_essentials_annual",
     modules: BASE_MODULES,
     flagSet: { base: true, compliance: false, business: false, bundle: false, ai: false },
     tagline: "Run your daily operations.",
@@ -190,10 +192,10 @@ export const TIERS: Record<TierId, TierDef> = {
   professional: {
     id: "professional",
     name: "Professional",
-    monthlyPrice: 9.99,
-    yearlyPrice: 99.90,
+    monthlyPrice: 25.99,
+    yearlyPrice: 265.10,
     monthlyPriceId: "miseos_professional_monthly",
-    yearlyPriceId: "miseos_professional_yearly",
+    yearlyPriceId: "miseos_professional_annual",
     modules: PROFESSIONAL_MODULES,
     flagSet: { base: true, compliance: true, business: false, bundle: false, ai: false },
     tagline: "Everything in Essentials + full compliance.",
@@ -207,10 +209,10 @@ export const TIERS: Record<TierId, TierDef> = {
   business_tier: {
     id: "business_tier",
     name: "Business",
-    monthlyPrice: 12.99,
-    yearlyPrice: 129.90,
+    monthlyPrice: 45.99,
+    yearlyPrice: 469.10,
     monthlyPriceId: "miseos_business_tier_monthly",
-    yearlyPriceId: "miseos_business_tier_yearly",
+    yearlyPriceId: "miseos_business_tier_annual",
     modules: BUSINESS_TIER_MODULES,
     flagSet: { base: false, compliance: false, business: false, bundle: true, ai: false },
     tagline: "Everything in Professional + business tools.",
@@ -223,10 +225,10 @@ export const TIERS: Record<TierId, TierDef> = {
   intelligence: {
     id: "intelligence",
     name: "Intelligence",
-    monthlyPrice: 16.99,
-    yearlyPrice: 169.90,
+    monthlyPrice: 69.99,
+    yearlyPrice: 713.90,
     monthlyPriceId: "miseos_intelligence_monthly",
-    yearlyPriceId: "miseos_intelligence_yearly",
+    yearlyPriceId: "miseos_intelligence_annual",
     modules: ALL_MODULES,
     flagSet: { base: false, compliance: false, business: false, bundle: true, ai: true },
     tagline: "Everything in Business + AI superpowers.",
@@ -238,6 +240,11 @@ export const TIERS: Record<TierId, TierDef> = {
     ai: true,
   },
 };
+
+/** Annual savings vs paying monthly_term for 12 months. */
+export function annualSavings(tier: TierDef): number {
+  return Math.round((tier.monthlyPrice * 12 - tier.yearlyPrice) * 100) / 100;
+}
 
 export const TIER_ORDER: TierId[] = ["essentials", "professional", "business_tier", "intelligence"];
 

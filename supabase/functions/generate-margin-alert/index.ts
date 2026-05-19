@@ -3,6 +3,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.96.0";
 import { assertSiteAccess } from "../_shared/siteAuthz.ts";
+import { assertIntelligenceTier } from "../_shared/aiTierGuard.ts";
 
 /**
  * generate-margin-alert
@@ -66,6 +67,9 @@ serve(async (req) => {
       corsHeaders,
     });
     if (authzFail) return authzFail;
+
+    const aiFail = await assertIntelligenceTier({ siteId: site_id, svc, corsHeaders });
+    if (aiFail) return aiFail;
 
 
     const todayStr = payload.generated_for_date || ymd(new Date());

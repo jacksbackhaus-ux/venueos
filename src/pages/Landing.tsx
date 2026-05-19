@@ -431,26 +431,30 @@ function LiveExamples() {
 const TIERS = [
   {
     name: "Essentials",
-    price: "£7.99",
+    price: "£14.99",
+    annual: "£152.90/yr",
     desc: "Daily ops, temps and day sheets for one site.",
-    features: ["Dashboard", "Temperatures", "Day Sheet", "Cleaning", "Shifts", "Up to 5 staff"],
+    features: ["Dashboard", "Temperatures", "Day Sheet", "Cleaning", "Shifts", "Unlimited users"],
   },
   {
     name: "Professional",
-    price: "£9.99",
+    price: "£25.99",
+    annual: "£265.10/yr",
     desc: "Everything in Essentials + full compliance.",
-    features: ["Everything in Essentials", "Incidents", "Allergens & labels", "HACCP & EHO reports", "Unlimited staff"],
+    features: ["Everything in Essentials", "Allergens & labels", "HACCP & EHO reports", "Incidents", "Unlimited users"],
     popular: true,
   },
   {
     name: "Business",
-    price: "£12.99",
+    price: "£45.99",
+    annual: "£469.10/yr",
     desc: "Everything in Professional + business tools.",
     features: ["Everything in Professional", "Batch tracking", "Suppliers & deliveries", "Pest & maintenance", "Cost & margin"],
   },
   {
     name: "Intelligence",
-    price: "£16.99",
+    price: "£69.99",
+    annual: "£713.90/yr",
     desc: "Everything in Business + AI superpowers.",
     features: ["Everything in Business", "Daily morning briefing", "Margin & waste alerts", "Equipment health warnings", "Smart rota suggestions"],
   },
@@ -463,7 +467,8 @@ function Pricing() {
         <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
           Simple pricing. No surprises.
         </h2>
-        <p className="mt-4 text-slate-600 text-lg">Per site, per month. 14-day free trial. Cancel anytime.</p>
+        <p className="mt-4 text-slate-600 text-lg">Per site, per month. Unlimited users. Annual saves 15%.</p>
+        <p className="mt-2 text-slate-500 text-sm">Monthly is a 12-month plan billed monthly. 14-day free trial — no card required.</p>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
         {TIERS.map((t) => (
@@ -480,10 +485,11 @@ function Pricing() {
             <p className={`text-sm font-semibold uppercase tracking-wider mb-2 ${t.popular ? "text-white/70" : "text-slate-500"}`}>
               {t.name}
             </p>
-            <div className="flex items-baseline gap-1 mb-3">
+            <div className="flex items-baseline gap-1 mb-1">
               <span className="text-4xl font-bold">{t.price}</span>
               <span className={t.popular ? "text-white/70" : "text-slate-500"}>/mo</span>
             </div>
+            <p className={`text-xs mb-3 ${t.popular ? "text-white/70" : "text-slate-500"}`}>or {t.annual} (save 15%)</p>
             <p className={`text-sm mb-6 ${t.popular ? "text-white/85" : "text-slate-600"}`}>{t.desc}</p>
             <ul className="space-y-2.5 mb-7">
               {t.features.map((f) => (
@@ -503,6 +509,18 @@ function Pricing() {
             </a>
           </Card>
         ))}
+      </div>
+      <div className="max-w-3xl mx-auto mt-12 text-center space-y-3">
+        <p className="text-sm text-slate-600">🌱 5% of every subscription goes towards carbon removal via Stripe Climate.</p>
+        <iframe
+          title="Stripe Climate"
+          src="https://climate.stripe.com/badge/Zd5W2t?theme=light&size=small&locale=en-GB"
+          width={380} height={38} style={{ border: 0, maxWidth: "100%", margin: "0 auto" }} loading="lazy"
+        />
+        <p className="text-xs text-slate-500 mt-4">
+          Monthly plans are a 12-month minimum, billed monthly, and renew for another 12-month term unless cancelled.
+          Annual plans renew yearly unless cancelled.
+        </p>
       </div>
     </Section>
   );
