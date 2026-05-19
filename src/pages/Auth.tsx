@@ -9,13 +9,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Mail, KeyRound, Building2, Loader2, Eye, EyeOff } from "lucide-react";
+import { SEO } from "@/components/SEO";
+
 
 export default function Auth() {
   const [tab, setTab] = useState<"login" | "signup" | "staff">("login");
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      <SEO
+        title="Sign in or sign up — MiseOS"
+        description="Sign in to your MiseOS account or start a 14-day free trial. Hygiene and batch-tracking for UK food businesses."
+        path="/auth"
+      />
       {/* Internal-only entrypoint for MiseOS employees. Not advertised to customers. */}
+
       <Link
         to="/staff-login"
         className="absolute top-4 right-4 text-xs text-primary hover:underline font-medium"

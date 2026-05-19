@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import miseosLogo from "@/assets/miseos-logo.png";
+import { SEO } from "@/components/SEO";
+
 
 const AUTH_URL = "/auth";
 
