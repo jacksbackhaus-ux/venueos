@@ -129,6 +129,7 @@ export async function loadCostContextForOrg(
       .select(`
         id, name, category, packaging_cost, labour_minutes,
         sell_price_ex_vat, vat_rate, monthly_volume, target_margin_override,
+        sale_price, target_gp_percent,
         recipe_ingredients(
           id, ingredient_id, weight, unit, cost_per_unit_override,
           ingredients(id, name, unit, cost_per_unit)
@@ -165,20 +166,36 @@ interface RawRecipe extends RecipeCostInput {
   name: string;
   category: string;
   monthly_volume: number;
+  sale_price?: number | null;
+  target_gp_percent?: number | null;
 }
 
 export interface RecipeWithCost extends RawRecipe {
   breakdown: RecipeCostBreakdown;
 }
 
-// Compute total production cost for a batch of N units of a given recipe.
-// Now backed by the True Margin Engine so Batches uses the same cost model.
+export interface BatchCostMargin {
+  unitCost: number;
+  totalCost: number;
+  /** Per-unit sale price ex-VAT pulled from the recipe at production time. */
+  salePriceExVat: number | null;
+  /** Gross margin % at production time, null if no sale price is set. */
+  marginPct: number | null;
+  /** Recipe target gross margin % (org default if recipe override missing). */
+  targetGpPercent: number | null;
+  /** True when marginPct is non-null and falls under the target. */
+  belowTarget: boolean;
+}
+
+// Compute total production cost — plus the margin snapshot — for a batch of N
+// units of a given recipe. Backed by the True Margin Engine so Batches uses
+// the exact same cost model as Cost & Margin.
 export async function calcBatchProductionCost(
   recipeId: string,
   quantity: number,
   orgId: string,
   siteId: string
-): Promise<{ unitCost: number; totalCost: number } | null> {
+): Promise<BatchCostMargin | null> {
   if (!recipeId || !quantity || quantity <= 0) return null;
   const { loadTMEContext, calcRecipeBreakdown } = await import("./trueMargin");
   const { ctx, recipes } = await loadTMEContext(siteId, orgId);
@@ -187,5 +204,24 @@ export async function calcBatchProductionCost(
   const bd = calcRecipeBreakdown(recipe, ctx);
   const portions = Math.max(1, Number(recipe.portions) || 1);
   const unitCost = bd.totalCostExVat / portions;
-  return { unitCost, totalCost: unitCost * quantity };
+  const totalCost = unitCost * quantity;
+
+  const salePriceExVat = bd.salePriceExVat ?? null;
+  const marginPct =
+    salePriceExVat != null && salePriceExVat > 0
+      ? ((salePriceExVat - unitCost) / salePriceExVat) * 100
+      : null;
+  const targetGpPercent =
+    Number(recipe.target_gp_percent) || Number(ctx.settings.target_margin_pct) || null;
+  const belowTarget =
+    marginPct != null && targetGpPercent != null && marginPct < targetGpPercent;
+
+  return {
+    unitCost,
+    totalCost,
+    salePriceExVat,
+    marginPct,
+    targetGpPercent,
+    belowTarget,
+  };
 }

@@ -303,6 +303,8 @@ export type Database = {
           created_by_user_id: string | null
           date_produced: string | null
           id: string
+          margin_below_target: boolean
+          margin_pct: number | null
           notes: string | null
           organisation_id: string
           product_name: string
@@ -311,8 +313,10 @@ export type Database = {
           recipe_id: string | null
           recipe_number: number | null
           recipe_ref: string | null
+          sale_price_snapshot: number | null
           site_id: string
           status: Database["public"]["Enums"]["batch_status"]
+          target_gp_percent_snapshot: number | null
           template_id: string | null
           total_production_cost: number | null
           tray_count: number | null
@@ -327,6 +331,8 @@ export type Database = {
           created_by_user_id?: string | null
           date_produced?: string | null
           id?: string
+          margin_below_target?: boolean
+          margin_pct?: number | null
           notes?: string | null
           organisation_id: string
           product_name: string
@@ -335,8 +341,10 @@ export type Database = {
           recipe_id?: string | null
           recipe_number?: number | null
           recipe_ref?: string | null
+          sale_price_snapshot?: number | null
           site_id: string
           status?: Database["public"]["Enums"]["batch_status"]
+          target_gp_percent_snapshot?: number | null
           template_id?: string | null
           total_production_cost?: number | null
           tray_count?: number | null
@@ -351,6 +359,8 @@ export type Database = {
           created_by_user_id?: string | null
           date_produced?: string | null
           id?: string
+          margin_below_target?: boolean
+          margin_pct?: number | null
           notes?: string | null
           organisation_id?: string
           product_name?: string
@@ -359,8 +369,10 @@ export type Database = {
           recipe_id?: string | null
           recipe_number?: number | null
           recipe_ref?: string | null
+          sale_price_snapshot?: number | null
           site_id?: string
           status?: Database["public"]["Enums"]["batch_status"]
+          target_gp_percent_snapshot?: number | null
           template_id?: string | null
           total_production_cost?: number | null
           tray_count?: number | null

@@ -36,6 +36,10 @@ interface Batch {
   tray_count: number | null;
   unit_cost_snapshot: number | null;
   total_production_cost: number | null;
+  sale_price_snapshot: number | null;
+  target_gp_percent_snapshot: number | null;
+  margin_pct: number | null;
+  margin_below_target: boolean | null;
   status: BatchStatus;
   notes: string | null;
   created_at: string;
@@ -108,6 +112,7 @@ export default function Batches() {
     quantity_produced: '', quantity_unit: 'cookies', tray_count: '',
     template_id: '', notes: '',
     date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
+    sale_price: '', // per-unit ex-VAT; pre-fills from recipe when one is picked
   });
   const [creating, setCreating] = useState(false);
 
@@ -176,9 +181,23 @@ export default function Batches() {
 
     let unitCost: number | null = null;
     let totalCost: number | null = null;
+    let salePriceSnap: number | null = newBatch.sale_price ? Number(newBatch.sale_price) : null;
+    let targetGpSnap: number | null = null;
+    let marginPct: number | null = null;
+    let marginBelowTarget = false;
     if (hasCostAccess && newBatch.recipe_id && qty > 0) {
       const calc = await calcBatchProductionCost(newBatch.recipe_id, qty, organisationId, siteId);
-      if (calc) { unitCost = calc.unitCost; totalCost = calc.totalCost; }
+      if (calc) {
+        unitCost = calc.unitCost;
+        totalCost = calc.totalCost;
+        // Per-batch sale-price override wins; otherwise use the recipe snapshot.
+        if (salePriceSnap == null) salePriceSnap = calc.salePriceExVat;
+        targetGpSnap = calc.targetGpPercent;
+        if (salePriceSnap != null && salePriceSnap > 0 && unitCost != null) {
+          marginPct = ((salePriceSnap - unitCost) / salePriceSnap) * 100;
+          marginBelowTarget = targetGpSnap != null && marginPct < targetGpSnap;
+        }
+      }
     }
 
     const selectedRecipe = costRecipes.find(r => r.id === newBatch.recipe_id);
@@ -198,6 +217,10 @@ export default function Batches() {
       tray_count: newBatch.tray_count ? Number(newBatch.tray_count) : null,
       unit_cost_snapshot: unitCost,
       total_production_cost: totalCost,
+      sale_price_snapshot: salePriceSnap,
+      target_gp_percent_snapshot: targetGpSnap,
+      margin_pct: marginPct,
+      margin_below_target: marginBelowTarget,
       notes: newBatch.notes || null,
       date_produced: newBatch.date_produced || null,
       use_by_date: newBatch.use_by_date || null,
@@ -206,12 +229,20 @@ export default function Batches() {
     setCreating(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Logged ${qty} ${unitLabel(smartUnit, qty)}`);
+    // Margin alert pipeline — surface immediately so the operator sees the hit.
+    if (marginBelowTarget && marginPct != null && targetGpSnap != null) {
+      toast.warning(
+        `Margin below target on this bake: ${marginPct.toFixed(0)}% (target ${targetGpSnap.toFixed(0)}%)`,
+        { description: 'Review sale price or production cost in Cost & Margin.' }
+      );
+    }
     setShowCreate(false);
     setNewBatch({
       product_name: '', recipe_ref: '', recipe_id: '', recipe_number: '',
       quantity_produced: '', quantity_unit: 'cookies', tray_count: '',
       template_id: '', notes: '',
       date_produced: format(new Date(), 'yyyy-MM-dd'), use_by_date: '',
+      sale_price: '',
     });
     loadBatches();
   };
@@ -339,6 +370,39 @@ export default function Batches() {
                         <Icon className="h-3 w-3 mr-1" /> {sc.label}
                       </Badge>
                     </div>
+
+                    {/* LINE 1b — Cost & margin snapshot */}
+                    {(batch.unit_cost_snapshot != null || batch.margin_pct != null) && (
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        {batch.unit_cost_snapshot != null && (
+                          <span className="text-muted-foreground tabular-nums">
+                            £{Number(batch.unit_cost_snapshot).toFixed(2)}/unit
+                          </span>
+                        )}
+                        {batch.total_production_cost != null && (
+                          <span className="text-muted-foreground tabular-nums">
+                            · total £{Number(batch.total_production_cost).toFixed(2)}
+                          </span>
+                        )}
+                        {batch.margin_pct != null && (
+                          <Badge
+                            variant="outline"
+                            className={
+                              batch.margin_below_target
+                                ? 'bg-breach/10 text-breach border-breach/30 text-[10px] py-0 px-1.5 tabular-nums'
+                                : 'bg-success/10 text-success border-success/30 text-[10px] py-0 px-1.5 tabular-nums'
+                            }
+                          >
+                            Margin {Number(batch.margin_pct).toFixed(0)}%
+                            {batch.target_gp_percent_snapshot != null && (
+                              <span className="opacity-70 ml-1">
+                                / {Number(batch.target_gp_percent_snapshot).toFixed(0)}%
+                              </span>
+                            )}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
 
                     {/* LINE 2 — BIG quantity */}
                     <div>
@@ -482,31 +546,51 @@ export default function Batches() {
             </div>
 
             {hasCostAccess && costRecipes.length > 0 && (
-              <div>
-                <Label className="text-xs">Recipe (links cost data — optional)</Label>
-                <Select
-                  value={newBatch.recipe_id || "__none__"}
-                  onValueChange={(v) => {
-                    const rid = v === "__none__" ? "" : v;
-                    const r = costRecipes.find(x => x.id === rid);
-                    setNewBatch({
-                      ...newBatch,
-                      recipe_id: rid,
-                      product_name: newBatch.product_name || r?.name || '',
-                      recipe_ref: newBatch.recipe_ref || r?.name || '',
-                    });
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder="No recipe" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">No recipe</SelectItem>
-                    {costRecipes.map(r => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.name} — £{r.breakdown.totalCostPerUnit.toFixed(3)}/unit
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs">Recipe (links cost data — optional)</Label>
+                  <Select
+                    value={newBatch.recipe_id || "__none__"}
+                    onValueChange={(v) => {
+                      const rid = v === "__none__" ? "" : v;
+                      const r = costRecipes.find(x => x.id === rid);
+                      setNewBatch({
+                        ...newBatch,
+                        recipe_id: rid,
+                        product_name: newBatch.product_name || r?.name || '',
+                        recipe_ref: newBatch.recipe_ref || r?.name || '',
+                        // Pre-fill per-unit sale price from the recipe; user can override.
+                        sale_price:
+                          r && (r as any).sale_price != null
+                            ? String((r as any).sale_price)
+                            : newBatch.sale_price,
+                      });
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="No recipe" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">No recipe</SelectItem>
+                      {costRecipes.map(r => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name} — £{r.breakdown.totalCostPerUnit.toFixed(3)}/unit
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {newBatch.recipe_id && (
+                  <div>
+                    <Label className="text-xs">Sale price per unit (£, ex-VAT)</Label>
+                    <Input
+                      type="number" step="0.01" min="0" placeholder="e.g. 2.50"
+                      value={newBatch.sale_price}
+                      onChange={e => setNewBatch({ ...newBatch, sale_price: e.target.value })}
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Used to calculate this batch's margin. Pre-filled from the recipe.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
