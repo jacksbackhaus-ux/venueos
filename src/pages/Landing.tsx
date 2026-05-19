@@ -1,23 +1,15 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Menu, X, Check, ArrowRight, ShieldCheck, Smartphone, Archive, Scale,
-  LayoutDashboard, CalendarDays, Repeat, Clock, MessageSquare, ClipboardCheck,
-  Thermometer, Sparkles, Trash2, Star, Tag, Truck, Bug, Wrench,
-  AlertTriangle, Boxes, GraduationCap, FileText, PoundSterling, Coins,
-  FileSpreadsheet, FileWarning, Layers, Users, Brain, Wand2, LineChart, Zap,
+  Menu, X, Check, ArrowRight, AlertTriangle, Cookie, Thermometer,
+  PoundSterling, CalendarDays, ClipboardCheck, MessageSquare, LayoutDashboard,
+  Sparkles, FileText, Coins, Scale, Trash2, Boxes, Brain, Zap, LineChart, Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Accordion, AccordionItem, AccordionTrigger, AccordionContent,
-} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import miseosLogo from "@/assets/miseos-logo.png";
 import { SEO } from "@/components/SEO";
-
 
 const AUTH_URL = "/auth";
 
@@ -25,12 +17,13 @@ const AUTH_URL = "/auth";
 const BRAND_DEEP = "#1f3a32";
 const BRAND_SAGE = "#3d8a6a";
 const BRAND_LIGHT = "#6BAE8E";
+const BRAND_CREAM = "#FAF7F2";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.5, ease: "easeOut" },
+  transition: { duration: 0.5, ease: "easeOut" as const },
 };
 
 const Section = ({ id, className = "", children }: { id?: string; className?: string; children: React.ReactNode }) => (
@@ -43,10 +36,9 @@ const Section = ({ id, className = "", children }: { id?: string; className?: st
 function Nav() {
   const [open, setOpen] = useState(false);
   const links = [
-    { href: "#features", label: "Features" },
+    { href: "#how", label: "How it works" },
+    { href: "#examples", label: "Examples" },
     { href: "#pricing", label: "Pricing" },
-    { href: "#compliance", label: "Compliance" },
-    { href: "#faq", label: "FAQ" },
   ];
   return (
     <nav className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-slate-200">
@@ -63,9 +55,7 @@ function Nav() {
           ))}
         </div>
         <div className="hidden md:flex items-center gap-2">
-          <a href={AUTH_URL}>
-            <Button variant="outline" size="sm">Log In</Button>
-          </a>
+          <a href={AUTH_URL}><Button variant="outline" size="sm">Log In</Button></a>
           <a href={AUTH_URL}>
             <Button size="sm" style={{ backgroundColor: BRAND_SAGE }} className="hover:opacity-90 text-white">
               Start Free Trial
@@ -95,426 +85,227 @@ function Nav() {
   );
 }
 
-// ───── Hero (OneHub-inspired: dark green panel, headline left, CTA card right) ─────
+// ───── Hero ─────
 function Hero() {
   return (
-    <section id="top" className="px-4 pt-6 md:pt-10 pb-10">
-      <motion.div
-        {...fadeUp}
-        className="relative max-w-6xl mx-auto rounded-[2rem] overflow-hidden text-white shadow-xl"
+    <section id="top" className="relative overflow-hidden px-4 pt-16 md:pt-24 pb-20 md:pb-28">
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
         style={{
-          background: `linear-gradient(135deg, ${BRAND_DEEP} 0%, ${BRAND_DEEP} 45%, ${BRAND_SAGE} 100%)`,
-          minHeight: "560px",
+          background: `radial-gradient(60% 80% at 10% 0%, ${BRAND_LIGHT}22 0%, transparent 60%), radial-gradient(50% 70% at 90% 20%, ${BRAND_SAGE}1a 0%, transparent 60%)`,
         }}
-      >
-        {/* decorative orb */}
-        <div
-          aria-hidden
-          className="absolute -right-32 -top-32 w-[480px] h-[480px] rounded-full opacity-40 blur-3xl"
-          style={{ background: `radial-gradient(circle, ${BRAND_LIGHT} 0%, transparent 70%)` }}
-        />
-        <div
-          aria-hidden
-          className="absolute -right-20 bottom-0 w-[380px] h-[380px] rounded-full opacity-25 blur-2xl"
-          style={{ background: `radial-gradient(circle, #a8d8bd 0%, transparent 70%)` }}
-        />
-
-        <div className="relative grid lg:grid-cols-5 gap-10 p-8 md:p-14 lg:p-16">
-          {/* Left: copy */}
-          <div className="lg:col-span-3 flex flex-col justify-center">
-            <Badge className="self-start mb-6 bg-white/15 hover:bg-white/15 text-white border border-white/20 px-3.5 py-1.5 rounded-full font-medium backdrop-blur-sm">
-              14-day free trial — no card required
-            </Badge>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] mb-6">
-              Run your bakery, café or restaurant from one platform
-            </h1>
-            <p className="text-base md:text-lg text-white/80 max-w-xl leading-relaxed mb-8">
-              MiseOS is food safety and compliance software built for independent food businesses
-              in the UK. Temperature logs, cleaning schedules, HACCP plans, shift rotas, recipe
-              costing and team messaging — all in one place, on any device.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a href={AUTH_URL}>
-                <Button size="lg" className="bg-white text-slate-900 hover:bg-white/90 h-12 px-7 text-base font-semibold">
-                  Start Free Trial <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </a>
-              <a href="#features">
-                <Button size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white h-12 px-7 text-base">
-                  See features
-                </Button>
-              </a>
-            </div>
-          </div>
-
-          {/* Right: log in card (replacing the demo form) */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl p-7 md:p-8 text-slate-900 shadow-2xl">
-              <div className="flex items-center gap-3 mb-2">
-                <div
-                  className="w-10 h-10 rounded-xl grid place-items-center"
-                  style={{ backgroundColor: `${BRAND_SAGE}15` }}
-                >
-                  <ShieldCheck className="w-5 h-5" style={{ color: BRAND_SAGE }} />
-                </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  14-day free trial
-                </span>
-              </div>
-              <h3 className="text-2xl font-bold mb-2 leading-tight">
-                Run your venue properly
-              </h3>
-              <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                No card required. Full platform access for two weeks. Cancel any time.
-              </p>
-              <div className="space-y-2.5 mb-6">
-                {[
-                  "Every module unlocked — full platform access",
-                  "Mobile and desktop ready",
-                  "Inspection-ready exports included",
-                ].map((t) => (
-                  <div key={t} className="flex items-start gap-2.5 text-sm text-slate-700">
-                    <Check className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: BRAND_SAGE }} />
-                    <span>{t}</span>
-                  </div>
-                ))}
-              </div>
-              <a href={AUTH_URL}>
-                <Button
-                  className="w-full h-12 text-white text-base font-semibold"
-                  style={{ backgroundColor: BRAND_SAGE }}
-                >
-                  Log In / Sign Up <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </a>
-              <p className="text-xs text-slate-500 text-center mt-4">
-                By signing up you agree to our terms and privacy policy.
-              </p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Trust strip */}
-      <div className="max-w-6xl mx-auto mt-10 grid grid-cols-2 md:grid-cols-4 gap-5">
-        {[
-          { icon: ShieldCheck, text: "FSA Safer Food Better Business aligned" },
-          { icon: FileSpreadsheet, text: "EHO inspection pack built in" },
-          { icon: Tag, text: "Natasha's Law compliant labelling" },
-          { icon: Archive, text: "7-year data retention" },
-        ].map((b, i) => (
-          <div key={i} className="flex items-start gap-2.5 text-xs md:text-sm text-slate-600">
-            <b.icon className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: BRAND_SAGE }} />
-            <span>{b.text}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ───── A connected platform statement ─────
-function Statement() {
-  return (
-    <Section className="py-16 md:py-20">
-      <p className="text-center text-2xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight max-w-4xl mx-auto">
-        Create a{" "}
-        <span style={{ color: BRAND_SAGE }}>consistent and connected</span>{" "}
-        food safety operation across every site.
-      </p>
-    </Section>
-  );
-}
-
-// ───── AI Capabilities ─────
-function AISection() {
-  const cards = [
-    {
-      icon: Brain,
-      title: "Morning Briefing",
-      body: "Each morning, AI summarises last night's checks, flags anything missed, and tells you exactly what needs attention before service.",
-    },
-    {
-      icon: Wand2,
-      title: "Smart Rota",
-      body: "AI drafts next week's rota from historical patterns, availability and approved holidays — respecting Working Time Directive limits.",
-    },
-    {
-      icon: LineChart,
-      title: "Equipment Drift Detection",
-      body: "AI watches your fridge and freezer trends, predicts failures before they breach, and tells you which unit needs servicing.",
-    },
-    {
-      icon: FileText,
-      title: "Compliance Narrative",
-      body: "AI writes plain-English compliance summaries for your EHO inspection pack — no more stitching reports together by hand.",
-    },
-  ];
-  return (
-    <section className="px-4 py-20 md:py-28">
-      <motion.div
-        {...fadeUp}
-        className="relative max-w-6xl mx-auto rounded-[2rem] overflow-hidden text-white p-8 md:p-14 lg:p-16"
-        style={{ background: `linear-gradient(135deg, ${BRAND_DEEP} 0%, #2a5446 100%)` }}
-      >
-        <div
-          aria-hidden
-          className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full opacity-25 blur-3xl"
-          style={{ background: `radial-gradient(circle, ${BRAND_LIGHT} 0%, transparent 70%)` }}
-        />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-9 h-9 rounded-xl bg-white/15 grid place-items-center backdrop-blur-sm">
-              <Zap className="w-5 h-5" />
-            </div>
-            <span className="text-xs font-semibold uppercase tracking-widest text-white/80">
-              AI built in — no setup, no extra cost
-            </span>
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight max-w-3xl mb-4">
-            AI that runs in the background, not in your way
-          </h2>
-          <p className="text-base md:text-lg text-white/80 max-w-2xl leading-relaxed mb-12">
-            MiseOS uses AI to remove the boring parts of running a venue — drafting rotas,
-            spotting equipment drift, summarising compliance — so you can focus on the food
-            and your team.
+      />
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+        <motion.div {...fadeUp} className="lg:col-span-6">
+          <Badge variant="outline" className="mb-6 border-slate-300 text-slate-700 font-medium">
+            For bakeries, cafés & independent kitchens
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-slate-900 leading-[1.05]">
+            Run your bakery, café, or kitchen from{" "}
+            <span style={{ color: BRAND_SAGE }}>one system</span>.
+          </h1>
+          <p className="mt-6 text-lg md:text-xl text-slate-600 leading-relaxed max-w-xl">
+            Operations, food safety, and profit — simplified into one daily workflow.
           </p>
-          <div className="grid sm:grid-cols-2 gap-5">
-            {cards.map((c) => (
-              <div
-                key={c.title}
-                className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-6"
-              >
-                <c.icon className="w-7 h-7 mb-4 opacity-90" />
-                <h3 className="font-bold text-lg mb-1.5">{c.title}</h3>
-                <p className="text-sm text-white/80 leading-relaxed">{c.body}</p>
-              </div>
-            ))}
+          <div className="mt-9 flex flex-wrap gap-3">
+            <a href={AUTH_URL}>
+              <Button size="lg" style={{ backgroundColor: BRAND_SAGE }} className="hover:opacity-90 text-white h-12 px-7 text-base font-semibold">
+                Start Free Trial <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </a>
+            <a href="#how">
+              <Button size="lg" variant="outline" className="h-12 px-7 text-base">
+                See How It Works
+              </Button>
+            </a>
           </div>
-        </div>
-      </motion.div>
+          <p className="mt-5 text-sm text-slate-500">No card required · Up and running in minutes</p>
+        </motion.div>
+
+        {/* Right: mixed dashboard mock */}
+        <motion.div {...fadeUp} transition={{ duration: 0.6, delay: 0.1 }} className="lg:col-span-6">
+          <HeroDashboard />
+        </motion.div>
+      </div>
     </section>
   );
 }
 
-// ───── Problem (no emojis, icons instead) ─────
-function Problem() {
-  const cards = [
-    {
-      icon: FileWarning,
-      title: "Paper logs nobody checks",
-      body: "Temperature clipboards, laminated cleaning sheets, ring-binder day sheets. They work until the Environmental Health Officer asks for three months of records and you're digging through a drawer.",
-    },
-    {
-      icon: Layers,
-      title: "Five apps that don't connect",
-      body: "A rota app, a messaging app, a costing spreadsheet, a folder of training certificates. Nothing talks to anything else. You're the one holding it all together.",
-    },
-    {
-      icon: PoundSterling,
-      title: "Software built for chains, priced for chains",
-      body: "Enterprise platforms charge per user, lock features behind expensive tiers, and ship tools you'll never touch. You have one site and three staff. You need less software, not more.",
-    },
-  ];
+function HeroDashboard() {
   return (
-    <Section id="problem" className="bg-[#faf6ee]">
-      <h2 className="text-3xl md:text-5xl font-bold text-center text-slate-900 mb-14 tracking-tight">
-        You're spending more time on paperwork than on food
-      </h2>
-      <div className="grid md:grid-cols-3 gap-6 mb-12">
-        {cards.map((c, i) => (
-          <Card key={i} className="p-7 rounded-2xl border-slate-200 bg-white">
-            <div
-              className="w-12 h-12 rounded-xl grid place-items-center mb-5"
-              style={{ backgroundColor: `${BRAND_SAGE}15` }}
-            >
-              <c.icon className="w-6 h-6" style={{ color: BRAND_SAGE }} />
-            </div>
-            <h3 className="font-semibold text-lg text-slate-900 mb-2">{c.title}</h3>
-            <p className="text-slate-600 text-sm leading-relaxed">{c.body}</p>
-          </Card>
-        ))}
-      </div>
-      <p className="text-center text-lg text-slate-700 max-w-3xl mx-auto leading-relaxed">
-        MiseOS was built by a bakery owner who had exactly these problems. It does what you need,
-        nothing you don't, and starts at less than the price of two coffees a week.
-      </p>
-    </Section>
-  );
-}
-
-// ───── Bento Product Grid (OneHub-inspired colored cards) ─────
-function ProductBento() {
-  return (
-    <Section id="modules">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-          Explore the MiseOS modules
-        </h2>
-        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Modular by design. Activate only what you need. Every module syncs with every other.
-        </p>
-      </div>
-      <div className="grid md:grid-cols-3 gap-5">
-        {/* Large left card — sage */}
-        <Card
-          className="md:row-span-2 p-8 rounded-3xl border-0 text-white flex flex-col justify-between min-h-[340px]"
-          style={{ backgroundColor: BRAND_SAGE }}
-        >
+    <div className="relative">
+      <div
+        aria-hidden
+        className="absolute -inset-6 rounded-[2.5rem] opacity-40 blur-2xl"
+        style={{ background: `linear-gradient(135deg, ${BRAND_LIGHT}, ${BRAND_SAGE})` }}
+      />
+      <div className="relative rounded-3xl bg-white border border-slate-200 shadow-2xl shadow-slate-900/10 p-5 md:p-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <ClipboardCheck className="w-9 h-9 mb-6 opacity-90" />
-            <h3 className="text-2xl font-bold mb-3">Daily Operations</h3>
-            <p className="text-sm text-white/85 leading-relaxed mb-6">
-              Day sheet, temperature tracking, cleaning schedules, waste log and customer feedback —
-              the daily checks your team actually completes.
-            </p>
+            <p className="text-xs text-slate-500 font-medium">Tuesday, 19 May</p>
+            <p className="text-sm font-semibold text-slate-900">Morning at Maison Rue</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {["Day Sheet", "Temperatures", "Cleaning", "Waste", "Feedback"].map((t) => (
-              <span key={t} className="text-xs bg-white/15 px-3 py-1.5 rounded-full backdrop-blur-sm">
-                {t}
-              </span>
+          <div className="flex gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-200" />
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-200" />
+            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: BRAND_SAGE }} />
+          </div>
+        </div>
+
+        {/* Safe to trade */}
+        <div className="rounded-2xl p-5 mb-3" style={{ background: `linear-gradient(135deg, ${BRAND_DEEP}, ${BRAND_SAGE})` }}>
+          <p className="text-xs text-white/70 font-medium uppercase tracking-wide">Safe to trade</p>
+          <div className="flex items-end justify-between mt-1">
+            <p className="text-4xl font-bold text-white">92%</p>
+            <span className="text-2xl">✅</span>
+          </div>
+          <div className="mt-3 h-1.5 rounded-full bg-white/20 overflow-hidden">
+            <div className="h-full rounded-full bg-white" style={{ width: "92%" }} />
+          </div>
+        </div>
+
+        {/* Two stat cards */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="rounded-2xl border border-slate-200 p-4">
+            <div className="flex items-center justify-between">
+              <Cookie className="w-4 h-4 text-amber-600" />
+              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">+12%</span>
+            </div>
+            <p className="text-2xl font-bold text-slate-900 mt-2">120</p>
+            <p className="text-xs text-slate-500">cookies produced</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 p-4">
+            <div className="flex items-center justify-between">
+              <PoundSterling className="w-4 h-4" style={{ color: BRAND_SAGE }} />
+              <span className="text-[10px] font-semibold text-slate-500">per unit</span>
+            </div>
+            <p className="text-2xl font-bold text-slate-900 mt-2">£2.10</p>
+            <p className="text-xs text-slate-500">profit margin 💰</p>
+          </div>
+        </div>
+
+        {/* Alert row */}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+            <Thermometer className="w-4 h-4 text-amber-700" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900">Fridge 2 alert ⚠️</p>
+            <p className="text-xs text-amber-800 mt-0.5">Reading 7.2°C — above 5°C threshold for 14 min</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ───── Hook ─────
+function Hook() {
+  const left = ["Paper logs", "4 different apps", "No visibility", "EHO stress"];
+  const right = ["One system", "Clear priorities", "Always inspection ready", "Profit visibility"];
+  return (
+    <Section className="bg-slate-50">
+      <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-center text-slate-900 max-w-3xl mx-auto leading-tight">
+        Most systems track your business.
+        <br />
+        <span style={{ color: BRAND_SAGE }}>MiseOS runs it.</span>
+      </h2>
+
+      <div className="grid md:grid-cols-2 gap-5 mt-14 max-w-4xl mx-auto">
+        <Card className="p-7 border-slate-200 bg-white">
+          <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-5">Before</p>
+          <ul className="space-y-4">
+            {left.map((t) => (
+              <li key={t} className="flex items-center gap-3 text-slate-500">
+                <X className="w-5 h-5 shrink-0" />
+                <span className="text-base line-through decoration-slate-300">{t}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </Card>
-
-        {/* Top right — deep */}
-        <Card
-          className="md:col-span-2 p-8 rounded-3xl border-0 text-white min-h-[160px]"
-          style={{ backgroundColor: BRAND_DEEP }}
-        >
-          <ShieldCheck className="w-8 h-8 mb-4 opacity-90" />
-          <h3 className="text-xl font-bold mb-2">Compliance &amp; Safety</h3>
-          <p className="text-sm text-white/80 leading-relaxed max-w-2xl">
-            HACCP plans, allergens, suppliers, pest &amp; maintenance, incidents and batch traceability —
-            audit-ready by default.
-          </p>
-        </Card>
-
-        {/* Middle right — cream */}
-        <Card className="p-7 rounded-3xl border-slate-200 bg-[#faf6ee] min-h-[160px]">
-          <CalendarDays className="w-8 h-8 mb-4" style={{ color: BRAND_SAGE }} />
-          <h3 className="font-bold text-slate-900 mb-1.5">Shifts &amp; Rota</h3>
-          <p className="text-sm text-slate-600 leading-relaxed">
-            Weekly rota, swaps, cover and Employment Rights Bill cancellation logging.
-          </p>
-        </Card>
-
-        {/* Right card — light sage */}
-        <Card
-          className="p-7 rounded-3xl border-0 min-h-[160px]"
-          style={{ backgroundColor: `${BRAND_LIGHT}25` }}
-        >
-          <PoundSterling className="w-8 h-8 mb-4" style={{ color: BRAND_DEEP }} />
-          <h3 className="font-bold text-slate-900 mb-1.5">Cost &amp; Margin</h3>
-          <p className="text-sm text-slate-700 leading-relaxed">
-            True Margin Engine with VAT, yield, nested recipes and live labour from timesheets.
-          </p>
+        <Card className="p-7 border-0 text-white" style={{ background: `linear-gradient(160deg, ${BRAND_DEEP}, ${BRAND_SAGE})` }}>
+          <p className="text-xs uppercase tracking-wider font-semibold text-white/60 mb-5">With MiseOS</p>
+          <ul className="space-y-4">
+            {right.map((t) => (
+              <li key={t} className="flex items-center gap-3">
+                <Check className="w-5 h-5 shrink-0" />
+                <span className="text-base font-medium">{t}</span>
+              </li>
+            ))}
+          </ul>
         </Card>
       </div>
     </Section>
   );
 }
 
-// ───── Alternating image / text rows (OneHub-style) ─────
-function AltRows() {
-  const rows = [
-    {
-      eyebrow: "Inspection ready",
-      title: "Pass your EHO inspection with confidence",
-      body: "Generate a complete inspection pack in seconds. Estimated Food Hygiene Rating, three FSA pillars scored, full audit trail across temperatures, cleaning, training and incidents.",
-      bullets: ["EHO-ready PDF and Excel exports", "7-year data retention", "Estimated FHR score"],
-      icon: FileSpreadsheet,
-    },
-    {
-      eyebrow: "Built for your team",
-      title: "Mobile-first tools your staff will actually use",
-      body: "PIN-based kiosk login. No emails to reset, no apps to install. Staff complete checks on a tablet at the bench or on their phone. Managers see everything in real time.",
-      bullets: ["PIN login — no staff emails needed", "Real-time alerts on breaches", "Works on any device"],
-      icon: Users,
-    },
-    {
-      eyebrow: "True cost visibility",
-      title: "Know your margin on every plate",
-      body: "Cost recipes from raw ingredients through nested sub-recipes. Layer in VAT, yield and live labour from timesheets. Stoplight GP% so you spot the dish costing you money before service.",
-      bullets: ["VAT and yield-aware costing", "Live labour from timesheets", "Tip Tracker — Allocation of Tips Act 2023"],
-      icon: PoundSterling,
-    },
-  ];
+// ───── Pillars ─────
+const PILLARS = [
+  {
+    emoji: "🟢",
+    title: "Run your day",
+    items: ["Shifts", "Tasks", "Messaging", "Daily dashboard"],
+    icon: LayoutDashboard,
+    tint: "#3d8a6a",
+  },
+  {
+    emoji: "🟡",
+    title: "Stay compliant",
+    items: ["Temperature logs", "Cleaning", "HACCP", "EHO-ready reports"],
+    icon: ClipboardCheck,
+    tint: "#c79545",
+  },
+  {
+    emoji: "🔵",
+    title: "Know your numbers",
+    items: ["Cost per item", "Margin tracking", "Waste tracking", "Batch output"],
+    icon: LineChart,
+    tint: "#3b6ea8",
+  },
+  {
+    emoji: "🧠",
+    title: "Get smarter automatically",
+    items: ["Daily briefing", "Margin alerts", "Waste insights", "Equipment warnings"],
+    icon: Brain,
+    tint: "#7a5cc4",
+  },
+];
 
+function Pillars() {
   return (
-    <Section id="how" className="bg-white">
-      <div className="text-center mb-16">
-        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-          Improve operations and protect your reputation
+    <Section id="how">
+      <div className="text-center max-w-2xl mx-auto mb-14">
+        <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: BRAND_SAGE }}>
+          What it actually does
+        </p>
+        <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
+          Four jobs. One quiet system.
         </h2>
       </div>
-      <div className="space-y-20 md:space-y-28">
-        {rows.map((r, i) => {
-          const reverse = i % 2 === 1;
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {PILLARS.map((p) => {
+          const Icon = p.icon;
           return (
-            <div
-              key={i}
-              className={`grid md:grid-cols-2 gap-10 md:gap-16 items-center ${reverse ? "md:[&>*:first-child]:order-2" : ""}`}
-            >
-              {/* Visual block */}
+            <Card key={p.title} className="p-6 border-slate-200 bg-white hover:shadow-lg transition-shadow">
               <div
-                className="relative aspect-[5/4] rounded-3xl overflow-hidden p-10 flex items-end"
-                style={{
-                  background:
-                    i === 0
-                      ? `linear-gradient(135deg, ${BRAND_DEEP} 0%, ${BRAND_SAGE} 100%)`
-                      : i === 1
-                      ? `linear-gradient(135deg, ${BRAND_SAGE} 0%, ${BRAND_LIGHT} 100%)`
-                      : `linear-gradient(135deg, #faf6ee 0%, #e8ddc4 100%)`,
-                }}
+                className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+                style={{ backgroundColor: `${p.tint}18`, color: p.tint }}
               >
-                <div
-                  aria-hidden
-                  className="absolute -top-16 -right-16 w-72 h-72 rounded-full opacity-30 blur-2xl"
-                  style={{ background: i === 2 ? BRAND_SAGE : "white" }}
-                />
-                <div className="relative">
-                  <r.icon
-                    className="w-16 h-16 mb-4"
-                    style={{ color: i === 2 ? BRAND_DEEP : "white" }}
-                  />
-                  <p
-                    className="text-2xl md:text-3xl font-bold leading-tight max-w-xs"
-                    style={{ color: i === 2 ? BRAND_DEEP : "white" }}
-                  >
-                    {r.title}
-                  </p>
-                </div>
+                <Icon className="w-5 h-5" />
               </div>
-
-              {/* Text */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BRAND_SAGE }}>
-                  {r.eyebrow}
-                </p>
-                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 leading-tight tracking-tight">
-                  {r.title}
-                </h3>
-                <p className="text-slate-600 leading-relaxed mb-6">{r.body}</p>
-                <div className="space-y-2.5">
-                  {r.bullets.map((b) => (
-                    <div key={b} className="flex items-start gap-2.5 text-sm text-slate-700">
-                      <div
-                        className="w-5 h-5 rounded-md grid place-items-center flex-shrink-0 mt-0.5"
-                        style={{ backgroundColor: `${BRAND_SAGE}20` }}
-                      >
-                        <Check className="w-3.5 h-3.5" style={{ color: BRAND_SAGE }} />
-                      </div>
-                      <span>{b}</span>
-                    </div>
-                  ))}
-                </div>
-                <a href={AUTH_URL} className="inline-flex items-center gap-1.5 mt-7 text-sm font-semibold" style={{ color: BRAND_SAGE }}>
-                  Start free trial <ArrowRight className="w-4 h-4" />
-                </a>
-              </div>
-            </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                <span>{p.emoji}</span> {p.title}
+              </h3>
+              <ul className="space-y-2">
+                {p.items.map((i) => (
+                  <li key={i} className="text-sm text-slate-600 flex items-center gap-2">
+                    <span className="w-1 h-1 rounded-full bg-slate-400" />
+                    {i}
+                  </li>
+                ))}
+              </ul>
+            </Card>
           );
         })}
       </div>
@@ -522,301 +313,189 @@ function AltRows() {
   );
 }
 
-// ───── Features (tabbed) ─────
-const FEATURES = {
-  daily: [
-    { icon: LayoutDashboard, title: "Dashboard", desc: "Today's checklist, compliance score, shift schedule, alerts and inspection readiness — one screen." },
-    { icon: CalendarDays, title: "Shifts & Rota", desc: "Weekly and daily rota with linked compliance tasks and automatic Messenger notifications." },
-    { icon: Repeat, title: "Shift Hive", desc: "Staff request swaps and cover. Managers approve in one tap. Late cancellations auto-log compensation." },
-    { icon: Clock, title: "Timesheets", desc: "Clock in, clock out, log breaks. Export to CSV for Xero, Sage and BrightPay." },
-    { icon: MessageSquare, title: "Messenger", desc: "Built-in team chat with channels, DMs, pinned messages, tasks, acks and shift handover notes." },
-    { icon: ClipboardCheck, title: "Day Sheet", desc: "Configurable opening and closing checks based on FSA SFBB. Lock and sign-off with full audit trail." },
-    { icon: Thermometer, title: "Temperature Tracking", desc: "Log fridge, freezer and probe temps with a tap-friendly keypad. Breach detection with corrective actions." },
-    { icon: Sparkles, title: "Cleaning Schedule", desc: "Daily, weekly and monthly tasks. Full audit history including missed days." },
-    { icon: Trash2, title: "Waste Log", desc: "Track food waste by category. Spot trends with weekly bar charts." },
-    { icon: Star, title: "Customer Feedback", desc: "Capture, categorise, resolve and trend feedback from any source." },
-  ],
-  compliance: [
-    { icon: Tag, title: "Allergens & Labels", desc: "Build recipes from ingredients with 14 declared allergens. Auto-generate Natasha's Law PPDS labels." },
-    { icon: Truck, title: "Suppliers & Deliveries", desc: "Approved supplier list. Log deliveries with temperature, packaging and use-by checks." },
-    { icon: Bug, title: "Pest & Maintenance", desc: "Report sightings and issues. Preventative check schedules with overdue alerts." },
-    { icon: Wrench, title: "PPM Schedule", desc: "Planned preventative maintenance with configurable frequencies and cost tracking." },
-    { icon: AlertTriangle, title: "Incidents", desc: "Three-stage workflow: Open → Action Taken → Verified. Root cause and corrective actions." },
-    { icon: Boxes, title: "Batch Tracking", desc: "Production traceability with batch codes, stage progression, quarantine and cost snapshots." },
-    { icon: GraduationCap, title: "Staff Training", desc: "Training records, certificate uploads, expiry tracking and RAG compliance status." },
-    { icon: FileText, title: "HACCP Plan Builder", desc: "Guided 7-principle builder. Publish and print as a formatted document." },
-  ],
-  business: [
-    { icon: PoundSterling, title: "Cost & Margin", desc: "True Margin Engine — VAT, yield, nested recipes and labour from timesheets. Stoplight GP%." },
-    { icon: Coins, title: "Tip Tracker", desc: "Log tip pools, distribute by equal/hours/manual. Allocation of Tips Act 2023 compliant." },
-    { icon: FileSpreadsheet, title: "Reports", desc: "EHO-ready PDF and 9-worksheet Excel. Estimated FHR. Three FSA pillars scored." },
-  ],
-};
-
-function FeatureGrid({ items }: { items: typeof FEATURES.daily }) {
+// ───── Difference ─────
+function Difference() {
+  const rows = [
+    ["Built for audits", "Built for real kitchens"],
+    ["Complex setups", "Instant clarity"],
+    ["Static data", "Live decisions"],
+    ["Admin heavy", "Action focused"],
+  ];
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-      {items.map((f, i) => (
-        <Card key={i} className="p-5 rounded-2xl border-slate-200 hover:shadow-md transition-all" style={{ ['--hover' as string]: BRAND_SAGE }}>
-          <div className="w-10 h-10 rounded-lg grid place-items-center mb-3" style={{ backgroundColor: `${BRAND_SAGE}15` }}>
-            <f.icon className="w-5 h-5" style={{ color: BRAND_SAGE }} />
+    <Section className="bg-slate-50">
+      <div className="text-center max-w-2xl mx-auto mb-14">
+        <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: BRAND_SAGE }}>
+          The difference
+        </p>
+        <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
+          Built for operators, not consultants.
+        </h2>
+      </div>
+      <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden border border-slate-200 bg-white">
+        <div className="grid grid-cols-2 px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <p className="text-sm font-semibold text-slate-500">Others</p>
+          <p className="text-sm font-semibold" style={{ color: BRAND_SAGE }}>MiseOS</p>
+        </div>
+        {rows.map(([a, b], i) => (
+          <div key={a} className={`grid grid-cols-2 px-6 py-5 items-center ${i < rows.length - 1 ? "border-b border-slate-100" : ""}`}>
+            <p className="text-slate-500">{a}</p>
+            <p className="font-semibold text-slate-900">{b}</p>
           </div>
-          <h3 className="font-semibold text-slate-900 mb-1.5">{f.title}</h3>
-          <p className="text-sm text-slate-600 leading-relaxed">{f.desc}</p>
-        </Card>
-      ))}
-    </div>
+        ))}
+      </div>
+    </Section>
   );
 }
 
-function Features() {
+// ───── Live Examples ─────
+function LiveExamples() {
   return (
-    <Section id="features" className="bg-[#faf6ee]">
-      <div className="text-center mb-10">
-        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-          Food safety, operations and business tools in one platform
-        </h2>
-        <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-          Every module connects to every other. Activate what you need. Turn off what you don't.
+    <Section id="examples">
+      <div className="text-center max-w-2xl mx-auto mb-14">
+        <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: BRAND_SAGE }}>
+          Live examples
         </p>
+        <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
+          What you'll actually see at 7am.
+        </h2>
       </div>
-      <Tabs defaultValue="daily" className="w-full">
-        <TabsList className="grid w-full max-w-xl mx-auto grid-cols-3">
-          <TabsTrigger value="daily">Daily Operations</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
-          <TabsTrigger value="business">Business</TabsTrigger>
-        </TabsList>
-        <TabsContent value="daily"><FeatureGrid items={FEATURES.daily} /></TabsContent>
-        <TabsContent value="compliance"><FeatureGrid items={FEATURES.compliance} /></TabsContent>
-        <TabsContent value="business"><FeatureGrid items={FEATURES.business} /></TabsContent>
-      </Tabs>
+
+      <div className="grid md:grid-cols-3 gap-5">
+        {/* Morning briefing */}
+        <Card className="p-6 border-slate-200 bg-white">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">📅</span>
+            <h3 className="font-bold text-slate-900">Morning Briefing</h3>
+          </div>
+          <div className="space-y-4 text-sm">
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Yesterday</p>
+              <ul className="space-y-1.5">
+                <li className="flex gap-2"><span>✅</span><span className="text-slate-700">All checks completed</span></li>
+                <li className="flex gap-2"><span>⚠️</span><span className="text-slate-700">1 temp breach</span></li>
+                <li className="flex gap-2"><span>💷</span><span className="text-slate-700">Pistachio margin dropped 8%</span></li>
+              </ul>
+            </div>
+            <div className="pt-3 border-t border-slate-100">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Today</p>
+              <ul className="space-y-1.5 text-slate-700">
+                <li>– Check fridge 2</li>
+                <li>– Reduce pistachio batch size</li>
+              </ul>
+            </div>
+          </div>
+        </Card>
+
+        {/* Margin Watchdog */}
+        <Card className="p-6 border-slate-200 bg-white">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">💰</span>
+            <h3 className="font-bold text-slate-900">Margin Watchdog</h3>
+          </div>
+          <p className="font-semibold text-slate-900 mb-3">Double Chocolate</p>
+          <div className="space-y-2 text-sm mb-4">
+            <div className="flex justify-between"><span className="text-slate-500">Current margin</span><span className="font-semibold text-slate-900">48%</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Target</span><span className="font-semibold" style={{ color: BRAND_SAGE }}>60%</span></div>
+            <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-1">
+              <div className="h-full rounded-full" style={{ width: "48%", backgroundColor: BRAND_SAGE }} />
+            </div>
+          </div>
+          <div className="rounded-xl bg-slate-50 p-3 text-sm space-y-1">
+            <p className="text-slate-700">→ Raise price <span className="font-semibold">£0.40</span></p>
+            <p className="text-slate-700">OR reduce chocolate by <span className="font-semibold">8%</span></p>
+          </div>
+        </Card>
+
+        {/* Batch Tracking */}
+        <Card className="p-6 border-slate-200 bg-white">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">🍪</span>
+            <h3 className="font-bold text-slate-900">Batch Tracking</h3>
+          </div>
+          <p className="font-semibold text-slate-900 mb-3">Double Chocolate</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-slate-500">Quantity</span><span className="font-semibold text-slate-900">120 cookies</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Use by</span><span className="font-semibold text-slate-900">18 May</span></div>
+          </div>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold" style={{ backgroundColor: `${BRAND_SAGE}18`, color: BRAND_DEEP }}>
+            <Check className="w-4 h-4" /> Complete
+          </div>
+        </Card>
+      </div>
     </Section>
   );
 }
 
 // ───── Pricing ─────
+const TIERS = [
+  {
+    name: "Starter",
+    price: "£29",
+    desc: "For one small site getting compliant.",
+    features: ["Daily dashboard", "Temperature & cleaning logs", "HACCP & EHO reports", "Up to 5 staff"],
+  },
+  {
+    name: "Professional",
+    price: "£79",
+    desc: "Everything to run a real operation.",
+    features: ["Everything in Starter", "Shifts & tasks", "Cost & margin tracking", "Batch & waste tracking", "Unlimited staff"],
+    popular: true,
+  },
+  {
+    name: "Intelligence",
+    price: "£149",
+    desc: "Adds automation and insights to your operation.",
+    features: ["Everything in Professional", "Daily morning briefing", "Margin & waste alerts", "Equipment health warnings", "Smart rota suggestions"],
+  },
+];
+
 function Pricing() {
-  const [annual, setAnnual] = useState(false);
-  const plans: Array<{
-    name: string; monthly: number; yearly: number; tagline: string;
-    bullets: string[]; featured?: boolean; ai?: boolean;
-  }> = [
-    {
-      name: "Essentials",
-      monthly: 7.99, yearly: 79.90,
-      tagline: "Run your daily operations.",
-      bullets: [
-        "Dashboard, Shifts & Rota, Shift Hive, Timesheets",
-        "Messenger, Day Sheet, Temperatures, Cleaning",
-        "Waste Log, Customer Feedback",
-      ],
-    },
-    {
-      name: "Professional",
-      monthly: 9.99, yearly: 99.90,
-      tagline: "Stay inspection-ready.",
-      bullets: [
-        "Everything in Essentials, plus:",
-        "Allergens & Labels, Suppliers, Pest, PPM",
-        "Incidents, Batch Tracking, Training, HACCP",
-      ],
-      featured: true,
-    },
-    {
-      name: "Business",
-      monthly: 12.99, yearly: 129.90,
-      tagline: "Track costs and grow profit.",
-      bullets: [
-        "Everything in Professional, plus:",
-        "Cost & Margin (True Margin Engine)",
-        "Tip Tracker, Reports (EHO Inspection Pack)",
-      ],
-    },
-    {
-      name: "Intelligence",
-      monthly: 16.99, yearly: 169.90,
-      tagline: "Your operations, made smarter.",
-      bullets: [
-        "Everything in Business, plus:",
-        "Morning Briefing, Smart Rota, Equipment Health",
-        "Compliance Assessment, Waste Insights, Margin Watchdog",
-      ],
-      ai: true,
-    },
-  ];
-  const perks = [
-    "14-day free trial on all plans — no card required",
-    "15% multi-site discount from the second site",
-    "Data retained 7 years after cancellation",
-    "Cancel anytime — keep access until end of billing period",
-  ];
   return (
     <Section id="pricing">
-      <div className="text-center mb-4">
-        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
+      <div className="text-center max-w-2xl mx-auto mb-14">
+        <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
           Simple pricing. No surprises.
         </h2>
-        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Per site, per month. No hidden fees, no contracts, cancel anytime.
-        </p>
+        <p className="mt-4 text-slate-600 text-lg">Per site, per month. Cancel anytime.</p>
       </div>
-      <p className="text-center text-sm font-medium max-w-2xl mx-auto mb-10" style={{ color: BRAND_SAGE }}>
-        14-day free trial on all plans — no card required. Every module unlocked during the trial.
-      </p>
-      <div className="flex items-center justify-center gap-3 mb-10">
-        <span className={`text-sm font-medium ${!annual ? "text-slate-900" : "text-slate-500"}`}>Monthly</span>
-        <Switch checked={annual} onCheckedChange={setAnnual} />
-        <span className={`text-sm font-medium ${annual ? "text-slate-900" : "text-slate-500"}`}>
-          Annual <span className="text-xs" style={{ color: BRAND_SAGE }}>(save ~17%)</span>
-        </span>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {plans.map((p) => (
+      <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+        {TIERS.map((t) => (
           <Card
-            key={p.name}
-            className={`p-6 rounded-2xl flex flex-col relative ${p.featured ? "shadow-lg" : "border-slate-200"}`}
-            style={
-              p.featured ? { borderColor: BRAND_SAGE, borderWidth: 2 }
-              : p.ai ? { borderColor: BRAND_LIGHT, borderWidth: 2, background: "linear-gradient(180deg, rgba(107,174,142,0.06), transparent)" }
-              : undefined
-            }
+            key={t.name}
+            className={`p-7 relative ${t.popular ? "border-0 shadow-2xl shadow-emerald-900/20 scale-[1.02]" : "border-slate-200"}`}
+            style={t.popular ? { background: `linear-gradient(170deg, ${BRAND_DEEP}, ${BRAND_SAGE})`, color: "white" } : undefined}
           >
-            {p.featured && (
-              <Badge
-                className="absolute -top-3 left-1/2 -translate-x-1/2 text-white border-0"
-                style={{ backgroundColor: BRAND_SAGE }}
-              >
-                Most popular
-              </Badge>
+            {t.popular && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-white text-slate-900 hover:bg-white font-semibold shadow">Most popular</Badge>
+              </div>
             )}
-            {p.ai && (
-              <Badge
-                className="absolute -top-3 right-4 text-white border-0"
-                style={{ backgroundColor: BRAND_DEEP }}
-              >
-                <Sparkles className="w-3 h-3 mr-1" /> AI
-              </Badge>
-            )}
-            <h3 className="font-semibold text-slate-900 mb-1">{p.name}</h3>
-            <p className="text-sm text-slate-600 mb-4">{p.tagline}</p>
-            <div className="mb-1">
-              <span className="text-3xl font-bold text-slate-900">£{annual ? p.yearly.toFixed(2) : p.monthly.toFixed(2)}</span>
-              <span className="text-slate-500 text-sm">/site/{annual ? "yr" : "mo"}</span>
-            </div>
-            <p className="text-xs text-slate-500 mb-4">
-              {annual ? `≈ £${(p.yearly / 12).toFixed(2)}/mo` : `£${(p.monthly * 10).toFixed(2)}/yr if paid annually`}
+            <p className={`text-sm font-semibold uppercase tracking-wider mb-2 ${t.popular ? "text-white/70" : "text-slate-500"}`}>
+              {t.name}
             </p>
-            <ul className="space-y-1.5 text-sm text-slate-700 mb-5 flex-1">
-              {p.bullets.map((b) => (
-                <li key={b} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: p.ai ? BRAND_DEEP : BRAND_SAGE }} />
-                  <span>{b}</span>
+            <div className="flex items-baseline gap-1 mb-3">
+              <span className="text-4xl font-bold">{t.price}</span>
+              <span className={t.popular ? "text-white/70" : "text-slate-500"}>/mo</span>
+            </div>
+            <p className={`text-sm mb-6 ${t.popular ? "text-white/85" : "text-slate-600"}`}>{t.desc}</p>
+            <ul className="space-y-2.5 mb-7">
+              {t.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm">
+                  <Check className={`w-4 h-4 mt-0.5 shrink-0 ${t.popular ? "text-white" : ""}`} style={!t.popular ? { color: BRAND_SAGE } : undefined} />
+                  <span className={t.popular ? "text-white" : "text-slate-700"}>{f}</span>
                 </li>
               ))}
             </ul>
-            <a href={AUTH_URL} className="mt-auto">
+            <a href={AUTH_URL} className="block">
               <Button
-                className={`w-full ${p.featured || p.ai ? "text-white" : ""}`}
-                style={
-                  p.featured ? { backgroundColor: BRAND_SAGE }
-                  : p.ai ? { backgroundColor: BRAND_DEEP }
-                  : undefined
-                }
-                variant={p.featured || p.ai ? "default" : "outline"}
+                className={`w-full h-11 font-semibold ${t.popular ? "bg-white text-slate-900 hover:bg-white/90" : "text-white"}`}
+                style={!t.popular ? { backgroundColor: BRAND_SAGE } : undefined}
               >
                 Start Free Trial
               </Button>
             </a>
           </Card>
         ))}
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-10 max-w-4xl mx-auto">
-        {perks.map((p, i) => (
-          <div key={i} className="flex items-start gap-2 text-sm text-slate-600">
-            <Check className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: BRAND_SAGE }} />
-            <span>{p}</span>
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-// ───── Compliance (no emojis) ─────
-function Compliance() {
-  const cards = [
-    {
-      icon: Thermometer,
-      title: "Temperature compliance",
-      body: "AM and PM checks. Automatic breach detection. Mandatory corrective actions. Full audit trail.",
-    },
-    {
-      icon: Tag,
-      title: "PPDS & allergen labelling",
-      body: "14 allergens tracked. Sub-ingredient composition. Auto-generated labels compliant with Natasha's Law.",
-    },
-    {
-      icon: FileSpreadsheet,
-      title: "Inspection-ready exports",
-      body: "Generate your EHO inspection pack in seconds. Estimated Food Hygiene Rating. Three FSA pillars scored.",
-    },
-  ];
-  return (
-    <Section id="compliance" className="bg-[#faf6ee]">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-          Built around UK food safety law
-        </h2>
-        <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
-          MiseOS is not a generic task manager with a food safety label added on. Every module is built
-          around FSA Safer Food Better Business principles, the Food Information to Consumers regulation,
-          and Natasha's Law.
-        </p>
-      </div>
-      <div className="grid md:grid-cols-3 gap-6">
-        {cards.map((c, i) => (
-          <Card key={i} className="p-7 rounded-2xl border-slate-200 bg-white">
-            <div
-              className="w-12 h-12 rounded-xl grid place-items-center mb-5"
-              style={{ backgroundColor: `${BRAND_SAGE}15` }}
-            >
-              <c.icon className="w-6 h-6" style={{ color: BRAND_SAGE }} />
-            </div>
-            <h3 className="font-semibold text-lg text-slate-900 mb-2">{c.title}</h3>
-            <p className="text-slate-600 text-sm leading-relaxed">{c.body}</p>
-          </Card>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-// ───── FAQ ─────
-function FAQ() {
-  const items: [string, string][] = [
-    ["Do I need a card to start the trial?", "No. Your 14-day trial starts when you pick a plan. No payment details needed until you subscribe."],
-    ["Can I change plans later?", "Yes. Upgrade or downgrade at any time from Account and Billing. Changes take effect immediately."],
-    ["How do my staff log in?", "Staff use a PIN-based kiosk login. You share your unique login URL or QR code. They enter the site ID and their staff ID. No email or app download required."],
-    ["Is my data safe?", "Yes. All data is encrypted in transit and at rest. Hosted on AWS infrastructure. Data is retained for seven years after cancellation for compliance purposes."],
-    ["Can I use MiseOS on my phone?", "Yes. MiseOS is mobile-first. It works in any browser on any device. A native app with push notifications is on the roadmap."],
-    ["What if I have multiple sites?", "Multi-site is built in from day one. Each additional site gets a 15 percent discount. The HQ Dashboard gives you compliance visibility across all locations."],
-    ["Does MiseOS replace my till or EPOS system?", "No. MiseOS handles operations and compliance, not payments or orders. It works alongside your existing EPOS."],
-    ["What is the Intelligence plan?", "The Intelligence plan adds smart operational features powered by AI — daily morning briefing, automated rota suggestions, equipment health monitoring, compliance assessments, waste analysis and recipe margin alerts. All based on your actual data, not generic advice."],
-  ];
-  return (
-    <Section id="faq">
-      <h2 className="text-3xl md:text-5xl font-bold text-center text-slate-900 mb-12 tracking-tight">
-        Frequently asked questions
-      </h2>
-      <div className="max-w-3xl mx-auto">
-        <Accordion type="single" collapsible className="w-full">
-          {items.map(([q, a], i) => (
-            <AccordionItem key={i} value={`item-${i}`}>
-              <AccordionTrigger className="text-left font-medium">{q}</AccordionTrigger>
-              <AccordionContent className="text-slate-600 leading-relaxed">{a}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
       </div>
     </Section>
   );
@@ -837,23 +516,18 @@ function FinalCTA() {
           style={{ background: `radial-gradient(circle, ${BRAND_LIGHT} 0%, transparent 70%)` }}
         />
         <div className="relative max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-bold mb-5 tracking-tight">Stop managing your venue from a clipboard</h2>
-          <p className="text-lg text-white/85 mb-10 leading-relaxed">
-            Join the bakeries and cafés replacing paper, spreadsheets and guesswork with one
-            platform built for UK food safety.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
+          <h2 className="text-3xl md:text-5xl font-bold mb-5 tracking-tight">
+            Stop managing your business.
+            <br />Start running it.
+          </h2>
+          <div className="flex flex-wrap gap-3 justify-center mt-10">
             <a href={AUTH_URL}>
               <Button size="lg" className="bg-white text-slate-900 hover:bg-white/90 h-12 px-8 text-base font-semibold">
-                Start Your Free Trial <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </a>
-            <a href={AUTH_URL}>
-              <Button size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white h-12 px-8 text-base">
-                Log In
+                Start Free Trial <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </a>
           </div>
+          <p className="mt-5 text-sm text-white/80">No card required · Up and running in minutes</p>
         </div>
       </motion.div>
     </section>
@@ -885,27 +559,21 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-white text-slate-900 scroll-smooth font-body">
       <SEO
-        title="MiseOS — Hygiene & batch-tracking for UK food businesses"
-        description="All-in-one, UK-focused hygiene and batch-tracking for bakeries, cafés and small restaurants. Log checks fast and stay inspection-ready."
+        title="MiseOS — Run your bakery, café or kitchen from one system"
+        description="Operations, food safety, and profit — simplified into one daily workflow for independent bakeries, cafés and kitchens."
         path="/"
       />
       <Nav />
-
       <main>
         <Hero />
-        <Statement />
-        <Problem />
-        <ProductBento />
-        <AltRows />
-        <Features />
-        <AISection />
+        <Hook />
+        <Pillars />
+        <Difference />
+        <LiveExamples />
         <Pricing />
-        <Compliance />
-        <FAQ />
         <FinalCTA />
       </main>
       <Footer />
     </div>
   );
 }
-
