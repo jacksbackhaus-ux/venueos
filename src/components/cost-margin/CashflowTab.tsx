@@ -157,6 +157,17 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
             </Select>
           )}
 
+          {vatOn && (
+            <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+              <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gross">View: Gross</SelectItem>
+                <SelectItem value="net">View: Net</SelectItem>
+                <SelectItem value="net_vat">View: Net + VAT</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
           <div className="flex items-center gap-2 ml-auto">
             <Label htmlFor="adv-mode" className="text-xs text-muted-foreground">Advanced</Label>
             <Switch id="adv-mode" checked={advanced} onCheckedChange={setAdvanced} />
@@ -165,7 +176,8 @@ export default function CashflowTab({ siteIds, primarySiteId, intelligence }: Pr
       </Card>
 
       {/* KPI strip */}
-      <KpiStrip data={data} days={days} loading={q.isLoading} />
+      <KpiStrip data={data} days={days} loading={q.isLoading} vatEstimate={vatEstimate} vatOn={vatOn} />
+
 
       {/* Gentle prompts */}
       {data && !data.hasSales && (
