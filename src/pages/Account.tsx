@@ -32,7 +32,7 @@ export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [siteCount, setSiteCount] = useState<number>(1);
   const [savingCycle, setSavingCycle] = useState(false);
-  const [savingAddon, setSavingAddon] = useState<PlanId | null>(null);
+  
 
   const checkoutPlan = searchParams.get("checkout") as PlanId | "success" | null;
   const checkoutCycle = (searchParams.get("cycle") as BillingCycle | null) ?? cycle;
