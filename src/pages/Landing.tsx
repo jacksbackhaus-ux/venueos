@@ -891,18 +891,21 @@ export default function Landing() {
       />
       <Nav />
 
-      <Hero />
-      <Statement />
-      <Problem />
-      <ProductBento />
-      <AltRows />
-      <Features />
-      <AISection />
-      <Pricing />
-      <Compliance />
-      <FAQ />
-      <FinalCTA />
+      <main>
+        <Hero />
+        <Statement />
+        <Problem />
+        <ProductBento />
+        <AltRows />
+        <Features />
+        <AISection />
+        <Pricing />
+        <Compliance />
+        <FAQ />
+        <FinalCTA />
+      </main>
       <Footer />
     </div>
   );
 }
+
