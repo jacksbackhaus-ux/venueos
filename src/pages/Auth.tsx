@@ -74,7 +74,7 @@ export function RoleChooser({ onChoose, businessName }: { onChoose: (s: Screen) 
   return (
     <div className="space-y-6">
       <div className="text-center space-y-1.5">
-        <h2 className="font-heading text-2xl font-bold text-foreground">Welcome to MiseOS</h2>
+        <h2 className="font-heading text-2xl font-bold text-foreground">{businessName ? `Welcome to ${businessName}` : "Welcome to MiseOS"}</h2>
         <p className="text-sm text-muted-foreground">Choose how you want to continue</p>
       </div>
 
