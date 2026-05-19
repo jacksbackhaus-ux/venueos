@@ -45,13 +45,26 @@ const RECIPE_UNITS = ["g", "ml", "each"] as const;
 
 export default function CostMargin() {
   const { appUser, orgRole } = useAuth();
-  const { currentSite } = useSite();
+  const { currentSite, sites } = useSite();
+  const { tier } = useOrgAccess();
+  const { isActive } = useModuleAccess();
   const qc = useQueryClient();
   const orgId = appUser?.organisation_id || null;
-  const siteId = currentSite?.id || null;
 
   const isManager =
     orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
+
+  // Multi-site selector. "all" aggregates across owned sites for analytics-only tabs.
+  const [siteScope, setSiteScope] = useState<string>(currentSite?.id || "");
+  useEffect(() => {
+    if (!siteScope && currentSite?.id) setSiteScope(currentSite.id);
+  }, [currentSite?.id, siteScope]);
+
+  const isAllSites = siteScope === "__all__";
+  // For data tabs that need a single site (Overview, Pricing Lab, Inputs), fall back to current site.
+  const siteId = isAllSites ? (currentSite?.id || null) : (siteScope || currentSite?.id || null);
+  const cashflowSiteIds = isAllSites ? sites.map((s) => s.id) : siteId ? [siteId] : [];
+  const intelligence = tier === "intelligence" && isActive("ai_insights");
 
   const tmeQuery = useQuery({
     queryKey: ["tme-ctx", siteId, orgId],
@@ -91,73 +104,96 @@ export default function CostMargin() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="font-heading font-bold text-2xl flex items-center gap-2">
-          <Calculator className="h-6 w-6 text-primary" />
-          True Margin Engine
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Recipe costing with VAT, yield, nested prep and derived labour.
-        </p>
+      <div className="flex flex-wrap gap-3 items-start justify-between">
+        <div>
+          <h1 className="font-heading font-bold text-2xl flex items-center gap-2">
+            <Calculator className="h-6 w-6 text-primary" />
+            Profit & Cashflow
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Recipe costing, channel pricing and cash visibility — in one place.
+          </p>
+        </div>
+        {sites.length > 1 && (
+          <Select value={siteScope || ""} onValueChange={setSiteScope}>
+            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Choose site" /></SelectTrigger>
+            <SelectContent>
+              {sites.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              <SelectItem value="__all__">All sites (analytics)</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
-      <MarginWatchdogCard siteId={siteId} ctx={ctx} recipes={allRecipes} />
-
-      <Tabs defaultValue="menu" className="space-y-4">
+      <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="menu"><ChefHat className="h-4 w-4 mr-2" />Menu items</TabsTrigger>
-          <TabsTrigger value="prep"><Boxes className="h-4 w-4 mr-2" />Prep batches</TabsTrigger>
-          <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
-          <TabsTrigger value="overheads"><Receipt className="h-4 w-4 mr-2" />Overheads</TabsTrigger>
-          <TabsTrigger value="channels"><Layers className="h-4 w-4 mr-2" />Channels</TabsTrigger>
-          <TabsTrigger value="sales"><BarChart3 className="h-4 w-4 mr-2" />Sales</TabsTrigger>
-          <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-2" />Settings</TabsTrigger>
+          <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
+          <TabsTrigger value="cashflow"><Wallet className="h-4 w-4 mr-2" />Cashflow</TabsTrigger>
+          <TabsTrigger value="pricing-lab"><Beaker className="h-4 w-4 mr-2" />Pricing Lab</TabsTrigger>
+          <TabsTrigger value="inputs"><Sliders className="h-4 w-4 mr-2" />Inputs</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="menu">
-          <RecipesPanel
-            kind="menu_item"
-            recipes={menuItems}
-            ctx={ctx}
-            ingredients={ingredients}
-            allRecipes={allRecipes}
-            onChange={refreshAll}
-            siteId={siteId}
-            orgId={orgId}
+        <TabsContent value="overview" className="space-y-4">
+          {isAllSites && (
+            <Card><CardContent className="py-3 text-xs text-muted-foreground">
+              Overview shows your primary site ({currentSite?.name}). Switch to a single site to edit recipes.
+            </CardContent></Card>
+          )}
+          <MarginWatchdogCard siteId={siteId} ctx={ctx} recipes={allRecipes} />
+          <Tabs defaultValue="menu" className="space-y-3">
+            <TabsList className="flex-wrap h-auto">
+              <TabsTrigger value="menu"><ChefHat className="h-4 w-4 mr-2" />Menu items</TabsTrigger>
+              <TabsTrigger value="prep"><Boxes className="h-4 w-4 mr-2" />Prep batches</TabsTrigger>
+              <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
+              <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-2" />Settings</TabsTrigger>
+            </TabsList>
+            <TabsContent value="menu">
+              <RecipesPanel
+                kind="menu_item"
+                recipes={menuItems}
+                ctx={ctx}
+                ingredients={ingredients}
+                allRecipes={allRecipes}
+                onChange={refreshAll}
+                siteId={siteId}
+                orgId={orgId}
+              />
+            </TabsContent>
+            <TabsContent value="prep">
+              <RecipesPanel
+                kind="prep_batch"
+                recipes={prepBatches}
+                ctx={ctx}
+                ingredients={ingredients}
+                allRecipes={allRecipes}
+                onChange={refreshAll}
+                siteId={siteId}
+                orgId={orgId}
+              />
+            </TabsContent>
+            <TabsContent value="ingredients">
+              <IngredientsTab ingredients={ingredients} onChange={refreshAll} />
+            </TabsContent>
+            <TabsContent value="settings">
+              <SettingsTab ctx={ctx} orgId={orgId} onSaved={refreshAll} />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="cashflow">
+          <CashflowTab
+            siteIds={cashflowSiteIds}
+            primarySiteId={isAllSites ? null : siteId}
+            intelligence={intelligence}
           />
         </TabsContent>
 
-        <TabsContent value="prep">
-          <RecipesPanel
-            kind="prep_batch"
-            recipes={prepBatches}
-            ctx={ctx}
-            ingredients={ingredients}
-            allRecipes={allRecipes}
-            onChange={refreshAll}
-            siteId={siteId}
-            orgId={orgId}
-          />
+        <TabsContent value="pricing-lab">
+          <PricingLabTab siteId={siteId} orgId={orgId} />
         </TabsContent>
 
-        <TabsContent value="ingredients">
-          <IngredientsTab ingredients={ingredients} onChange={refreshAll} />
-        </TabsContent>
-
-        <TabsContent value="overheads">
-          <OverheadsTab siteId={siteId} orgId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="channels">
-          <ChannelsSettings siteId={siteId} orgId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="sales">
-          <SalesStub />
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <SettingsTab ctx={ctx} orgId={orgId} onSaved={refreshAll} />
+        <TabsContent value="inputs">
+          <InputsTab siteId={siteId} orgId={orgId} />
         </TabsContent>
       </Tabs>
     </div>
