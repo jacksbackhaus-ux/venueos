@@ -75,7 +75,12 @@ const Allergens = () => {
     queryKey: ["recipes", siteId],
     queryFn: async () => {
       if (!siteId) return [];
-      const { data, error } = await supabase.from("recipes").select("*, recipe_ingredients(*, ingredients(*))").eq("site_id", siteId).eq("active", true).order("name");
+      const { data, error } = await supabase
+        .from("recipes")
+        .select("*, recipe_ingredients!recipe_ingredients_recipe_id_fkey(*, ingredients(*))")
+        .eq("site_id", siteId)
+        .eq("active", true)
+        .order("name");
       if (error) throw error; return data || [];
     }, enabled: !!siteId,
   });
