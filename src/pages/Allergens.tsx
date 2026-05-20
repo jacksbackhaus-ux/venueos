@@ -131,15 +131,28 @@ const Allergens = () => {
 
   const saveRecipe = useMutation({
     mutationFn: async () => {
-      if (!siteId || !organisationId) throw new Error("No site");
+      if (!siteId || !organisationId) throw new Error("No site selected. Pick a site and try again.");
+      const name = recipeForm.name.trim();
+      if (!name) throw new Error("Recipe name is required.");
       const { data: newRecipe, error } = await supabase.from("recipes").insert({
-        site_id: siteId, organisation_id: organisationId,
-        name: recipeForm.name, category: recipeForm.category, label_type: recipeForm.label_type,
+        site_id: siteId,
+        organisation_id: organisationId,
+        name,
+        category: recipeForm.category?.trim() || "General",
+        label_type: recipeForm.label_type,
+        recipe_type: "menu_item",
+        active: true,
       }).select("id").single();
-      if (error) throw error;
+      if (error) {
+        console.error("[Allergens] recipe insert failed", error);
+        throw new Error(error.message || "Could not create recipe");
+      }
       const valid = recipeForm.ingredients.filter(i => i.ingredient_id);
       if (valid.length > 0) {
-        const weightVal = (w: string) => (w ? parseFloat(w) : null);
+        const weightVal = (w: string) => {
+          const n = w ? parseFloat(w) : NaN;
+          return Number.isFinite(n) ? n : null;
+        };
         const { error: riErr } = await supabase.from("recipe_ingredients").insert(
           valid.map((ri, idx) => ({
             recipe_id: newRecipe!.id,
@@ -150,16 +163,27 @@ const Allergens = () => {
             sort_order: idx,
           }))
         );
-        if (riErr) throw riErr;
+        if (riErr) {
+          console.error("[Allergens] recipe_ingredients insert failed", riErr);
+          throw new Error(riErr.message || "Recipe created but ingredients failed to save");
+        }
       }
+      return newRecipe!.id as string;
     },
-    onSuccess: () => {
-      toast.success("Recipe added");
+    onSuccess: (newId) => {
+      toast.success("Recipe created");
       setShowRecipeDialog(false);
       setRecipeForm({ name: "", category: "General", label_type: "ppds", ingredients: [] });
       qc.invalidateQueries({ queryKey: ["recipes", siteId] });
+      // Make sure the Cost & Margin module picks it up immediately.
+      qc.invalidateQueries({ queryKey: ["tme-ctx", siteId, organisationId] });
+      qc.invalidateQueries({ queryKey: ["tme-ingredients", siteId] });
+      if (newId) setSelectedRecipeId(newId);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => {
+      console.error("[Allergens] saveRecipe error", e);
+      toast.error(e?.message || "Could not save recipe");
+    },
   });
 
   const deleteRecipe = useMutation({
@@ -509,9 +533,9 @@ const Allergens = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRecipeDialog(false)}>Cancel</Button>
-            <Button disabled={!recipeForm.name || saveRecipe.isPending} onClick={() => saveRecipe.mutate()}>
-              <Save className="h-3 w-3 mr-1" /> Save
+            <Button type="button" variant="outline" onClick={() => setShowRecipeDialog(false)} disabled={saveRecipe.isPending}>Cancel</Button>
+            <Button type="button" disabled={!recipeForm.name.trim() || !siteId || saveRecipe.isPending} onClick={() => saveRecipe.mutate()}>
+              {saveRecipe.isPending ? (<><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving…</>) : (<><Save className="h-3 w-3 mr-1" /> Save</>)}
             </Button>
           </DialogFooter>
         </DialogContent>
