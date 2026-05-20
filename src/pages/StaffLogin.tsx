@@ -26,6 +26,11 @@ export default function StaffLogin() {
 
   // If already signed in AND internal staff → straight to /staff.
   // If signed in but NOT staff, leave them where they are (they may be a customer).
+  // 1) If already signed in AND internal staff → /staff.
+  // 2) If already signed in AND NOT internal staff (i.e. a customer with an
+  //    appUser, or an unknown account) → sign them out and bounce to /auth
+  //    so a customer who hits this URL by mistake can never even render the
+  //    form in an authed state.
   useEffect(() => {
     void (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -35,7 +40,10 @@ export default function StaffLogin() {
         navigate("/staff", { replace: true });
         return;
       }
-      setChecking(false);
+      // Authed but not internal staff → this page is not for them.
+      await supabase.auth.signOut();
+      toast.error("Internal staff access only. Please use the standard login.");
+      navigate("/auth", { replace: true });
     })();
   }, [navigate]);
 
