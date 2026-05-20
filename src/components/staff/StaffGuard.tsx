@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { useAuth } from "@/contexts/AuthContext";
 import { FullScreenLoader } from "@/components/FullScreenLoader";
@@ -15,13 +17,41 @@ import { Button } from "@/components/ui/button";
  */
 export function StaffGuard({ children }: { children: React.ReactNode }) {
   const { isInternalStaff, loading } = useInternalStaff();
-  const { appUser, isLoading: authLoading } = useAuth();
+  const { appUser, isLoading: authLoading, user } = useAuth();
+  const [customerCheckLoading, setCustomerCheckLoading] = useState(true);
+  const [hasCustomerAccount, setHasCustomerAccount] = useState(false);
 
-  if (loading || authLoading) return <FullScreenLoader />;
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      setHasCustomerAccount(false);
+      setCustomerCheckLoading(false);
+      return;
+    }
+
+    setCustomerCheckLoading(true);
+    void (async () => {
+      // SECURITY DEFINER helper bypasses users-table RLS recursion, so even if
+      // normal appUser hydration fails, a customer account still cannot enter
+      // the internal MiseOS console.
+      const sb: any = supabase;
+      const { data } = await sb.rpc("has_customer_account", { _auth_user_id: user.id });
+      if (!cancelled) {
+        setHasCustomerAccount(data === true);
+        setCustomerCheckLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  if (loading || authLoading || customerCheckLoading) return <FullScreenLoader />;
   // Belt-and-braces: a customer account (linked to a tenant via appUser)
   // can NEVER access /staff, regardless of any other flag. Internal staff
   // accounts must have no tenant appUser.
-  if (isInternalStaff && !appUser) return <>{children}</>;
+  if (isInternalStaff && !appUser && !hasCustomerAccount) return <>{children}</>;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
