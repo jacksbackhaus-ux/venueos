@@ -334,7 +334,7 @@ export async function loadTMEContext(
         sale_price, sale_price_vat_rate_percent, target_gp_percent,
         labor_estimate_mode, labour_minutes, packaging_cost,
         vat_rate, monthly_volume,
-        recipe_ingredients(
+        recipe_ingredients!recipe_ingredients_recipe_id_fkey(
           id, recipe_id, line_type, ingredient_id, nested_recipe_id,
           quantity, weight, unit, cost_per_unit_override, yield_percent_override,
           ingredients(
