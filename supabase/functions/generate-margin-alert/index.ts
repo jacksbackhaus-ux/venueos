@@ -138,7 +138,7 @@ serve(async (req) => {
       });
     }
 
-    const flagged: any[] = Array.isArray(payload.flagged_recipes) ? payload.flagged_recipes : [];
+    // `flagged` is now produced from the sanitized payload above.
 
     const validUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const generatedAt = new Date().toISOString();
