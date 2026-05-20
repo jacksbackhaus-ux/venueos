@@ -15,9 +15,13 @@ import { Button } from "@/components/ui/button";
  */
 export function StaffGuard({ children }: { children: React.ReactNode }) {
   const { isInternalStaff, loading } = useInternalStaff();
+  const { appUser, isLoading: authLoading } = useAuth();
 
-  if (loading) return <FullScreenLoader />;
-  if (isInternalStaff) return <>{children}</>;
+  if (loading || authLoading) return <FullScreenLoader />;
+  // Belt-and-braces: a customer account (linked to a tenant via appUser)
+  // can NEVER access /staff, regardless of any other flag. Internal staff
+  // accounts must have no tenant appUser.
+  if (isInternalStaff && !appUser) return <>{children}</>;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
