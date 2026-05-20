@@ -65,7 +65,7 @@ export async function enableWebPush(vapidPublicKey: string): Promise<{ ok: true;
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey).buffer as ArrayBuffer,
     });
     const token = JSON.stringify(sub.toJSON());
     const res = await registerPushToken({ platform: "web", provider: "webpush", token });
