@@ -533,9 +533,9 @@ const Allergens = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRecipeDialog(false)}>Cancel</Button>
-            <Button disabled={!recipeForm.name || saveRecipe.isPending} onClick={() => saveRecipe.mutate()}>
-              <Save className="h-3 w-3 mr-1" /> Save
+            <Button type="button" variant="outline" onClick={() => setShowRecipeDialog(false)} disabled={saveRecipe.isPending}>Cancel</Button>
+            <Button type="button" disabled={!recipeForm.name.trim() || !siteId || saveRecipe.isPending} onClick={() => saveRecipe.mutate()}>
+              {saveRecipe.isPending ? (<><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving…</>) : (<><Save className="h-3 w-3 mr-1" /> Save</>)}
             </Button>
           </DialogFooter>
         </DialogContent>
