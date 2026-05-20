@@ -31,9 +31,6 @@ export default function Onboarding() {
     siteAddress: "",
   });
 
-  // Do not auto-route anyone from customer onboarding into /staff. The internal
-  // MiseOS console is only reached via /internal-login or direct guarded URL.
-
   // If profile already exists AND we are not in the post-signup welcome screen,
   // bounce to dashboard. (During the welcome step we WANT to keep showing it.)
   useEffect(() => {
