@@ -158,6 +158,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
 
+        if (session?.user && !session.user.is_anonymous) {
+          // An email/password Supabase session is mutually exclusive with a
+          // staff PIN session. Clear any stale staff_session from this device
+          // so a previous PIN user cannot leak into the customer dashboard
+          // and vice versa.
+          try {
+            if (localStorage.getItem("staff_session")) {
+              localStorage.removeItem("staff_session");
+              setStaffSession(null);
+            }
+          } catch { /* ignore */ }
+        }
+
         if (session?.user) {
           // Keep isLoading=true until appUser hydration finishes, otherwise
           // guards see (user && !appUser) for a brief window and incorrectly

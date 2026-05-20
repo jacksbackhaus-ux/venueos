@@ -34,12 +34,15 @@ export default function Onboarding() {
   });
 
   // Internal MiseOS staff should never be sent through customer onboarding —
-  // bounce them to the Staff Console instead.
+  // bounce them to the Staff Console instead. BUT only when they have no
+  // customer appUser. A user who is BOTH internal and a customer (e.g. dual
+  // role for testing) must stay in their tenant dashboard, never auto-route
+  // to /staff. /staff is reached only by explicit navigation.
   useEffect(() => {
-    if (!staffLoading && isInternalStaff && step === "form") {
+    if (!isLoading && !staffLoading && isInternalStaff && !appUser && step === "form") {
       navigate("/staff", { replace: true });
     }
-  }, [isInternalStaff, staffLoading, navigate, step]);
+  }, [isInternalStaff, staffLoading, isLoading, appUser, navigate, step]);
 
   // If profile already exists AND we are not in the post-signup welcome screen,
   // bounce to dashboard. (During the welcome step we WANT to keep showing it.)
