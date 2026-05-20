@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useInternalStaff } from "@/hooks/useInternalStaff";
 import { Loader2, Building2, LogOut, Link2, Copy, Check, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,6 @@ import { buildOrgLoginUrl } from "@/lib/publicAppUrl";
  */
 export default function Onboarding() {
   const { user, refreshAppUser, signOut, appUser, isLoading } = useAuth();
-  const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState<"form" | "welcome" | "branding">("form");
@@ -33,16 +31,8 @@ export default function Onboarding() {
     siteAddress: "",
   });
 
-  // Internal MiseOS staff should never be sent through customer onboarding —
-  // bounce them to the Staff Console instead. BUT only when they have no
-  // customer appUser. A user who is BOTH internal and a customer (e.g. dual
-  // role for testing) must stay in their tenant dashboard, never auto-route
-  // to /staff. /staff is reached only by explicit navigation.
-  useEffect(() => {
-    if (!isLoading && !staffLoading && isInternalStaff && !appUser && step === "form") {
-      navigate("/staff", { replace: true });
-    }
-  }, [isInternalStaff, staffLoading, isLoading, appUser, navigate, step]);
+  // Do not auto-route anyone from customer onboarding into /staff. The internal
+  // MiseOS console is only reached via /internal-login or direct guarded URL.
 
   // If profile already exists AND we are not in the post-signup welcome screen,
   // bounce to dashboard. (During the welcome step we WANT to keep showing it.)
