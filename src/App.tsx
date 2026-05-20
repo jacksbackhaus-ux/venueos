@@ -72,14 +72,12 @@ const queryClient = new QueryClient();
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { isAuthenticated, isLoading, user, appUser, staffSession } = useAuth();
-  const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <>{children}</>;
   if (user && !user.is_anonymous && !appUser) {
-    if (staffLoading) return <FullScreenLoader />;
-    if (isInternalStaff) {
-      return location.pathname.startsWith("/staff") ? <>{children}</> : <Navigate to="/staff" replace />;
-    }
+    // Email/password sessions are NEVER auto-routed to the internal /staff console.
+    // Internal staff must navigate to /staff explicitly; StaffGuard will gate it.
+    if (location.pathname.startsWith("/staff")) return <>{children}</>;
     return <Navigate to="/onboarding" replace />;
   }
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
@@ -135,17 +133,17 @@ function RequireSite({ children }: { children: React.ReactNode }) {
 
 function AuthRedirect() {
   const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
-  const { isInternalStaff, loading: staffLoading } = useInternalStaff();
   if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <Navigate to="/" replace />;
   if (user && !user.is_anonymous && !appUser) {
-    if (staffLoading) return <FullScreenLoader />;
-    if (isInternalStaff) return <Navigate to="/staff" replace />;
+    // Email/password without an app user goes to onboarding, NEVER to the
+    // internal /staff console. Internal staff must navigate to /staff manually.
     return <Navigate to="/onboarding" replace />;
   }
   if (isAuthenticated) return <Navigate to="/" replace />;
   return <Auth />;
 }
+
 
 /** Root path: show Landing for unauthenticated visitors, Dashboard for signed-in users. */
 function RootRoute({ children }: { children: React.ReactNode }) {
