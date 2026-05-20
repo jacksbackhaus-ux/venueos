@@ -1,4 +1,5 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
