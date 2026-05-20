@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useInternalStaff } from "@/hooks/useInternalStaff";
+import { useAuth } from "@/contexts/AuthContext";
 import { FullScreenLoader } from "@/components/FullScreenLoader";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
