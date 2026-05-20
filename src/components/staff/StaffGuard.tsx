@@ -35,9 +35,11 @@ export function StaffGuard({ children }: { children: React.ReactNode }) {
       // normal appUser hydration fails, a customer account still cannot enter
       // the internal MiseOS console.
       const sb: any = supabase;
-      const { data } = await sb.rpc("has_customer_account", { _auth_user_id: user.id });
+      const { data, error } = await sb.rpc("has_customer_account", { _auth_user_id: user.id });
       if (!cancelled) {
-        setHasCustomerAccount(data === true);
+        // Fail closed: if the customer-account check cannot complete, do not
+        // allow the internal console to render.
+        setHasCustomerAccount(error ? true : data === true);
         setCustomerCheckLoading(false);
       }
     })();
