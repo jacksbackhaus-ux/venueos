@@ -150,7 +150,7 @@ serve(async (req) => {
         site_id: site.id,
         organisation_id: site.organisation_id,
         insight_type: "margin_alert",
-        content: payload,
+        content: safePayload,
         narrative,
         generated_at: generatedAt,
         valid_until: validUntil.toISOString(),
