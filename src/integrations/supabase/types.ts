@@ -2446,6 +2446,45 @@ export type Database = {
           },
         ]
       }
+      notification_prefs: {
+        Row: {
+          created_at: string
+          id: string
+          incident_updates: boolean
+          margin_alerts: boolean
+          missed_cleaning: boolean
+          missed_opening_checks: boolean
+          rota_changes: boolean
+          temp_breach: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          incident_updates?: boolean
+          margin_alerts?: boolean
+          missed_cleaning?: boolean
+          missed_opening_checks?: boolean
+          rota_changes?: boolean
+          temp_breach?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          incident_updates?: boolean
+          margin_alerts?: boolean
+          missed_cleaning?: boolean
+          missed_opening_checks?: boolean
+          rota_changes?: boolean
+          temp_breach?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       org_branding: {
         Row: {
           business_display_name: string | null
@@ -2859,6 +2898,60 @@ export type Database = {
           },
           {
             foreignKeyName: "preventative_checks_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_devices: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          organisation_id: string | null
+          platform: string
+          provider: string
+          push_token: string
+          site_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organisation_id?: string | null
+          platform: string
+          provider: string
+          push_token: string
+          site_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organisation_id?: string | null
+          platform?: string
+          provider?: string
+          push_token?: string
+          site_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_devices_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_devices_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
