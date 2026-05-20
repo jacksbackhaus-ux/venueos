@@ -5435,6 +5435,10 @@ export type Database = {
       assert_internal_staff: { Args: never; Returns: undefined }
       assert_super_admin: { Args: never; Returns: undefined }
       can_access_realtime_topic: { Args: { _topic: string }; Returns: boolean }
+      can_view_shared_site_teammate: {
+        Args: { _target_user_id: string }
+        Returns: boolean
+      }
       generate_site_code: { Args: never; Returns: string }
       generate_staff_code: { Args: { _org_id: string }; Returns: string }
       generate_unique_org_slug: {
@@ -5470,6 +5474,10 @@ export type Database = {
           _start_time: string
           _user_id: string
         }
+        Returns: boolean
+      }
+      has_customer_account: {
+        Args: { _auth_user_id?: string }
         Returns: boolean
       }
       has_hq_access: { Args: { _org_id: string }; Returns: boolean }
