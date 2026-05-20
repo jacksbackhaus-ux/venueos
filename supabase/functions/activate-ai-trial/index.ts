@@ -84,7 +84,8 @@ Deno.serve(async (req) => {
       .update({ ai_active: true })
       .eq("id", sub.id);
     if (updErr) {
-      return new Response(JSON.stringify({ error: updErr.message }), {
+      console.error("activate-ai-trial update error:", updErr);
+      return new Response(JSON.stringify({ error: "Could not activate AI trial. Please try again." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -93,7 +94,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    console.error("activate-ai-trial error:", e);
+    return new Response(JSON.stringify({ error: "An unexpected error occurred. Please try again." }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
