@@ -42,9 +42,14 @@ export default function OrgLogin() {
     if (authLoading) return;
     if (staffSession) navigate("/", { replace: true });
     else if (isAuthenticated && user && !user.is_anonymous) {
+      // Remember the slug per-user only when it actually matches their org.
+      if (appUser && org && appUser.organisation_id === org.id) {
+        import("@/lib/postLoginRoute").then(m => m.rememberSlugForUser(user.id, org.slug));
+      }
       navigate(appUser ? "/" : "/onboarding", { replace: true });
     }
-  }, [authLoading, isAuthenticated, staffSession, user, appUser, navigate]);
+  }, [authLoading, isAuthenticated, staffSession, user, appUser, navigate, org]);
+
 
   useEffect(() => {
     let cancelled = false;
