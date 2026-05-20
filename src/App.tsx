@@ -69,16 +69,76 @@ import type { ModuleName } from "@/lib/plans";
 
 const queryClient = new QueryClient();
 
+/**
+ * Safety net before sending an authenticated email/password user to /onboarding.
+ * Onboarding is for TRULY NEW accounts only. If the user already has a
+ * customer row OR any accessible memberships/sites, we route them to the
+ * dashboard instead. This prevents existing customers (e.g. with a row whose
+ * auth_type ≠ 'email') from accidentally re-onboarding and overwriting tenancy.
+ */
+function OnboardingFallback({ authUserId, reason }: { authUserId: string; reason: string }) {
+  const [decision, setDecision] = useState<"loading" | "onboarding" | "dashboard">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // 1) Re-check users table without auth_type filter
+        const { data: userRow } = await supabase
+          .from("users")
+          .select("id, organisation_id")
+          .eq("auth_user_id", authUserId)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle();
+
+        let hasMembership = !!userRow?.organisation_id;
+        let sitesCount = 0;
+
+        if (userRow?.id) {
+          const { count } = await supabase
+            .from("memberships")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userRow.id)
+            .eq("active", true);
+          sitesCount = count ?? 0;
+        }
+
+        // eslint-disable-next-line no-console
+        console.warn("[AuthRedirect] onboarding gate", {
+          authUserId,
+          reason,
+          appUserFound: !!userRow,
+          organisation_id: userRow?.organisation_id ?? null,
+          sitesCount,
+        });
+
+        if (cancelled) return;
+        if (hasMembership || sitesCount > 0) setDecision("dashboard");
+        else setDecision("onboarding");
+      } catch (err) {
+        console.error("[AuthRedirect] onboarding gate failed, defaulting to dashboard", err);
+        if (!cancelled) setDecision("dashboard");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [authUserId, reason]);
+
+  if (decision === "loading") return <FullScreenLoader />;
+  if (decision === "onboarding") return <Navigate to="/onboarding" replace />;
+  // Force a session refresh — the hydration race is the most common cause.
+  return <Navigate to="/" replace />;
+}
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { isAuthenticated, isLoading, user, appUser, staffSession } = useAuth();
   if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <>{children}</>;
   if (user && !user.is_anonymous && !appUser) {
-    // Email/password sessions are NEVER auto-routed to the internal /staff console.
-    // Internal staff must navigate to /staff explicitly; StaffGuard will gate it.
+    // Internal /staff is reached explicitly; StaffGuard handles its own gating.
     if (location.pathname.startsWith("/staff")) return <>{children}</>;
-    return <Navigate to="/onboarding" replace />;
+    return <OnboardingFallback authUserId={user.id} reason="AuthGuard:no-appUser" />;
   }
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return <>{children}</>;
@@ -136,9 +196,7 @@ function AuthRedirect() {
   if (isLoading) return <FullScreenLoader />;
   if (staffSession) return <Navigate to="/" replace />;
   if (user && !user.is_anonymous && !appUser) {
-    // Email/password without an app user goes to onboarding, NEVER to the
-    // internal /staff console. Internal staff must navigate to /staff manually.
-    return <Navigate to="/onboarding" replace />;
+    return <OnboardingFallback authUserId={user.id} reason="AuthRedirect:no-appUser" />;
   }
   if (isAuthenticated) return <Navigate to="/" replace />;
   return <Auth />;
