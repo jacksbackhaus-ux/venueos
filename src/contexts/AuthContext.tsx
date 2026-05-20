@@ -79,12 +79,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchAppUser = useCallback(async (authUserId: string) => {
     try {
+      // Resolve canonical customer user. We intentionally do NOT filter by
+      // auth_type — an active row linked to this auth user is sufficient
+      // proof of customer tenancy. Filtering by auth_type='email' historically
+      // misrouted existing customers (e.g. jackhammond@jacksbackhaus.com) to
+      // /onboarding when their row had any other auth_type set.
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('auth_user_id', authUserId)
         .eq('status', 'active')
-        .eq('auth_type', 'email')
+        .order('created_at', { ascending: true })
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
@@ -101,10 +107,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq('active', true)
           .maybeSingle();
 
-        if (orgError) throw orgError;
-        if (mountedRef.current) setOrgRole(orgData as OrgRole | null);
-      } else if (mountedRef.current) {
-        setOrgRole(null);
+        // Do NOT clobber appUser if org_users lookup fails — the user is still
+        // a valid customer, they just have no HQ role.
+        if (orgError) {
+          console.warn('[auth] org_users lookup failed (non-fatal)', orgError);
+          if (mountedRef.current) setOrgRole(null);
+        } else if (mountedRef.current) {
+          setOrgRole(orgData as OrgRole | null);
+        }
+      } else {
+        if (mountedRef.current) setOrgRole(null);
+        console.warn('[auth] No appUser row resolved for auth user', { authUserId });
       }
 
       return appUserData;
