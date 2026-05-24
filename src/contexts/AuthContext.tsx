@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
 
-        if (!session && staffSession) {
+        if (!session) {
           setStaffSession(null);
         }
 
@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (mountedRef.current) setIsLoading(false);
             });
         } else {
-          if (!session && staffSession) {
+          if (!session) {
             setStaffSession(null);
           }
           setAppUser(null);
