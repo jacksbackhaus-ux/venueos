@@ -67,6 +67,24 @@ function readStoredStaffSession(): StaffSession | null {
   return null;
 }
 
+async function verifyStoredStaffSession(stored: StaffSession | null): Promise<StaffSession | null> {
+  if (!stored) return null;
+  const sb: any = supabase;
+  const { data, error } = await sb.rpc('verify_staff_session', {
+    _user_id: stored.user_id,
+    _site_id: stored.site_id,
+  });
+  const result = data as (StaffSession & { valid?: boolean }) | null;
+  if (error || result?.valid !== true) return null;
+  return {
+    user_id: result.user_id,
+    display_name: result.display_name,
+    site_role: result.site_role,
+    organisation_id: result.organisation_id,
+    site_id: result.site_id,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { isImpersonating, targetAppUser, targetOrgRole } = useImpersonation();
   const [session, setSession] = useState<Session | null>(null);
@@ -148,6 +166,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!session) {
           setStaffSession(null);
+        }
+
+        if (session?.user?.is_anonymous) {
+          const verifiedStaffSession = await verifyStoredStaffSession(readStoredStaffSession());
+          setStaffSession(verifiedStaffSession);
         }
 
         if (session?.user && !session.user.is_anonymous && staffSession) {
