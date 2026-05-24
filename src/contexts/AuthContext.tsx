@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshAppUser = useCallback(async () => {
-    if (user?.id) await fetchAppUser(user.id);
+    if (user?.id && !user.is_anonymous) await fetchAppUser(user.id);
   }, [user, fetchAppUser]);
 
   useEffect(() => {
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
 
-        if (session?.user) {
+        if (session?.user && !session.user.is_anonymous) {
           await fetchAppUser(session.user.id);
         } else {
           setAppUser(null);
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch { /* ignore */ }
         }
 
-        if (session?.user) {
+        if (session?.user && !session.user.is_anonymous) {
           // Keep isLoading=true until appUser hydration finishes, otherwise
           // guards see (user && !appUser) for a brief window and incorrectly
           // redirect a fully onboarded user to /onboarding.
