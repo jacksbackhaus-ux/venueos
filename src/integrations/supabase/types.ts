@@ -5582,6 +5582,10 @@ export type Database = {
         Args: { _site_id: string; _staff_code: string }
         Returns: Json
       }
+      verify_staff_session: {
+        Args: { _site_id: string; _user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       auth_type: "email" | "staff_code"
