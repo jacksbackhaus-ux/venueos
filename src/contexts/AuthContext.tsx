@@ -146,6 +146,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
 
+        if (!session && staffSession) {
+          setStaffSession(null);
+        }
+
         if (session?.user && !session.user.is_anonymous) {
           await fetchAppUser(session.user.id);
         } else {
@@ -197,6 +201,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (mountedRef.current) setIsLoading(false);
             });
         } else {
+          if (!session && staffSession) {
+            setStaffSession(null);
+          }
           setAppUser(null);
           setOrgRole(null);
           setIsLoading(false);
