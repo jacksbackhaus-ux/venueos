@@ -1,5 +1,5 @@
 import { useState, forwardRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -476,6 +476,7 @@ export function ManagerForgotCard({ onBack }: { onBack: () => void }) {
 
 export function StaffCard({ onBack, orgSlug, orgName }: { onBack: () => void; orgSlug?: string; orgName?: string }) {
   const { setStaffSession } = useAuth();
+  const navigate = useNavigate();
   const [siteCode, setSiteCode] = useState("");
   const [staffCode, setStaffCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -505,7 +506,13 @@ export function StaffCard({ onBack, orgSlug, orgName }: { onBack: () => void; or
     };
 
     const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
+    if (sessionData.session && !sessionData.session.user.is_anonymous) {
+      await supabase.auth.signOut();
+      setStaffSession(null);
+    }
+
+    const { data: freshSessionData } = await supabase.auth.getSession();
+    if (!freshSessionData.session) {
       const { error: anonErr } = await supabase.auth.signInAnonymously();
       if (anonErr) {
         setLoading(false);
@@ -546,7 +553,12 @@ export function StaffCard({ onBack, orgSlug, orgName }: { onBack: () => void; or
       organisation_id: result.organisation_id!,
       site_id: result.site_id!,
     });
+    try {
+      localStorage.removeItem("current_site_id");
+      localStorage.removeItem("hq_site_selected");
+    } catch { /* ignore */ }
     toast.success(`Welcome, ${result.display_name}!`);
+    navigate("/", { replace: true });
   };
 
   return (
