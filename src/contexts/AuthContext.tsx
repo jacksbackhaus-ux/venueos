@@ -150,6 +150,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setStaffSession(null);
         }
 
+        if (session?.user && !session.user.is_anonymous && staffSession) {
+          setStaffSession(null);
+        }
+
         if (session?.user && !session.user.is_anonymous) {
           await fetchAppUser(session.user.id);
         } else {
