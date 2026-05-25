@@ -277,9 +277,10 @@ function RecipesPanel({
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead className="text-right">Cost / portion</TableHead>
+                  <TableHead className="text-right">Cost / unit</TableHead>
+                  <TableHead className="text-right">Recommended / unit</TableHead>
                   {kind === "menu_item" && <>
-                    <TableHead className="text-right">Sale price</TableHead>
+                    <TableHead className="text-right">Your price</TableHead>
                     <TableHead className="text-right">GP %</TableHead>
                   </>}
                   {kind === "prep_batch" && <TableHead className="text-right">Portions</TableHead>}
@@ -299,7 +300,10 @@ function RecipesPanel({
                         <div className="text-[11px] text-muted-foreground">{r.category}</div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        £{bd.costPerPortionExVat.toFixed(3)}
+                        £{bd.costPerPortionExVat.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-semibold text-success">
+                        £{bd.recommendedSellIncVat.toFixed(2)}
                       </TableCell>
                       {kind === "menu_item" && <>
                         <TableCell className="text-right tabular-nums">
