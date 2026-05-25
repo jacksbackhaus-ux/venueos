@@ -277,9 +277,10 @@ function RecipesPanel({
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead className="text-right">Cost / portion</TableHead>
+                  <TableHead className="text-right">Cost / unit</TableHead>
+                  <TableHead className="text-right">Recommended / unit</TableHead>
                   {kind === "menu_item" && <>
-                    <TableHead className="text-right">Sale price</TableHead>
+                    <TableHead className="text-right">Your price</TableHead>
                     <TableHead className="text-right">GP %</TableHead>
                   </>}
                   {kind === "prep_batch" && <TableHead className="text-right">Portions</TableHead>}
@@ -299,7 +300,10 @@ function RecipesPanel({
                         <div className="text-[11px] text-muted-foreground">{r.category}</div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        £{bd.costPerPortionExVat.toFixed(3)}
+                        £{bd.costPerPortionExVat.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-semibold text-success">
+                        £{bd.recommendedSellIncVat.toFixed(2)}
                       </TableCell>
                       {kind === "menu_item" && <>
                         <TableCell className="text-right tabular-nums">
@@ -461,27 +465,27 @@ function RecipeDrawer({
           {/* Inputs */}
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label>{isMenu ? "Portions / yields" : "Batch portions"}</Label>
+              <Label>{isMenu ? "Units per batch" : "Portions per batch"}</Label>
               <Input type="number" step="1" value={portions} onChange={(e) => setPortions(e.target.value)} />
               <p className="text-[11px] text-muted-foreground">
-                Cost per portion = total ÷ this number.
+                How many sellable units does one batch produce? Cost-per-unit = total batch cost ÷ this number.
               </p>
             </div>
             <div className="space-y-1">
-              <Label>Labour minutes</Label>
+              <Label>Labour minutes (per batch)</Label>
               <Input type="number" step="0.5" value={labourMins} onChange={(e) => setLabourMins(e.target.value)} />
               <p className="text-[11px] text-muted-foreground">
                 @ £{ctx.effectiveHourlyRate.toFixed(2)}/hr ({ctx.settings.labor_rate_manual_override_enabled ? "manual" : "blended from timesheets"})
               </p>
             </div>
             <div className="space-y-1">
-              <Label>Packaging cost (£)</Label>
+              <Label>Packaging cost per unit (£)</Label>
               <Input type="number" step="0.01" value={packaging} onChange={(e) => setPackaging(e.target.value)} />
             </div>
             {isMenu && (
               <>
                 <div className="space-y-1">
-                  <Label>Sale price ({ctx.settings.costing_view_mode === "INC_VAT" ? "inc-VAT" : "ex-VAT"}) £</Label>
+                  <Label>Your sale price per unit ({ctx.settings.costing_view_mode === "INC_VAT" ? "inc-VAT" : "ex-VAT"}) £</Label>
                   <Input type="number" step="0.01" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} />
                 </div>
                 <div className="space-y-1">
@@ -496,45 +500,66 @@ function RecipeDrawer({
             )}
           </div>
 
-          {/* Breakdown */}
+          {/* HERO: per-unit cost & per-unit recommended price */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Cost per unit
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <p className="text-3xl font-bold tabular-nums">£{bd.costPerPortionExVat.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  £{bd.totalCostExVat.toFixed(2)} total batch ÷ {Number(portions) || 1} {Number(portions) === 1 ? "unit" : "units"}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-success/30 bg-success/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Charge per unit (recommended)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <p className="text-3xl font-bold tabular-nums">£{bd.recommendedSellIncVat.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  inc-VAT · £{bd.recommendedSellExVat.toFixed(2)} ex-VAT @ {Number(targetGp).toFixed(0)}% GP target
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Breakdown (secondary) */}
           <div className="rounded-md border bg-muted/30 p-4 space-y-1.5 text-sm">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Cost breakdown (per batch)</p>
             <Row label="Ingredients (ex-VAT, after yield)" value={`£${bd.ingredientCostExVat.toFixed(3)}`} />
             <Row label="Packaging" value={`£${bd.packagingCost.toFixed(3)}`} />
             <Row label="Labour" value={`£${bd.labourCost.toFixed(3)}`} />
             <Row label="Overhead" value={`£${bd.overheadPerUnit.toFixed(3)}`} />
             <div className="border-t pt-1.5 mt-1.5">
               <Row label="Total cost (batch)" value={`£${bd.totalCostExVat.toFixed(3)}`} bold />
-              <Row label="Cost per portion" value={`£${bd.costPerPortionExVat.toFixed(3)}`} bold />
+              <Row label="Cost per unit" value={`£${bd.costPerPortionExVat.toFixed(3)}`} bold />
             </div>
           </div>
 
-          {/* Pricing */}
-          {isMenu && (
-            <div className="grid sm:grid-cols-2 gap-3">
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Recommended price</CardTitle></CardHeader>
-                <CardContent className="space-y-1">
-                  <p className="text-2xl font-bold tabular-nums">£{bd.recommendedSellExVat.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground">ex-VAT @ {Number(targetGp).toFixed(1)}% GP</p>
-                  <p className="text-xs text-muted-foreground">£{bd.recommendedSellIncVat.toFixed(2)} inc-VAT</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Actual GP</CardTitle></CardHeader>
-                <CardContent className="space-y-1">
-                  <p className={`text-2xl font-bold tabular-nums ${
-                    bd.gpPercent != null && bd.gpPercent < Number(targetGp) ? "text-warning" : "text-success"
-                  }`}>
-                    {bd.gpPercent != null ? `${bd.gpPercent.toFixed(1)}%` : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {bd.grossProfitPerPortion != null
-                      ? `£${bd.grossProfitPerPortion.toFixed(3)} / portion`
-                      : "Set sale price"}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Actual GP vs target — when sale price is set */}
+          {isMenu && bd.gpPercent != null && (
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Your actual GP at current sale price</CardTitle></CardHeader>
+              <CardContent className="space-y-1">
+                <p className={`text-2xl font-bold tabular-nums ${
+                  bd.gpPercent < Number(targetGp) ? "text-warning" : "text-success"
+                }`}>
+                  {bd.gpPercent.toFixed(1)}%
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {bd.grossProfitPerPortion != null
+                    ? `£${bd.grossProfitPerPortion.toFixed(2)} profit per unit · target ${Number(targetGp).toFixed(0)}%`
+                    : "Set sale price"}
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {isMenu && (
