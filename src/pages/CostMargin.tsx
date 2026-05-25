@@ -130,7 +130,7 @@ export default function CostMargin() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
           <TabsTrigger value="cashflow"><Wallet className="h-4 w-4 mr-2" />Cashflow</TabsTrigger>
-          <TabsTrigger value="pricing-lab"><Beaker className="h-4 w-4 mr-2" />Pricing Lab</TabsTrigger>
+          <TabsTrigger value="pricing-lab"><Beaker className="h-4 w-4 mr-2" />Pricing Calculator</TabsTrigger>
           <TabsTrigger value="inputs"><Sliders className="h-4 w-4 mr-2" />Inputs</TabsTrigger>
         </TabsList>
 
