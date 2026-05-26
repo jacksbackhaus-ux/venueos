@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       .select("auth_user_id, email")
       .eq("id", targetUserId)
       .maybeSingle();
-    if (uErr) return json(500, { error: `target lookup failed: ${uErr.message}` });
+    if (uErr) { console.error("[staff-admin-action] target lookup failed", uErr); return json(500, { error: "Target user lookup failed." }); }
     if (!u) return json(404, { error: "target user not found" });
     targetAuthUserId = (u as { auth_user_id: string | null }).auth_user_id;
     targetEmail = (u as { email: string | null }).email;
