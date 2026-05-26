@@ -126,7 +126,8 @@ DATA:
 
     if (!aiRes.ok) {
       const text = await aiRes.text();
-      return new Response(JSON.stringify({ error: "AI gateway error", detail: text }), {
+      console.error("AI gateway error:", aiRes.status, text);
+      return new Response(JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
