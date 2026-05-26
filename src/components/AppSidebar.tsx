@@ -149,7 +149,7 @@ export function AppSidebar() {
 
         {dailyOps.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Daily Operations</SidebarGroupLabel>
+            <SidebarGroupLabel>Run the Day</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(dailyOps)}</SidebarMenu>
             </SidebarGroupContent>
@@ -158,7 +158,7 @@ export function AppSidebar() {
 
         {compliance.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Compliance</SidebarGroupLabel>
+            <SidebarGroupLabel>Stay Compliant</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(compliance)}</SidebarMenu>
             </SidebarGroupContent>
@@ -167,9 +167,18 @@ export function AppSidebar() {
 
         {business.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Business</SidebarGroupLabel>
+            <SidebarGroupLabel>Protect Margin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(business)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {utility.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Communication</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderItems(utility)}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
