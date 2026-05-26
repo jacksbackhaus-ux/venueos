@@ -87,6 +87,7 @@ export function AppSidebar() {
   const dailyOps = hasSelectedSite ? visible(dailyOpsAll) : [];
   const compliance = hasSelectedSite ? visible(complianceAll) : [];
   const business = hasSelectedSite ? visible(businessAll) : [];
+  const utility = hasSelectedSite ? visible(utilityAll) : [];
 
   const userInitials = appUser?.display_name?.trim().slice(0, 2).toUpperCase() || "MG";
 
