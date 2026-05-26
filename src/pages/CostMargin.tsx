@@ -109,10 +109,10 @@ export default function CostMargin() {
         <div>
           <h1 className="font-heading font-bold text-2xl flex items-center gap-2">
             <Calculator className="h-6 w-6 text-primary" />
-            Profit & Cashflow
+            Profit & Pricing
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Recipe costing, channel pricing and cash visibility — in one place.
+            Know your true cost, set the right price, protect your margin.
           </p>
         </div>
         {sites.length > 1 && (
@@ -129,8 +129,7 @@ export default function CostMargin() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
-          <TabsTrigger value="cashflow"><Wallet className="h-4 w-4 mr-2" />Cashflow</TabsTrigger>
-          <TabsTrigger value="pricing-lab"><Beaker className="h-4 w-4 mr-2" />Pricing Calculator</TabsTrigger>
+          <TabsTrigger value="products"><ChefHat className="h-4 w-4 mr-2" />Products</TabsTrigger>
           <TabsTrigger value="inputs"><Sliders className="h-4 w-4 mr-2" />Inputs</TabsTrigger>
         </TabsList>
 
@@ -147,27 +146,32 @@ export default function CostMargin() {
             recipes={allRecipes}
             intelligence={intelligence}
           />
-          <MarginWatchdogCard siteId={siteId} ctx={ctx} recipes={allRecipes} />
-          <Tabs defaultValue="menu" className="space-y-3">
-            <TabsList className="flex-wrap h-auto">
-              <TabsTrigger value="menu"><ChefHat className="h-4 w-4 mr-2" />Menu items</TabsTrigger>
-              <TabsTrigger value="prep"><Boxes className="h-4 w-4 mr-2" />Prep batches</TabsTrigger>
-              <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
-              <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-2" />Settings</TabsTrigger>
-            </TabsList>
-            <TabsContent value="menu">
-              <RecipesPanel
-                kind="menu_item"
-                recipes={menuItems}
-                ctx={ctx}
-                ingredients={ingredients}
-                allRecipes={allRecipes}
-                onChange={refreshAll}
-                siteId={siteId}
-                orgId={orgId}
-              />
-            </TabsContent>
-            <TabsContent value="prep">
+          <details className="rounded-md border bg-muted/20">
+            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">
+              Margin Watchdog (optional)
+            </summary>
+            <div className="p-4 pt-0">
+              <MarginWatchdogCard siteId={siteId} ctx={ctx} recipes={allRecipes} />
+            </div>
+          </details>
+        </TabsContent>
+
+        <TabsContent value="products" className="space-y-6">
+          <RecipesPanel
+            kind="menu_item"
+            recipes={menuItems}
+            ctx={ctx}
+            ingredients={ingredients}
+            allRecipes={allRecipes}
+            onChange={refreshAll}
+            siteId={siteId}
+            orgId={orgId}
+          />
+          <details className="rounded-md border bg-muted/20">
+            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium flex items-center gap-2">
+              <Boxes className="h-4 w-4" /> Prep batches (sub-recipes used inside products)
+            </summary>
+            <div className="p-4 pt-0">
               <RecipesPanel
                 kind="prep_batch"
                 recipes={prepBatches}
@@ -178,30 +182,14 @@ export default function CostMargin() {
                 siteId={siteId}
                 orgId={orgId}
               />
-            </TabsContent>
-            <TabsContent value="ingredients">
-              <IngredientsTab ingredients={ingredients} onChange={refreshAll} />
-            </TabsContent>
-            <TabsContent value="settings">
-              <SettingsTab ctx={ctx} orgId={orgId} onSaved={refreshAll} />
-            </TabsContent>
-          </Tabs>
+            </div>
+          </details>
         </TabsContent>
 
-        <TabsContent value="cashflow">
-          <CashflowTab
-            siteIds={cashflowSiteIds}
-            primarySiteId={isAllSites ? null : siteId}
-            intelligence={intelligence}
-          />
-        </TabsContent>
-
-        <TabsContent value="pricing-lab">
-          <PricingLabTab siteId={siteId} orgId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="inputs">
+        <TabsContent value="inputs" className="space-y-6">
           <InputsTab siteId={siteId} orgId={orgId} />
+          <IngredientsTab ingredients={ingredients} onChange={refreshAll} />
+          <SettingsTab ctx={ctx} orgId={orgId} onSaved={refreshAll} />
         </TabsContent>
       </Tabs>
     </div>
