@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
   // Verify internal staff status using the SECURITY DEFINER helper.
   const { data: isStaff, error: staffErr } = await callerClient.rpc("is_internal_staff");
-  if (staffErr) return json(500, { error: `staff check failed: ${staffErr.message}` });
+  if (staffErr) { console.error("[staff-admin-action] staff check failed", staffErr); return json(500, { error: "Authorization check failed." }); }
   if (!isStaff) return json(403, { error: "not authorised: internal staff required" });
 
   // Parse + validate body
