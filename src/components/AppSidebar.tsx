@@ -211,3 +211,52 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+function CollapsibleGroup({
+  id,
+  label,
+  collapsed,
+  defaultOpen = true,
+  children,
+}: {
+  id: string;
+  label: string;
+  collapsed: boolean;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const storageKey = `sidebar-group:${id}`;
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return defaultOpen;
+    const v = window.localStorage.getItem(storageKey);
+    return v === null ? defaultOpen : v === "1";
+  });
+
+  useEffect(() => {
+    try { window.localStorage.setItem(storageKey, open ? "1" : "0"); } catch {}
+  }, [open, storageKey]);
+
+  // When the sidebar collapses to icon mode, always show items (label is hidden anyway)
+  const showContent = collapsed ? true : open;
+
+  return (
+    <SidebarGroup>
+      {!collapsed && (
+        <SidebarGroupLabel asChild>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="w-full flex items-center justify-between gap-2 hover:text-foreground transition-colors"
+            aria-expanded={open}
+          >
+            <span>{label}</span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+            />
+          </button>
+        </SidebarGroupLabel>
+      )}
+      {showContent && <SidebarGroupContent>{children}</SidebarGroupContent>}
+    </SidebarGroup>
+  );
+}
