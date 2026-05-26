@@ -558,27 +558,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             onClose={() => setSheet(null)}
           />
 
-          {/* Operations sheet */}
+          {/* Run the Day sheet */}
           <BottomSheet
             open={sheet === "ops"}
             onClose={() => setSheet(null)}
-            title="Daily Operations"
+            title="Run the Day"
             items={visibleOps}
           />
 
-          {/* Compliance sheet */}
+          {/* Stay Compliant sheet */}
           <BottomSheet
             open={sheet === "compliance"}
             onClose={() => setSheet(null)}
-            title="Compliance"
+            title="Stay Compliant"
             items={visibleCompliance}
           />
 
-          {/* More sheet */}
+          {/* More sheet — Protect Margin + organisation utilities */}
           <BottomSheet
             open={sheet === "more"}
             onClose={() => setSheet(null)}
-            title="More"
+            title="Protect Margin & More"
             items={visibleBusiness}
             extras={<MoreSheetExtras onClose={() => setSheet(null)} />}
           />
