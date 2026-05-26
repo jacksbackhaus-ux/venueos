@@ -149,48 +149,33 @@ export function AppSidebar() {
         )}
 
         {dailyOps.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Run the Day</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(dailyOps)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="run-the-day" label="Run the Day" collapsed={collapsed}>
+            <SidebarMenu>{renderItems(dailyOps)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {compliance.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Stay Compliant</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(compliance)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="stay-compliant" label="Stay Compliant" collapsed={collapsed}>
+            <SidebarMenu>{renderItems(compliance)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {business.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Protect Margin</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(business)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="protect-margin" label="Protect Margin" collapsed={collapsed}>
+            <SidebarMenu>{renderItems(business)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {utility.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Communication</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(utility)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="communication" label="Communication" collapsed={collapsed}>
+            <SidebarMenu>{renderItems(utility)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {orgNav.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Organisation</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(orgNav)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="organisation" label="Organisation" collapsed={collapsed} defaultOpen={false}>
+            <SidebarMenu>{renderItems(orgNav)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {!hasSelectedSite && isHQ && (
