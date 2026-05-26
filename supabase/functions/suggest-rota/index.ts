@@ -278,7 +278,7 @@ serve(async (req) => {
         name: s.name,
         role: role ?? s.site_role,
         site_role: s.site_role,
-        hourly_rate: s.hourly_rate,
+        // hourly_rate intentionally omitted — pay data must not be persisted in ai_insights.content
         availability_days,
         usual_start_time: mode(startTimes),
         usual_end_time: mode(endTimes),
