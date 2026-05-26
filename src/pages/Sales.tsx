@@ -33,6 +33,21 @@ export default function Sales() {
   const tierOk = tier === "business_tier" || tier === "intelligence";
   const intelligence = tier === "intelligence" && isActive("ai_insights");
 
+  const imports = useQuery({
+    queryKey: ["sales-imports", siteId],
+    enabled: !!siteId && isManager && tierOk,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sales_imports")
+        .select("id, source_system, file_name, status, uploaded_at, imported_at, row_count, error")
+        .eq("site_id", siteId!)
+        .order("uploaded_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   if (!isManager) return <Navigate to="/" replace />;
 
   if (!tierOk) {
@@ -51,21 +66,6 @@ export default function Sales() {
       </div>
     );
   }
-
-  const imports = useQuery({
-    queryKey: ["sales-imports", siteId],
-    enabled: !!siteId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sales_imports")
-        .select("id, source_system, file_name, status, uploaded_at, imported_at, row_count, error")
-        .eq("site_id", siteId!)
-        .order("uploaded_at", { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
