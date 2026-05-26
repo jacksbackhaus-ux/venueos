@@ -112,8 +112,9 @@ Deno.serve(async (req) => {
         email: targetEmail,
       });
       if (error) {
+        console.error("[staff-admin-action] generateLink failed", error);
         await writeAudit({ outcome: "error", error: error.message });
-        return json(500, { error: error.message });
+        return json(500, { error: "Failed to generate password reset link." });
       }
       await writeAudit({ outcome: "ok", email_sent_to: targetEmail });
       return json(200, { ok: true, sent_to: targetEmail, action_link_generated: !!data });
