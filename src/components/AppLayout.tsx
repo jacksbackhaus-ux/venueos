@@ -8,6 +8,7 @@ import {
   Package, Calculator, PoundSterling, FileText, Settings,
   CreditCard, Building2, Clock, ClipboardList, Thermometer,
   SprayCan, Sparkles, ChevronRight, Plus, ChevronDown, Check,
+  Trash2, GraduationCap, BookCheck, MessageSquareHeart, Wrench,
 } from "lucide-react";
 import { useSite } from "@/contexts/SiteContext";
 import { useBranding } from "@/contexts/BrandingContext";
@@ -27,29 +28,36 @@ type NavLeaf = {
   desc?: string;
 };
 
-// ─── Nav data ─────────────────────────────────────────────────────────────────
+// ─── Nav data (mirrors the 3-pillar desktop sidebar) ──────────────────────────
 
+// Run the Day
 const operationsItems: NavLeaf[] = [
   { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts", desc: "Staff rota" },
-  
   { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets", desc: "Hours & payroll" },
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet", desc: "Opening & closing" },
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures", desc: "Fridge/freezer logs" },
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning", desc: "Cleaning schedule" },
+  { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log", desc: "Track wastage" },
+  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking", desc: "Production traceability" },
+  { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker", desc: "Staff tip distribution" },
 ];
 
+// Stay Compliant
 const complianceItems: NavLeaf[] = [
+  { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp", desc: "Hazard plan" },
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens", desc: "Recipes & PPDS labels" },
   { title: "Suppliers", url: "/suppliers", icon: Truck, mod: "suppliers", desc: "Deliveries & suppliers" },
-  { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest_maintenance", desc: "Sightings & jobs" },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents", desc: "Non-conformances" },
-  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking", desc: "Production traceability" },
+  { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest_maintenance", desc: "Sightings & jobs" },
+  { title: "PPM Schedule", url: "/ppm-schedule", icon: Wrench, mod: "ppm_schedule", desc: "Planned maintenance" },
+  { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training", desc: "Certifications" },
+  { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback", desc: "Reviews & complaints" },
+  { title: "Reports", url: "/reports", icon: FileText, mod: "reports", desc: "EHO-ready exports" },
 ];
 
+// Protect Margin
 const businessItems: NavLeaf[] = [
-  { title: "Cost & Margin", url: "/cost-margin", icon: Calculator, mod: "cost_margin", desc: "Recipe costing" },
-  { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker", desc: "Staff tip distribution" },
-  { title: "Reports", url: "/reports", icon: FileText, mod: "reports", desc: "EHO-ready exports" },
+  { title: "Profit & Pricing", url: "/cost-margin", icon: Calculator, mod: "cost_margin", desc: "Cost, pricing & margin" },
 ];
 
 const quickActions = [
