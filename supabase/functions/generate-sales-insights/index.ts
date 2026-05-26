@@ -97,7 +97,8 @@ ${JSON.stringify(summaryInput)}`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message || "Internal error" }), {
+    console.error("generate-sales-insights error:", e);
+    return new Response(JSON.stringify({ error: "An unexpected error occurred. Please try again." }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

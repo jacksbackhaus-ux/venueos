@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
   // Verify internal staff status using the SECURITY DEFINER helper.
   const { data: isStaff, error: staffErr } = await callerClient.rpc("is_internal_staff");
-  if (staffErr) return json(500, { error: `staff check failed: ${staffErr.message}` });
+  if (staffErr) { console.error("[staff-admin-action] staff check failed", staffErr); return json(500, { error: "Authorization check failed." }); }
   if (!isStaff) return json(403, { error: "not authorised: internal staff required" });
 
   // Parse + validate body
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       .select("auth_user_id, email")
       .eq("id", targetUserId)
       .maybeSingle();
-    if (uErr) return json(500, { error: `target lookup failed: ${uErr.message}` });
+    if (uErr) { console.error("[staff-admin-action] target lookup failed", uErr); return json(500, { error: "Target user lookup failed." }); }
     if (!u) return json(404, { error: "target user not found" });
     targetAuthUserId = (u as { auth_user_id: string | null }).auth_user_id;
     targetEmail = (u as { email: string | null }).email;
@@ -112,8 +112,9 @@ Deno.serve(async (req) => {
         email: targetEmail,
       });
       if (error) {
+        console.error("[staff-admin-action] generateLink failed", error);
         await writeAudit({ outcome: "error", error: error.message });
-        return json(500, { error: error.message });
+        return json(500, { error: "Failed to generate password reset link." });
       }
       await writeAudit({ outcome: "ok", email_sent_to: targetEmail });
       return json(200, { ok: true, sent_to: targetEmail, action_link_generated: !!data });
@@ -122,13 +123,14 @@ Deno.serve(async (req) => {
     case "force_sign_out": {
       // Sensitive — require super admin
       const { data: isSuper, error: sErr } = await callerClient.rpc("is_super_admin");
-      if (sErr) return json(500, { error: sErr.message });
+      if (sErr) { console.error("[staff-admin-action] super admin check failed", sErr); return json(500, { error: "Authorization check failed." }); }
       if (!isSuper) return json(403, { error: "super admin required for this action" });
       if (!targetAuthUserId) return json(400, { error: "target has no auth account" });
       const { error } = await adminClient.auth.admin.signOut(targetAuthUserId);
       if (error) {
+        console.error("[staff-admin-action] signOut failed", error);
         await writeAudit({ outcome: "error", error: error.message });
-        return json(500, { error: error.message });
+        return json(500, { error: "Failed to sign user out." });
       }
       await writeAudit({ outcome: "ok" });
       return json(200, { ok: true });
