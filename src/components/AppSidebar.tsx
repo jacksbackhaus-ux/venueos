@@ -1,9 +1,10 @@
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard, CalendarClock, Thermometer, ClipboardList, SprayCan,
   Wheat, Truck, Bug, AlertTriangle, FileText, Settings, ShieldCheck,
   Package, Building2, CreditCard, MapPin, Calculator, Clock, MessageSquare,
   PoundSterling, Sparkles, Trash2, GraduationCap, BookCheck, MessageSquareHeart, Wrench, ShoppingBag,
-
+  ChevronDown,
 } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useInternalStaff } from "@/hooks/useInternalStaff";
@@ -148,48 +149,33 @@ export function AppSidebar() {
         )}
 
         {dailyOps.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Run the Day</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(dailyOps)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="run-the-day" label="Run the Day" collapsed={collapsed}>
+            <SidebarMenu>{renderItems(dailyOps)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {compliance.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Stay Compliant</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(compliance)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="stay-compliant" label="Stay Compliant" collapsed={collapsed}>
+            <SidebarMenu>{renderItems(compliance)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {business.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Protect Margin</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(business)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="protect-margin" label="Protect Margin" collapsed={collapsed}>
+            <SidebarMenu>{renderItems(business)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {utility.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Communication</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(utility)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="communication" label="Communication" collapsed={collapsed}>
+            <SidebarMenu>{renderItems(utility)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {orgNav.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Organisation</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{renderItems(orgNav)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup id="organisation" label="Organisation" collapsed={collapsed} defaultOpen={false}>
+            <SidebarMenu>{renderItems(orgNav)}</SidebarMenu>
+          </CollapsibleGroup>
         )}
 
         {!hasSelectedSite && isHQ && (
@@ -223,5 +209,54 @@ export function AppSidebar() {
         )}
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function CollapsibleGroup({
+  id,
+  label,
+  collapsed,
+  defaultOpen = true,
+  children,
+}: {
+  id: string;
+  label: string;
+  collapsed: boolean;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const storageKey = `sidebar-group:${id}`;
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return defaultOpen;
+    const v = window.localStorage.getItem(storageKey);
+    return v === null ? defaultOpen : v === "1";
+  });
+
+  useEffect(() => {
+    try { window.localStorage.setItem(storageKey, open ? "1" : "0"); } catch {}
+  }, [open, storageKey]);
+
+  // When the sidebar collapses to icon mode, always show items (label is hidden anyway)
+  const showContent = collapsed ? true : open;
+
+  return (
+    <SidebarGroup>
+      {!collapsed && (
+        <SidebarGroupLabel asChild>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="w-full flex items-center justify-between gap-2 hover:text-foreground transition-colors"
+            aria-expanded={open}
+          >
+            <span>{label}</span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+            />
+          </button>
+        </SidebarGroupLabel>
+      )}
+      {showContent && <SidebarGroupContent>{children}</SidebarGroupContent>}
+    </SidebarGroup>
   );
 }
