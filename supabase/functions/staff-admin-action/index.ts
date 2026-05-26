@@ -123,13 +123,14 @@ Deno.serve(async (req) => {
     case "force_sign_out": {
       // Sensitive — require super admin
       const { data: isSuper, error: sErr } = await callerClient.rpc("is_super_admin");
-      if (sErr) return json(500, { error: sErr.message });
+      if (sErr) { console.error("[staff-admin-action] super admin check failed", sErr); return json(500, { error: "Authorization check failed." }); }
       if (!isSuper) return json(403, { error: "super admin required for this action" });
       if (!targetAuthUserId) return json(400, { error: "target has no auth account" });
       const { error } = await adminClient.auth.admin.signOut(targetAuthUserId);
       if (error) {
+        console.error("[staff-admin-action] signOut failed", error);
         await writeAudit({ outcome: "error", error: error.message });
-        return json(500, { error: error.message });
+        return json(500, { error: "Failed to sign user out." });
       }
       await writeAudit({ outcome: "ok" });
       return json(200, { ok: true });
