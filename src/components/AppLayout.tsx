@@ -522,7 +522,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => setSheet(sheet === "ops" ? null : "ops")}
             >
               <CalendarClock className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Shifts</span>
+              <span className="text-[10px] font-medium">Run Day</span>
             </button>
 
             <button
