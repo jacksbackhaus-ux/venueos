@@ -86,7 +86,8 @@ Use null when no good match. Header values must EXACTLY match one of: ${JSON.str
     });
     if (!r.ok) {
       const t = await r.text();
-      return new Response(JSON.stringify({ error: "AI error", detail: t }), {
+      console.error("AI gateway error:", r.status, t);
+      return new Response(JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
