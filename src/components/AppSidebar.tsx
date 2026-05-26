@@ -22,36 +22,37 @@ import type { ModuleName } from "@/lib/plans";
 
 type NavLeaf = { title: string; url: string; icon: React.ElementType; mod?: ModuleName };
 
-// Daily Operations: Dashboard always visible; module-gated items follow
+// Run the Day: Dashboard always visible; operational items follow
 const dailyOpsAll: NavLeaf[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard }, // always visible
   { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts" },
-  
   { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets" },
-  { title: "Messenger", url: "/messenger", icon: MessageSquare, mod: "messenger" },
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet" },
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures" },
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
   { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log" },
+  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking" },
+  { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker" },
 ];
 
 const complianceAll: NavLeaf[] = [
+  { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens" },
   { title: "Suppliers", url: "/suppliers", icon: Truck, mod: "suppliers" },
-  { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest_maintenance" },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
-  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking" },
-  { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training" },
-  { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
-  { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
+  { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest_maintenance" },
   { title: "PPM Schedule", url: "/ppm-schedule", icon: Wrench, mod: "ppm_schedule" },
+  { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training" },
+  { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
+  { title: "Reports", url: "/reports", icon: FileText, mod: "reports" },
 ];
 
 const businessAll: NavLeaf[] = [
-  { title: "Cost & Margin", url: "/cost-margin", icon: Calculator, mod: "cost_margin" },
-  { title: "Sales Hub", url: "/sales", icon: ShoppingBag, mod: "cost_margin" },
-  { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker" },
-  { title: "Reports", url: "/reports", icon: FileText, mod: "reports" },
+  { title: "Profit & Pricing", url: "/cost-margin", icon: Calculator, mod: "cost_margin" },
+];
+
+const utilityAll: NavLeaf[] = [
+  { title: "Messenger", url: "/messenger", icon: MessageSquare, mod: "messenger" },
 ];
 
 export function AppSidebar() {
@@ -86,6 +87,7 @@ export function AppSidebar() {
   const dailyOps = hasSelectedSite ? visible(dailyOpsAll) : [];
   const compliance = hasSelectedSite ? visible(complianceAll) : [];
   const business = hasSelectedSite ? visible(businessAll) : [];
+  const utility = hasSelectedSite ? visible(utilityAll) : [];
 
   const userInitials = appUser?.display_name?.trim().slice(0, 2).toUpperCase() || "MG";
 
@@ -147,7 +149,7 @@ export function AppSidebar() {
 
         {dailyOps.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Daily Operations</SidebarGroupLabel>
+            <SidebarGroupLabel>Run the Day</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(dailyOps)}</SidebarMenu>
             </SidebarGroupContent>
@@ -156,7 +158,7 @@ export function AppSidebar() {
 
         {compliance.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Compliance</SidebarGroupLabel>
+            <SidebarGroupLabel>Stay Compliant</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(compliance)}</SidebarMenu>
             </SidebarGroupContent>
@@ -165,9 +167,18 @@ export function AppSidebar() {
 
         {business.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Business</SidebarGroupLabel>
+            <SidebarGroupLabel>Protect Margin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(business)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {utility.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Communication</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderItems(utility)}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
