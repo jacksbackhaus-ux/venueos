@@ -540,7 +540,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               }
             >
               <ShieldCheck className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Compliance</span>
+              <span className="text-[10px] font-medium">Comply</span>
             </button>
 
             <button
