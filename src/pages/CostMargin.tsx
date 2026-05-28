@@ -34,9 +34,6 @@ import {
 } from "@/lib/trueMargin";
 import { MarginWatchdogCard } from "@/components/cost-margin/MarginWatchdogCard";
 import SalesHealthDashboard from "@/components/cost-margin/SalesHealthDashboard";
-import ChannelPricing from "@/components/cost-margin/ChannelPricing";
-import CashflowTab from "@/components/cost-margin/CashflowTab";
-import PricingLabTab from "@/components/cost-margin/PricingLabTab";
 import InputsTab from "@/components/cost-margin/InputsTab";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
