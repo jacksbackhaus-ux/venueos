@@ -212,6 +212,8 @@ function RecipesPanel({
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"worst" | "best" | "profit" | "name">("worst");
 
   if (!ctx) {
     return (
@@ -230,7 +232,7 @@ function RecipesPanel({
         organisation_id: orgId,
         name: name.trim(),
         recipe_type: kind,
-        portions: kind === "prep_batch" ? 1 : 1,
+        portions: 1,
         target_gp_percent: ctx.settings.target_margin_pct,
       })
       .select("id")
@@ -241,18 +243,67 @@ function RecipesPanel({
     setCreating(false);
   };
 
+  // Precompute per-recipe rows so we can sort/filter/flag.
+  const rows = recipes.map((r) => {
+    const bd = calcRecipeBreakdown(r, ctx);
+    const target = Number(r.target_gp_percent) || ctx.settings.target_margin_pct;
+    const monthly = Number(r.monthly_volume) || 0;
+    const monthlyProfit =
+      bd.salePriceExVat != null && monthly > 0
+        ? (bd.salePriceExVat - bd.costPerPortionExVat) * monthly
+        : null;
+    // Flag suspicious data: stored price > 3× recommended usually means a batch total was saved as a unit price.
+    const corrupted =
+      bd.salePriceIncVat != null &&
+      bd.recommendedSellIncVat > 0 &&
+      bd.salePriceIncVat > bd.recommendedSellIncVat * 3;
+    return { r, bd, target, monthlyProfit, corrupted };
+  });
+
+  const filtered = rows.filter((x) =>
+    x.r.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "name") return a.r.name.localeCompare(b.r.name);
+    if (sortBy === "profit") return (b.monthlyProfit ?? -Infinity) - (a.monthlyProfit ?? -Infinity);
+    const ag = a.bd.gpPercent ?? (sortBy === "worst" ? Infinity : -Infinity);
+    const bg = b.bd.gpPercent ?? (sortBy === "worst" ? Infinity : -Infinity);
+    return sortBy === "worst" ? ag - bg : bg - ag;
+  });
+
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-2">
         <p className="text-sm text-muted-foreground">
           {kind === "menu_item"
-            ? "Items you sell. Sale price drives GP %."
+            ? "Tap a product to set its true cost and price."
             : "Prep / sub-recipes used as ingredients in menu items."}
         </p>
         <Button size="sm" onClick={() => setCreating(true)}>
-          <Plus className="h-4 w-4 mr-1" /> New {kind === "menu_item" ? "menu item" : "prep batch"}
+          <Plus className="h-4 w-4 mr-1" /> New {kind === "menu_item" ? "product" : "prep batch"}
         </Button>
       </div>
+
+      {kind === "menu_item" && recipes.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <Input
+            placeholder="Search products…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9 max-w-xs"
+          />
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+            <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="worst">Worst margin first</SelectItem>
+              <SelectItem value="best">Best margin first</SelectItem>
+              <SelectItem value="profit">Highest monthly profit</SelectItem>
+              <SelectItem value="name">Alphabetical</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {recipes.length === 0 ? (
         <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">
@@ -266,32 +317,37 @@ function RecipesPanel({
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead className="text-right">Cost / unit</TableHead>
-                  <TableHead className="text-right">Recommended / unit</TableHead>
                   {kind === "menu_item" && <>
                     <TableHead className="text-right">Your price</TableHead>
                     <TableHead className="text-right">GP %</TableHead>
+                    <TableHead className="text-right">Monthly profit</TableHead>
                   </>}
-                  {kind === "prep_batch" && <TableHead className="text-right">Portions</TableHead>}
+                  {kind === "prep_batch" && <>
+                    <TableHead className="text-right">Recommended / unit</TableHead>
+                    <TableHead className="text-right">Portions</TableHead>
+                  </>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recipes.map((r) => {
-                  const bd = calcRecipeBreakdown(r, ctx);
-                  const target = Number(r.target_gp_percent) || ctx.settings.target_margin_pct;
+                {sorted.map(({ r, bd, target, monthlyProfit, corrupted }) => {
                   const gpClass = bd.gpPercent == null
                     ? "text-muted-foreground"
-                    : bd.gpPercent < target ? "text-warning" : "text-success";
+                    : bd.gpPercent < target - 5 ? "text-destructive"
+                    : bd.gpPercent < target ? "text-warning"
+                    : "text-success";
                   return (
                     <TableRow key={r.id} className="cursor-pointer" onClick={() => setOpenId(r.id)}>
                       <TableCell>
-                        <div className="font-medium">{r.name}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {r.name}
+                          {corrupted && (
+                            <Badge variant="destructive" className="text-[9px]">price check</Badge>
+                          )}
+                        </div>
                         <div className="text-[11px] text-muted-foreground">{r.category}</div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         £{bd.costPerPortionExVat.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums font-semibold text-success">
-                        £{bd.recommendedSellIncVat.toFixed(2)}
                       </TableCell>
                       {kind === "menu_item" && <>
                         <TableCell className="text-right tabular-nums">
@@ -300,10 +356,16 @@ function RecipesPanel({
                         <TableCell className={`text-right tabular-nums font-semibold ${gpClass}`}>
                           {bd.gpPercent != null ? `${bd.gpPercent.toFixed(1)}%` : "—"}
                         </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {monthlyProfit != null ? `£${monthlyProfit.toFixed(0)}` : "—"}
+                        </TableCell>
                       </>}
-                      {kind === "prep_batch" && (
+                      {kind === "prep_batch" && <>
+                        <TableCell className="text-right tabular-nums font-semibold text-success">
+                          £{bd.recommendedSellIncVat.toFixed(2)}
+                        </TableCell>
                         <TableCell className="text-right tabular-nums">{r.portions}</TableCell>
-                      )}
+                      </>}
                     </TableRow>
                   );
                 })}
