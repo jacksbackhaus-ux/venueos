@@ -441,9 +441,17 @@ function RecipeDrawer({
   const [portions, setPortions] = useState(String(recipe?.portions ?? 1));
   const [labourMins, setLabourMins] = useState(String(recipe?.labour_minutes ?? 0));
   const [packaging, setPackaging] = useState(String(recipe?.packaging_cost ?? 0));
-  const [salePrice, setSalePrice] = useState(recipe?.sale_price != null ? String(recipe.sale_price) : "");
-  const [saleVat, setSaleVat] = useState(String(recipe?.sale_price_vat_rate_percent ?? 20));
   const [targetGp, setTargetGp] = useState(String(recipe?.target_gp_percent ?? ctx.settings.target_margin_pct));
+  const [unitsPerMonth, setUnitsPerMonth] = useState(String(recipe?.monthly_volume ?? ""));
+  const [dtcPrice, setDtcPrice] = useState(
+    (recipe as any)?.dtc_price != null
+      ? String((recipe as any).dtc_price)
+      : recipe?.sale_price != null ? String(recipe.sale_price) : ""
+  );
+  const [wsPrice, setWsPrice] = useState(
+    (recipe as any)?.wholesale_price != null ? String((recipe as any).wholesale_price) : ""
+  );
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -451,9 +459,14 @@ function RecipeDrawer({
     setPortions(String(recipe.portions ?? 1));
     setLabourMins(String(recipe.labour_minutes ?? 0));
     setPackaging(String(recipe.packaging_cost ?? 0));
-    setSalePrice(recipe.sale_price != null ? String(recipe.sale_price) : "");
-    setSaleVat(String(recipe.sale_price_vat_rate_percent ?? 20));
     setTargetGp(String(recipe.target_gp_percent ?? ctx.settings.target_margin_pct));
+    setUnitsPerMonth(recipe.monthly_volume != null ? String(recipe.monthly_volume) : "");
+    setDtcPrice(
+      (recipe as any).dtc_price != null
+        ? String((recipe as any).dtc_price)
+        : recipe.sale_price != null ? String(recipe.sale_price) : ""
+    );
+    setWsPrice((recipe as any).wholesale_price != null ? String((recipe as any).wholesale_price) : "");
   }, [recipeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!recipe) {
@@ -467,26 +480,75 @@ function RecipeDrawer({
   }
 
   const bd = calcRecipeBreakdown(recipe, ctx);
+  const portionsNum = Math.max(Number(portions) || 1, 1);
+  const target = Number(targetGp) || ctx.settings.target_margin_pct || 60;
+
+  // Per-unit cost from live form values (so the user sees changes before saving).
+  const ingredientPerUnit = bd.ingredientCostExVat / portionsNum;
+  const packagingPerUnit = (Number(packaging) || 0) / portionsNum;
+  const labourPerUnit = ((Number(labourMins) || 0) / 60) * ctx.effectiveHourlyRate / portionsNum;
+  const upm = Number(unitsPerMonth) || 0;
+  const overheadTotal = ctx.settings.monthly_overhead || 0;
+  // Allocate this product's share by its share of monthly units, or evenly if no totals.
+  const overheadPerUnit = upm > 0 && overheadTotal > 0
+    ? overheadTotal / Math.max(upm, 1) * 0 + (bd.overheadPerUnit || 0) // engine value
+    : 0;
+  const costPerUnit = ingredientPerUnit + packagingPerUnit + labourPerUnit + overheadPerUnit;
+
+  const recommended = target < 100 && target >= 0 ? costPerUnit / (1 - target / 100) : 0;
+
+  const calcMargin = (priceStr: string) => {
+    const p = Number(priceStr) || 0;
+    if (p <= 0) return { price: 0, profit: 0, gp: null as number | null, monthly: 0 };
+    const profit = p - costPerUnit;
+    const gp = (profit / p) * 100;
+    const monthly = upm > 0 ? profit * upm : 0;
+    return { price: p, profit, gp, monthly };
+  };
+
+  const dtcM = calcMargin(dtcPrice);
+  const wsM = calcMargin(wsPrice);
+
+  const gpClass = (gp: number | null) =>
+    gp == null ? "text-muted-foreground"
+      : gp < target - 5 ? "text-destructive"
+      : gp < target ? "text-warning"
+      : "text-success";
+
+  const adjust = (setter: (v: string) => void, current: string, delta: number) => {
+    const n = (Number(current) || 0) + delta;
+    setter(n.toFixed(2));
+  };
+  const roundTo = (setter: (v: string) => void, current: string, cents: number) => {
+    const n = Number(current) || 0;
+    if (n <= 0) return;
+    setter((Math.floor(n) + cents / 100).toFixed(2));
+  };
 
   const save = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("recipes")
-        .update({
-          portions: Number(portions) || 1,
-          labour_minutes: Number(labourMins) || 0,
-          packaging_cost: Number(packaging) || 0,
-          sale_price: salePrice === "" ? null : Number(salePrice),
-          sale_price_vat_rate_percent: Number(saleVat) || 0,
-          target_gp_percent: Number(targetGp) || 0,
-        })
-        .eq("id", recipe.id);
+      const update: any = {
+        portions: portionsNum,
+        labour_minutes: Number(labourMins) || 0,
+        packaging_cost: Number(packaging) || 0,
+        target_gp_percent: Number(targetGp) || 0,
+        monthly_volume: upm || 0,
+      };
+      if (isMenu) {
+        const dtcVal = dtcPrice === "" ? null : Number(dtcPrice);
+        const wsVal = wsPrice === "" ? null : Number(wsPrice);
+        update.dtc_price = dtcVal;
+        update.wholesale_price = wsVal;
+        // sale_price mirrors DTC so the rest of the app (Batches, Reports) sees the user's chosen price.
+        update.sale_price = dtcVal;
+      }
+      const { error } = await supabase.from("recipes").update(update).eq("id", recipe.id);
       if (error) throw error;
       toast.success("Saved");
       onChange();
     } catch (e: any) {
-      toast.error(e.message || "Failed");
+      toast.error(e.message || "Failed to save");
     } finally {
       setSaving(false);
     }
@@ -498,12 +560,12 @@ function RecipeDrawer({
         <SheetHeader>
           <SheetTitle>{recipe.name}</SheetTitle>
           <SheetDescription>
-            {isMenu ? "Menu item" : "Prep batch"} · {recipe.category}
+            {isMenu ? "Product" : "Prep batch"} · {recipe.category}
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 mt-4">
-          {/* Lines */}
+          {/* Ingredients & prep */}
           <RecipeLines
             recipe={recipe}
             ctx={ctx}
@@ -512,127 +574,210 @@ function RecipeDrawer({
             onChange={onChange}
           />
 
-          {/* Inputs */}
-          <div className="grid sm:grid-cols-2 gap-4">
+          {/* Production inputs (compact) */}
+          <div className="grid sm:grid-cols-3 gap-3">
             <div className="space-y-1">
-              <Label>{isMenu ? "Units per batch" : "Portions per batch"}</Label>
+              <Label className="text-xs">Units per batch</Label>
               <Input type="number" step="1" value={portions} onChange={(e) => setPortions(e.target.value)} />
-              <p className="text-[11px] text-muted-foreground">
-                How many sellable units does one batch produce? Cost-per-unit = total batch cost ÷ this number.
-              </p>
             </div>
             <div className="space-y-1">
-              <Label>Labour minutes (per batch)</Label>
+              <Label className="text-xs">Labour minutes / batch</Label>
               <Input type="number" step="0.5" value={labourMins} onChange={(e) => setLabourMins(e.target.value)} />
-              <p className="text-[11px] text-muted-foreground">
-                @ £{ctx.effectiveHourlyRate.toFixed(2)}/hr ({ctx.settings.labor_rate_manual_override_enabled ? "manual" : "blended from timesheets"})
+              <p className="text-[10px] text-muted-foreground">
+                @ £{ctx.effectiveHourlyRate.toFixed(2)}/hr ({ctx.settings.labor_rate_manual_override_enabled ? "manual" : "blended"})
               </p>
             </div>
             <div className="space-y-1">
-              <Label>Packaging cost per unit (£)</Label>
+              <Label className="text-xs">Packaging £ / batch</Label>
               <Input type="number" step="0.01" value={packaging} onChange={(e) => setPackaging(e.target.value)} />
             </div>
-            {isMenu && (
-              <>
-                <div className="space-y-1">
-                  <Label>Your sale price per unit ({ctx.settings.costing_view_mode === "INC_VAT" ? "inc-VAT" : "ex-VAT"}) £</Label>
-                  <Input type="number" step="0.01" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Sale VAT %</Label>
-                  <Input type="number" step="0.5" value={saleVat} onChange={(e) => setSaleVat(e.target.value)} />
-                </div>
-                <div className="space-y-1 sm:col-span-2">
-                  <Label>Target GP %</Label>
-                  <Input type="number" step="0.1" value={targetGp} onChange={(e) => setTargetGp(e.target.value)} />
-                </div>
-              </>
-            )}
           </div>
-
-          {/* HERO: per-unit cost & per-unit recommended price */}
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Card className="border-primary/30 bg-primary/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Cost per unit
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1">
-                <p className="text-3xl font-bold tabular-nums">£{bd.costPerPortionExVat.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">
-                  £{bd.totalCostExVat.toFixed(2)} total batch ÷ {Number(portions) || 1} {Number(portions) === 1 ? "unit" : "units"}
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-success/30 bg-success/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Charge per unit (recommended)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1">
-                <p className="text-3xl font-bold tabular-nums">£{bd.recommendedSellIncVat.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">
-                  inc-VAT · £{bd.recommendedSellExVat.toFixed(2)} ex-VAT @ {Number(targetGp).toFixed(0)}% GP target
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Breakdown (secondary) */}
-          <div className="rounded-md border bg-muted/30 p-4 space-y-1.5 text-sm">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Cost breakdown (per batch)</p>
-            <Row label="Ingredients (ex-VAT, after yield)" value={`£${bd.ingredientCostExVat.toFixed(3)}`} />
-            <Row label="Packaging" value={`£${bd.packagingCost.toFixed(3)}`} />
-            <Row label="Labour" value={`£${bd.labourCost.toFixed(3)}`} />
-            <Row label="Overhead" value={`£${bd.overheadPerUnit.toFixed(3)}`} />
-            <div className="border-t pt-1.5 mt-1.5">
-              <Row label="Total cost (batch)" value={`£${bd.totalCostExVat.toFixed(3)}`} bold />
-              <Row label="Cost per unit" value={`£${bd.costPerPortionExVat.toFixed(3)}`} bold />
-            </div>
-          </div>
-
-          {/* Actual GP vs target — when sale price is set */}
-          {isMenu && bd.gpPercent != null && (
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Your actual GP at current sale price</CardTitle></CardHeader>
-              <CardContent className="space-y-1">
-                <p className={`text-2xl font-bold tabular-nums ${
-                  bd.gpPercent < Number(targetGp) ? "text-warning" : "text-success"
-                }`}>
-                  {bd.gpPercent.toFixed(1)}%
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {bd.grossProfitPerPortion != null
-                    ? `£${bd.grossProfitPerPortion.toFixed(2)} profit per unit · target ${Number(targetGp).toFixed(0)}%`
-                    : "Set sale price"}
-                </p>
-              </CardContent>
-            </Card>
-          )}
 
           {isMenu && (
-            <ChannelPricing
-              recipeId={recipe.id}
-              siteId={siteId}
-              orgId={orgId}
-              ingredientCostPerPortion={bd.costPerPortionExVat}
-              initialDtcPrice={(recipe as any).dtc_price ?? recipe.sale_price ?? null}
-              initialWholesalePrice={(recipe as any).wholesale_price ?? null}
-              initialTargetGp={Number(targetGp) || 60}
-              defaultChannel={((recipe as any).default_channel as any) || "dtc"}
-              onPriceUpdated={onChange}
-            />
+            <>
+              {/* Section 1 — What it costs */}
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
+                    What it costs (per unit)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-4xl font-bold tabular-nums">£{costPerUnit.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {portionsNum} {portionsNum === 1 ? "unit" : "units"} per batch
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowBreakdown((v) => !v)}
+                    className="text-xs text-primary underline-offset-2 hover:underline"
+                  >
+                    {showBreakdown ? "Hide breakdown" : "Show breakdown"}
+                  </button>
+                  {showBreakdown && (
+                    <div className="mt-2 rounded-md border bg-background p-3 space-y-1 text-sm">
+                      <Row label="Ingredients / unit" value={`£${ingredientPerUnit.toFixed(3)}`} />
+                      <Row label="Packaging / unit" value={`£${packagingPerUnit.toFixed(3)}`} />
+                      <Row label="Labour / unit" value={`£${labourPerUnit.toFixed(3)}`} />
+                      <Row label="Overhead / unit" value={`£${overheadPerUnit.toFixed(3)}`} />
+                      <div className="border-t pt-1.5 mt-1.5">
+                        <Row label="Total / unit" value={`£${costPerUnit.toFixed(3)}`} bold />
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Target GP + Units/month */}
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Target GP %</Label>
+                  <Input type="number" step="0.1" value={targetGp} onChange={(e) => setTargetGp(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Units per month</Label>
+                  <Input
+                    type="number" step="1" value={unitsPerMonth}
+                    onChange={(e) => setUnitsPerMonth(e.target.value)}
+                    placeholder="e.g. 120"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Used for overhead allocation & monthly profit.</p>
+                </div>
+              </div>
+
+              {/* Section 2 — Your prices */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Your prices</CardTitle>
+                  <CardDescription className="text-xs">
+                    Set what you charge. We never overwrite this — we just show the consequence.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <PriceBlock
+                    label="DTC price / unit (£)"
+                    value={dtcPrice}
+                    onChange={setDtcPrice}
+                    recommended={recommended}
+                    margin={dtcM}
+                    target={target}
+                    gpClass={gpClass(dtcM.gp)}
+                    onAdjust={(d) => adjust(setDtcPrice, dtcPrice, d)}
+                    onRound={(c) => roundTo(setDtcPrice, dtcPrice, c)}
+                    onReset={() => setDtcPrice(recommended > 0 ? recommended.toFixed(2) : "")}
+                  />
+                  <div className="border-t" />
+                  <PriceBlock
+                    label="Wholesale price / unit (£) — optional"
+                    value={wsPrice}
+                    onChange={setWsPrice}
+                    recommended={recommended * 0.7}
+                    margin={wsM}
+                    target={target}
+                    gpClass={gpClass(wsM.gp)}
+                    onAdjust={(d) => adjust(setWsPrice, wsPrice, d)}
+                    onRound={(c) => roundTo(setWsPrice, wsPrice, c)}
+                    onReset={() => setWsPrice("")}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Section 3 — Monthly economics */}
+              {upm > 0 && (Number(dtcPrice) > 0 || Number(wsPrice) > 0) && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Monthly economics</CardTitle>
+                    <CardDescription className="text-xs">
+                      Based on {upm} units / month.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid sm:grid-cols-2 gap-3 text-sm">
+                    {Number(dtcPrice) > 0 && (
+                      <div className="rounded-md border p-3 space-y-1">
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">DTC</p>
+                        <Row label="Revenue" value={`£${(dtcM.price * upm).toFixed(0)}`} />
+                        <Row label="Cost" value={`£${(costPerUnit * upm).toFixed(0)}`} />
+                        <Row label="Gross profit" value={`£${dtcM.monthly.toFixed(0)}`} bold />
+                        <Row label="GP %" value={dtcM.gp != null ? `${dtcM.gp.toFixed(1)}%` : "—"} />
+                      </div>
+                    )}
+                    {Number(wsPrice) > 0 && (
+                      <div className="rounded-md border p-3 space-y-1">
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Wholesale</p>
+                        <Row label="Revenue" value={`£${(wsM.price * upm).toFixed(0)}`} />
+                        <Row label="Cost" value={`£${(costPerUnit * upm).toFixed(0)}`} />
+                        <Row label="Gross profit" value={`£${wsM.monthly.toFixed(0)}`} bold />
+                        <Row label="GP %" value={wsM.gp != null ? `${wsM.gp.toFixed(1)}%` : "—"} />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 sticky bottom-0 bg-background py-3 border-t">
             <Button variant="outline" onClick={onClose}>Close</Button>
             <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
           </div>
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function PriceBlock({
+  label, value, onChange, recommended, margin, target, gpClass,
+  onAdjust, onRound, onReset,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  recommended: number;
+  margin: { price: number; profit: number; gp: number | null; monthly: number };
+  target: number;
+  gpClass: string;
+  onAdjust: (delta: number) => void;
+  onRound: (cents: number) => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs">{label}</Label>
+      <Input
+        type="number" step="0.01" inputMode="decimal"
+        value={value} onChange={(e) => onChange(e.target.value)}
+        className="text-lg font-semibold tabular-nums"
+      />
+      {recommended > 0 && (
+        <p className="text-[11px] text-muted-foreground">
+          Recommended to hit {target.toFixed(0)}% GP: <span className="font-medium">£{recommended.toFixed(2)}</span>
+        </p>
+      )}
+      <div className="flex flex-wrap gap-1.5">
+        <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onAdjust(0.25)}>+£0.25</Button>
+        <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onAdjust(0.5)}>+£0.50</Button>
+        <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onAdjust(1)}>+£1.00</Button>
+        <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onRound(99)}>.99</Button>
+        <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onRound(50)}>.50</Button>
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onReset}>Reset</Button>
+      </div>
+      {margin.price > 0 && (
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm pt-1">
+          <span className={`font-semibold tabular-nums ${gpClass}`}>
+            {margin.gp != null ? `${margin.gp.toFixed(1)}%` : "—"} GP
+          </span>
+          <span className="text-muted-foreground tabular-nums">
+            £{margin.profit.toFixed(2)} profit / unit
+          </span>
+          {margin.monthly > 0 && (
+            <span className="text-muted-foreground tabular-nums">
+              £{margin.monthly.toFixed(0)} / month
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
