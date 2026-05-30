@@ -140,7 +140,7 @@ export default function ChannelPricing({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Channel pricing (What-if)</CardTitle>
+        <CardTitle className="text-sm">Your prices</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs value={channel} onValueChange={(v) => setChannel(v as Channel)}>
@@ -161,12 +161,12 @@ export default function ChannelPricing({
 
         <div className="rounded-md border bg-muted/30 p-3 space-y-1 text-sm">
           <Row label={channel === "dtc" ? "Price" : "List price"} value={`£${bd.listPrice.toFixed(2)}`} />
-          <Row label="Net revenue / unit (after fees)" value={`£${bd.netRevenue.toFixed(3)}`} />
+          <Row label="Money kept after fees / unit" value={`£${bd.netRevenue.toFixed(3)}`} />
           <Row label="Ingredient cost / unit" value={`£${bd.ingredientCost.toFixed(3)}`} />
-          <Row label="Overhead / unit (allocated)" value={`£${bd.overheadPerUnit.toFixed(3)}`} />
+          <Row label="Overhead / unit" value={`£${bd.overheadPerUnit.toFixed(3)}`} />
           <div className="border-t pt-1.5 mt-1.5">
             <Row
-              label="Contribution after overhead"
+              label="Profit after costs"
               value={`£${bd.contributionAfterOverhead.toFixed(3)}`}
               bold
             />
