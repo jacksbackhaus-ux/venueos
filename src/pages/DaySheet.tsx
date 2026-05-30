@@ -266,7 +266,7 @@ const locked = !canEdit; // staff/supervisors locked on past days; managers can 
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><ClipboardList className="h-5 w-5 text-primary" /></div>
             <div>
-              <h1 className="text-xl font-heading font-bold text-foreground">Daily Day Sheet</h1>
+              <h1 className="text-2xl font-heading font-bold text-foreground">Day Sheet</h1>
               <p className="text-sm text-muted-foreground">
                 {isToday
                   ? new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })

@@ -219,7 +219,7 @@ const TemperatureTracking = () => {
               <Thermometer className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-heading font-bold">Temperature Tracking</h1>
+              <h1 className="text-2xl font-heading font-bold">Temperatures</h1>
               <p className="text-sm text-muted-foreground">
                 {breaches.length > 0
                   ? `${breaches.length} breach${breaches.length > 1 ? "es" : ""} today`

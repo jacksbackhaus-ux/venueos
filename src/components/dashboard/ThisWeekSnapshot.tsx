@@ -120,7 +120,7 @@ export function ThisWeekSnapshot({ siteId }: Props) {
           title="Margin health"
           value={isActive("cost_margin") ? "Live" : "—"}
           sub={<Link to={isActive("cost_margin") ? "/cost-margin" : "/settings"} className="text-xs text-primary hover:underline">
-            {isActive("cost_margin") ? "Open Cost & Margin" : "Enable Business plan"}
+            {isActive("cost_margin") ? "Open Profit & Pricing" : "Enable Business plan"}
           </Link>}
         />
         <Tile title="Production" value={data.prodNow.toLocaleString()} sub={<Trend now={data.prodNow} prev={data.prodPrev} />} />

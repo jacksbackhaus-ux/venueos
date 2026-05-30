@@ -38,7 +38,7 @@ const compliance: NavItem[] = [
 ];
 
 const business: NavItem[] = [
-  { to: "/cost-margin", label: "Cost & Margin", desc: "Recipe costing and margin analysis", icon: Calculator, mod: "cost_margin" },
+  { to: "/cost-margin", label: "Profit & Pricing", desc: "Know your true cost and protect your margin", icon: Calculator, mod: "cost_margin" },
   { to: "/tip-tracker", label: "Tip Tracker", desc: "Track and split staff tips", icon: PoundSterling, mod: "tip_tracker" },
   { to: "/reports", label: "Reports", desc: "Inspection-ready exports", icon: FileBarChart, mod: "reports" },
 ];
@@ -73,7 +73,7 @@ export default function More() {
   return (
     <div className="p-4 space-y-5 max-w-2xl mx-auto">
       <div>
-        <h1 className="text-xl font-heading font-bold text-foreground">More</h1>
+        <h1 className="text-2xl font-heading font-bold text-foreground">More</h1>
         <p className="text-sm text-muted-foreground">All modules and settings</p>
       </div>
 
