@@ -331,9 +331,9 @@ const WasteLog = () => {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Trash2 className="h-7 w-7 text-primary" />
-            Waste Tracking
+          <h1 className="font-heading text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Trash2 className="h-6 w-6 text-primary" />
+            Waste tracking
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Log waste in seconds. See what's costing you most.
@@ -341,7 +341,7 @@ const WasteLog = () => {
         </div>
         <Button onClick={() => setShowLog(true)} className="shrink-0">
           <Plus className="h-4 w-4 mr-1" />
-          Log Waste
+          Log waste
         </Button>
       </div>
 

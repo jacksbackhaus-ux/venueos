@@ -469,7 +469,7 @@ const Reports = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-heading flex items-center gap-2">
-                  <Calculator className="h-4 w-4 text-primary" /> Cost & Margin Summary
+                  <Calculator className="h-4 w-4 text-primary" /> Profit & Pricing summary
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">

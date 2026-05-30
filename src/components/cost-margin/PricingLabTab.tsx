@@ -505,8 +505,8 @@ export default function PricingLabTab({ siteId, orgId }: Props) {
                   <div className="mt-2 space-y-1">
                     <KV k="Overhead / unit" v={`£${overheadPerUnit.toFixed(2)}`} />
                     {vatEnabled && <KV k="VAT / unit" v={`£${vatPerUnit.toFixed(2)}`} />}
-                    <KV k="Contribution before overhead" v={`£${contribBeforeOverhead.toFixed(2)}`} />
-                    <KV k="Contribution after overhead" v={`£${contribAfterOverhead.toFixed(2)}`} />
+                    <KV k="Profit before overhead" v={`£${contribBeforeOverhead.toFixed(2)}`} />
+                    <KV k="Profit after costs" v={`£${contribAfterOverhead.toFixed(2)}`} />
                   </div>
                 </details>
               </CardContent>

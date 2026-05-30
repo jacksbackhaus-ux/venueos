@@ -382,7 +382,7 @@ export default function SalesHealthDashboard({ siteId, orgId, ctx, recipes, inte
   // ─────────────── Setup states ───────────────
   if (importsQ.isLoading || taxQ.isLoading) {
     return (
-      <Card><CardContent className="py-6 text-sm text-muted-foreground">Loading Sales Health…</CardContent></Card>
+      <Card><CardContent className="py-6 text-sm text-muted-foreground">Loading…</CardContent></Card>
     );
   }
 
@@ -392,9 +392,9 @@ export default function SalesHealthDashboard({ siteId, orgId, ctx, recipes, inte
         <CardHeader>
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Sales Health</CardTitle>
+            <CardTitle className="text-lg">Best sellers & problems</CardTitle>
           </div>
-          <CardDescription>Import sales to unlock weighted margins, profit drivers and margin leak.</CardDescription>
+          <CardDescription>Import sales to see which products earn most — and which lose money.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
@@ -440,7 +440,7 @@ export default function SalesHealthDashboard({ siteId, orgId, ctx, recipes, inte
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Sales Health</CardTitle>
+            <CardTitle className="text-lg">Best sellers & problems</CardTitle>
             {totals.isEstimate && <Badge variant="outline" className="text-xs">estimate</Badge>}
           </div>
           <div className="flex flex-wrap items-center gap-2">

@@ -239,7 +239,7 @@ export default function Haccp() {
         className="flex items-start justify-between gap-3 flex-wrap"
       >
         <div>
-          <h1 className="font-heading text-2xl md:text-3xl font-semibold flex items-center gap-2">
+          <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
             <BookCheck className="h-6 w-6 text-primary" />
             HACCP Plan Builder
           </h1>
@@ -519,7 +519,7 @@ function PlanBuilder({
           <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
             <ArrowLeft className="h-4 w-4 mr-1.5" /> All plans
           </Button>
-          <h1 className="font-heading text-2xl md:text-3xl font-semibold truncate">{plan.name}</h1>
+          <h1 className="font-heading text-2xl font-bold truncate">{plan.name}</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className={
               plan.status === "published"
@@ -825,7 +825,7 @@ function PublishedPlanView({
                 : "text-xs"
             }>{plan.status === "published" ? "Published" : "Draft"}</Badge>
           </div>
-          <h1 className="font-heading text-2xl md:text-3xl font-semibold">{plan.name}</h1>
+          <h1 className="font-heading text-2xl font-bold">{plan.name}</h1>
           {plan.food_business_type && (
             <p className="text-sm text-muted-foreground">{plan.food_business_type}</p>
           )}

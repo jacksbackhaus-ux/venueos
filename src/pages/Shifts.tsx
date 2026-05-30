@@ -440,7 +440,7 @@ const Shifts = () => {
           <CalendarDays className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-heading font-bold text-foreground">Shifts</h1>
+          <h1 className="text-2xl font-heading font-bold text-foreground">Shifts</h1>
           <p className="text-sm text-muted-foreground">
             Rota, swaps, cover, availability & compliance — all in one place
           </p>

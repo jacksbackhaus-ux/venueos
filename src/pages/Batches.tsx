@@ -233,7 +233,7 @@ export default function Batches() {
     if (marginBelowTarget && marginPct != null && targetGpSnap != null) {
       toast.warning(
         `Margin below target on this bake: ${marginPct.toFixed(0)}% (target ${targetGpSnap.toFixed(0)}%)`,
-        { description: 'Review sale price or production cost in Cost & Margin.' }
+        { description: 'Review your price or production cost in Profit & Pricing.' }
       );
     }
     setShowCreate(false);
