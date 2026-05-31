@@ -188,7 +188,8 @@ export function usePriorityFeed(
       });
 
       items.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || a.rank - b.rank);
-      return items.slice(0, 8);
+      // Dashboard rule: max 5 priority items — keep scannable.
+      return items.slice(0, 5);
     },
   });
 }
