@@ -13,16 +13,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSite } from "@/contexts/SiteContext";
-import { DashboardStatusStrip } from "@/components/dashboard/DashboardStatusStrip";
+import { SafeToTradeHero } from "@/components/dashboard/SafeToTradeHero";
 import { PriorityFeed } from "@/components/dashboard/PriorityFeed";
 import { TodayAtAGlance } from "@/components/dashboard/TodayAtAGlance";
 import { ThisWeekSnapshot } from "@/components/dashboard/ThisWeekSnapshot";
-import { InsightsAccordion } from "@/components/dashboard/InsightsAccordion";
-import { RecentBatches } from "@/components/dashboard/RecentBatches";
-import { QuickActions } from "@/components/dashboard/QuickActions";
+import { ProfitSnapshot } from "@/components/dashboard/ProfitSnapshot";
 import { DashboardFeedback } from "@/components/dashboard/DashboardFeedback";
 import { Card } from "@/components/ui/card";
 
+/**
+ * Operator Command Centre.
+ * Strict five-section layout (per v1 spec):
+ *   1) Safe to Trade   2) Priority Feed   3) Today   4) This Week   5) Profit Snapshot
+ * Reuses existing hooks/components — no new data systems.
+ */
 const Dashboard = () => {
   const { currentSite, currentMembership } = useSite();
   const { staffSession, appUser } = useAuth();
@@ -39,6 +43,9 @@ const Dashboard = () => {
   const role = currentMembership?.site_role || staffSession?.site_role;
   const canCloseDay = role === "owner" || role === "supervisor";
   const currentUserId = appUser?.id ?? staffSession?.user_id ?? null;
+  const displayName = appUser?.display_name ?? (staffSession as any)?.display_name ?? undefined;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const minDate = currentSite?.created_at?.slice(0, 10);
   const isAtFloor = !!minDate && selectedDate <= minDate;
@@ -52,29 +59,21 @@ const Dashboard = () => {
     setSelectedDate(next);
   };
 
-  // Closed-day check + completed count (lightweight)
-  const { data: meta } = useQuery({
-    queryKey: ["dashboard-meta", siteId, selectedDate],
+  // Lightweight closed-day check (drives the closed-day banner only).
+  const { data: closedDay } = useQuery({
+    queryKey: ["dashboard-closed-day", siteId, selectedDate],
     enabled: !!siteId,
     queryFn: async () => {
-      const [closed, cleaning, tempCount, dsRes] = await Promise.all([
-        supabase.from("closed_days" as any).select("id, closed_by_name").eq("site_id", siteId!).eq("closed_date", selectedDate).maybeSingle(),
-        supabase.from("cleaning_logs").select("id, done").eq("site_id", siteId!).eq("log_date", selectedDate),
-        supabase.from("temp_logs").select("id").eq("site_id", siteId!).gte("logged_at", `${selectedDate}T00:00:00`).lt("logged_at", `${selectedDate}T23:59:59`),
-        supabase.from("day_sheets").select("day_sheet_entries(done)").eq("site_id", siteId!).eq("sheet_date", selectedDate).maybeSingle(),
-      ]);
-      const dsDone = ((dsRes.data as any)?.day_sheet_entries ?? []).filter((e: any) => e.done).length;
-      const completed =
-        (cleaning.data ?? []).filter((l: any) => l.done).length +
-        (tempCount.data ?? []).length +
-        dsDone;
-      return { closedDay: (closed as any)?.data ?? null, completed };
+      const { data } = await supabase
+        .from("closed_days" as any)
+        .select("id, closed_by_name")
+        .eq("site_id", siteId!)
+        .eq("closed_date", selectedDate)
+        .maybeSingle();
+      return (data as any) ?? null;
     },
   });
-
-  const closedDay = meta?.closedDay ?? null;
   const isClosed = !!closedDay;
-  const completedToday = meta?.completed ?? 0;
 
   const closeDayMutation = useMutation({
     mutationFn: async (close: boolean) => {
@@ -99,7 +98,7 @@ const Dashboard = () => {
     },
     onSuccess: (_d, close) => {
       toast.success(close ? "Day marked as closed" : "Day reopened");
-      queryClient.invalidateQueries({ queryKey: ["dashboard-meta", siteId, selectedDate] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-closed-day", siteId, selectedDate] });
       queryClient.invalidateQueries({ queryKey: ["safe-to-trade", siteId, selectedDate] });
       queryClient.invalidateQueries({ queryKey: ["priority-feed", siteId, selectedDate] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-today-glance", siteId, selectedDate] });
@@ -130,9 +129,6 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto pb-12">
-      {/* SECTION 0 — Sticky status strip */}
-      <DashboardStatusStrip siteId={siteId} dateISO={selectedDate} completedToday={completedToday} />
-
       {/* Date nav + closed-day control */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
         <div className="flex items-center justify-between rounded-lg border bg-card px-2 py-1.5">
@@ -172,23 +168,30 @@ const Dashboard = () => {
         )}
       </motion.div>
 
-      {/* SECTION 1 — Priority feed */}
+      {/* 1 — SAFE TO TRADE (hero) */}
+      <SafeToTradeHero
+        siteId={siteId}
+        dateISO={selectedDate}
+        greeting={isToday ? greeting : undefined}
+        displayName={displayName}
+      />
+
+      {/* 2 — PRIORITY FEED (what needs doing now) */}
       <PriorityFeed siteId={siteId} dateISO={selectedDate} currentUserId={currentUserId} />
 
-      {/* Collapsed AI strip directly under the feed */}
-      <InsightsAccordion />
+      {/* 3 — TODAY OVERVIEW */}
+      {!isClosed && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Today</h2>
+          <TodayAtAGlance siteId={siteId} dateISO={selectedDate} />
+        </section>
+      )}
 
-      {/* SECTION 2 — Today at a glance */}
-      {!isClosed && <TodayAtAGlance siteId={siteId} dateISO={selectedDate} />}
-
-      {/* SECTION 6 — Quick actions (above the fold for action density) */}
-      <QuickActions />
-
-      {/* SECTION 3 — This week */}
+      {/* 4 — THIS WEEK OVERVIEW */}
       <ThisWeekSnapshot siteId={siteId} />
 
-      {/* SECTION 5 — Recent batches */}
-      <RecentBatches siteId={siteId} />
+      {/* 5 — PROFIT SNAPSHOT (lightweight) */}
+      <ProfitSnapshot siteId={siteId} />
 
       {/* Feedback link */}
       <div className="pt-4 flex justify-center">
