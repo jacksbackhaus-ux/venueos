@@ -205,50 +205,34 @@ const Reports = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <FileText className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-heading font-bold text-foreground">Reports & Inspection Pack</h1>
-            <p className="text-sm text-muted-foreground">{currentSite.name} · live compliance from your records</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Date range + data completeness */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeKey)}>
-          <SelectTrigger className="w-44">
-            <Calendar className="h-3 w-3 mr-1" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7days">Last 7 days</SelectItem>
-            <SelectItem value="4weeks">Last 4 weeks</SelectItem>
-            <SelectItem value="3months">Last 3 months</SelectItem>
-            <SelectItem value="12months">Last 12 months</SelectItem>
-          </SelectContent>
-        </Select>
-        {data && (
-          <>
-            <Badge variant="outline" className="text-xs">Data completeness: {data.dataCompleteness}%</Badge>
-            <span className="text-[10px] text-muted-foreground">
-              {format(data.range.from, "d MMM")} – {format(data.range.to, "d MMM yyyy")}
-            </span>
-          </>
-        )}
-      </div>
+    <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
+      {/* Premium header */}
+      <PageHeader
+        icon={<FileText className="h-5 w-5" />}
+        title="Inspection Pack"
+        subtitle={`${currentSite.name} · live evidence from your operational records`}
+        action={
+          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeKey)}>
+            <SelectTrigger className="w-40 h-9">
+              <Calendar className="h-3.5 w-3.5 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7days">Last 7 days</SelectItem>
+              <SelectItem value="4weeks">Last 4 weeks</SelectItem>
+              <SelectItem value="3months">Last 3 months</SelectItem>
+              <SelectItem value="12months">Last 12 months</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+      />
 
       {/* Disclaimer */}
       <Alert className="border-warning/30 bg-warning/5">
         <Info className="h-4 w-4 text-warning" />
         <AlertDescription className="text-xs text-muted-foreground">
-          <strong>Disclaimer:</strong> The estimated food hygiene rating is indicative only, based on records logged in this app.
-          The actual EHO rating may differ due to physical inspection observations, evidence outside this system, and officer discretion.
+          This report is based on operational records captured in MiseOS. The inspection readiness score
+          is an estimate based on available data and does not guarantee a specific food hygiene rating.
         </AlertDescription>
       </Alert>
 
@@ -258,77 +242,73 @@ const Reports = () => {
         </div>
       ) : (
         <>
-          {/* Inspection Pack Overview — readiness traffic light + strengths + evidence index */}
-          <Card className={`border-2 ${data.readiness === "green" ? "border-success/40 bg-success/5" : data.readiness === "amber" ? "border-warning/40 bg-warning/5" : "border-breach/40 bg-breach/5"}`}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-heading flex items-center justify-between">
-                <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Inspection Pack Overview</span>
-                <Badge className={data.readiness === "green" ? "bg-success text-success-foreground" : data.readiness === "amber" ? "bg-warning text-warning-foreground" : "bg-breach text-breach-foreground"}>
-                  {data.readiness === "green" ? "READY" : data.readiness === "amber" ? "PARTIAL" : "ACTION REQUIRED"}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-md border bg-card p-2">
-                  <p className="text-[10px] text-muted-foreground uppercase">Compliance</p>
-                  <p className="text-lg font-heading font-bold">{data.overallScore}%</p>
-                </div>
-                <div className="rounded-md border bg-card p-2">
-                  <p className="text-[10px] text-muted-foreground uppercase">High-risk</p>
-                  <p className="text-lg font-heading font-bold text-breach">{data.highRiskBreaches}</p>
-                </div>
-                <div className="rounded-md border bg-card p-2">
-                  <p className="text-[10px] text-muted-foreground uppercase">Closed days</p>
-                  <p className="text-lg font-heading font-bold text-muted-foreground">{data.closedDaysCount}</p>
-                </div>
-              </div>
-              {data.topStrengths.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold mb-1 flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-success" /> Top strengths</p>
-                  <ul className="text-xs text-muted-foreground space-y-0.5">
-                    {data.topStrengths.slice(0, 3).map((s, i) => <li key={i}>• {s.text}</li>)}
-                  </ul>
-                </div>
-              )}
-              <div>
-                <p className="text-xs font-semibold mb-1">Evidence sections in the export</p>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-                  <span>• Daily Controls (sheets, temps, cleaning)</span>
-                  <span>• Deliveries & supplier controls</span>
-                  <span>• Allergens & PPDS labelling</span>
-                  <span>• Incidents & corrective actions</span>
-                  <span>• Pest, maintenance & PPM</span>
-                  <span>• Staff training & competence</span>
-                  <span>• HACCP plan</span>
-                  <span>• Waste & continuous improvement</span>
-                  <span>• Workplace Safety Addendum</span>
-                  <span>• Audit trail</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Rating Estimate */}
+          {/* ───── Inspection Readiness Hero ───── */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="p-6 text-center">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Estimated Food Hygiene Rating</p>
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <div key={n} className={`h-10 w-10 rounded-lg flex items-center justify-center font-heading font-bold text-lg ${
-                      n <= data.ratingEstimate ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
-                    }`}>
-                      {n}
+            <Card className={`border-2 overflow-hidden ${
+              data.readiness === "green" ? "border-success/40" :
+              data.readiness === "amber" ? "border-warning/40" : "border-breach/40"
+            }`}>
+              <div className={`px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white ${
+                data.readiness === "green" ? "bg-success" :
+                data.readiness === "amber" ? "bg-warning" : "bg-breach"
+              }`}>
+                {data.readiness === "green" ? "Inspection ready" :
+                 data.readiness === "amber" ? "Partially ready — action recommended" :
+                 "Action required"}
+              </div>
+              <CardContent className="p-6">
+                <div className="flex items-start gap-6 flex-wrap">
+                  <div className="flex-1 min-w-[180px]">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Inspection readiness</p>
+                    <div className={`font-heading font-bold tabular-nums leading-none mt-2 ${
+                      data.readiness === "green" ? "text-success" :
+                      data.readiness === "amber" ? "text-warning" : "text-breach"
+                    }`} style={{ fontSize: "4rem" }}>
+                      {data.overallScore}<span className="text-2xl ml-0.5">%</span>
                     </div>
-                  ))}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Across {data.range.label.toLowerCase()} · {format(data.range.from, "dd/MM/yyyy")} – {format(data.range.to, "dd/MM/yyyy")}
+                    </p>
+                    {data.topFixes.length > 0 && (
+                      <p className="text-xs text-foreground mt-3">
+                        <span className="text-muted-foreground">Dragging score down: </span>
+                        <span className="font-medium">{data.topFixes[0].text.split(":")[0]}</span>
+                        {data.topFixes.length > 1 && (
+                          <span className="text-muted-foreground"> · +{data.topFixes.length - 1} more</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-lg border bg-card p-3 min-w-[88px]">
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Est. FHRS</p>
+                      <p className="text-2xl font-heading font-bold tabular-nums mt-1">{data.ratingEstimate}<span className="text-xs text-muted-foreground">/5</span></p>
+                    </div>
+                    <div className="rounded-lg border bg-card p-3 min-w-[88px]">
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">High-risk</p>
+                      <p className={`text-2xl font-heading font-bold tabular-nums mt-1 ${data.highRiskBreaches === 0 ? "text-success" : "text-breach"}`}>
+                        {data.highRiskBreaches}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border bg-card p-3 min-w-[88px]">
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Closed days</p>
+                      <p className="text-2xl font-heading font-bold tabular-nums mt-1 text-muted-foreground">{data.closedDaysCount}</p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Overall compliance: <strong>{data.overallScore}%</strong> across all 3 inspection pillars
-                </p>
+                {data.topStrengths.length > 0 && (
+                  <div className="mt-4 pt-4 border-t flex items-start gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">Strengths: </span>
+                      {data.topStrengths.slice(0, 2).map(s => s.text.split(":")[0]).join(" · ")}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
+
 
           {/* Top Fixes */}
           {data.topFixes.length > 0 && (
