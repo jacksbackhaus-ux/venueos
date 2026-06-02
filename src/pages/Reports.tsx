@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   FileText, Download, ShieldCheck, ClipboardCheck, SprayCan, Thermometer,
-  Truck, AlertTriangle, Wheat, Bug, Users, CheckCircle2, BarChart3,
-  ArrowRight, Info, Calendar, Loader2, Sparkles, RotateCcw,
+  Truck, AlertTriangle, Wheat, Bug, Users, CheckCircle2,
+  ArrowRight, Info, Calendar, Loader2, Sparkles, RotateCcw, Lock,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { useRole } from "@/hooks/useRole";
 import { useBranding } from "@/contexts/BrandingContext";
 import { toast } from "@/hooks/use-toast";
 import { buildRange, fetchReportData, type DateRangeKey, type ReportData } from "@/lib/reports";
