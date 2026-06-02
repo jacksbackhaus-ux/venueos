@@ -158,6 +158,10 @@ const Reports = () => {
 
   const handleExport = async () => {
     if (!data) return;
+    if (!canExport) {
+      toast({ title: "Export restricted", description: "Only managers can generate the inspection pack.", variant: "destructive" });
+      return;
+    }
     setExporting(true);
     try {
       const logoDataUrl = branding.logoUrl ? await urlToDataUrl(branding.logoUrl) : undefined;
@@ -181,6 +185,10 @@ const Reports = () => {
 
   const handleExcelExport = async () => {
     if (!data) return;
+    if (!canExport) {
+      toast({ title: "Export restricted", description: "Only managers can generate the inspection pack.", variant: "destructive" });
+      return;
+    }
     setExporting(true);
     try {
       generateInspectionPackExcel(data, aiActive ? aiNarrative : undefined);
