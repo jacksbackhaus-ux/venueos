@@ -515,41 +515,49 @@ const Reports = () => {
             </Card>
           )}
 
-          {/* Export Section */}
-          <Card>
+          {/* Export Section — prominent, role-gated */}
+          <Card className="border-primary/30 bg-primary/5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-heading flex items-center gap-2">
-                <Download className="h-4 w-4" /> Generate EHO Inspection Pack
+              <CardTitle className="text-base font-heading flex items-center gap-2">
+                <Download className="h-4 w-4 text-primary" /> Generate Inspection Pack
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <p className="text-xs font-medium mb-2">Included in export:</p>
-                <div className="grid sm:grid-cols-2 gap-1.5">
-                  {reportSections.map((s) => (
-                    <div key={s.label} className="flex items-center gap-2 text-xs">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
-                      <s.icon className="h-3 w-3 text-muted-foreground shrink-0" />
-                      <span>{s.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-<div className="flex gap-2 flex-wrap">
-          <Button onClick={handleExport} disabled={exporting || !data} variant="outline">
-            {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            Export PDF
-          </Button>
-          <Button onClick={handleExcelExport} disabled={exporting || !data}>
-            {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            Export Excel
-          </Button>
-         </div>
-              <p className="text-[10px] text-muted-foreground text-center">
-                A multi-page A4 PDF with all records and evidence for the selected period. Includes the disclaimer above.
+              <p className="text-xs text-muted-foreground">
+                A professional multi-page pack containing all compliance evidence for the selected period —
+                ready to hand to an Environmental Health Officer. Data completeness: <strong>{data.dataCompleteness}%</strong>.
               </p>
+              <div className="grid sm:grid-cols-2 gap-1.5">
+                {reportSections.map((s) => (
+                  <div key={s.label} className="flex items-center gap-2 text-xs">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
+                    <s.icon className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span>{s.label}</span>
+                  </div>
+                ))}
+              </div>
+              {canExport ? (
+                <div className="flex gap-2 flex-wrap pt-1">
+                  <Button onClick={handleExport} disabled={exporting || !data} size="lg" className="flex-1 min-w-[160px]">
+                    {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    Export PDF Pack
+                  </Button>
+                  <Button onClick={handleExcelExport} disabled={exporting || !data} size="lg" variant="outline" className="flex-1 min-w-[160px]">
+                    {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-2" />}
+                    Export Excel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border">
+                  <Lock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    Only managers can export the inspection pack. Ask an owner or manager to generate it.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
+
         </>
       )}
     </div>
