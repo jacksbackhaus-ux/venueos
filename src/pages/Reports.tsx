@@ -71,8 +71,10 @@ const Reports = () => {
   const { orgRole } = useAuth();
   const { plan, trialActive, compedActive } = useOrgAccess();
   const { isActive } = useModuleAccess();
+  const { isManager } = useRole();
   const branding = useBranding();
   const aiActive = isActive("ai_insights");
+  const canExport = isManager; // Only manager/org_owner can export pack
   const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRangeKey>("4weeks");
   const [data, setData] = useState<ReportData | null>(null);
