@@ -959,13 +959,17 @@ export default function Batches() {
 
                   {/* Section C — Actions */}
                   {!isReadOnly && selectedBatch.status === 'in_progress' && (
-                    <div className="flex gap-2 pt-3 border-t">
-                      <Button size="sm" className="flex-1" onClick={() => updateBatchStatus('complete')}>
+                    <div className="grid grid-cols-3 gap-2 pt-3 border-t">
+                      <Button size="sm" onClick={() => updateBatchStatus('complete')}>
                         <CheckCircle2 className="h-3 w-3 mr-1" /> Complete
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1 text-breach border-breach/30"
+                      <Button size="sm" variant="outline" className="text-warning border-warning/30"
                         onClick={() => updateBatchStatus('quarantined')}>
                         <AlertTriangle className="h-3 w-3 mr-1" /> Quarantine
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-breach border-breach/30"
+                        onClick={() => updateBatchStatus('disposed')}>
+                        <Ban className="h-3 w-3 mr-1" /> Dispose
                       </Button>
                     </div>
                   )}
