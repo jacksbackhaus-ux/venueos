@@ -156,6 +156,14 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
     return nowMin >= start && nowMin <= end;
   }).length;
 
+  // -------- PRODUCTION --------
+  const batchCount = data.batchesToday.length;
+  const unitsProduced = data.batchesToday.reduce((s: number, b: any) => s + (Number(b.quantity_produced) || 0), 0);
+  const prodLines: Tile["lines"] = [
+    { text: `${batchCount} batch${batchCount === 1 ? '' : 'es'}`, tone: batchCount > 0 ? "ok" : "muted" },
+    { text: `${unitsProduced.toLocaleString()} units`, tone: unitsProduced > 0 ? "ok" : "muted" },
+  ];
+
   const tiles: Tile[] = [
     { href: "/temperatures", label: "Temperatures", icon: Thermometer, lines: tempLines },
     { href: "/cleaning", label: "Cleaning", icon: SprayCan, lines: cleanLines },
@@ -164,10 +172,11 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
       { text: `Scheduled: ${data.shifts.length}`, tone: "muted" },
     ]},
     { href: "/day-sheet", label: "Day Sheet", icon: ClipboardCheck, lines: dsLines },
+    { href: "/batches", label: "Production", icon: Package, lines: prodLines },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       {tiles.map((t) => (
         <Link key={t.label} to={t.href} className="group">
           <Card className="p-4 h-full hover:border-primary/40 transition-colors">
