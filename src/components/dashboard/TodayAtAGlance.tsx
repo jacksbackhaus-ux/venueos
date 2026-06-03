@@ -30,7 +30,7 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
       const dayStart = `${dateISO}T00:00:00`;
       const dayEnd = `${dateISO}T23:59:59`;
 
-      const [closed, tempUnits, tempLogs, cleanTasks, cleanLogs, daySheet, sections, shifts] = await Promise.all([
+      const [closed, tempUnits, tempLogs, cleanTasks, cleanLogs, daySheet, sections, shifts, batchesToday] = await Promise.all([
         supabase.from("closed_days" as any).select("id").eq("site_id", siteId!).eq("closed_date", dateISO).maybeSingle(),
         supabase.from("temp_units").select("id, name").eq("site_id", siteId!).eq("active", true),
         supabase.from("temp_logs").select("unit_id, log_type, pass, logged_at, food_item").eq("site_id", siteId!).gte("logged_at", dayStart).lt("logged_at", dayEnd),
@@ -39,6 +39,7 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
         supabase.from("day_sheets").select("id, signed_off_at, day_sheet_entries(item_id, done, completed_at)").eq("site_id", siteId!).eq("sheet_date", dateISO).maybeSingle(),
         supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("rota_assignments").select("id, user_id, start_time, end_time").eq("site_id", siteId!).eq("shift_date", dateISO).is("cancelled_at", null),
+        supabase.from("batches").select("id, quantity_produced, date_produced, created_at").eq("site_id", siteId!).or(`date_produced.eq.${dateISO},and(date_produced.is.null,created_at.gte.${dayStart},created_at.lt.${dayEnd})`),
       ]);
 
       return {
@@ -50,6 +51,7 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
         daySheet: daySheet.data as any,
         sections: (sections.data ?? []) as any[],
         shifts: shifts.data ?? [],
+        batchesToday: (batchesToday.data ?? []) as any[],
       };
     },
   });
