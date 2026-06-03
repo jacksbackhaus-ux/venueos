@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Thermometer, SprayCan, Users, ClipboardCheck, ChevronRight } from "lucide-react";
+import { Thermometer, SprayCan, Users, ClipboardCheck, ChevronRight, Package } from "lucide-react";
 import { classifySection, currentOpsWindow, isToday, parseHHMM } from "@/lib/opsTime";
 
 interface Props { siteId: string | undefined; dateISO: string; }
@@ -30,7 +30,7 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
       const dayStart = `${dateISO}T00:00:00`;
       const dayEnd = `${dateISO}T23:59:59`;
 
-      const [closed, tempUnits, tempLogs, cleanTasks, cleanLogs, daySheet, sections, shifts] = await Promise.all([
+      const [closed, tempUnits, tempLogs, cleanTasks, cleanLogs, daySheet, sections, shifts, batchesToday] = await Promise.all([
         supabase.from("closed_days" as any).select("id").eq("site_id", siteId!).eq("closed_date", dateISO).maybeSingle(),
         supabase.from("temp_units").select("id, name").eq("site_id", siteId!).eq("active", true),
         supabase.from("temp_logs").select("unit_id, log_type, pass, logged_at, food_item").eq("site_id", siteId!).gte("logged_at", dayStart).lt("logged_at", dayEnd),
@@ -39,6 +39,7 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
         supabase.from("day_sheets").select("id, signed_off_at, day_sheet_entries(item_id, done, completed_at)").eq("site_id", siteId!).eq("sheet_date", dateISO).maybeSingle(),
         supabase.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, active)").eq("site_id", siteId!).eq("active", true),
         supabase.from("rota_assignments").select("id, user_id, start_time, end_time").eq("site_id", siteId!).eq("shift_date", dateISO).is("cancelled_at", null),
+        supabase.from("batches").select("id, quantity_produced, date_produced, created_at").eq("site_id", siteId!).or(`date_produced.eq.${dateISO},and(date_produced.is.null,created_at.gte.${dayStart},created_at.lt.${dayEnd})`),
       ]);
 
       return {
@@ -50,14 +51,15 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
         daySheet: daySheet.data as any,
         sections: (sections.data ?? []) as any[],
         shifts: shifts.data ?? [],
+        batchesToday: (batchesToday.data ?? []) as any[],
       };
     },
   });
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
       </div>
     );
   }
@@ -154,6 +156,14 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
     return nowMin >= start && nowMin <= end;
   }).length;
 
+  // -------- PRODUCTION --------
+  const batchCount = data.batchesToday.length;
+  const unitsProduced = data.batchesToday.reduce((s: number, b: any) => s + (Number(b.quantity_produced) || 0), 0);
+  const prodLines: Tile["lines"] = [
+    { text: `${batchCount} batch${batchCount === 1 ? '' : 'es'}`, tone: batchCount > 0 ? "ok" : "muted" },
+    { text: `${unitsProduced.toLocaleString()} units`, tone: unitsProduced > 0 ? "ok" : "muted" },
+  ];
+
   const tiles: Tile[] = [
     { href: "/temperatures", label: "Temperatures", icon: Thermometer, lines: tempLines },
     { href: "/cleaning", label: "Cleaning", icon: SprayCan, lines: cleanLines },
@@ -162,10 +172,11 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
       { text: `Scheduled: ${data.shifts.length}`, tone: "muted" },
     ]},
     { href: "/day-sheet", label: "Day Sheet", icon: ClipboardCheck, lines: dsLines },
+    { href: "/batches", label: "Production", icon: Package, lines: prodLines },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       {tiles.map((t) => (
         <Link key={t.label} to={t.href} className="group">
           <Card className="p-4 h-full hover:border-primary/40 transition-colors">

@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Package, Plus, AlertTriangle, CheckCircle2,
-  Clock, Ban, Loader2
+  Clock, Ban, Loader2, Search
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, differenceInCalendarDays } from "date-fns";
+import { format, differenceInCalendarDays, startOfWeek, startOfMonth } from "date-fns";
 import { calcBatchProductionCost, loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
 import { displayBatchNumber, formatBatchNumber } from "@/lib/batchNumber";
 
@@ -97,6 +97,8 @@ export default function Batches() {
   const [templates, setTemplates] = useState<BatchTemplate[]>([]);
   const [costRecipes, setCostRecipes] = useState<RecipeWithCost[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState<"today" | "week" | "month" | "all">("week");
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
@@ -161,6 +163,18 @@ export default function Batches() {
     if (/croissant|pastr|bun|roll/.test(name)) return 'pieces';
     return newBatch.quantity_unit || 'cookies';
   }, [newBatch.product_name, newBatch.quantity_unit]);
+
+  // Auto-suggest next recipe number for the current product (max + 1 at this site)
+  useEffect(() => {
+    if (!newBatch.product_name || newBatch.recipe_number) return;
+    const name = newBatch.product_name.trim().toLowerCase();
+    if (!name) return;
+    const matching = batches.filter(
+      b => (b.product_name || '').trim().toLowerCase() === name && b.recipe_number != null
+    );
+    const maxNum = matching.reduce((m, b) => Math.max(m, Number(b.recipe_number) || 0), 0);
+    setNewBatch(nb => nb.recipe_number ? nb : { ...nb, recipe_number: String(maxNum + 1) });
+  }, [newBatch.product_name, batches]);
 
   const generateBatchCode = () => {
     const date = format(new Date(), 'yyyyMMdd');
@@ -286,7 +300,33 @@ export default function Batches() {
     loadBatches();
   };
 
-  const filteredBatches = filterStatus === 'all' ? batches : batches.filter(b => b.status === filterStatus);
+  const rangeStart = useMemo(() => {
+    const now = new Date();
+    if (dateRange === 'today') return format(now, 'yyyy-MM-dd');
+    if (dateRange === 'week') return format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    if (dateRange === 'month') return format(startOfMonth(now), 'yyyy-MM-dd');
+    return null;
+  }, [dateRange]);
+
+  const filteredBatches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return batches.filter(b => {
+      if (filterStatus !== 'all' && b.status !== filterStatus) return false;
+      if (rangeStart) {
+        const refDate = b.date_produced || format(new Date(b.created_at), 'yyyy-MM-dd');
+        if (refDate < rangeStart) return false;
+      }
+      if (q) {
+        const hay = `${b.product_name || ''} ${displayBatchNumber(b.product_name, b.recipe_number, b.batch_code)}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [batches, filterStatus, rangeStart, searchQuery]);
+
+  const todayISO = format(new Date(), 'yyyy-MM-dd');
+  const producedToday = batches.filter(b => (b.date_produced || format(new Date(b.created_at), 'yyyy-MM-dd')) === todayISO);
+  const unitsToday = producedToday.reduce((s, b) => s + (Number(b.quantity_produced) || 0), 0);
 
   const selectedTemplate = selectedBatch?.template_id
     ? templates.find(t => t.id === selectedBatch.template_id)
@@ -321,8 +361,49 @@ export default function Batches() {
         )}
       </div>
 
+      {/* Today summary strip */}
+      <Card className="bg-muted/30 border-dashed">
+        <CardContent className="p-3 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Produced today</p>
+            <p className="text-lg font-semibold tabular-nums leading-tight">
+              {producedToday.length}{' '}
+              <span className="text-sm font-normal text-muted-foreground">
+                batch{producedToday.length === 1 ? '' : 'es'}
+              </span>
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Units today</p>
+            <p className="text-lg font-semibold tabular-nums leading-tight">{unitsToday.toLocaleString()}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Search + date range */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by product or batch number"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
+          <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="week">This week</SelectItem>
+            <SelectItem value="month">This month</SelectItem>
+            <SelectItem value="all">All time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <Tabs value={filterStatus} onValueChange={setFilterStatus}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="all">All ({batches.length})</TabsTrigger>
           <TabsTrigger value="in_progress">
             In Progress ({batches.filter(b => b.status === 'in_progress').length})
@@ -335,6 +416,7 @@ export default function Batches() {
           </TabsTrigger>
         </TabsList>
       </Tabs>
+
 
       {loading ? (
         <div className="flex justify-center py-8">
@@ -731,30 +813,106 @@ export default function Batches() {
                     <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">{selectedBatch.notes}</div>
                   )}
 
-                  {/* Cost section */}
-                  {hasCostAccess && (selectedBatch.total_production_cost != null || selectedBatch.unit_cost_snapshot != null) && (
-                    <div className="rounded-md border bg-primary/5 p-3 space-y-1.5 text-sm">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">
-                        Cost
+                  {/* Section B — Batch Economics */}
+                  {hasCostAccess && (() => {
+                    const unitCost = selectedBatch.unit_cost_snapshot != null
+                      ? Number(selectedBatch.unit_cost_snapshot)
+                      : (qty && qty > 0 && selectedBatch.total_production_cost != null
+                          ? Number(selectedBatch.total_production_cost) / qty
+                          : null);
+                    const totalCost = selectedBatch.total_production_cost != null
+                      ? Number(selectedBatch.total_production_cost)
+                      : (unitCost != null && qty ? unitCost * qty : null);
+                    const salePrice = selectedBatch.sale_price_snapshot != null
+                      ? Number(selectedBatch.sale_price_snapshot) : null;
+                    const profit = (salePrice != null && unitCost != null && qty)
+                      ? (salePrice - unitCost) * qty : null;
+                    const marginPct = selectedBatch.margin_pct != null
+                      ? Number(selectedBatch.margin_pct)
+                      : (salePrice != null && salePrice > 0 && unitCost != null
+                          ? ((salePrice - unitCost) / salePrice) * 100 : null);
+                    const linkedRecipe = costRecipes.find(r => r.id === selectedBatch.recipe_id);
+
+                    if (unitCost == null && !linkedRecipe) {
+                      return (
+                        <div className="rounded-md border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">
+                          Link a recipe to see batch costs.
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="rounded-md border bg-primary/5 p-3 space-y-1.5 text-sm">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">
+                          Batch Economics
+                        </div>
+                        {unitCost != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Cost per {unitLabel(selectedBatch.quantity_unit, 1)}</span>
+                            <span className="tabular-nums">£{unitCost.toFixed(3)}</span>
+                          </div>
+                        )}
+                        {totalCost != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total batch cost</span>
+                            <span className="tabular-nums font-semibold">£{totalCost.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {salePrice != null ? (
+                          <>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Sale price per unit</span>
+                              <span className="tabular-nums">£{salePrice.toFixed(2)}</span>
+                            </div>
+                            {profit != null && (
+                              <div className="flex justify-between pt-1 border-t border-border/50">
+                                <span className="text-muted-foreground">Batch profit</span>
+                                <span className={`tabular-nums font-semibold ${profit >= 0 ? 'text-success' : 'text-breach'}`}>
+                                  £{profit.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+                            {marginPct != null && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Margin</span>
+                                <span className={`tabular-nums ${selectedBatch.margin_below_target ? 'text-breach' : 'text-success'}`}>
+                                  {marginPct.toFixed(0)}%
+                                  {selectedBatch.target_gp_percent_snapshot != null && (
+                                    <span className="text-muted-foreground ml-1">
+                                      / target {Number(selectedBatch.target_gp_percent_snapshot).toFixed(0)}%
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground pt-1">
+                            Set a price in Profit & Pricing to see batch profit.
+                          </p>
+                        )}
                       </div>
-                      {selectedBatch.total_production_cost != null && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Total batch cost</span>
-                          <span className="tabular-nums font-semibold">£{Number(selectedBatch.total_production_cost).toFixed(2)}</span>
+                    );
+                  })()}
+
+                  {/* Section C — Ingredients (from linked recipe) */}
+                  {(() => {
+                    const linkedRecipe = costRecipes.find(r => r.id === selectedBatch.recipe_id);
+                    const ingredients = linkedRecipe?.recipe_ingredients
+                      ?.map((ri: any) => ri.ingredients?.name)
+                      .filter(Boolean) as string[] | undefined;
+                    if (!ingredients || ingredients.length === 0) return null;
+                    return (
+                      <div className="space-y-1.5 pt-3 border-t">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ingredients</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {ingredients.map((n, i) => (
+                            <Badge key={i} variant="outline" className="text-[11px] font-normal">{n}</Badge>
+                          ))}
                         </div>
-                      )}
-                      {qty && qty > 0 && selectedBatch.total_production_cost != null && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Cost per {unitLabel(selectedBatch.quantity_unit, 1)}
-                          </span>
-                          <span className="tabular-nums">
-                            £{(Number(selectedBatch.total_production_cost) / qty).toFixed(3)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Stage progression */}
                   {selectedTemplate && (
@@ -801,13 +959,17 @@ export default function Batches() {
 
                   {/* Section C — Actions */}
                   {!isReadOnly && selectedBatch.status === 'in_progress' && (
-                    <div className="flex gap-2 pt-3 border-t">
-                      <Button size="sm" className="flex-1" onClick={() => updateBatchStatus('complete')}>
+                    <div className="grid grid-cols-3 gap-2 pt-3 border-t">
+                      <Button size="sm" onClick={() => updateBatchStatus('complete')}>
                         <CheckCircle2 className="h-3 w-3 mr-1" /> Complete
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1 text-breach border-breach/30"
+                      <Button size="sm" variant="outline" className="text-warning border-warning/30"
                         onClick={() => updateBatchStatus('quarantined')}>
                         <AlertTriangle className="h-3 w-3 mr-1" /> Quarantine
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-breach border-breach/30"
+                        onClick={() => updateBatchStatus('disposed')}>
+                        <Ban className="h-3 w-3 mr-1" /> Dispose
                       </Button>
                     </div>
                   )}
