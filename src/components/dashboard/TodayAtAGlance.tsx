@@ -58,8 +58,8 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
       </div>
     );
   }
