@@ -97,6 +97,8 @@ export default function Batches() {
   const [templates, setTemplates] = useState<BatchTemplate[]>([]);
   const [costRecipes, setCostRecipes] = useState<RecipeWithCost[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState<"today" | "week" | "month" | "all">("week");
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
