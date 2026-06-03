@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Thermometer, SprayCan, Users, ClipboardCheck, ChevronRight } from "lucide-react";
+import { Thermometer, SprayCan, Users, ClipboardCheck, ChevronRight, Package } from "lucide-react";
 import { classifySection, currentOpsWindow, isToday, parseHHMM } from "@/lib/opsTime";
 
 interface Props { siteId: string | undefined; dateISO: string; }
