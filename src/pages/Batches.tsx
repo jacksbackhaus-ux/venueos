@@ -164,6 +164,18 @@ export default function Batches() {
     return newBatch.quantity_unit || 'cookies';
   }, [newBatch.product_name, newBatch.quantity_unit]);
 
+  // Auto-suggest next recipe number for the current product (max + 1 at this site)
+  useEffect(() => {
+    if (!newBatch.product_name || newBatch.recipe_number) return;
+    const name = newBatch.product_name.trim().toLowerCase();
+    if (!name) return;
+    const matching = batches.filter(
+      b => (b.product_name || '').trim().toLowerCase() === name && b.recipe_number != null
+    );
+    const maxNum = matching.reduce((m, b) => Math.max(m, Number(b.recipe_number) || 0), 0);
+    setNewBatch(nb => nb.recipe_number ? nb : { ...nb, recipe_number: String(maxNum + 1) });
+  }, [newBatch.product_name, batches]);
+
   const generateBatchCode = () => {
     const date = format(new Date(), 'yyyyMMdd');
     const seq = String(batches.length + 1).padStart(3, '0');
