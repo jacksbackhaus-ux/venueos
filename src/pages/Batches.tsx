@@ -361,8 +361,49 @@ export default function Batches() {
         )}
       </div>
 
+      {/* Today summary strip */}
+      <Card className="bg-muted/30 border-dashed">
+        <CardContent className="p-3 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Produced today</p>
+            <p className="text-lg font-semibold tabular-nums leading-tight">
+              {producedToday.length}{' '}
+              <span className="text-sm font-normal text-muted-foreground">
+                batch{producedToday.length === 1 ? '' : 'es'}
+              </span>
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Units today</p>
+            <p className="text-lg font-semibold tabular-nums leading-tight">{unitsToday.toLocaleString()}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Search + date range */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by product or batch number"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
+          <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="week">This week</SelectItem>
+            <SelectItem value="month">This month</SelectItem>
+            <SelectItem value="all">All time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <Tabs value={filterStatus} onValueChange={setFilterStatus}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="all">All ({batches.length})</TabsTrigger>
           <TabsTrigger value="in_progress">
             In Progress ({batches.filter(b => b.status === 'in_progress').length})
@@ -375,6 +416,7 @@ export default function Batches() {
           </TabsTrigger>
         </TabsList>
       </Tabs>
+
 
       {loading ? (
         <div className="flex justify-center py-8">
