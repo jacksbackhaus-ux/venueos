@@ -300,7 +300,33 @@ export default function Batches() {
     loadBatches();
   };
 
-  const filteredBatches = filterStatus === 'all' ? batches : batches.filter(b => b.status === filterStatus);
+  const rangeStart = useMemo(() => {
+    const now = new Date();
+    if (dateRange === 'today') return format(now, 'yyyy-MM-dd');
+    if (dateRange === 'week') return format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    if (dateRange === 'month') return format(startOfMonth(now), 'yyyy-MM-dd');
+    return null;
+  }, [dateRange]);
+
+  const filteredBatches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return batches.filter(b => {
+      if (filterStatus !== 'all' && b.status !== filterStatus) return false;
+      if (rangeStart) {
+        const refDate = b.date_produced || format(new Date(b.created_at), 'yyyy-MM-dd');
+        if (refDate < rangeStart) return false;
+      }
+      if (q) {
+        const hay = `${b.product_name || ''} ${displayBatchNumber(b.product_name, b.recipe_number, b.batch_code)}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [batches, filterStatus, rangeStart, searchQuery]);
+
+  const todayISO = format(new Date(), 'yyyy-MM-dd');
+  const producedToday = batches.filter(b => (b.date_produced || format(new Date(b.created_at), 'yyyy-MM-dd')) === todayISO);
+  const unitsToday = producedToday.reduce((s, b) => s + (Number(b.quantity_produced) || 0), 0);
 
   const selectedTemplate = selectedBatch?.template_id
     ? templates.find(t => t.id === selectedBatch.template_id)
