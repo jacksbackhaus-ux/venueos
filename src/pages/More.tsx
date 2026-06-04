@@ -85,9 +85,10 @@ export default function More() {
         <p className="text-sm text-muted-foreground">All modules and settings</p>
       </div>
 
-      {visibleDaily.length > 0 && <Section title="Daily Operations" items={visibleDaily} />}
-      {visibleCompliance.length > 0 && <Section title="Compliance" items={visibleCompliance} />}
-      {visibleBusiness.length > 0 && <Section title="Business" items={visibleBusiness} />}
+      {visibleDaily.length > 0 && <Section title="Run the Day" items={visibleDaily} />}
+      {visibleCompliance.length > 0 && <Section title="Stay Compliant" items={visibleCompliance} />}
+      {visibleBusiness.length > 0 && <Section title="Protect Margin" items={visibleBusiness} />}
+      {visibleUtility.length > 0 && <Section title="Communication" items={visibleUtility} />}
       {orgItems.length > 0 && <Section title="Organisation" items={orgItems} />}
 
       {isSuperAdmin && (
