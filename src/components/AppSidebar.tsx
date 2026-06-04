@@ -23,33 +23,35 @@ import type { ModuleName } from "@/lib/plans";
 
 type NavLeaf = { title: string; url: string; icon: React.ElementType; mod?: ModuleName };
 
-// Run the Day: Dashboard always visible; operational items follow
+// Run the Day — operate the business today
 const dailyOpsAll: NavLeaf[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard }, // always visible
-  { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts" },
-  { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets" },
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet" },
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures" },
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
-  { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log" },
+  { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts" },
+  { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets" },
   { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking" },
-  { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker" },
+  { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log" },
 ];
 
+// Stay Compliant — inspection-ready records & food safety
 const complianceAll: NavLeaf[] = [
   { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens" },
-  { title: "Suppliers", url: "/suppliers", icon: Truck, mod: "suppliers" },
+  { title: "Suppliers & Deliveries", url: "/suppliers", icon: Truck, mod: "suppliers" },
   { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
   { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest_maintenance" },
   { title: "PPM Schedule", url: "/ppm-schedule", icon: Wrench, mod: "ppm_schedule" },
   { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training" },
   { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
-  { title: "Reports", url: "/reports", icon: FileText, mod: "reports" },
+  { title: "Inspection Pack", url: "/reports", icon: FileText, mod: "reports" },
 ];
 
+// Protect Margin — commercial core
 const businessAll: NavLeaf[] = [
   { title: "Profit & Pricing", url: "/cost-margin", icon: Calculator, mod: "cost_margin" },
+  { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker" },
 ];
 
 const utilityAll: NavLeaf[] = [
