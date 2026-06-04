@@ -63,6 +63,7 @@ export default function More() {
   const visibleDaily = hasSelectedSite ? filterByModule(dailyOps) : [];
   const visibleCompliance = hasSelectedSite ? filterByModule(compliance) : [];
   const visibleBusiness = hasSelectedSite ? filterByModule(business) : [];
+  const visibleUtility = hasSelectedSite ? filterByModule(utility) : [];
 
   const isOrgOwner = orgRole?.org_role === "org_owner";
   const orgItems: NavItem[] = [
