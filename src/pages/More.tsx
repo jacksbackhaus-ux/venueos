@@ -15,32 +15,39 @@ import type { ModuleName } from "@/lib/plans";
 
 type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; mod?: ModuleName };
 
+// Run the Day — operate the business today
 const dailyOps: NavItem[] = [
-  { to: "/shifts", label: "Shifts", desc: "Assign staff & shift tasks", icon: Calendar, mod: "shifts" },
-  { to: "/timesheets", label: "Timesheets", desc: "Hours & payroll prep", icon: Clock, mod: "timesheets" },
-  { to: "/messenger", label: "Messenger", desc: "Team chat", icon: MessageSquare, mod: "messenger" },
   { to: "/day-sheet", label: "Day Sheet", desc: "Opening & closing checks", icon: ClipboardList, mod: "day_sheet" },
   { to: "/temperatures", label: "Temperatures", desc: "Fridge/freezer logs", icon: Thermometer, mod: "temperatures" },
   { to: "/cleaning", label: "Cleaning", desc: "Daily cleaning schedule", icon: SprayCan, mod: "cleaning" },
+  { to: "/shifts", label: "Shifts", desc: "Assign staff & shift tasks", icon: Calendar, mod: "shifts" },
+  { to: "/timesheets", label: "Timesheets", desc: "Hours & payroll prep", icon: Clock, mod: "timesheets" },
+  { to: "/batches", label: "Batch Tracking", desc: "Production log & traceability", icon: Package, mod: "batch_tracking" },
   { to: "/waste-log", label: "Waste Log", desc: "Track food waste & cost", icon: Trash2, mod: "waste_log" },
 ];
 
+// Stay Compliant — inspection-ready records & food safety
 const compliance: NavItem[] = [
+  { to: "/haccp", label: "HACCP Plan", desc: "Build and publish HACCP plans", icon: BookCheck, mod: "haccp" },
   { to: "/allergens", label: "Allergens & Labels", desc: "Recipes, ingredients, PPDS labels", icon: Wheat, mod: "allergens" },
   { to: "/suppliers", label: "Suppliers & Deliveries", desc: "Approved suppliers and delivery logs", icon: Truck, mod: "suppliers" },
-  { to: "/pest-maintenance", label: "Pest & Maintenance", desc: "Pest sightings and maintenance jobs", icon: Bug, mod: "pest_maintenance" },
   { to: "/incidents", label: "Incidents", desc: "Report and investigate non-conformances", icon: AlertTriangle, mod: "incidents" },
-  { to: "/batches", label: "Batch Tracking", desc: "Production batch traceability", icon: Package, mod: "batch_tracking" },
-  { to: "/staff-training", label: "Staff Training", desc: "Records, certificates & expiries", icon: GraduationCap, mod: "staff_training" },
-  { to: "/haccp", label: "HACCP Plan", desc: "Build and publish HACCP plans", icon: BookCheck, mod: "haccp" },
-  { to: "/customer-feedback", label: "Customer Feedback", desc: "Log and resolve customer feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
+  { to: "/pest-maintenance", label: "Pest & Maintenance", desc: "Pest sightings and maintenance jobs", icon: Bug, mod: "pest_maintenance" },
   { to: "/ppm-schedule", label: "PPM Schedule", desc: "Planned preventative maintenance", icon: Wrench, mod: "ppm_schedule" },
+  { to: "/staff-training", label: "Staff Training", desc: "Records, certificates & expiries", icon: GraduationCap, mod: "staff_training" },
+  { to: "/customer-feedback", label: "Customer Feedback", desc: "Log and resolve customer feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
+  { to: "/reports", label: "Inspection Pack", desc: "EHO-ready exports & reports", icon: FileBarChart, mod: "reports" },
 ];
 
+// Protect Margin — commercial core
 const business: NavItem[] = [
-  { to: "/cost-margin", label: "Profit & Pricing", desc: "Know your true cost and protect your margin", icon: Calculator, mod: "cost_margin" },
+  { to: "/cost-margin", label: "Profit & Pricing", desc: "Cost, pricing, VAT, overheads & flash P&L", icon: Calculator, mod: "cost_margin" },
   { to: "/tip-tracker", label: "Tip Tracker", desc: "Track and split staff tips", icon: PoundSterling, mod: "tip_tracker" },
-  { to: "/reports", label: "Reports", desc: "Inspection-ready exports", icon: FileBarChart, mod: "reports" },
+];
+
+// Utility — outside the pillars
+const utility: NavItem[] = [
+  { to: "/messenger", label: "Messenger", desc: "Team chat", icon: MessageSquare, mod: "messenger" },
 ];
 
 export default function More() {
