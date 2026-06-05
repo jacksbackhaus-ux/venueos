@@ -144,20 +144,22 @@ export function usePriorityFeed(
         }
       });
 
-      // 🟠 Cleaning tasks missed yesterday
-      const yDoneIds = new Set((cleaningLogsYesterdayRes.data ?? []).filter((l: any) => l.done).map((l: any) => l.task_id));
-      (cleaningTasksRes.data ?? []).forEach((t: any) => {
-        if (!yDoneIds.has(t.id)) {
-          items.push({
-            id: `clean-y-${t.id}`,
-            severity: "important",
-            title: `Cleaning missed yesterday — ${t.task}`,
-            href: "/cleaning",
-            actionLabel: "Catch up",
-            rank: 4,
-          });
-        }
-      });
+      // 🟠 Cleaning tasks missed yesterday — exempt if yesterday was a closed day
+      if (!yesterdayWasClosed) {
+        const yDoneIds = new Set((cleaningLogsYesterdayRes.data ?? []).filter((l: any) => l.done).map((l: any) => l.task_id));
+        (cleaningTasksRes.data ?? []).forEach((t: any) => {
+          if (!yDoneIds.has(t.id)) {
+            items.push({
+              id: `clean-y-${t.id}`,
+              severity: "important",
+              title: `Cleaning missed yesterday — ${t.task}`,
+              href: "/cleaning",
+              actionLabel: "Catch up",
+              rank: 4,
+            });
+          }
+        });
+      }
 
       // 🟠 Staff training expiring soon
       (trainingExpiringRes.data ?? []).forEach((t: any) => {
