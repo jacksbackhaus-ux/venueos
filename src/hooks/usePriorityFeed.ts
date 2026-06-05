@@ -42,8 +42,15 @@ export function usePriorityFeed(
       in7days.setDate(in7days.getDate() + 7);
       const in7daysISO = in7days.toISOString().slice(0, 10);
 
+      // Pull a window of closed_days covering yesterday → today (and a small
+      // back-window for any recent breaches that may sit on a closed date).
+      const backWindow = new Date(dateISO);
+      backWindow.setDate(backWindow.getDate() - 14);
+      const backWindowISO = backWindow.toISOString().slice(0, 10);
+
       const [
         closedDayRes,
+        closedDaysWindowRes,
         tempBreachesRes,
         tempUnitsRes,
         tempLogsTodayRes,
@@ -55,6 +62,7 @@ export function usePriorityFeed(
         batchesExpiredRes,
       ] = await Promise.all([
         supabase.from("closed_days" as any).select("id").eq("site_id", siteId!).eq("closed_date", dateISO).maybeSingle(),
+        supabase.from("closed_days" as any).select("closed_date").eq("site_id", siteId!).gte("closed_date", backWindowISO).lte("closed_date", dateISO),
         supabase.from("temp_logs").select("id, value, unit_id, logged_at, food_item").eq("site_id", siteId!).eq("pass", false).is("corrective_action", null).order("logged_at", { ascending: false }).limit(5),
         supabase.from("temp_units").select("id, name").eq("site_id", siteId!).eq("active", true),
         supabase.from("temp_logs").select("unit_id, log_type").eq("site_id", siteId!).gte("logged_at", dayStart).lt("logged_at", dayEnd),
@@ -70,11 +78,17 @@ export function usePriorityFeed(
 
       if ((closedDayRes as any)?.data) return [];
 
+      const closedSet = new Set(((closedDaysWindowRes as any)?.data ?? []).map((c: any) => c.closed_date as string));
+      const yesterdayWasClosed = closedSet.has(yesterdayISO);
+
       const items: PriorityItem[] = [];
       const unitNameById = new Map((tempUnitsRes.data ?? []).map((u: any) => [u.id, u.name as string]));
 
       // 🔴 Temperature breaches with no corrective action
+      // (skip any whose log date falls on a closed day — those are exempt)
       (tempBreachesRes.data ?? []).forEach((b: any) => {
+        const logDate = (b.logged_at || "").slice(0, 10);
+        if (closedSet.has(logDate)) return;
         const label = unitNameById.get(b.unit_id) ?? b.food_item ?? "Unit";
         items.push({
           id: `breach-${b.id}`,
@@ -130,20 +144,22 @@ export function usePriorityFeed(
         }
       });
 
-      // 🟠 Cleaning tasks missed yesterday
-      const yDoneIds = new Set((cleaningLogsYesterdayRes.data ?? []).filter((l: any) => l.done).map((l: any) => l.task_id));
-      (cleaningTasksRes.data ?? []).forEach((t: any) => {
-        if (!yDoneIds.has(t.id)) {
-          items.push({
-            id: `clean-y-${t.id}`,
-            severity: "important",
-            title: `Cleaning missed yesterday — ${t.task}`,
-            href: "/cleaning",
-            actionLabel: "Catch up",
-            rank: 4,
-          });
-        }
-      });
+      // 🟠 Cleaning tasks missed yesterday — exempt if yesterday was a closed day
+      if (!yesterdayWasClosed) {
+        const yDoneIds = new Set((cleaningLogsYesterdayRes.data ?? []).filter((l: any) => l.done).map((l: any) => l.task_id));
+        (cleaningTasksRes.data ?? []).forEach((t: any) => {
+          if (!yDoneIds.has(t.id)) {
+            items.push({
+              id: `clean-y-${t.id}`,
+              severity: "important",
+              title: `Cleaning missed yesterday — ${t.task}`,
+              href: "/cleaning",
+              actionLabel: "Catch up",
+              rank: 4,
+            });
+          }
+        });
+      }
 
       // 🟠 Staff training expiring soon
       (trainingExpiringRes.data ?? []).forEach((t: any) => {
