@@ -78,11 +78,17 @@ export function usePriorityFeed(
 
       if ((closedDayRes as any)?.data) return [];
 
+      const closedSet = new Set(((closedDaysWindowRes as any)?.data ?? []).map((c: any) => c.closed_date as string));
+      const yesterdayWasClosed = closedSet.has(yesterdayISO);
+
       const items: PriorityItem[] = [];
       const unitNameById = new Map((tempUnitsRes.data ?? []).map((u: any) => [u.id, u.name as string]));
 
       // 🔴 Temperature breaches with no corrective action
+      // (skip any whose log date falls on a closed day — those are exempt)
       (tempBreachesRes.data ?? []).forEach((b: any) => {
+        const logDate = (b.logged_at || "").slice(0, 10);
+        if (closedSet.has(logDate)) return;
         const label = unitNameById.get(b.unit_id) ?? b.food_item ?? "Unit";
         items.push({
           id: `breach-${b.id}`,
