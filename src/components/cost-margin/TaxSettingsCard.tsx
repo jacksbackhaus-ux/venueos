@@ -83,7 +83,7 @@ export default function TaxSettingsCard({ siteId, orgId }: Props) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <Label className="text-sm">VAT enabled</Label>
-            <p className="text-[11px] text-muted-foreground">Show VAT breakdowns across Cost & Margin.</p>
+            <p className="text-[11px] text-muted-foreground">Show VAT breakdowns across Profit & Pricing.</p>
           </div>
           <Switch checked={vatEnabled} onCheckedChange={setVatEnabled} />
         </div>

@@ -604,7 +604,7 @@ export function generateInspectionPackPdf(
   if (data.costMargin && data.costMargin.recipes.length > 0) {
     const cm = data.costMargin;
     addEvidence(
-      "Cost & Margin Summary",
+      "Profit & Pricing Summary",
       [["Recipe", "Cost/unit", "Recommended", "Current", "Margin %", "Target %"]],
       cm.recipes.map((r) => [
         r.name,

@@ -17,8 +17,8 @@ import { format } from "date-fns";
 
 const TIER_LABEL: Record<TierId, string> = {
   essentials: "Essentials",
-  professional: "Professional",
-  business_tier: "Business",
+  compliance: "Compliance",
+  profit: "Profit",
   intelligence: "Intelligence",
 };
 
@@ -26,10 +26,10 @@ function expectedModulesForTier(tier: TierId | null): Set<ModuleName> {
   const out = new Set<ModuleName>();
   if (!tier) return out;
   BASE_MODULES.forEach(m => out.add(m));
-  if (tier === "professional" || tier === "business_tier" || tier === "intelligence") {
+  if (tier === "compliance" || tier === "profit" || tier === "intelligence") {
     COMPLIANCE_MODULES.forEach(m => out.add(m));
   }
-  if (tier === "business_tier" || tier === "intelligence") {
+  if (tier === "profit" || tier === "intelligence") {
     BUSINESS_MODULES.forEach(m => out.add(m));
   }
   if (tier === "intelligence") {

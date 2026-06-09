@@ -46,8 +46,8 @@ export interface PlanState {
 
 const TIER_LABEL: Record<TierId, string> = {
   essentials: "Essentials",
-  professional: "Professional",
-  business_tier: "Business",
+  compliance: "Compliance",
+  profit: "Profit",
   intelligence: "Intelligence",
 };
 
@@ -59,10 +59,10 @@ function planFromTier(tier: TierId | null): PlanState {
     };
   }
   const hasEssentials = true;
-  const hasCompliance = tier === "professional" || tier === "business_tier" || tier === "intelligence";
-  const hasBusiness   = tier === "business_tier" || tier === "intelligence";
+  const hasCompliance = tier === "compliance" || tier === "profit" || tier === "intelligence";
+  const hasBusiness   = tier === "profit" || tier === "intelligence";
   const hasIntelligence = tier === "intelligence";
-  // `bundle` historically meant "full set of modules". Treat Business/Intelligence as bundle-equivalent.
+  // `bundle` historically meant "full set of modules". Treat Profit/Intelligence as bundle-equivalent.
   const bundle = hasBusiness;
   return {
     base: hasEssentials,
@@ -73,8 +73,8 @@ function planFromTier(tier: TierId | null): PlanState {
     intelligence: hasIntelligence,
     hasAnyPlan: true,
     label: TIER_LABEL[tier],
-    primary: tier === "intelligence" || tier === "business_tier" ? "bundle"
-           : tier === "professional" ? "compliance"
+    primary: hasBusiness ? "bundle"
+           : hasCompliance ? "compliance"
            : "base",
   };
 }
