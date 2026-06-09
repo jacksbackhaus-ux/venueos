@@ -34,6 +34,7 @@ import Batches from "./pages/Batches";
 import StaffTraining from "./pages/StaffTraining";
 import Haccp from "./pages/Haccp";
 import CostMargin from "./pages/CostMargin";
+import Compliance from "./pages/Compliance";
 import Sales from "./pages/Sales";
 import Timesheets from "./pages/Timesheets";
 import Messenger from "./pages/Messenger";
@@ -267,6 +268,7 @@ function AppRoutes() {
       <Route path="/suppliers" element={moduleRoute("suppliers", <Suppliers />)} />
       <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <PestMaintenance />)} />
       <Route path="/incidents" element={moduleRoute("incidents", <Incidents />)} />
+      <Route path="/compliance" element={siteRoute(<Compliance />)} />
       <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
       <Route path="/staff-training" element={moduleRoute("staff_training", <StaffTraining />)} />
