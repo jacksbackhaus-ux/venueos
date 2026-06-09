@@ -3,7 +3,7 @@ import {
   Calendar, Wheat, Truck, Bug, AlertTriangle, Package, FileBarChart,
   Calculator, Building2, User, Settings as SettingsIcon, Shield,
   ChevronRight, Clock, MessageSquare, Thermometer, ClipboardList,
-  SprayCan, PoundSterling, Trash2, GraduationCap, BookCheck, MessageSquareHeart, Wrench,
+  SprayCan, PoundSterling, Trash2, GraduationCap, BookCheck, MessageSquareHeart, Wrench, ShieldCheck,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +28,7 @@ const dailyOps: NavItem[] = [
 
 // Stay Compliant — inspection-ready records & food safety
 const compliance: NavItem[] = [
+  { to: "/compliance", label: "Compliance Overview", desc: "Inspection readiness scores & quick actions", icon: ShieldCheck },
   { to: "/haccp", label: "HACCP Plan", desc: "Build and publish HACCP plans", icon: BookCheck, mod: "haccp" },
   { to: "/allergens", label: "Allergens & Labels", desc: "Recipes, ingredients, PPDS labels", icon: Wheat, mod: "allergens" },
   { to: "/suppliers", label: "Suppliers & Deliveries", desc: "Approved suppliers and delivery logs", icon: Truck, mod: "suppliers" },

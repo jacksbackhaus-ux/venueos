@@ -37,6 +37,7 @@ const dailyOpsAll: NavLeaf[] = [
 
 // Stay Compliant — inspection-ready records & food safety
 const complianceAll: NavLeaf[] = [
+  { title: "Compliance Overview", url: "/compliance", icon: ShieldCheck },
   { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens" },
   { title: "Suppliers & Deliveries", url: "/suppliers", icon: Truck, mod: "suppliers" },
