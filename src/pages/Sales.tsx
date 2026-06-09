@@ -30,7 +30,7 @@ export default function Sales() {
   const orgId = appUser?.organisation_id || null;
   const siteId = currentSite?.id || null;
   const isManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
-  const tierOk = tier === "business_tier" || tier === "intelligence";
+  const tierOk = tier === "profit" || tier === "intelligence";
   const intelligence = tier === "intelligence" && isActive("ai_insights");
 
   const imports = useQuery({

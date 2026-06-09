@@ -33,7 +33,7 @@ export default function Pricing() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <SEO
           title="Pricing — MiseOS"
-          description="Simple per-site pricing for UK food businesses. Essentials, Professional, Business and Intelligence plans with a 14-day free trial."
+          description="Simple per-site pricing for UK food businesses. Essentials from £6.99, plus Compliance, Profit and Intelligence. 14-day free trial."
           path="/pricing"
         />
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -77,7 +77,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-background">
       <SEO
         title="Pricing — MiseOS"
-        description="Simple per-site pricing for UK food businesses. Essentials, Professional, Business and Intelligence plans. Annual saves 15%."
+        description="Simple per-site pricing for UK food businesses. Essentials, Compliance, Profit and Intelligence. Annual saves about 15%."
         path="/pricing"
       />
       <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">

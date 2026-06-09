@@ -427,36 +427,55 @@ function LiveExamples() {
 }
 
 // ───── Pricing ─────
-// Prices mirror src/lib/plans.ts (MISEOS_TIERS). Keep in sync.
+// Prices mirror src/lib/plans.ts (TIERS). Keep in sync.
 const TIERS = [
   {
     name: "Essentials",
-    price: "£14.99",
-    annual: "£152.90/yr",
-    desc: "Daily ops, temps and day sheets for one site.",
-    features: ["Dashboard", "Temperatures", "Day Sheet", "Cleaning", "Shifts", "Unlimited users"],
+    price: "£6.99",
+    annual: "£71/yr",
+    desc: "Run the day without paper or spreadsheets.",
+    features: [
+      "Dashboard, Day Sheet, Shifts & Timesheets",
+      "Temperatures, Cleaning & Waste",
+      "Batch Tracking & Messenger",
+    ],
   },
   {
-    name: "Professional",
-    price: "£25.99",
-    annual: "£265.10/yr",
-    desc: "Everything in Essentials + full compliance.",
-    features: ["Everything in Essentials", "Allergens & labels", "HACCP & EHO reports", "Incidents", "Unlimited users"],
+    name: "Compliance",
+    price: "£12.99",
+    annual: "£132/yr",
+    desc: "Stay inspection-ready with digital food safety records.",
+    features: [
+      "Everything in Essentials",
+      "HACCP, Allergens & PPDS labels",
+      "Incidents, Suppliers, Pest, PPM, Staff Training",
+      "EHO-ready Inspection Pack",
+    ],
     popular: true,
   },
   {
-    name: "Business",
-    price: "£45.99",
-    annual: "£469.10/yr",
-    desc: "Everything in Professional + business tools.",
-    features: ["Everything in Professional", "Batch tracking", "Suppliers & deliveries", "Pest & maintenance", "Cost & margin"],
+    name: "Profit",
+    price: "£19.99",
+    annual: "£204/yr",
+    desc: "Understand what your products really cost and what you should charge.",
+    features: [
+      "Everything in Compliance",
+      "Profit & Pricing with overheads & VAT",
+      "DTC / Wholesale pricing",
+      "Margin overview & top problems",
+    ],
   },
   {
     name: "Intelligence",
-    price: "£69.99",
-    annual: "£713.90/yr",
-    desc: "Everything in Business + AI superpowers.",
-    features: ["Everything in Business", "Daily morning briefing", "Margin & waste alerts", "Equipment health warnings", "Smart rota suggestions"],
+    price: "£24.99",
+    annual: "£255/yr",
+    desc: "Get embedded smart assistance across operations, compliance, and margin.",
+    features: [
+      "Everything in Profit",
+      "Margin Watchdog & waste insights",
+      "Smart rota suggestions",
+      "Morning briefing & compliance summary",
+    ],
   },
 ];
 
@@ -465,10 +484,10 @@ function Pricing() {
     <Section id="pricing">
       <div className="text-center max-w-2xl mx-auto mb-14">
         <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
-          Simple pricing. No surprises.
+          Simple pricing. Built for independents.
         </h2>
-        <p className="mt-4 text-slate-600 text-lg">Per site, per month. Unlimited users. Annual saves 15%.</p>
-        <p className="mt-2 text-slate-500 text-sm">Monthly is a 12-month plan billed monthly. 14-day free trial — no card required.</p>
+        <p className="mt-4 text-slate-600 text-lg">Per site, per month. Unlimited users. Annual saves about 15%.</p>
+        <p className="mt-2 text-slate-500 text-sm">Start free for 14 days — no card required.</p>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
         {TIERS.map((t) => (
