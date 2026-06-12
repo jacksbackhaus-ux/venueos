@@ -288,23 +288,43 @@ export default function StaffAccess() {
             <p className="text-sm text-muted-foreground p-6 text-center">No active assignments.</p>
           ) : (
             <div className="divide-y">
-              {assignments.map(a => (
-                <div key={a.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">{a.organisation_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      <code className="mr-2">{a.staff_user_id.slice(0, 8)}…</code>
-                      <Badge variant="secondary" className="mr-2 text-[10px]">{a.access_level}</Badge>
-                      Granted {format(new Date(a.granted_at), "PP")}
-                      {a.expires_at && ` · expires ${format(new Date(a.expires_at), "PP")}`}
-                    </p>
-                    <p className="text-xs text-muted-foreground italic mt-0.5">{a.reason}</p>
+              {assignments.map(a => {
+                const expired = !!a.expires_at && new Date(a.expires_at).getTime() <= Date.now();
+                const canImpersonate = !expired && (isSuperAdmin || a.staff_user_id === user?.id);
+                return (
+                  <div key={a.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{a.organisation_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        <code className="mr-2">
+                          {a.staff_user_id === user?.id ? "you" : `${a.staff_user_id.slice(0, 8)}…`}
+                        </code>
+                        <Badge variant="secondary" className="mr-2 text-[10px]">{a.access_level}</Badge>
+                        Granted {format(new Date(a.granted_at), "PP")}
+                        {a.expires_at && ` · expires ${format(new Date(a.expires_at), "PP")}`}
+                        {expired && " · expired"}
+                      </p>
+                      <p className="text-xs text-muted-foreground italic mt-0.5">{a.reason}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!canImpersonate || impersonatingId === a.id}
+                        onClick={() => void impersonate(a)}
+                      >
+                        {impersonatingId === a.id
+                          ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                          : <Headset className="h-3.5 w-3.5 mr-1.5" />}
+                        Impersonate
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => void revoke(a)}>
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Revoke
+                      </Button>
+                    </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => void revoke(a)}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Revoke
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
