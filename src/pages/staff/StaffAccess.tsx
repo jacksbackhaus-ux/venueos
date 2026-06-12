@@ -147,6 +147,25 @@ export default function StaffAccess() {
     await refresh();
   };
 
+  const impersonate = async (a: Assignment) => {
+    setImpersonatingId(a.id);
+    const res = await startImpersonation({
+      organisationId: a.organisation_id,
+      reason: `Support session via assignment: ${a.reason}`,
+      returnTo: "/staff/access",
+    });
+    setImpersonatingId(null);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success(`Support mode started for ${a.organisation_name}.`);
+    // Full reload so all customer-context providers initialise cleanly.
+    window.location.assign("/");
+  };
+
+
+
   return (
     <div className="space-y-4">
       <div>
