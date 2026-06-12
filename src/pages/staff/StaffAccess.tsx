@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Loader2, ShieldAlert, ShieldPlus, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, Headset, Loader2, ShieldAlert, ShieldPlus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -35,9 +37,12 @@ const ACCESS_LEVELS = ["support", "onboarding", "billing", "engineering"] as con
 
 export default function StaffAccess() {
   const { isSuperAdmin, loading: saLoading } = useSuperAdmin();
+  const { user } = useAuth();
+  const { startImpersonation } = useImpersonation();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [orgs, setOrgs] = useState<OrgOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
   // Grant form
   const [staffEmail, setStaffEmail] = useState("");
