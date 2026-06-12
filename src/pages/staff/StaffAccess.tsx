@@ -168,12 +168,66 @@ export default function StaffAccess() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="g-org">Organisation</Label>
-              <Select value={orgId} onValueChange={setOrgId}>
-                <SelectTrigger id="g-org"><SelectValue placeholder="Choose an organisation…" /></SelectTrigger>
-                <SelectContent>
-                  {orgs.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Popover open={orgPickerOpen} onOpenChange={setOrgPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="g-org"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={orgPickerOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    <span className={cn("truncate", !orgId && "text-muted-foreground")}>
+                      {orgId
+                        ? orgs.find(o => o.id === orgId)?.name ?? "Choose an organisation…"
+                        : "Choose an organisation…"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command
+                    filter={(value, search) => {
+                      const o = orgs.find(x => x.id === value);
+                      const haystack = `${o?.name ?? ""} ${o?.slug ?? ""}`.toLowerCase();
+                      return haystack.includes(search.toLowerCase()) ? 1 : 0;
+                    }}
+                  >
+                    <CommandInput placeholder="Search by name or slug…" />
+                    <CommandList>
+                      <CommandEmpty>
+                        {orgs.length === 0
+                          ? "No customer organisations available. Check query filters or organisation status."
+                          : "No organisation matches your search."}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {orgs.map(o => (
+                          <CommandItem
+                            key={o.id}
+                            value={o.id}
+                            onSelect={() => { setOrgId(o.id); setOrgPickerOpen(false); }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4 shrink-0", orgId === o.id ? "opacity-100" : "opacity-0")} />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm">{o.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {o.slug ?? "no slug"}
+                                {o.subscription_status ? ` · ${o.subscription_status}` : ""}
+                              </p>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {!loading && orgs.length === 0 && (
+                <p className="text-xs text-warning">
+                  No customer organisations available. Check query filters or organisation status.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="g-level">Access level</Label>
