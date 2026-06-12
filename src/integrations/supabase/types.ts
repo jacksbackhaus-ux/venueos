@@ -5529,6 +5529,16 @@ export type Database = {
       slugify_org_name: { Args: { _name: string }; Returns: string }
       staff_get_org_detail: { Args: { _org_id: string }; Returns: Json }
       staff_get_subscription: { Args: { _org_id: string }; Returns: Json }
+      staff_list_all_organisations: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          subscription_status: string
+        }[]
+      }
       staff_list_assigned_orgs: {
         Args: never
         Returns: {

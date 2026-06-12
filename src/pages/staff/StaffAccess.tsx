@@ -8,7 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ShieldAlert, ShieldPlus, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown, Loader2, ShieldAlert, ShieldPlus, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -26,7 +29,7 @@ interface Assignment {
   expires_at: string | null;
 }
 
-interface OrgOption { id: string; name: string }
+interface OrgOption { id: string; name: string; slug: string | null; subscription_status: string | null }
 
 const ACCESS_LEVELS = ["support", "onboarding", "billing", "engineering"] as const;
 
@@ -39,6 +42,7 @@ export default function StaffAccess() {
   // Grant form
   const [staffEmail, setStaffEmail] = useState("");
   const [orgId, setOrgId] = useState("");
+  const [orgPickerOpen, setOrgPickerOpen] = useState(false);
   const [accessLevel, setAccessLevel] = useState<typeof ACCESS_LEVELS[number]>("support");
   const [reason, setReason] = useState("");
   const [granting, setGranting] = useState(false);
@@ -47,10 +51,15 @@ export default function StaffAccess() {
     setLoading(true);
     const [{ data: rows, error: rowsErr }, { data: orgRows, error: orgErr }] = await Promise.all([
       sb.rpc("staff_list_org_assignments"),
-      sb.from("organisations").select("id, name").order("name", { ascending: true }),
+      // Staff-gated SECURITY DEFINER listing — direct table reads are blocked by
+      // tenant RLS for internal staff (they have no customer org membership).
+      sb.rpc("staff_list_all_organisations"),
     ]);
     if (rowsErr) toast.error(rowsErr.message);
-    if (orgErr) toast.error(orgErr.message);
+    if (orgErr) {
+      console.error("[StaffAccess] organisation list failed:", orgErr.message);
+      toast.error(`Couldn't load organisations: ${orgErr.message}`);
+    }
     setAssignments((rows ?? []) as Assignment[]);
     setOrgs((orgRows ?? []) as OrgOption[]);
     setLoading(false);
@@ -159,12 +168,66 @@ export default function StaffAccess() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="g-org">Organisation</Label>
-              <Select value={orgId} onValueChange={setOrgId}>
-                <SelectTrigger id="g-org"><SelectValue placeholder="Choose an organisation…" /></SelectTrigger>
-                <SelectContent>
-                  {orgs.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Popover open={orgPickerOpen} onOpenChange={setOrgPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="g-org"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={orgPickerOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    <span className={cn("truncate", !orgId && "text-muted-foreground")}>
+                      {orgId
+                        ? orgs.find(o => o.id === orgId)?.name ?? "Choose an organisation…"
+                        : "Choose an organisation…"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command
+                    filter={(value, search) => {
+                      const o = orgs.find(x => x.id === value);
+                      const haystack = `${o?.name ?? ""} ${o?.slug ?? ""}`.toLowerCase();
+                      return haystack.includes(search.toLowerCase()) ? 1 : 0;
+                    }}
+                  >
+                    <CommandInput placeholder="Search by name or slug…" />
+                    <CommandList>
+                      <CommandEmpty>
+                        {orgs.length === 0
+                          ? "No customer organisations available. Check query filters or organisation status."
+                          : "No organisation matches your search."}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {orgs.map(o => (
+                          <CommandItem
+                            key={o.id}
+                            value={o.id}
+                            onSelect={() => { setOrgId(o.id); setOrgPickerOpen(false); }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4 shrink-0", orgId === o.id ? "opacity-100" : "opacity-0")} />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm">{o.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {o.slug ?? "no slug"}
+                                {o.subscription_status ? ` · ${o.subscription_status}` : ""}
+                              </p>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {!loading && orgs.length === 0 && (
+                <p className="text-xs text-warning">
+                  No customer organisations available. Check query filters or organisation status.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="g-level">Access level</Label>
