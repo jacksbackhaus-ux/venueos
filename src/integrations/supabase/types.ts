@@ -1682,6 +1682,69 @@ export type Database = {
           },
         ]
       }
+      internal_impersonation_sessions: {
+        Row: {
+          access_level: string
+          active: boolean
+          created_at: string
+          created_by: string
+          ended_at: string | null
+          expires_at: string
+          id: string
+          internal_user_id: string
+          reason: string
+          started_at: string
+          target_organisation_id: string
+          target_site_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_level?: string
+          active?: boolean
+          created_at?: string
+          created_by: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          internal_user_id: string
+          reason: string
+          started_at?: string
+          target_organisation_id: string
+          target_site_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_level?: string
+          active?: boolean
+          created_at?: string
+          created_by?: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          internal_user_id?: string
+          reason?: string
+          started_at?: string
+          target_organisation_id?: string
+          target_site_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_impersonation_sessions_target_organisation_id_fkey"
+            columns: ["target_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_impersonation_sessions_target_site_id_fkey"
+            columns: ["target_site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internal_staff_roles: {
         Row: {
           created_at: string
@@ -5432,6 +5495,7 @@ export type Database = {
         Args: { _auth_uid: string }
         Returns: undefined
       }
+      active_impersonation_org: { Args: never; Returns: string }
       assert_internal_staff: { Args: never; Returns: undefined }
       assert_super_admin: { Args: never; Returns: undefined }
       can_access_realtime_topic: { Args: { _topic: string }; Returns: boolean }
@@ -5439,6 +5503,7 @@ export type Database = {
         Args: { _target_user_id: string }
         Returns: boolean
       }
+      end_internal_impersonation: { Args: never; Returns: Json }
       generate_site_code: { Args: never; Returns: string }
       generate_staff_code: { Args: { _org_id: string }; Returns: string }
       generate_unique_org_slug: {
@@ -5585,6 +5650,14 @@ export type Database = {
       }
       staff_update_subscription: {
         Args: { _org_id: string; _patch: Json; _reason: string }
+        Returns: Json
+      }
+      start_internal_impersonation: {
+        Args: {
+          _reason: string
+          _target_organisation_id: string
+          _target_site_id?: string
+        }
         Returns: Json
       }
       sync_org_modules: { Args: { _org_id: string }; Returns: undefined }

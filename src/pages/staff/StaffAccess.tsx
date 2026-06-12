@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Loader2, ShieldAlert, ShieldPlus, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, Headset, Loader2, ShieldAlert, ShieldPlus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -35,9 +37,12 @@ const ACCESS_LEVELS = ["support", "onboarding", "billing", "engineering"] as con
 
 export default function StaffAccess() {
   const { isSuperAdmin, loading: saLoading } = useSuperAdmin();
+  const { user } = useAuth();
+  const { startImpersonation } = useImpersonation();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [orgs, setOrgs] = useState<OrgOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
   // Grant form
   const [staffEmail, setStaffEmail] = useState("");
@@ -141,6 +146,25 @@ export default function StaffAccess() {
     toast.success("Access revoked.");
     await refresh();
   };
+
+  const impersonate = async (a: Assignment) => {
+    setImpersonatingId(a.id);
+    const res = await startImpersonation({
+      organisationId: a.organisation_id,
+      reason: `Support session via assignment: ${a.reason}`,
+      returnTo: "/staff/access",
+    });
+    setImpersonatingId(null);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success(`Support mode started for ${a.organisation_name}.`);
+    // Full reload so all customer-context providers initialise cleanly.
+    window.location.assign("/");
+  };
+
+
 
   return (
     <div className="space-y-4">
@@ -264,23 +288,43 @@ export default function StaffAccess() {
             <p className="text-sm text-muted-foreground p-6 text-center">No active assignments.</p>
           ) : (
             <div className="divide-y">
-              {assignments.map(a => (
-                <div key={a.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">{a.organisation_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      <code className="mr-2">{a.staff_user_id.slice(0, 8)}…</code>
-                      <Badge variant="secondary" className="mr-2 text-[10px]">{a.access_level}</Badge>
-                      Granted {format(new Date(a.granted_at), "PP")}
-                      {a.expires_at && ` · expires ${format(new Date(a.expires_at), "PP")}`}
-                    </p>
-                    <p className="text-xs text-muted-foreground italic mt-0.5">{a.reason}</p>
+              {assignments.map(a => {
+                const expired = !!a.expires_at && new Date(a.expires_at).getTime() <= Date.now();
+                const canImpersonate = !expired && (isSuperAdmin || a.staff_user_id === user?.id);
+                return (
+                  <div key={a.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{a.organisation_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        <code className="mr-2">
+                          {a.staff_user_id === user?.id ? "you" : `${a.staff_user_id.slice(0, 8)}…`}
+                        </code>
+                        <Badge variant="secondary" className="mr-2 text-[10px]">{a.access_level}</Badge>
+                        Granted {format(new Date(a.granted_at), "PP")}
+                        {a.expires_at && ` · expires ${format(new Date(a.expires_at), "PP")}`}
+                        {expired && " · expired"}
+                      </p>
+                      <p className="text-xs text-muted-foreground italic mt-0.5">{a.reason}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!canImpersonate || impersonatingId === a.id}
+                        onClick={() => void impersonate(a)}
+                      >
+                        {impersonatingId === a.id
+                          ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                          : <Headset className="h-3.5 w-3.5 mr-1.5" />}
+                        Impersonate
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => void revoke(a)}>
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Revoke
+                      </Button>
+                    </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => void revoke(a)}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Revoke
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

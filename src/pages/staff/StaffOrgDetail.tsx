@@ -67,6 +67,7 @@ export default function StaffOrgDetail() {
     const res = await startImpersonation({
       organisationId: detail.organisation.id,
       reason: reason.trim(),
+      returnTo: `/staff/org/${detail.organisation.id}`,
     });
     setStarting(false);
     if (res.error) {

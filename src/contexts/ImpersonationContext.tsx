@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { setImpersonationActive } from "@/lib/impersonationGuard";
 import { toast } from "sonner";
 
-const STORAGE_KEY = "miseos_impersonation_session";
-const SESSION_MAX_MS = 60 * 60 * 1000; // 60 minutes
+const STORAGE_KEY = "miseos_impersonation_session_v2";
+const LEGACY_STORAGE_KEY = "miseos_impersonation_session";
 
 export interface ImpersonationTargetUser {
   id: string;
@@ -23,13 +23,26 @@ export interface ImpersonationOrgRole {
 }
 
 export interface ImpersonationSession {
-  log_id: string;
+  session_id: string;
   organisation_id: string;
   organisation_name: string;
-  target_user_id: string;
+  organisation_slug: string | null;
+  site_id: string | null;
+  site_name: string | null;
+  access_level: string;
   reason: string;
   started_at: string; // ISO
   expires_at: string; // ISO
+  return_to: string;
+  target_user: ImpersonationTargetUser;
+  org_role: ImpersonationOrgRole | null;
+}
+
+interface StartInput {
+  organisationId: string;
+  reason: string;
+  siteId?: string | null;
+  returnTo?: string;
 }
 
 interface ImpersonationContextType {
@@ -37,21 +50,23 @@ interface ImpersonationContextType {
   targetAppUser: ImpersonationTargetUser | null;
   targetOrgRole: ImpersonationOrgRole | null;
   isImpersonating: boolean;
-  startImpersonation: (input: { organisationId: string; reason: string }) => Promise<{ error?: string }>;
+  startImpersonation: (input: StartInput) => Promise<{ error?: string }>;
   stopImpersonation: (opts?: { silent?: boolean; expired?: boolean }) => Promise<void>;
 }
 
 const ImpersonationContext = createContext<ImpersonationContextType | undefined>(undefined);
 
 function readStored(): ImpersonationSession | null {
+  // Discard any legacy (pre-session-table) stored impersonation state.
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ImpersonationSession;
     if (
-      !parsed?.log_id ||
+      !parsed?.session_id ||
       !parsed.organisation_id ||
-      !parsed.target_user_id ||
+      !parsed.target_user?.id ||
       !parsed.expires_at
     )
       return null;
@@ -65,56 +80,17 @@ function readStored(): ImpersonationSession | null {
 
 export function ImpersonationProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<ImpersonationSession | null>(() => readStored());
-  const [targetAppUser, setTargetAppUser] = useState<ImpersonationTargetUser | null>(null);
-  const [targetOrgRole, setTargetOrgRole] = useState<ImpersonationOrgRole | null>(null);
   const expireTimerRef = useRef<number | null>(null);
 
-  // Keep the global guard flag in sync with our state.
+  // Keep the global write-block guard in sync with our state.
   useEffect(() => {
     setImpersonationActive(!!session);
-  }, [session]);
-
-  // Hydrate target user/role whenever the session changes.
-  useEffect(() => {
-    let cancelled = false;
-    if (!session) {
-      setTargetAppUser(null);
-      setTargetOrgRole(null);
-      return;
-    }
-    void (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sb: any = supabase;
-      const { data: userRow } = await sb
-        .from("users")
-        .select("id, auth_user_id, organisation_id, display_name, email, auth_type, staff_code, status")
-        .eq("id", session.target_user_id)
-        .maybeSingle();
-      if (cancelled) return;
-      if (!userRow) {
-        setTargetAppUser(null);
-        setTargetOrgRole(null);
-        return;
-      }
-      setTargetAppUser(userRow as ImpersonationTargetUser);
-      const { data: orgRow } = await sb
-        .from("org_users")
-        .select("org_role, organisation_id")
-        .eq("user_id", userRow.id)
-        .eq("active", true)
-        .maybeSingle();
-      if (cancelled) return;
-      setTargetOrgRole((orgRow as ImpersonationOrgRole | null) ?? null);
-    })();
-    return () => {
-      cancelled = true;
-    };
   }, [session]);
 
   const stopImpersonation = useCallback(
     async (opts?: { silent?: boolean; expired?: boolean }) => {
       const current = session;
-      // Clear local state FIRST so the write guard releases before we update the log.
+      // Clear local state FIRST so the write guard releases before the RPC runs.
       localStorage.removeItem(STORAGE_KEY);
       setSession(null);
       setImpersonationActive(false);
@@ -124,22 +100,48 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       }
       if (current) {
         try {
-          await supabase
-            .from("impersonation_logs")
-            .update({ ended_at: new Date().toISOString() })
-            .eq("id", current.log_id);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).rpc("end_internal_impersonation");
         } catch {
-          /* best-effort */
+          /* best-effort — session also auto-expires server-side */
         }
       }
       if (opts?.expired) {
-        toast.warning("Impersonation session expired after 60 minutes.");
+        toast.warning("Support session expired after 2 hours.");
       } else if (!opts?.silent) {
-        toast.success("Impersonation ended.");
+        toast.success("Exited support mode.");
       }
     },
     [session]
   );
+
+  // Verify the stored session is still active server-side (e.g. ended elsewhere,
+  // staff signed out, or another session was started on a different device).
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb: any = supabase;
+      const { data, error } = await sb
+        .from("internal_impersonation_sessions")
+        .select("id, active, ended_at, expires_at")
+        .eq("id", session.session_id)
+        .maybeSingle();
+      if (cancelled || error) return; // network/RLS hiccup: rely on local expiry
+      const stillActive =
+        data && data.active === true && !data.ended_at &&
+        new Date(data.expires_at as string).getTime() > Date.now();
+      if (!stillActive) {
+        await stopImpersonation({ silent: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Only re-verify when the session identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.session_id]);
 
   // Auto-expire timer.
   useEffect(() => {
@@ -161,70 +163,41 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
   }, [session, stopImpersonation]);
 
   const startImpersonation = useCallback(
-    async ({ organisationId, reason }: { organisationId: string; reason: string }) => {
-      if (!reason.trim()) return { error: "A reason is required." };
-
-      // Find the target organisation's primary manager: org_owner first,
-      // then hq_admin, then any active manager-level org user.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sb: any = supabase;
-
-      // Server-side scope check: must be super admin AND have staff access to this org.
-      // `has_staff_access_to_org` returns true for super admins automatically (bypass),
-      // and otherwise requires an active staff_org_access row.
-      const { data: scopeOk, error: scopeErr } = await sb.rpc(
-        "has_staff_access_to_org",
-        { _org_id: organisationId },
-      );
-      if (scopeErr) return { error: scopeErr.message };
-      if (scopeOk !== true) {
-        return { error: "You don't have staff access to this organisation." };
+    async ({ organisationId, reason, siteId, returnTo }: StartInput) => {
+      if (!reason.trim() || reason.trim().length < 5) {
+        return { error: "A reason (min 5 chars) is required." };
       }
 
-      // Use SECURITY DEFINER RPC so super admins can read orgs they don't belong to.
-      const { data: detail, error: detailErr } = await sb.rpc("staff_get_org_detail", {
-        _org_id: organisationId,
+      // Starting a new session replaces any current one — release the guard
+      // first so the RPC is allowed through.
+      localStorage.removeItem(STORAGE_KEY);
+      setSession(null);
+      setImpersonationActive(false);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb: any = supabase;
+      const { data, error } = await sb.rpc("start_internal_impersonation", {
+        _target_organisation_id: organisationId,
+        _reason: reason.trim(),
+        _target_site_id: siteId ?? null,
       });
-      if (detailErr) return { error: detailErr.message };
-      const org = detail?.organisation as { id: string; name: string } | null;
-      if (!org) return { error: "Organisation not found." };
-
-      const owners = (detail?.org_owners || []) as Array<{ user_id: string; org_role: string }>;
-      const ranked = owners.slice().sort((a, b) => {
-        const order: Record<string, number> = { org_owner: 0, hq_admin: 1, hq_auditor: 2 };
-        return (order[a.org_role] ?? 99) - (order[b.org_role] ?? 99);
-      });
-      const primary = ranked[0];
-      if (!primary) return { error: "No manager account found for this organisation." };
-
-      const { data: { user: adminUser } } = await supabase.auth.getUser();
-      if (!adminUser) return { error: "You must be signed in." };
-
-      // Insert the log row — must happen BEFORE the guard activates, so we
-      // still have write access as the super admin.
-      const { data: logRow, error: logErr } = await sb
-        .from("impersonation_logs")
-        .insert({
-          super_admin_user_id: adminUser.id,
-          target_organisation_id: organisationId,
-          target_user_id: primary.user_id,
-          reason: reason.trim(),
-        })
-        .select("id, started_at")
-        .single();
-      if (logErr || !logRow) return { error: logErr?.message || "Failed to log impersonation." };
-
-      const startedAt = (logRow.started_at as string) || new Date().toISOString();
-      const expiresAt = new Date(new Date(startedAt).getTime() + SESSION_MAX_MS).toISOString();
+      if (error) return { error: error.message };
+      if (!data?.session_id) return { error: "Failed to start support session." };
 
       const newSession: ImpersonationSession = {
-        log_id: logRow.id as string,
-        organisation_id: organisationId,
-        organisation_name: org.name,
-        target_user_id: primary.user_id as string,
-        reason: reason.trim(),
-        started_at: startedAt,
-        expires_at: expiresAt,
+        session_id: data.session_id as string,
+        organisation_id: data.organisation?.id as string,
+        organisation_name: (data.organisation?.name as string) ?? "Customer",
+        organisation_slug: (data.organisation?.slug as string) ?? null,
+        site_id: (data.site?.id as string) ?? null,
+        site_name: (data.site?.name as string) ?? null,
+        access_level: (data.access_level as string) ?? "support",
+        reason: (data.reason as string) ?? reason.trim(),
+        started_at: data.started_at as string,
+        expires_at: data.expires_at as string,
+        return_to: returnTo || "/admin",
+        target_user: data.target_user as ImpersonationTargetUser,
+        org_role: (data.org_role as ImpersonationOrgRole | null) ?? null,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession));
       setSession(newSession);
@@ -237,13 +210,13 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
   const value = useMemo<ImpersonationContextType>(
     () => ({
       session,
-      targetAppUser,
-      targetOrgRole,
+      targetAppUser: session?.target_user ?? null,
+      targetOrgRole: session?.org_role ?? null,
       isImpersonating: !!session,
       startImpersonation,
       stopImpersonation,
     }),
-    [session, targetAppUser, targetOrgRole, startImpersonation, stopImpersonation]
+    [session, startImpersonation, stopImpersonation]
   );
 
   return <ImpersonationContext.Provider value={value}>{children}</ImpersonationContext.Provider>;
