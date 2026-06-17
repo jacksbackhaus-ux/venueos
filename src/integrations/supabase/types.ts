@@ -5592,6 +5592,7 @@ export type Database = {
         Returns: undefined
       }
       slugify_org_name: { Args: { _name: string }; Returns: string }
+      staff_get_customer_360: { Args: { _org_id: string }; Returns: Json }
       staff_get_org_detail: { Args: { _org_id: string }; Returns: Json }
       staff_get_subscription: { Args: { _org_id: string }; Returns: Json }
       staff_list_all_organisations: {
