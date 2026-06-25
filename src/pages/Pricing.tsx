@@ -128,7 +128,7 @@ export default function Pricing() {
                 "Staff Training records",
                 "Customer Feedback log",
                 "Inspection Pack (EHO-ready PDF/Excel)",
-                "Team Messenger",
+                "7-year record retention",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <Check className="h-4 w-4 shrink-0 mt-0.5 text-success" />

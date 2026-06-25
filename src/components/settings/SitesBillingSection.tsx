@@ -19,6 +19,11 @@ import {
 } from "@/lib/plans";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { openCustomerPortal } from "@/lib/stripe";
+import { LAUNCH_MODE } from "@/lib/launchFlags";
+
+const HACCP_LAUNCH = LAUNCH_MODE === "haccp";
+const HACCP_SITE_MONTHLY = 4.99;
+const HACCP_SITE_ANNUAL = 49.90;
 
 type SiteRow = {
   id: string;
@@ -112,8 +117,13 @@ export function SitesBillingSection() {
   const siteQuantity = subscription?.site_quantity ?? 1;
   const siteCount = sites.filter(s => s.active).length;
   const slotsAvailable = Math.max(0, siteQuantity - siteCount);
-  const additionalSitePrice = perSiteCost(subscription, cycle);
-  const hasActivePlan = !!currentPlan && (subscription?.base_active || subscription?.bundle_active || subscription?.compliance_active || subscription?.business_active);
+  const _rawAdditionalSitePrice = perSiteCost(subscription, cycle);
+  const additionalSitePrice = HACCP_LAUNCH
+    ? (cycle === "year" ? HACCP_SITE_ANNUAL : HACCP_SITE_MONTHLY)
+    : _rawAdditionalSitePrice;
+  const hasActivePlan = HACCP_LAUNCH
+    ? true
+    : !!currentPlan && (subscription?.base_active || subscription?.bundle_active || subscription?.compliance_active || subscription?.business_active);
 
   // Poll for site_quantity bump after checkout success
   useEffect(() => {
@@ -304,21 +314,30 @@ export function SitesBillingSection() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Based on your current plan
-                    {subscription?.tier && (subscription.tier as string) in TIERS && ` (${TIERS[subscription.tier as TierId].name})`}
-                    {!subscription?.tier && subscription?.bundle_active && " (Full Bundle)"}
-                    {!subscription?.tier && !subscription?.bundle_active && (
+                    {HACCP_LAUNCH ? (
                       <>
-                        {" ("}
-                        {[
-                          subscription?.base_active && "Base",
-                          subscription?.compliance_active && "Compliance",
-                          subscription?.business_active && "Business",
-                        ].filter(Boolean).join(" + ")}
-                        {")"}
+                        Based on your current plan (MiseOS HACCP) — £4.99/mo per site, plus £1/month per additional user.
+                        {" Billed "}{cycle === "year" ? "yearly (2 months free)" : "monthly"}.
+                      </>
+                    ) : (
+                      <>
+                        Based on your current plan
+                        {subscription?.tier && (subscription.tier as string) in TIERS && ` (${TIERS[subscription.tier as TierId].name})`}
+                        {!subscription?.tier && subscription?.bundle_active && " (Full Bundle)"}
+                        {!subscription?.tier && !subscription?.bundle_active && (
+                          <>
+                            {" ("}
+                            {[
+                              subscription?.base_active && "Base",
+                              subscription?.compliance_active && "Compliance",
+                              subscription?.business_active && "Business",
+                            ].filter(Boolean).join(" + ")}
+                            {")"}
+                          </>
+                        )}
+                        {" — billed "}{cycle === "year" ? "yearly" : "monthly"}.
                       </>
                     )}
-                    {" — billed "}{cycle === "year" ? "yearly" : "monthly"}.
                   </p>
                 </div>
 
