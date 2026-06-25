@@ -314,21 +314,30 @@ export function SitesBillingSection() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Based on your current plan
-                    {subscription?.tier && (subscription.tier as string) in TIERS && ` (${TIERS[subscription.tier as TierId].name})`}
-                    {!subscription?.tier && subscription?.bundle_active && " (Full Bundle)"}
-                    {!subscription?.tier && !subscription?.bundle_active && (
+                    {HACCP_LAUNCH ? (
                       <>
-                        {" ("}
-                        {[
-                          subscription?.base_active && "Base",
-                          subscription?.compliance_active && "Compliance",
-                          subscription?.business_active && "Business",
-                        ].filter(Boolean).join(" + ")}
-                        {")"}
+                        Based on your current plan (MiseOS HACCP) — £4.99/mo per site, plus £1/month per additional user.
+                        {" Billed "}{cycle === "year" ? "yearly (2 months free)" : "monthly"}.
+                      </>
+                    ) : (
+                      <>
+                        Based on your current plan
+                        {subscription?.tier && (subscription.tier as string) in TIERS && ` (${TIERS[subscription.tier as TierId].name})`}
+                        {!subscription?.tier && subscription?.bundle_active && " (Full Bundle)"}
+                        {!subscription?.tier && !subscription?.bundle_active && (
+                          <>
+                            {" ("}
+                            {[
+                              subscription?.base_active && "Base",
+                              subscription?.compliance_active && "Compliance",
+                              subscription?.business_active && "Business",
+                            ].filter(Boolean).join(" + ")}
+                            {")"}
+                          </>
+                        )}
+                        {" — billed "}{cycle === "year" ? "yearly" : "monthly"}.
                       </>
                     )}
-                    {" — billed "}{cycle === "year" ? "yearly" : "monthly"}.
                   </p>
                 </div>
 
