@@ -1,4 +1,3 @@
-import { showAIFeatures } from "@/lib/launchFlags";
 // Cashflow AI insights — Intelligence tier only.
 // Server-side gating is enforced by the edge function.
 import { useState } from "react";
@@ -12,7 +11,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function CashflowInsightsCard({ siteId, period }: { siteId: string; period: string }) {
-  if (!showAIFeatures) return null;
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
 

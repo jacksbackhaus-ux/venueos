@@ -1,4 +1,3 @@
-import { showAIFeatures } from "@/lib/launchFlags";
 import { Link } from "react-router-dom";
 import { FileText } from "lucide-react";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
@@ -11,7 +10,6 @@ import { CollapsibleInsight } from "@/components/shared/CollapsibleInsight";
  * with AI branding.
  */
 export function InsightsAccordion() {
-  if (!showAIFeatures) return null;
   const { isActive } = useModuleAccess();
   if (!isActive("ai_insights")) return null;
 

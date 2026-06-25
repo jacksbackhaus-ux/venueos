@@ -1,4 +1,3 @@
-import { showAIFeatures } from "@/lib/launchFlags";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Loader2, Check, X } from "lucide-react";
@@ -37,7 +36,6 @@ interface Props {
 }
 
 export function AIRotaSuggestButton({ siteId, organisationId, weekStart }: Props) {
-  if (!showAIFeatures) return null;
   const { isSupervisorPlus } = useRole();
   const { isActive } = useModuleAccess();
   const qc = useQueryClient();
@@ -64,7 +62,6 @@ export function AIRotaSuggestButton({ siteId, organisationId, weekStart }: Props
       setDays(suggestions);
       setOpen(true);
     } catch (e: any) {
-  if (!showAIFeatures) return null;
       console.error(e);
       toast.error(e?.message || "Failed to generate suggestions");
     } finally {

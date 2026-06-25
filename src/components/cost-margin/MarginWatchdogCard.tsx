@@ -1,4 +1,3 @@
-import { showAIFeatures } from "@/lib/launchFlags";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { TrendingDown, ChevronDown, RotateCcw, CheckCircle, Loader2, X } from "lucide-react";
@@ -59,7 +58,6 @@ function stripMarkdown(s: string): string {
 }
 
 export function MarginWatchdogCard({ siteId, ctx, recipes }: Props) {
-  if (!showAIFeatures) return null;
   const { isActive } = useModuleAccess();
   const { isManager } = useRole();
   const aiActive = isActive("ai_insights");
@@ -73,7 +71,6 @@ export function MarginWatchdogCard({ siteId, ctx, recipes }: Props) {
     if (!ctx || !recipes?.length) return [];
     const out: FlaggedRecipe[] = [];
     for (const r of recipes) {
-  if (!showAIFeatures) return null;
       if (r.recipe_type === "prep_batch") continue;
       const bd = calcRecipeBreakdown(r, ctx);
       if (bd.gpPercent == null || bd.salePriceExVat == null) continue;

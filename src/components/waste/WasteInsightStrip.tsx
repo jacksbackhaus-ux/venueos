@@ -1,4 +1,3 @@
-import { showAIFeatures } from "@/lib/launchFlags";
 import { Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,6 @@ interface CachedInsight {
  * — keeps AI invisible by default per Phase 3.
  */
 export function WasteInsightStrip() {
-  if (!showAIFeatures) return null;
   const { isActive } = useModuleAccess();
   const { currentSite } = useSite();
   const siteId = currentSite?.id ?? null;

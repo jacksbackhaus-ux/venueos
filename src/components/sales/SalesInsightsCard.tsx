@@ -1,4 +1,3 @@
-import { showAIFeatures } from "@/lib/launchFlags";
 // Collapsible AI sales insights card. Intelligence tier only (gated server-side).
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +10,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function SalesInsightsCard({ siteId }: { siteId: string }) {
-  if (!showAIFeatures) return null;
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
 
