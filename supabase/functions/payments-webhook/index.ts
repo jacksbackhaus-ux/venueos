@@ -124,7 +124,10 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
   for (const item of sub.items?.data || []) {
     const lookup = item.price?.lookup_key || "";
     interval = item.price?.recurring?.interval || interval;
-    siteQty = Math.max(siteQty, Number(item.quantity || 1));
+    // Only count site line items toward site_quantity; per-user add-ons are tracked separately.
+    if (!USER_ADDON_KEYS.has(lookup)) {
+      siteQty = Math.max(siteQty, Number(item.quantity || 1));
+    }
     const m = flagsForLookup(lookup);
     if (!m) continue;
 
