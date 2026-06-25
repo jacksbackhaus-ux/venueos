@@ -20,6 +20,7 @@ import {
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import type { ModuleName } from "@/lib/plans";
+import { showMultiSiteHQ } from "@/lib/launchFlags";
 
 type NavLeaf = { title: string; url: string; icon: React.ElementType; mod?: ModuleName };
 
