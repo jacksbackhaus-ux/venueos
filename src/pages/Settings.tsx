@@ -58,6 +58,7 @@ import { MessengerSettingsSection } from "@/components/messenger/MessengerSettin
 import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
 import { BrandingSection } from "@/components/settings/BrandingSection";
 import { ToggleLeft, MessageSquare, Palette } from "lucide-react";
+import { showMessenger, showModulesSettingsTab, showBrandingSettingsTab } from "@/lib/launchFlags";
 
 // ─── Temperature Units ───
 type TempUnit = {
