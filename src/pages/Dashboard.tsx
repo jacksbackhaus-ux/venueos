@@ -191,8 +191,8 @@ const Dashboard = () => {
       {/* 4 — THIS WEEK OVERVIEW */}
       <ThisWeekSnapshot siteId={siteId} />
 
-      {/* 5 — PROFIT SNAPSHOT (lightweight) */}
-      <ProfitSnapshot siteId={siteId} />
+      {/* 5 — PROFIT SNAPSHOT (hidden in HACCP launch mode) */}
+      {showCommercialModules && <ProfitSnapshot siteId={siteId} />}
 
       {/* Feedback link */}
       <div className="pt-4 flex justify-center">
