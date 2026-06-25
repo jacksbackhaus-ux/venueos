@@ -294,12 +294,12 @@ export async function deriveBlendedHourlyRate(
   if (userIds.length === 0) return 0;
 
   const { data: users } = await supabase
-    .from("users")
-    .select("id, hourly_rate")
-    .in("id", userIds);
+    .rpc("list_org_user_hourly_rates", { _org_id: organisationId });
 
   const rateById = new Map<string, number>();
-  (users || []).forEach((u: any) => rateById.set(u.id, Number(u.hourly_rate) || 0));
+  (users || [])
+    .filter((u: any) => userIds.includes(u.user_id))
+    .forEach((u: any) => rateById.set(u.user_id, Number(u.hourly_rate) || 0));
 
   let totalHours = 0;
   let totalWages = 0;
