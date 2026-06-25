@@ -20,24 +20,22 @@ import {
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import type { ModuleName } from "@/lib/plans";
-import { showMultiSiteHQ } from "@/lib/launchFlags";
+import { showMultiSiteHQ, showMessenger, showCommercialModules, showOperationalCommercialModules, LAUNCH_MODE } from "@/lib/launchFlags";
 
 type NavLeaf = { title: string; url: string; icon: React.ElementType; mod?: ModuleName };
 
-// Run the Day — operate the business today
-const dailyOpsAll: NavLeaf[] = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard }, // always visible
+const HACCP = LAUNCH_MODE === "haccp";
+
+// HACCP launch — "Daily" section
+const dailyHaccp: NavLeaf[] = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet" },
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures" },
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
-  { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts" },
-  { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets" },
-  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking" },
-  { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log" },
 ];
 
-// Stay Compliant — inspection-ready records & food safety
-const complianceAll: NavLeaf[] = [
+// HACCP launch — "Food Safety & Compliance" section
+const complianceHaccp: NavLeaf[] = [
   { title: "Compliance Overview", url: "/compliance", icon: ShieldCheck },
   { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens" },
@@ -50,15 +48,40 @@ const complianceAll: NavLeaf[] = [
   { title: "Inspection Pack", url: "/reports", icon: FileText, mod: "reports" },
 ];
 
-// Protect Margin — commercial core
-const businessAll: NavLeaf[] = [
-  { title: "Profit & Pricing", url: "/cost-margin", icon: Calculator, mod: "cost_margin" },
-  { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker" },
+// Full product — Run the Day
+const dailyOpsAll: NavLeaf[] = HACCP ? dailyHaccp : [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet" },
+  { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures" },
+  { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning" },
+  { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts" },
+  { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets" },
+  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking" },
+  { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log" },
 ];
 
-const utilityAll: NavLeaf[] = [
-  { title: "Messenger", url: "/messenger", icon: MessageSquare, mod: "messenger" },
+const complianceAll: NavLeaf[] = HACCP ? complianceHaccp : [
+  { title: "Compliance Overview", url: "/compliance", icon: ShieldCheck },
+  { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp" },
+  { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens" },
+  { title: "Suppliers & Deliveries", url: "/suppliers", icon: Truck, mod: "suppliers" },
+  { title: "Incidents", url: "/incidents", icon: AlertTriangle, mod: "incidents" },
+  { title: "Pest & Maintenance", url: "/pest-maintenance", icon: Bug, mod: "pest_maintenance" },
+  { title: "PPM Schedule", url: "/ppm-schedule", icon: Wrench, mod: "ppm_schedule" },
+  { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training" },
+  { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback" },
+  { title: "Inspection Pack", url: "/reports", icon: FileText, mod: "reports" },
 ];
+
+// Protect Margin — commercial core (hidden in HACCP launch)
+const businessAll: NavLeaf[] = showCommercialModules ? [
+  { title: "Profit & Pricing", url: "/cost-margin", icon: Calculator, mod: "cost_margin" },
+  { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker" },
+] : [];
+
+const utilityAll: NavLeaf[] = showMessenger ? [
+  { title: "Messenger", url: "/messenger", icon: MessageSquare, mod: "messenger" },
+] : [];
 
 export function AppSidebar() {
   const { state } = useSidebar();
