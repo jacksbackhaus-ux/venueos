@@ -10,6 +10,7 @@ import { Check, Sparkles, Loader2, ShieldCheck, Users, Building2 } from "lucide-
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
+import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 
 /**
  * MiseOS HACCP — single launch plan.
