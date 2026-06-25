@@ -4,6 +4,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { syncHaccpUserQuantity } from "@/lib/billingSync";
 import { motion } from "framer-motion";
 import {
   Settings as SettingsIcon,
