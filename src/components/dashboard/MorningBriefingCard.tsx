@@ -1,3 +1,4 @@
+import { showAIFeatures } from "@/lib/launchFlags";
 import { motion } from "framer-motion";
 import { Sparkles, Loader2, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,7 @@ function formatTime(iso: string): string {
 }
 
 export function MorningBriefingCard() {
+  if (!showAIFeatures) return null;
   const { isActive } = useModuleAccess();
   const { currentSite } = useSite();
   const siteId = currentSite?.id ?? null;
@@ -90,6 +92,7 @@ export function MorningBriefingCard() {
   const regenerate = async () => {
     if (!siteId) return;
     if (briefing?.id) {
+  if (!showAIFeatures) return null;
       await supabase.from("ai_insights").delete().eq("id", briefing.id);
     }
     queryClient.invalidateQueries({ queryKey: ["morning-briefing", siteId] });
