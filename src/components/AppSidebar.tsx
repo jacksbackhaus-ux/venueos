@@ -176,13 +176,13 @@ export function AppSidebar() {
         )}
 
         {dailyOps.length > 0 && (
-          <CollapsibleGroup id="run-the-day" label="Run the Day" collapsed={collapsed}>
+          <CollapsibleGroup id="run-the-day" label={HACCP ? "Daily" : "Run the Day"} collapsed={collapsed}>
             <SidebarMenu>{renderItems(dailyOps)}</SidebarMenu>
           </CollapsibleGroup>
         )}
 
         {compliance.length > 0 && (
-          <CollapsibleGroup id="stay-compliant" label="Stay Compliant" collapsed={collapsed}>
+          <CollapsibleGroup id="stay-compliant" label={HACCP ? "Food Safety & Compliance" : "Stay Compliant"} collapsed={collapsed}>
             <SidebarMenu>{renderItems(compliance)}</SidebarMenu>
           </CollapsibleGroup>
         )}
@@ -198,6 +198,7 @@ export function AppSidebar() {
             <SidebarMenu>{renderItems(utility)}</SidebarMenu>
           </CollapsibleGroup>
         )}
+
 
         {orgNav.length > 0 && (
           <CollapsibleGroup id="organisation" label="Organisation" collapsed={collapsed} defaultOpen={false}>
