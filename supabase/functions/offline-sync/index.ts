@@ -66,17 +66,27 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Verify the user is a member of the site (if site_id provided).
-  if (site_id) {
-    if (!UUID_RE.test(site_id)) return bad(400, "invalid_site_id");
-    const { data: m } = await svc
-      .from("memberships")
-      .select("site_id")
-      .eq("user_id", user.id)
-      .eq("site_id", site_id)
-      .maybeSingle();
-    if (!m) return bad(403, "no_site_access");
-  }
+  // Resolve the app user id (memberships.user_id references users.id, NOT auth.uid()).
+  const { data: appUser } = await svc
+    .from("users")
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!appUser) return bad(403, "no_user");
+  const appUserId = (appUser as { id: string }).id;
+
+  // site_id is mandatory — never accept rows with no site scope.
+  if (!site_id) return bad(400, "missing_site_id");
+  if (!UUID_RE.test(site_id)) return bad(400, "invalid_site_id");
+  const { data: m } = await svc
+    .from("memberships")
+    .select("site_id")
+    .eq("user_id", appUserId)
+    .eq("site_id", site_id)
+    .eq("active", true)
+    .maybeSingle();
+  if (!m) return bad(403, "no_site_access");
 
   // Look up organisation_id for the site (most tables need it).
   let organisation_id: string | null = null;
