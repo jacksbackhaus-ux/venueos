@@ -18,6 +18,7 @@ import { PriorityFeed } from "@/components/dashboard/PriorityFeed";
 import { TodayAtAGlance } from "@/components/dashboard/TodayAtAGlance";
 import { ThisWeekSnapshot } from "@/components/dashboard/ThisWeekSnapshot";
 import { ProfitSnapshot } from "@/components/dashboard/ProfitSnapshot";
+import { showCommercialModules } from "@/lib/launchFlags";
 import { DashboardFeedback } from "@/components/dashboard/DashboardFeedback";
 import { Card } from "@/components/ui/card";
 
