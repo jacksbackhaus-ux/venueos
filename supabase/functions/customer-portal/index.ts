@@ -29,10 +29,23 @@ serve(async (req) => {
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const { data: appUser } = await service.from("users")
-      .select("organisation_id")
+      .select("id, organisation_id")
       .eq("auth_user_id", claimsData.claims.sub).eq("status", "active").maybeSingle();
     if (!appUser?.organisation_id) {
       return new Response(JSON.stringify({ error: "No organisation" }), { status: 400, headers: corsHeaders });
+    }
+
+    // Only the organisation owner can manage billing.
+    const { data: roleRow } = await service.from("org_users")
+      .select("org_role")
+      .eq("user_id", (appUser as { id: string }).id)
+      .eq("organisation_id", (appUser as { organisation_id: string }).organisation_id)
+      .eq("active", true)
+      .maybeSingle();
+    if ((roleRow as { org_role?: string } | null)?.org_role !== "org_owner") {
+      return new Response(JSON.stringify({ error: "Only the organisation owner can manage billing." }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const { data: sub } = await service.from("subscriptions")
       .select("stripe_customer_id")
