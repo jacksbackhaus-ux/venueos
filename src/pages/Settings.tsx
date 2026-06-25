@@ -593,20 +593,22 @@ const Settings = () => {
           <TabsTrigger value="temperature" className="text-xs gap-1"><Thermometer className="h-3 w-3" /> Temps</TabsTrigger>
           <TabsTrigger value="cleaning" className="text-xs gap-1"><SprayCan className="h-3 w-3" /> Cleaning</TabsTrigger>
           <TabsTrigger value="daysheet" className="text-xs gap-1"><ClipboardList className="h-3 w-3" /> Day Sheet</TabsTrigger>
-          {orgRole?.org_role === 'org_owner' && (
+          {showModulesSettingsTab && orgRole?.org_role === 'org_owner' && (
             <TabsTrigger value="modules" className="text-xs gap-1"><ToggleLeft className="h-3 w-3" /> Modules</TabsTrigger>
           )}
           <TabsTrigger value="users" className="text-xs gap-1"><Users className="h-3 w-3" /> Users</TabsTrigger>
-          <TabsTrigger value="messenger" className="text-xs gap-1"><MessageSquare className="h-3 w-3" /> Messenger</TabsTrigger>
+          {showMessenger && (
+            <TabsTrigger value="messenger" className="text-xs gap-1"><MessageSquare className="h-3 w-3" /> Messenger</TabsTrigger>
+          )}
           <TabsTrigger value="site" className="text-xs gap-1"><Building2 className="h-3 w-3" /> Site</TabsTrigger>
           <TabsTrigger value="sites" className="text-xs gap-1"><Plus className="h-3 w-3" /> Sites</TabsTrigger>
-          {(orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
+          {showBrandingSettingsTab && (orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
             <TabsTrigger value="branding" className="text-xs gap-1"><Palette className="h-3 w-3" /> Branding</TabsTrigger>
           )}
           <TabsTrigger value="account" className="text-xs gap-1"><Shield className="h-3 w-3" /> Account</TabsTrigger>
         </TabsList>
 
-        {(orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
+        {showBrandingSettingsTab && (orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
           <TabsContent value="branding" className="mt-4 space-y-4">
             <BrandingSection />
           </TabsContent>
@@ -616,15 +618,17 @@ const Settings = () => {
           <SitesBillingSection />
         </TabsContent>
 
-        {orgRole?.org_role === 'org_owner' && (
+        {showModulesSettingsTab && orgRole?.org_role === 'org_owner' && (
           <TabsContent value="modules" className="mt-4 space-y-4">
             <ModuleManagementSection />
           </TabsContent>
         )}
 
-        <TabsContent value="messenger" className="mt-4 space-y-4">
-          <MessengerSettingsSection />
-        </TabsContent>
+        {showMessenger && (
+          <TabsContent value="messenger" className="mt-4 space-y-4">
+            <MessengerSettingsSection />
+          </TabsContent>
+        )}
 
         {/* ════════ TEMPERATURE UNITS ════════ */}
         <TabsContent value="temperature" className="mt-4 space-y-4">
