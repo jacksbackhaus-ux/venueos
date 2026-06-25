@@ -1,3 +1,4 @@
+import { showAIFeatures } from "@/lib/launchFlags";
 import { motion } from "framer-motion";
 import { Sparkles, Loader2, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,7 @@ function formatTime(iso: string): string {
 }
 
 export function MorningBriefingCard() {
+  if (!showAIFeatures) return null;
   const { isActive } = useModuleAccess();
   const { currentSite } = useSite();
   const siteId = currentSite?.id ?? null;
