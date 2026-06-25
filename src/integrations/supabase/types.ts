@@ -5513,6 +5513,13 @@ export type Database = {
       get_app_user_id: { Args: never; Returns: string }
       get_org_public_by_slug: { Args: { _slug: string }; Returns: Json }
       get_user_org_id: { Args: never; Returns: string }
+      get_user_pay_context: {
+        Args: { _user_id: string }
+        Returns: {
+          hourly_rate: number
+          organisation_id: string
+        }[]
+      }
       get_user_weekly_hours: {
         Args: { _user_id: string; _week_start: string }
         Returns: number
@@ -5583,6 +5590,13 @@ export type Database = {
       link_staff_session_for_org: {
         Args: { _org_slug: string; _site_id: string; _staff_code: string }
         Returns: Json
+      }
+      list_org_user_hourly_rates: {
+        Args: { _org_id: string }
+        Returns: {
+          hourly_rate: number
+          user_id: string
+        }[]
       }
       messenger_mark_read: { Args: { _channel_id: string }; Returns: undefined }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
