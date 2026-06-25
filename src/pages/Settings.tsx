@@ -485,6 +485,7 @@ const Settings = () => {
     const { error } = await supabase.from('users').update({ status: active ? 'active' : 'suspended' }).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
+    void syncHaccpUserQuantity();
     toast.success(active ? "Staff member reactivated — PIN login restored" : "Staff member deactivated — PIN login revoked. Their historical records are preserved.");
   };
 
