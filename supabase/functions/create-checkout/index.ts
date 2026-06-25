@@ -4,30 +4,38 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { createStripeClient, type StripeEnv } from "../_shared/stripe.ts";
 
 /**
- * MiseOS plan checkout.
+ * MiseOS HACCP checkout.
  *
- * Body: { plan: "base"|"compliance"|"business"|"bundle", cycle: "month"|"year", siteQuantity?: number, returnUrl?: string, environment: "sandbox"|"live" }
+ * New HACCP-only model:
+ *   plan: "haccp", cycle: "month"|"year",
+ *   siteQuantity: number (>=1, each site billed at £4.99/mo or £49.90/yr),
+ *   userQuantity: number (additional users beyond the included 1 per site)
  *
- * Sites > 1 get a 15% multi-site discount on the per-site line via Stripe coupon.
- * The site quantity is passed as the `quantity` on the line item (per-site pricing).
+ * Legacy plan ids (base/compliance/business/bundle/essentials/...) are still
+ * accepted so existing customers and historical links keep working, but the
+ * customer-facing UI only ever passes plan="haccp".
  */
 
-type PlanId = "base" | "compliance" | "business" | "bundle" | "ai" | "essentials" | "professional" | "business_tier" | "intelligence";
+type LegacyPlanId =
+  | "base" | "compliance" | "business" | "bundle" | "ai"
+  | "essentials" | "professional" | "business_tier" | "intelligence";
+type PlanId = "haccp" | LegacyPlanId;
 type Cycle = "month" | "year";
 
-const LOOKUP: Record<PlanId, { month: string; year: string }> = {
-  // Legacy add-on style — kept so existing customers can still upgrade/extend their current Stripe sub.
+const LEGACY_LOOKUP: Record<LegacyPlanId, { month: string; year: string }> = {
   base:          { month: "venueos_base_monthly",          year: "venueos_base_yearly" },
   compliance:    { month: "venueos_compliance_monthly",    year: "venueos_compliance_yearly" },
   business:      { month: "venueos_business_monthly",      year: "venueos_business_yearly" },
   bundle:        { month: "venueos_bundle_monthly",        year: "venueos_bundle_yearly" },
   ai:            { month: "venueos_ai_monthly",            year: "venueos_ai_yearly" },
-  // New 4-tier model used by all new signups.
   essentials:    { month: "miseos_essentials_monthly",     year: "miseos_essentials_yearly" },
   professional:  { month: "miseos_professional_monthly",   year: "miseos_professional_yearly" },
   business_tier: { month: "miseos_business_tier_monthly",  year: "miseos_business_tier_yearly" },
   intelligence:  { month: "miseos_intelligence_monthly",   year: "miseos_intelligence_yearly" },
 };
+
+const HACCP_SITE = { month: "miseos_haccp_site_monthly", year: "miseos_haccp_site_annual" } as const;
+const HACCP_USER = { month: "miseos_haccp_user_monthly", year: "miseos_haccp_user_annual" } as const;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -52,20 +60,27 @@ serve(async (req) => {
     }
     const userEmail = claimsData.claims.email as string | undefined;
 
-    const { plan, cycle = "month", siteQuantity = 1, returnUrl, environment, addSiteMode = false } = await req.json();
-    if (!plan || !LOOKUP[plan as PlanId]) {
-      return new Response(JSON.stringify({ error: "Invalid plan" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const body = await req.json();
+    const plan = (body.plan ?? "haccp") as PlanId;
+    const cycle = (body.cycle ?? "month") as Cycle;
+    const siteQuantity = Math.max(1, Number(body.siteQuantity) || 1);
+    const userQuantity = Math.max(0, Number(body.userQuantity) || 0);
+    const returnUrl = body.returnUrl as string | undefined;
+    const environment = (body.environment ?? "sandbox") as StripeEnv;
+    const addSiteMode = Boolean(body.addSiteMode);
+
     if (cycle !== "month" && cycle !== "year") {
       return new Response(JSON.stringify({ error: "Invalid cycle" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const env = (environment || "sandbox") as StripeEnv;
-    const stripe = createStripeClient(env);
+    if (plan !== "haccp" && !(plan in LEGACY_LOOKUP)) {
+      return new Response(JSON.stringify({ error: "Invalid plan" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
+    const stripe = createStripeClient(environment);
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: appUser } = await service
       .from("users")
@@ -80,7 +95,6 @@ serve(async (req) => {
     }
     const organisationId = appUser.organisation_id;
 
-    // Only the organisation owner can manage billing.
     const { data: roleRow } = await service
       .from("org_users")
       .select("org_role")
@@ -94,46 +108,34 @@ serve(async (req) => {
       });
     }
 
-    // Resolve price
-    const lookupKey = LOOKUP[plan as PlanId][cycle as Cycle];
-    const priceList = await stripe.prices.list({ lookup_keys: [lookupKey] });
-    if (!priceList.data.length) {
-      return new Response(JSON.stringify({ error: `Price not found: ${lookupKey}` }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Resolve lookup keys → Stripe price ids.
+    async function resolvePrice(lookupKey: string): Promise<string> {
+      const list = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, limit: 1 });
+      if (!list.data.length) throw new Error(`Price not found: ${lookupKey}`);
+      return list.data[0].id;
     }
-    const stripePrice = priceList.data[0];
-    const qty = Math.max(1, Number(siteQuantity) || 1);
 
-    // Multi-site discount: 15% off when > 1 site, EXCEPT when adding sites
-    // from the Settings → Sites flow (full per-site price by product decision).
-    const discounts: Array<{ coupon: string }> = [];
-    if (qty > 1 && !addSiteMode) {
-      // Reuse / create a coupon. Stripe allows GET by id; we use a deterministic id.
-      const couponId = "venueos_multisite_15";
-      try {
-        await stripe.coupons.retrieve(couponId);
-      } catch (_e) {
-        await stripe.coupons.create({
-          id: couponId,
-          percent_off: 15,
-          duration: "forever",
-          name: "Multi-site 15% off (per-site)",
-        });
+    const lineItems: Array<{ price: string; quantity: number }> = [];
+
+    if (plan === "haccp") {
+      const sitePriceId = await resolvePrice(HACCP_SITE[cycle]);
+      lineItems.push({ price: sitePriceId, quantity: siteQuantity });
+      if (userQuantity > 0) {
+        const userPriceId = await resolvePrice(HACCP_USER[cycle]);
+        lineItems.push({ price: userPriceId, quantity: userQuantity });
       }
-      discounts.push({ coupon: couponId });
+    } else {
+      const legacyKey = LEGACY_LOOKUP[plan as LegacyPlanId][cycle];
+      const legacyPriceId = await resolvePrice(legacyKey);
+      lineItems.push({ price: legacyPriceId, quantity: siteQuantity });
     }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       ui_mode: "embedded_page",
-      line_items: [{ price: stripePrice.id, quantity: qty }],
-      ...(discounts.length ? { discounts } : {}),
+      line_items: lineItems,
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       ...(userEmail && { customer_email: userEmail }),
-      // Full end-to-end compliance handling: Stripe calculates/collects/files/remits tax
-      // for buyers in ~80 supported countries, plus fraud + dispute + transaction support.
-      // Customer bank statements will show "LINK.COM* <descriptor>". Additional fee: +3.5%.
       managed_payments: { enabled: true },
       metadata: {
         organisation_id: organisationId, plan, cycle,
@@ -150,7 +152,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("create-checkout error:", e);
-    return new Response(JSON.stringify({ error: "Unable to start checkout" }), {
+    return new Response(JSON.stringify({ error: (e as Error).message || "Unable to start checkout" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
