@@ -73,10 +73,12 @@ export const LabourVsWasteCard = ({ siteId, organisationId, date }: LabourVsWast
       let rateByUser = new Map<string, number | null>();
       if (userIds.length > 0) {
         const { data: usersData } = await supabase
-          .from("users")
-          .select("id, hourly_rate")
-          .in("id", userIds);
-        rateByUser = new Map((usersData ?? []).map((u: any) => [u.id, u.hourly_rate]));
+          .rpc("list_org_user_hourly_rates", { _org_id: organisationId });
+        rateByUser = new Map(
+          (usersData ?? [])
+            .filter((u: any) => userIds.includes(u.user_id))
+            .map((u: any) => [u.user_id, u.hourly_rate]),
+        );
       }
 
       const orgRate = Number(orgCostRes.data?.labour_hourly_rate) || 0;
