@@ -117,8 +117,13 @@ export function SitesBillingSection() {
   const siteQuantity = subscription?.site_quantity ?? 1;
   const siteCount = sites.filter(s => s.active).length;
   const slotsAvailable = Math.max(0, siteQuantity - siteCount);
-  const additionalSitePrice = perSiteCost(subscription, cycle);
-  const hasActivePlan = !!currentPlan && (subscription?.base_active || subscription?.bundle_active || subscription?.compliance_active || subscription?.business_active);
+  const _rawAdditionalSitePrice = perSiteCost(subscription, cycle);
+  const additionalSitePrice = HACCP_LAUNCH
+    ? (cycle === "year" ? HACCP_SITE_ANNUAL : HACCP_SITE_MONTHLY)
+    : _rawAdditionalSitePrice;
+  const hasActivePlan = HACCP_LAUNCH
+    ? true
+    : !!currentPlan && (subscription?.base_active || subscription?.bundle_active || subscription?.compliance_active || subscription?.business_active);
 
   // Poll for site_quantity bump after checkout success
   useEffect(() => {
