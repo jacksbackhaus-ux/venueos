@@ -162,9 +162,32 @@ export default function Pricing() {
               </div>
             </div>
 
-            <Button className="w-full" size="lg" onClick={() => navigate(paidActive ? "/account" : "/auth")}>
-              {paidActive ? "Manage subscription" : isTrialing ? "Continue trial" : "Start 14-day free trial"}
-            </Button>
+            {showCheckout && appUser ? (
+              <div className="rounded-lg border overflow-hidden">
+                <StripeEmbeddedCheckout
+                  plan="haccp"
+                  cycle={cycle}
+                  siteQuantity={sites}
+                  userQuantity={extraUsers}
+                  returnUrl={`${window.location.origin}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`}
+                />
+                <div className="p-2 border-t bg-muted/20 flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setShowCheckout(false)}>Cancel</Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => {
+                  if (paidActive) { navigate("/account"); return; }
+                  if (!appUser) { navigate("/auth"); return; }
+                  setShowCheckout(true);
+                }}
+              >
+                {paidActive ? "Manage subscription" : isTrialing ? "Continue trial" : "Start 14-day free trial"}
+              </Button>
+            )}
             <p className="text-xs text-muted-foreground text-center">No card required. Cancel anytime.</p>
           </CardContent>
         </Card>
