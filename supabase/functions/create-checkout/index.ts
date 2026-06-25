@@ -69,7 +69,7 @@ serve(async (req) => {
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: appUser } = await service
       .from("users")
-      .select("organisation_id")
+      .select("id, organisation_id")
       .eq("auth_user_id", claimsData.claims.sub)
       .eq("status", "active")
       .maybeSingle();
@@ -79,6 +79,20 @@ serve(async (req) => {
       });
     }
     const organisationId = appUser.organisation_id;
+
+    // Only the organisation owner can manage billing.
+    const { data: roleRow } = await service
+      .from("org_users")
+      .select("org_role")
+      .eq("user_id", (appUser as { id: string }).id)
+      .eq("organisation_id", organisationId)
+      .eq("active", true)
+      .maybeSingle();
+    if ((roleRow as { org_role?: string } | null)?.org_role !== "org_owner") {
+      return new Response(JSON.stringify({ error: "Only the organisation owner can manage billing." }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Resolve price
     const lookupKey = LOOKUP[plan as PlanId][cycle as Cycle];
