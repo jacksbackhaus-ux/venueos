@@ -341,10 +341,10 @@ export function SitesBillingSection() {
                   </p>
                 </div>
 
-                {showCheckout && currentPlan ? (
+                {showCheckout && (HACCP_LAUNCH || currentPlan) ? (
                   <div className="rounded-lg border overflow-hidden">
                     <StripeEmbeddedCheckout
-                      plan={currentPlan}
+                      plan={HACCP_LAUNCH ? "haccp" : (currentPlan as PlanId)}
                       cycle={cycle}
                       siteQuantity={siteQuantity + 1}
                       addSiteMode
