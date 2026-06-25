@@ -12,6 +12,7 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useRole } from "@/hooks/useRole";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import type { ModuleName } from "@/lib/plans";
+import { showMultiSiteHQ } from "@/lib/launchFlags";
 
 type NavItem = { to: string; label: string; desc: string; icon: React.ElementType; mod?: ModuleName };
 
