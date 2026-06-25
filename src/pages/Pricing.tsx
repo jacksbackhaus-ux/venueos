@@ -1,97 +1,88 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, Sparkles, Loader2, ShieldCheck } from "lucide-react";
-import {
-  TIERS, TIER_ORDER, MODULE_LABELS, formatGBP, deriveTierFromFlags,
-  type TierId, type BillingCycle,
-} from "@/lib/plans";
+import { Check, Sparkles, Loader2, ShieldCheck, Users, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
-import { toast } from "sonner";
 import { SEO } from "@/components/SEO";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
 
-
 /**
- * Pricing page — 4-tier model. Trial users can switch tiers freely
- * (flag-set on the subscriptions row); paid users go via Stripe checkout.
+ * MiseOS HACCP — single launch plan.
+ *   £4.99 per site / month (includes 1 user)
+ *   + £1 per additional user / month
+ *   Annual: 2 months free (× 10 months)
+ *   14-day free trial, no card required, cancel anytime.
  */
+
+const SITE_MONTHLY = 4.99;
+const SITE_ANNUAL = 49.90;
+const USER_MONTHLY = 1.00;
+const USER_ANNUAL = 10.00;
+
+type Cycle = "month" | "year";
+
 export default function Pricing() {
   const navigate = useNavigate();
   const { appUser, isLoading: authLoading } = useAuth();
-  const { subscription, loading, plan, trialActive, trialDaysLeft } = useOrgAccess();
-  const [selecting, setSelecting] = useState<TierId | null>(null);
-  const [cycle, setCycle] = useState<BillingCycle>("month");
+  const { subscription, loading, trialActive, trialDaysLeft, paidActive } = useOrgAccess();
+  const [cycle, setCycle] = useState<Cycle>("month");
+  const [sites, setSites] = useState(1);
+  const [users, setUsers] = useState(1);
+
+  useEffect(() => {
+    if (!appUser?.organisation_id) return;
+    void (async () => {
+      const [{ count: siteCount }, { count: userCount }] = await Promise.all([
+        supabase.from("sites").select("id", { count: "exact", head: true })
+          .eq("organisation_id", appUser.organisation_id).eq("active", true),
+        supabase.from("users").select("id", { count: "exact", head: true })
+          .eq("organisation_id", appUser.organisation_id).eq("status", "active"),
+      ]);
+      setSites(Math.max(1, siteCount ?? 1));
+      setUsers(Math.max(1, userCount ?? 1));
+    })();
+  }, [appUser?.organisation_id]);
 
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <SEO
-          title="Pricing — MiseOS"
-          description="Simple per-site pricing for UK food businesses. Essentials from £6.99, plus Compliance, Profit and Intelligence. 14-day free trial."
-          path="/pricing"
-        />
+        <SEO title="Pricing — MiseOS HACCP" description="Digital HACCP and food safety for UK small food businesses. £4.99 per site + £1 per extra user. 14-day free trial." path="/pricing" />
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  const sitePrice = cycle === "year" ? SITE_ANNUAL : SITE_MONTHLY;
+  const userPrice = cycle === "year" ? USER_ANNUAL : USER_MONTHLY;
+  const extraUsers = Math.max(0, users - 1);
+  const total = (sites * sitePrice) + (extraUsers * userPrice);
+  const monthlyEquivalent = cycle === "year" ? total / 12 : total;
 
   const isTrialing = subscription?.status === "trialing";
-  const hasPaidSub = subscription?.status === "active";
-  const currentTier: TierId | null =
-    (subscription as { tier?: TierId | null } | null)?.tier ?? deriveTierFromFlags(plan);
-
-  // During trial: pick a tier = set tier on the subscription row. No Stripe.
-  // Module activation is updated automatically by trg_sync_modules_on_sub_change.
-  const startTrialWithTier = async (tierId: TierId) => {
-    if (!appUser?.organisation_id) return;
-    setSelecting(tierId);
-    const tier = TIERS[tierId];
-    const { error } = await supabase
-      .from("subscriptions")
-      .update({
-        billing_interval: cycle,
-        tier: tierId,
-      })
-      .eq("organisation_id", appUser.organisation_id);
-    setSelecting(null);
-    if (error) {
-      toast.error("Could not save plan: " + error.message);
-      return;
-    }
-    toast.success(`Welcome to ${tier.name} — your free trial continues.`);
-    navigate("/", { replace: true });
-  };
-
-  const goToCheckout = (tierId: TierId) => {
-    navigate(`/account?checkout=${tierId}&cycle=${cycle}`);
-  };
 
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Pricing — MiseOS"
-        description="Simple per-site pricing for UK food businesses. Essentials, Compliance, Profit and Intelligence. Annual saves about 15%."
+        title="Pricing — MiseOS HACCP"
+        description="Digital HACCP and food safety for UK small food businesses. £4.99 per site + £1 per extra user. 14-day free trial, no card required."
         path="/pricing"
       />
-      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
-
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-8">
+        <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-semibold">
             <Sparkles className="h-3.5 w-3.5" />
             14-day free trial — no card required
           </div>
           <h1 className="font-heading text-3xl md:text-4xl font-bold">
-            Simple pricing per site. Unlimited users.
+            Simple pricing. One plan. No surprises.
           </h1>
-          <p className="text-muted-foreground">
-            Annual upfront saves 15%. Monthly is a 12-month plan billed monthly.
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Digital HACCP and food safety for UK small food businesses.
             {isTrialing && trialDaysLeft !== null && trialDaysLeft > 0 && (
               <span className="block mt-1 text-foreground font-medium">
                 You have {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left on your trial.
@@ -100,133 +91,88 @@ export default function Pricing() {
           </p>
 
           <div className="inline-flex items-center gap-3 rounded-full border bg-card p-1 px-4">
-            <span className={`text-sm font-medium ${cycle === "month" ? "text-foreground" : "text-muted-foreground"}`}>
-              Pay monthly (12-month minimum)
-            </span>
-            <Switch
-              checked={cycle === "year"}
-              onCheckedChange={(v) => setCycle(v ? "year" : "month")}
-              aria-label="Toggle annual billing"
-            />
+            <span className={`text-sm font-medium ${cycle === "month" ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
+            <Switch checked={cycle === "year"} onCheckedChange={(v) => setCycle(v ? "year" : "month")} aria-label="Toggle annual billing" />
             <span className={`text-sm font-medium flex items-center gap-2 ${cycle === "year" ? "text-foreground" : "text-muted-foreground"}`}>
-              Pay yearly
-              <Badge variant="outline" className="border-success/40 bg-success/10 text-success text-[10px]">
-                15% off
-              </Badge>
+              Annual
+              <Badge variant="outline" className="border-success/40 bg-success/10 text-success text-[10px]">2 months free</Badge>
             </span>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {TIER_ORDER.map((tierId) => {
-            const t = TIERS[tierId];
-            const isCurrent = currentTier === tierId;
-            const price = cycle === "year" ? t.yearlyPrice : t.monthlyPrice;
-            const monthlyEquivalent = cycle === "year" ? t.yearlyPrice / 12 : null;
+        <Card className="border-primary border-2 shadow-lg">
+          <CardHeader className="text-center">
+            <Badge className="mx-auto bg-primary text-primary-foreground w-fit">MiseOS HACCP</Badge>
+            <CardTitle className="font-heading text-2xl mt-2">Everything you need to stay inspection-ready</CardTitle>
+            <CardDescription>Replace paper, log digitally, export your Inspection Pack in seconds.</CardDescription>
+            <div className="pt-4">
+              <span className="text-5xl font-bold text-foreground">£{SITE_MONTHLY.toFixed(2)}</span>
+              <span className="text-sm text-muted-foreground"> / site / month</span>
+              <p className="text-sm text-muted-foreground mt-1">
+                Includes 1 user · + £{USER_MONTHLY.toFixed(2)} per additional user / month
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Annual: £{SITE_ANNUAL.toFixed(2)}/site/yr · £{USER_ANNUAL.toFixed(2)} per extra user/yr (2 months free)
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ul className="grid sm:grid-cols-2 gap-2 text-sm">
+              {[
+                "Dashboard — Inspection Readiness score",
+                "Day Sheet — opening/closing checks",
+                "Temperatures, Cleaning, Pest, Maintenance",
+                "HACCP Plan & Allergens (PPDS labels)",
+                "Suppliers & Deliveries",
+                "Incidents & PPM Schedule",
+                "Staff Training records",
+                "Customer Feedback log",
+                "Inspection Pack (EHO-ready PDF/Excel)",
+                "Team Messenger",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <Check className="h-4 w-4 shrink-0 mt-0.5 text-success" />
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
 
-            return (
-              <Card
-                key={tierId}
-                className={`relative flex flex-col ${
-                  t.highlight ? "border-primary border-2 shadow-lg" : ""
-                } ${t.ai ? "border-2 border-indigo-400/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/10 shadow-md" : ""}`}
-              >
-                {t.highlight && (
-                  <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
-                    Most popular
-                  </Badge>
-                )}
-                {t.ai && !isCurrent && (
-                  <Badge variant="secondary" className="absolute -top-2.5 right-3">
-                    AI
-                  </Badge>
-                )}
-                {isCurrent && (
-                  <Badge className="absolute -top-2.5 right-3 bg-success text-success-foreground">
-                    Current
-                  </Badge>
-                )}
-                <CardHeader>
-                  <CardTitle className="font-heading text-lg flex items-center gap-2">
-                    {t.ai && <Sparkles className="h-4 w-4 text-indigo-500" />}
-                    {t.name}
-                  </CardTitle>
-                  <CardDescription className="text-xs">{t.tagline}</CardDescription>
-                  <div className="pt-2">
-                    <span className="text-3xl font-bold text-foreground">{formatGBP(price)}</span>
-                    <span className="text-sm text-muted-foreground"> / site / {cycle === "year" ? "yr" : "mo"}</span>
-                    {monthlyEquivalent !== null && (
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        ≈ {formatGBP(monthlyEquivalent)}/mo · save 15% paying yearly
-                      </p>
-                    )}
-                    {cycle === "month" && (
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        12-month minimum, billed monthly
-                      </p>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col gap-4">
-                  <ul className="space-y-1.5 text-sm flex-1">
-                    {t.highlights.map((h) => (
-                      <li key={h} className="flex items-start gap-2">
-                        <Check className={`h-4 w-4 shrink-0 mt-0.5 ${t.ai ? "text-indigo-500" : "text-success"}`} />
-                        <span>{h}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <details className="text-xs text-muted-foreground">
-                    <summary className="cursor-pointer hover:text-foreground">All modules</summary>
-                    <ul className="mt-2 space-y-0.5 pl-2">
-                      {t.modules.map((m) => (
-                        <li key={m}>• {MODULE_LABELS[m]}</li>
-                      ))}
-                    </ul>
-                  </details>
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your estimate</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <label className="space-y-1">
+                  <span className="flex items-center gap-1.5 text-muted-foreground"><Building2 className="h-3.5 w-3.5" />Sites</span>
+                  <input type="number" min={1} value={sites} onChange={(e) => setSites(Math.max(1, parseInt(e.target.value || "1", 10)))} className="w-full rounded border px-2 py-1" />
+                </label>
+                <label className="space-y-1">
+                  <span className="flex items-center gap-1.5 text-muted-foreground"><Users className="h-3.5 w-3.5" />Total users</span>
+                  <input type="number" min={1} value={users} onChange={(e) => setUsers(Math.max(1, parseInt(e.target.value || "1", 10)))} className="w-full rounded border px-2 py-1" />
+                </label>
+              </div>
+              <div className="flex items-end justify-between pt-2 border-t">
+                <div>
+                  <p className="text-xs text-muted-foreground">{sites} site × £{sitePrice.toFixed(2)} + {extraUsers} extra user × £{userPrice.toFixed(2)}</p>
+                  <p className="text-2xl font-bold">£{total.toFixed(2)}<span className="text-sm font-normal text-muted-foreground">/{cycle === "year" ? "yr" : "mo"}</span></p>
+                  {cycle === "year" && (
+                    <p className="text-[11px] text-muted-foreground">≈ £{monthlyEquivalent.toFixed(2)}/month</p>
+                  )}
+                </div>
+              </div>
+            </div>
 
-                  {(() => {
-                    const isCurrentPaid = isCurrent && hasPaidSub;
-                    const trialSwitch = isTrialing && !isCurrent;
+            <Button className="w-full" size="lg" onClick={() => navigate(paidActive ? "/account" : "/auth")}>
+              {paidActive ? "Manage subscription" : isTrialing ? "Continue trial" : "Start 14-day free trial"}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">No card required. Cancel anytime.</p>
+          </CardContent>
+        </Card>
 
-                    let label: React.ReactNode = "Subscribe now";
-                    if (selecting === tierId) label = <Loader2 className="h-4 w-4 animate-spin" />;
-                    else if (isCurrentPaid) label = "Current plan";
-                    else if (isCurrent && isTrialing) label = "Subscribe now";
-                    else if (trialSwitch) label = "Switch & continue trial";
-                    else if (hasPaidSub) label = "Switch to this tier";
-
-                    const onClick = () => {
-                      if (trialSwitch) startTrialWithTier(tierId);
-                      else goToCheckout(tierId);
-                    };
-
-                    return (
-                      <Button
-                        className="w-full"
-                        variant={t.highlight ? "default" : "outline"}
-                        disabled={isCurrentPaid || selecting !== null}
-                        onClick={onClick}
-                      >
-                        {label}
-                      </Button>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        <div className="text-center text-xs text-muted-foreground space-y-2 max-w-3xl mx-auto">
+        <div className="text-center text-xs text-muted-foreground space-y-2 max-w-2xl mx-auto">
           <p className="flex items-center justify-center gap-1">
             <ShieldCheck className="h-3.5 w-3.5" />
-            All prices in GBP, per site. Unlimited users. Multi-site discount of 15% applies from the second site.
+            All prices in GBP. VAT may apply. Data retained for 7 years after cancellation.
           </p>
-          <p>
-            <strong>Monthly plans</strong> are a 12-month minimum term billed monthly and renew for another 12-month term unless cancelled before renewal.
-            <strong> Annual plans</strong> renew yearly unless cancelled. Data is retained for 7 years.
-          </p>
+          <p>5% of every subscription goes to carbon removal via Stripe Climate.</p>
         </div>
 
         <div className="pt-4 border-t">

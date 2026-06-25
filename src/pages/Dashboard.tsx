@@ -18,6 +18,7 @@ import { PriorityFeed } from "@/components/dashboard/PriorityFeed";
 import { TodayAtAGlance } from "@/components/dashboard/TodayAtAGlance";
 import { ThisWeekSnapshot } from "@/components/dashboard/ThisWeekSnapshot";
 import { ProfitSnapshot } from "@/components/dashboard/ProfitSnapshot";
+import { showCommercialModules } from "@/lib/launchFlags";
 import { DashboardFeedback } from "@/components/dashboard/DashboardFeedback";
 import { Card } from "@/components/ui/card";
 
@@ -190,8 +191,8 @@ const Dashboard = () => {
       {/* 4 — THIS WEEK OVERVIEW */}
       <ThisWeekSnapshot siteId={siteId} />
 
-      {/* 5 — PROFIT SNAPSHOT (lightweight) */}
-      <ProfitSnapshot siteId={siteId} />
+      {/* 5 — PROFIT SNAPSHOT (hidden in HACCP launch mode) */}
+      {showCommercialModules && <ProfitSnapshot siteId={siteId} />}
 
       {/* Feedback link */}
       <div className="pt-4 flex justify-center">

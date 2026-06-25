@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { ALL_MODULES, type ModuleName } from "@/lib/plans";
+import { isModuleVisibleInLaunch } from "@/lib/launchFlags";
 
 export interface ModuleActivationRow {
   id: string;
@@ -70,8 +71,15 @@ export function useModuleAccess() {
   rows.forEach(r => { activeMap[r.module_name] = r.is_active; });
 
   // During an active free trial, unlock every module — trial users get everything.
-  const isActive = (mod: ModuleName) => trialActive ? true : !!activeMap[mod];
-  const activeModules = trialActive ? [...ALL_MODULES] : ALL_MODULES.filter(m => activeMap[m]);
+  // Launch flag: in HACCP-only mode, hide non-HACCP modules from customer UI
+  // even when subscription/trial would otherwise grant access. Hidden modules
+  // remain in the codebase and re-enable when LAUNCH_MODE flips back to "full".
+  const isActive = (mod: ModuleName) => {
+    if (!isModuleVisibleInLaunch(mod)) return false;
+    return trialActive ? true : !!activeMap[mod];
+  };
+  const activeModules = (trialActive ? [...ALL_MODULES] : ALL_MODULES.filter(m => activeMap[m]))
+    .filter(isModuleVisibleInLaunch);
 
   return { loading, rows, isActive, activeModules, refresh };
 }

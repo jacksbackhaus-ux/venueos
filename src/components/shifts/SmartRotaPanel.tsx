@@ -1,3 +1,4 @@
+import { showAIFeatures } from "@/lib/launchFlags";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -93,6 +94,7 @@ export function SmartRotaPanel({
   shiftHiveActive,
   messengerActive,
 }: Props) {
+  if (!showAIFeatures) return null;
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);

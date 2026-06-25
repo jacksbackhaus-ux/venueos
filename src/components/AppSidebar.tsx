@@ -20,6 +20,7 @@ import {
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import type { ModuleName } from "@/lib/plans";
+import { showMultiSiteHQ } from "@/lib/launchFlags";
 
 type NavLeaf = { title: string; url: string; icon: React.ElementType; mod?: ModuleName };
 
@@ -81,7 +82,7 @@ export function AppSidebar() {
   const isOrgOwner = orgRole?.org_role === "org_owner";
 
   const orgNav: NavLeaf[] = [
-    ...(isHQ && role.isManager ? [{ title: "All Sites Overview", url: "/hq", icon: Building2 }] : []),
+    ...(showMultiSiteHQ && isHQ && role.isManager ? [{ title: "All Sites Overview", url: "/hq", icon: Building2 }] : []),
     ...(isOrgOwner ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(role.canViewSettings ? [{ title: "Settings", url: "/settings", icon: Settings }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
