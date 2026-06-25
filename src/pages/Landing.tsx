@@ -211,7 +211,7 @@ function Pricing() {
               "All HACCP & food safety modules",
               "Inspection Pack (PDF + Excel)",
               "Unlimited records & 7-year retention",
-              "Team Messenger included",
+              "Customer Feedback log",
               "14-day free trial, no card required",
             ].map((f) => (
               <li key={f} className="flex items-start gap-2">
