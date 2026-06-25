@@ -12,6 +12,12 @@ verify_jwt = true
 [functions.payments-webhook]
 verify_jwt = false
 
+[functions.stripe-admin-migrate]
+verify_jwt = true
+
+[functions.sync-haccp-user-quantity]
+verify_jwt = true
+
 [functions.suggest-sales-mapping]
 verify_jwt = true
 

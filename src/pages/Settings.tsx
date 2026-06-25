@@ -4,6 +4,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { syncHaccpUserQuantity } from "@/lib/billingSync";
 import { motion } from "framer-motion";
 import {
   Settings as SettingsIcon,
@@ -468,6 +469,7 @@ const Settings = () => {
     toast.success(`Staff member added — Staff ID: ${staffId}`);
     setShowAddStaff(false);
     setStaffForm({ name: "", email: "", role: "staff", pin: "", staffId: "" });
+    void syncHaccpUserQuantity();
     loadAll();
   };
 
@@ -483,6 +485,7 @@ const Settings = () => {
     const { error } = await supabase.from('users').update({ status: active ? 'active' : 'suspended' }).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
+    void syncHaccpUserQuantity();
     toast.success(active ? "Staff member reactivated — PIN login restored" : "Staff member deactivated — PIN login revoked. Their historical records are preserved.");
   };
 

@@ -35,6 +35,15 @@ const LEGACY_MAP: Record<string, { plan: LegacyPlan; cycle: "month" | "year" }> 
 };
 
 const TIER_MAP: Record<string, { tier: TierId; cycle: "month" | "year"; flagDelta: FlagDelta }> = {
+  // New HACCP launch product. Maps to the "essentials" tier internally so the
+  // existing DB trigger trg_sync_modules_on_sub_change continues to enable the
+  // correct module set; the customer-facing UI labels this as "MiseOS HACCP".
+  miseos_haccp_site_monthly:    { tier: "essentials",    cycle: "month", flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
+  miseos_haccp_site_annual:     { tier: "essentials",    cycle: "year",  flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
+  // Per-user add-on line items — don't change the tier, just contribute quantity.
+  miseos_haccp_user_monthly:    { tier: "essentials",    cycle: "month", flagDelta: {} },
+  miseos_haccp_user_annual:     { tier: "essentials",    cycle: "year",  flagDelta: {} },
+  // Legacy MiseOS tiers (kept for historical subscriptions).
   miseos_essentials_monthly:    { tier: "essentials",    cycle: "month", flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
   miseos_essentials_annual:     { tier: "essentials",    cycle: "year",  flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
   miseos_essentials_yearly:     { tier: "essentials",    cycle: "year",  flagDelta: { base: true,  compliance: false, business: false, bundle: false } },
@@ -48,6 +57,12 @@ const TIER_MAP: Record<string, { tier: TierId; cycle: "month" | "year"; flagDelt
   miseos_intelligence_annual:   { tier: "intelligence",  cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
   miseos_intelligence_yearly:   { tier: "intelligence",  cycle: "year",  flagDelta: { base: false, compliance: false, business: false, bundle: true, ai: true } },
 };
+
+// Lookup keys that represent per-user add-ons (contribute to user quantity, not site quantity).
+const USER_ADDON_KEYS = new Set([
+  "miseos_haccp_user_monthly",
+  "miseos_haccp_user_annual",
+]);
 
 function flagsForLookup(lookup: string): LookupResult | null {
   const tier = TIER_MAP[lookup];
@@ -109,7 +124,10 @@ async function upsertSubscription(sub: any, env: StripeEnv) {
   for (const item of sub.items?.data || []) {
     const lookup = item.price?.lookup_key || "";
     interval = item.price?.recurring?.interval || interval;
-    siteQty = Math.max(siteQty, Number(item.quantity || 1));
+    // Only count site line items toward site_quantity; per-user add-ons are tracked separately.
+    if (!USER_ADDON_KEYS.has(lookup)) {
+      siteQty = Math.max(siteQty, Number(item.quantity || 1));
+    }
     const m = flagsForLookup(lookup);
     if (!m) continue;
 
