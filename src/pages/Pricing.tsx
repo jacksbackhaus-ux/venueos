@@ -34,6 +34,7 @@ export default function Pricing() {
   const [cycle, setCycle] = useState<Cycle>("month");
   const [sites, setSites] = useState(1);
   const [users, setUsers] = useState(1);
+  const [showCheckout, setShowCheckout] = useState(false);
 
   useEffect(() => {
     if (!appUser?.organisation_id) return;
