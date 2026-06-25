@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,95 +8,51 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
-  Loader2, CreditCard, Sparkles, ExternalLink, ArrowUpDown, Plus,
-  Building2, AlertCircle, Calendar, CheckCircle2,
+  Loader2, CreditCard, Sparkles, ExternalLink, Building2, Users,
+  AlertCircle, Calendar, ShieldCheck,
 } from "lucide-react";
-import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { openCustomerPortal } from "@/lib/stripe";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import {
-  PLANS, MODULE_LABELS, formatGBP, calcTotalCost,
-  type PlanId, type BillingCycle, type ModuleName,
-  BASE_MODULES, COMPLIANCE_MODULES, BUSINESS_MODULES, AI_MODULES,
-} from "@/lib/plans";
 import { LoginUrlCard } from "@/components/LoginUrlCard";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
+
+// Launch pricing — single MiseOS HACCP plan.
+const SITE_MONTHLY = 4.99;
+const SITE_ANNUAL = 49.90;
+const USER_MONTHLY = 1.00;
+const USER_ANNUAL = 10.00;
 
 export default function Account() {
   const navigate = useNavigate();
   const { orgRole, appUser } = useAuth();
   const {
     subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft,
-    plan, cycle, paidActive, refresh,
+    cycle, paidActive,
   } = useOrgAccess();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [siteCount, setSiteCount] = useState<number>(1);
+  const [userCount, setUserCount] = useState<number>(1);
   const [savingCycle, setSavingCycle] = useState(false);
-  
-
-  const checkoutPlan = searchParams.get("checkout") as PlanId | "success" | null;
-  const checkoutCycle = (searchParams.get("cycle") as BillingCycle | null) ?? cycle;
-  const showCheckoutFor: PlanId | null =
-    checkoutPlan && checkoutPlan !== "success" && PLANS[checkoutPlan as PlanId]
-      ? (checkoutPlan as PlanId) : null;
 
   useEffect(() => {
     if (!appUser?.organisation_id) return;
-    supabase
-      .from("sites")
-      .select("id", { count: "exact", head: true })
-      .eq("organisation_id", appUser.organisation_id)
-      .eq("active", true)
-      .then(({ count }) => setSiteCount(count ?? 1));
-  }, [appUser?.organisation_id]);
-
-  useEffect(() => {
-    if (checkoutPlan === "success") {
-      toast.success("Subscription activated. Welcome aboard!");
-      const t = setTimeout(() => {
-        searchParams.delete("checkout");
-        searchParams.delete("session_id");
-        searchParams.delete("cycle");
-        setSearchParams(searchParams, { replace: true });
-      }, 1500);
-      return () => clearTimeout(t);
-    }
-  }, [checkoutPlan, searchParams, setSearchParams]);
-
-  // Active modules + savings hint (modules paid for but not enabled on any site)
-  const [unusedHint, setUnusedHint] = useState<{ compliance: boolean; business: boolean }>({ compliance: false, business: false });
-  useEffect(() => {
-    if (!appUser?.organisation_id || (!plan.compliance && !plan.business && !plan.bundle)) {
-      setUnusedHint({ compliance: false, business: false });
-      return;
-    }
-    (async () => {
-      const { data } = await supabase
-        .from("module_activation")
-        .select("module_name, is_active, sites!inner(organisation_id)")
-        .eq("sites.organisation_id", appUser.organisation_id)
-        .eq("is_active", true);
-      const activeSet = new Set((data ?? []).map((r: any) => r.module_name as ModuleName));
-      const complianceUsed = COMPLIANCE_MODULES.some(m => activeSet.has(m));
-      const businessUsed = BUSINESS_MODULES.some(m => activeSet.has(m));
-      setUnusedHint({
-        compliance: !plan.bundle && plan.compliance && !complianceUsed,
-        business: !plan.bundle && plan.business && !businessUsed,
-      });
+    void (async () => {
+      const [{ count: sCount }, { count: uCount }] = await Promise.all([
+        supabase.from("sites").select("id", { count: "exact", head: true })
+          .eq("organisation_id", appUser.organisation_id).eq("active", true),
+        supabase.from("users").select("id", { count: "exact", head: true })
+          .eq("organisation_id", appUser.organisation_id).eq("status", "active"),
+      ]);
+      setSiteCount(Math.max(1, sCount ?? 1));
+      setUserCount(Math.max(1, uCount ?? 1));
     })();
-  }, [appUser?.organisation_id, plan.compliance, plan.business, plan.bundle]);
-
-  const totals = useMemo(
-    () => calcTotalCost({ ...plan, cycle, sites: siteCount }),
-    [plan, cycle, siteCount]
-  );
+  }, [appUser?.organisation_id]);
 
   if (orgRole?.org_role !== "org_owner") {
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <Card><CardContent className="py-12 text-center text-muted-foreground">
-          Only the organisation manager can manage billing.
+          Only the organisation owner can manage billing.
         </CardContent></Card>
       </div>
     );
@@ -106,19 +62,13 @@ export default function Account() {
     return <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
-  // Active modules covered by current plan
-  const activeModuleNames: ModuleName[] = [
-    ...(plan.bundle
-      ? [...BASE_MODULES, ...COMPLIANCE_MODULES, ...BUSINESS_MODULES]
-      : [
-          ...(plan.base ? BASE_MODULES : []),
-          ...(plan.compliance ? COMPLIANCE_MODULES : []),
-          ...(plan.business ? BUSINESS_MODULES : []),
-        ]),
-    ...(plan.ai ? AI_MODULES : []),
-  ];
+  const sitePrice = cycle === "year" ? SITE_ANNUAL : SITE_MONTHLY;
+  const userPrice = cycle === "year" ? USER_ANNUAL : USER_MONTHLY;
+  const extraUsers = Math.max(0, userCount - 1);
+  const total = (siteCount * sitePrice) + (extraUsers * userPrice);
+  const monthlyEquivalent = cycle === "year" ? total / 12 : total;
 
-  const switchCycle = async (next: BillingCycle) => {
+  const switchCycle = async (next: "month" | "year") => {
     if (!appUser?.organisation_id || next === cycle) return;
     setSavingCycle(true);
     const { error } = await supabase
@@ -133,12 +83,8 @@ export default function Account() {
   const handleCancel = async () => {
     if (!appUser?.organisation_id) return;
     const termEnd = (subscription as any)?.term_end || subscription?.current_period_end;
-    const interval = (subscription as any)?.billing_interval;
     const endLabel = termEnd ? format(new Date(termEnd), "d MMM yyyy") : "the end of your current term";
-    const msg = interval === "monthly_term"
-      ? `You're on a 12-month plan billed monthly. Your plan will remain active until ${endLabel}. Continue?`
-      : `Cancel renewal? Your plan stays active until ${endLabel}.`;
-    if (!confirm(msg)) return;
+    if (!confirm(`Cancel renewal? Your plan stays active until ${endLabel}.`)) return;
     const { error } = await supabase
       .from("subscriptions")
       .update({ cancel_at_period_end: true })
@@ -147,123 +93,99 @@ export default function Account() {
     else toast.success(`Cancellation scheduled. You'll keep access until ${endLabel}.`);
   };
 
-
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto pb-24">
       <div>
         <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
           <CreditCard className="h-6 w-6" />Account & Billing
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Manage your MiseOS subscription, modules, and invoices.</p>
+        <p className="text-sm text-muted-foreground mt-1">Your MiseOS HACCP subscription.</p>
       </div>
 
-      {/* Embedded checkout */}
-      {showCheckoutFor && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {paidActive ? "Switch / add" : "Subscribe"} — {PLANS[showCheckoutFor].name}
-            </CardTitle>
-            <CardDescription>
-              {formatGBP(checkoutCycle === "year" ? PLANS[showCheckoutFor].yearlyPrice : PLANS[showCheckoutFor].monthlyPrice)} per site / {checkoutCycle === "year" ? "year" : "month"} · {siteCount} site(s) · 15% off from site 2
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border overflow-hidden">
-              <StripeEmbeddedCheckout plan={showCheckoutFor} cycle={checkoutCycle} siteQuantity={siteCount} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Current plan */}
-      <Card>
+      <Card className="border-primary/40 border-2">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2 flex-wrap">
-            Current plan
-            {compedActive && (
-              <Badge className="bg-success/15 text-success border-success/30">
-                <Sparkles className="h-3 w-3 mr-1" />Complimentary
-              </Badge>
-            )}
-            {!compedActive && subscription && (
-              <Badge variant="outline">{subscription.status}</Badge>
-            )}
-            {plan.hasAnyPlan && <Badge>{plan.label}</Badge>}
-          </CardTitle>
+          <div className="flex items-start justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="font-heading text-xl flex items-center gap-2">
+                MiseOS HACCP
+                {compedActive && (
+                  <Badge className="bg-success/15 text-success border-success/30">
+                    <Sparkles className="h-3 w-3 mr-1" />Complimentary
+                  </Badge>
+                )}
+                {!compedActive && subscription && (
+                  <Badge variant="outline">{subscription.status}</Badge>
+                )}
+              </CardTitle>
+              <CardDescription>Digital HACCP & food safety for UK small food businesses.</CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm">
+        <CardContent className="space-y-5 text-sm">
           {compedActive && (
             <p>You have complimentary access{subscription?.comped_until ? ` until ${format(new Date(subscription.comped_until), "d MMM yyyy")}` : " (no expiry)"}.</p>
           )}
           {!compedActive && trialActive && (
-            <>
-              <p>You're on a free trial — <strong>{trialDaysLeft} day(s) left</strong>.</p>
-              {!plan.hasAnyPlan && (
-                <p className="text-warning">
-                  You haven't picked a plan yet.{" "}
-                  <button onClick={() => navigate("/pricing")} className="underline font-medium">Choose one now</button>.
-                </p>
-              )}
-            </>
+            <p className="rounded-md bg-success/10 text-success px-3 py-2 font-medium">
+              Free trial — {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left. No card required.
+            </p>
           )}
 
-          {plan.hasAnyPlan && (
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Sites</p>
-                <p className="font-semibold flex items-center gap-1.5"><Building2 className="h-4 w-4" />{siteCount} site{siteCount === 1 ? "" : "s"}</p>
+          {/* Price breakdown */}
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What you pay</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{siteCount} site{siteCount === 1 ? "" : "s"} × £{sitePrice.toFixed(2)}</span>
+                <span className="font-medium">£{(siteCount * sitePrice).toFixed(2)}</span>
               </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Total {cycle === "year" ? "annual" : "monthly"} cost</p>
-                <p className="text-2xl font-bold">
-                  {formatGBP(totals.total)}<span className="text-sm font-normal text-muted-foreground">/{cycle === "year" ? "yr" : "mo"}</span>
-                </p>
-                {totals.saving > 0 && (
-                  <p className="text-[11px] text-success">Saving {formatGBP(totals.saving)} with multi-site discount</p>
-                )}
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{extraUsers} extra user{extraUsers === 1 ? "" : "s"} × £{userPrice.toFixed(2)}</span>
+                <span className="font-medium">£{(extraUsers * userPrice).toFixed(2)}</span>
               </div>
-              {paidActive && subscription?.current_period_end && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Next billing date</p>
-                  <p className="font-semibold">{format(new Date(subscription.current_period_end), "d MMM yyyy")}</p>
-                </div>
-              )}
-              {subscription?.cancel_at_period_end && (
-                <div className="space-y-1 sm:col-span-2 p-2 rounded-md bg-warning/10 border border-warning/30">
-                  <p className="text-warning flex items-center gap-1.5"><AlertCircle className="h-4 w-4" />Cancellation scheduled</p>
-                  {subscription.current_period_end && (
-                    <p className="text-xs">You'll keep access until {format(new Date(subscription.current_period_end), "d MMM yyyy")}. Data retained for 7 years.</p>
+              <div className="flex items-end justify-between pt-2 border-t">
+                <span className="text-xs text-muted-foreground">Total {cycle === "year" ? "per year" : "per month"}</span>
+                <div className="text-right">
+                  <p className="text-2xl font-bold">£{total.toFixed(2)}</p>
+                  {cycle === "year" && (
+                    <p className="text-[11px] text-muted-foreground">≈ £{monthlyEquivalent.toFixed(2)}/month</p>
                   )}
                 </div>
-              )}
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Adding a user adds £{USER_MONTHLY.toFixed(2)}/month to your subscription. Owner is included free.
+            </p>
+          </div>
+
+          {paidActive && subscription?.current_period_end && (
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span>Next renewal: <strong>{format(new Date(subscription.current_period_end), "d MMM yyyy")}</strong></span>
             </div>
           )}
-
-          {plan.hasAnyPlan && (
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Active modules</p>
-              <div className="flex flex-wrap gap-1.5">
-                {activeModuleNames.map(m => (
-                  <Badge key={m} variant="secondary" className="text-xs">
-                    <CheckCircle2 className="h-3 w-3 mr-1 text-success" />{MODULE_LABELS[m]}
-                  </Badge>
-                ))}
-              </div>
+          {subscription?.cancel_at_period_end && (
+            <div className="p-3 rounded-md bg-warning/10 border border-warning/30 text-sm">
+              <p className="text-warning flex items-center gap-1.5 font-medium"><AlertCircle className="h-4 w-4" />Cancellation scheduled</p>
+              {subscription.current_period_end && (
+                <p className="text-xs mt-1">You'll keep access until {format(new Date(subscription.current_period_end), "d MMM yyyy")}. Data retained for 7 years.</p>
+              )}
             </div>
           )}
 
           {!hasAccess && !trialActive && (
             <p className="text-destructive">
-              No active access. <button onClick={() => navigate("/pricing")} className="underline">Choose a plan</button> to continue.
+              No active access. <button onClick={() => navigate("/pricing")} className="underline">Subscribe</button> to continue.
             </p>
           )}
 
           <div className="flex flex-wrap gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => navigate("/pricing")}>
-              <ArrowUpDown className="h-3.5 w-3.5 mr-1.5" />
-              {paidActive ? "Change plan" : "Choose plan"}
-            </Button>
+            {!paidActive && (
+              <Button size="sm" onClick={() => navigate("/pricing")}>
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />Subscribe
+              </Button>
+            )}
             {subscription?.stripe_customer_id && (
               <Button variant="outline" size="sm" onClick={() => openCustomerPortal().catch(e => toast.error(e.message))}>
                 <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Invoices & payment method
@@ -273,26 +195,11 @@ export default function Account() {
         </CardContent>
       </Card>
 
-      {/* Org-specific login URL */}
+      {/* Login URL */}
       {appUser?.organisation_id && <LoginUrlCard organisationId={appUser.organisation_id} />}
 
-      {/* Savings hints */}
-      {(unusedHint.compliance || unusedHint.business) && (
-        <Card className="border-warning/30 bg-warning/5">
-          <CardContent className="py-4 text-sm space-y-1">
-            <p className="font-medium flex items-center gap-2"><AlertCircle className="h-4 w-4 text-warning" />Save on add-ons you're not using</p>
-            {unusedHint.compliance && (
-              <p className="text-muted-foreground">No site is using any Compliance module. You could remove the Compliance Add-on to save {formatGBP(PLANS.compliance.monthlyPrice)}/site/month.</p>
-            )}
-            {unusedHint.business && (
-              <p className="text-muted-foreground">No site is using any Business module. You could remove the Business Add-on to save {formatGBP(PLANS.business.monthlyPrice)}/site/month.</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Billing cycle */}
-      {plan.hasAnyPlan && (
+      {paidActive && (
         <Card>
           <CardHeader><CardTitle className="text-base">Billing cycle</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
@@ -308,40 +215,8 @@ export default function Account() {
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Switching takes effect on your next renewal. Stripe will pro-rate any difference.
+              Switching takes effect on your next renewal.
             </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Diagnostics */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Subscription health</CardTitle>
-          <CardDescription>Verify your plan tier is correctly synced to active modules.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline" size="sm" onClick={() => navigate("/account/diagnostics")}>
-            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Open subscription diagnostics
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Multi-site */}
-      {plan.hasAnyPlan && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Sites</CardTitle>
-            <CardDescription>Add additional sites — 15% discount applies from the second site.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>You currently have <strong>{siteCount}</strong> active site{siteCount === 1 ? "" : "s"}.</p>
-            <p className="text-xs text-muted-foreground">
-              Per-site cost: {formatGBP(totals.perSite)} · Each additional site: {formatGBP(totals.discountedSiteCost)} ({100 - 15}% of base).
-            </p>
-            <Button variant="outline" size="sm" onClick={() => navigate("/settings?tab=sites")}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />Add a site in Settings
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -358,12 +233,14 @@ export default function Account() {
       )}
 
       <Card>
-        <CardContent className="py-6">
+        <CardContent className="py-6 space-y-2">
+          <p className="text-xs flex items-start gap-2 text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 mt-0.5 text-success" />
+            <span>5% of every subscription goes to carbon removal via Stripe Climate.</span>
+          </p>
           <ClimatePledge />
         </CardContent>
       </Card>
-
     </div>
   );
 }
-
