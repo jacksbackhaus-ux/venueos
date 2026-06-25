@@ -469,6 +469,7 @@ const Settings = () => {
     toast.success(`Staff member added — Staff ID: ${staffId}`);
     setShowAddStaff(false);
     setStaffForm({ name: "", email: "", role: "staff", pin: "", staffId: "" });
+    void syncHaccpUserQuantity();
     loadAll();
   };
 
