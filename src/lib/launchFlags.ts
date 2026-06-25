@@ -16,21 +16,33 @@ export type LaunchMode = "haccp" | "full";
 /** Current launch mode. "haccp" = focused HACCP launch. "full" = pre-pivot. */
 export const LAUNCH_MODE: LaunchMode = "haccp";
 
+const HACCP = LAUNCH_MODE === "haccp";
+
 /** Customer-facing AI features (morning briefing, margin watchdog, smart rota, …) */
-export const showAIFeatures = LAUNCH_MODE !== "haccp";
+export const showAIFeatures = !HACCP;
 
 /** Commercial / margin / sales modules (Profit & Pricing, Tip Tracker, Sales, Overheads). */
-export const showCommercialModules = LAUNCH_MODE !== "haccp";
+export const showCommercialModules = !HACCP;
 
 /** Operational-but-not-HACCP modules (Shifts, Timesheets, Batch Tracking, Waste Log). */
-export const showOperationalCommercialModules = LAUNCH_MODE !== "haccp";
+export const showOperationalCommercialModules = !HACCP;
 
 /** Multi-site HQ console (future paid upgrade). */
-export const showMultiSiteHQ = LAUNCH_MODE !== "haccp";
+export const showMultiSiteHQ = !HACCP;
+
+/** Team Messenger (kept in build, hidden from customer UI at launch). */
+export const showMessenger = !HACCP;
+
+/** Settings tabs that should only appear in the full product. */
+export const showModulesSettingsTab = !HACCP;
+export const showBrandingSettingsTab = !HACCP;
+
+/** Show the multi-tier billing UI (sites/billing section with PLANS/TIERS). */
+export const showLegacyBillingUI = !HACCP;
 
 /** Modules hidden from customer UI in HACCP launch mode. */
 export const HIDDEN_MODULES: ReadonlySet<ModuleName> = new Set<ModuleName>(
-  LAUNCH_MODE === "haccp"
+  HACCP
     ? [
         "shifts",
         "timesheets",
@@ -39,6 +51,7 @@ export const HIDDEN_MODULES: ReadonlySet<ModuleName> = new Set<ModuleName>(
         "cost_margin",
         "tip_tracker",
         "ai_insights",
+        "messenger",
       ]
     : [],
 );
@@ -48,7 +61,6 @@ export const VISIBLE_MODULES: ReadonlySet<ModuleName> = new Set<ModuleName>([
   "day_sheet",
   "temperatures",
   "cleaning",
-  "messenger",
   "customer_feedback",
   "allergens",
   "suppliers",
@@ -62,6 +74,6 @@ export const VISIBLE_MODULES: ReadonlySet<ModuleName> = new Set<ModuleName>([
 
 /** Should this module be visible in the customer-facing UI? */
 export function isModuleVisibleInLaunch(mod: ModuleName): boolean {
-  if (LAUNCH_MODE !== "haccp") return true;
+  if (!HACCP) return true;
   return !HIDDEN_MODULES.has(mod);
 }
