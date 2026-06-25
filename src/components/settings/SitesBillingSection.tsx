@@ -19,6 +19,11 @@ import {
 } from "@/lib/plans";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { openCustomerPortal } from "@/lib/stripe";
+import { LAUNCH_MODE } from "@/lib/launchFlags";
+
+const HACCP_LAUNCH = LAUNCH_MODE === "haccp";
+const HACCP_SITE_MONTHLY = 4.99;
+const HACCP_SITE_ANNUAL = 49.90;
 
 type SiteRow = {
   id: string;
