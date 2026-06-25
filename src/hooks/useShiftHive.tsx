@@ -400,8 +400,11 @@ export async function previewCompensation(args: {
   const start = new Date(`${args.shiftDate}T${args.startTime}`);
   const hoursUntil = (start.getTime() - Date.now()) / (1000 * 60 * 60);
 
-  // Hourly rate fallback chain
-  const { data: u } = await supabase.from("users").select("hourly_rate, organisation_id").eq("id", args.userId).maybeSingle();
+  // Hourly rate fallback chain (uses SECURITY DEFINER RPC — column-level read of users.hourly_rate is revoked).
+  const { data: payCtx } = await supabase
+    .rpc("get_user_pay_context", { _user_id: args.userId })
+    .maybeSingle();
+  const u = (payCtx ?? null) as { hourly_rate: number | null; organisation_id: string | null } | null;
   let rate = u?.hourly_rate ? Number(u.hourly_rate) : null;
   if (!rate) rate = settings?.default_hourly_rate ? Number(settings.default_hourly_rate) : null;
   if (!rate && u?.organisation_id) {
