@@ -265,7 +265,7 @@ const Settings = () => {
         email: u.email || '',
         role: mapSiteRoleToStaffRole(memMap.get(u.id)),
         active: u.status === 'active',
-        pin: u.staff_code || undefined,
+        pin: staffCodeMap.get(u.id) || undefined,
       })));
     }
     setLoading(false);
