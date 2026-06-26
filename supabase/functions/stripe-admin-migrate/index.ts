@@ -100,12 +100,14 @@ Deno.serve(async (req) => {
 
   const writeAudit = async (extras: Record<string, unknown>) => {
     try {
-      await admin.from("admin_actions_log").insert({
-        actor_user_id: callerId,
-        action_kind: `stripe_admin:${action}`,
+      const { error } = await admin.from("admin_actions_log").insert({
+        performed_by: callerId,
+        action_type: `stripe_admin:${action}`,
+        target_organisation_id: null,
         reason,
         metadata: { environment, dry_run: dryRun, ...extras },
       });
+      if (error) console.error("audit write failed", error);
     } catch (e) { console.error("audit write failed", e); }
   };
 
