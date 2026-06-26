@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useRole } from "@/hooks/useRole";
+import { showCommercialModules } from "@/lib/launchFlags";
 import { TrendingDown, TrendingUp, Minus, Sparkles } from "lucide-react";
 
 interface Props { siteId: string | undefined; }
