@@ -1,3 +1,4 @@
+import { SEO } from "@/components/SEO";
 // True Margin Engine — Cost & Margin redesign.
 // Replaces the old single-list view with a typed Recipes tab (menu items vs prep
 // batches), an Ingredients setup tab, a Settings tab (VAT mode, derived labour

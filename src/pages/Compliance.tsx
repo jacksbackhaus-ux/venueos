@@ -1,3 +1,4 @@
+import { SEO } from "@/components/SEO";
 /**
  * Stay Compliant — section landing / command centre.
  *
