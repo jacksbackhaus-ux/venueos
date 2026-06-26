@@ -37,6 +37,16 @@ const LEGACY_LOOKUP: Record<LegacyPlanId, { month: string; year: string }> = {
 const HACCP_SITE = { month: "miseos_haccp_site_monthly", year: "miseos_haccp_site_annual" } as const;
 const HACCP_USER = { month: "miseos_haccp_user_monthly", year: "miseos_haccp_user_annual" } as const;
 
+function isMissingStripeCustomerError(error: unknown): boolean {
+  const err = error as { code?: string; raw?: { code?: string }; message?: string; statusCode?: number };
+  return (
+    err?.code === "resource_missing" ||
+    err?.raw?.code === "resource_missing" ||
+    (err?.statusCode === 404 && /No such customer/i.test(err?.message ?? "")) ||
+    /No such customer/i.test(err?.message ?? "")
+  );
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -144,6 +154,20 @@ serve(async (req) => {
     // Reuse the org's Stripe customer if we have one; otherwise create a
     // single customer and persist it so future checkouts cannot mint a
     // brand-new customer (which would let users get another free trial).
+    async function createAndStoreStripeCustomer(): Promise<string> {
+      const created = await stripe.customers.create({
+        ...(userEmail && { email: userEmail }),
+        metadata: { organisation_id: organisationId },
+      });
+      await service.from("subscriptions").upsert({
+        organisation_id: organisationId,
+        stripe_customer_id: created.id,
+        status: existingSub?.status ?? "incomplete",
+        environment,
+      }, { onConflict: "organisation_id" });
+      return created.id;
+    }
+
     let stripeCustomerId: string | null = existingSub?.stripe_customer_id ?? null;
     if (stripeCustomerId) {
       // Verify the stored customer still exists in the current Stripe
@@ -154,8 +178,7 @@ serve(async (req) => {
         const existing = await stripe.customers.retrieve(stripeCustomerId);
         if ((existing as { deleted?: boolean }).deleted) stripeCustomerId = null;
       } catch (err) {
-        const code = (err as { code?: string }).code;
-        if (code === "resource_missing") {
+        if (isMissingStripeCustomerError(err)) {
           stripeCustomerId = null;
         } else {
           throw err;
@@ -163,17 +186,7 @@ serve(async (req) => {
       }
     }
     if (!stripeCustomerId) {
-      const created = await stripe.customers.create({
-        ...(userEmail && { email: userEmail }),
-        metadata: { organisation_id: organisationId },
-      });
-      stripeCustomerId = created.id;
-      await service.from("subscriptions").upsert({
-        organisation_id: organisationId,
-        stripe_customer_id: stripeCustomerId,
-        status: existingSub?.status ?? "incomplete",
-        environment,
-      }, { onConflict: "organisation_id" });
+      stripeCustomerId = await createAndStoreStripeCustomer();
     }
 
     // Resolve lookup keys → Stripe price ids.
@@ -200,9 +213,9 @@ serve(async (req) => {
 
     const isHaccp = plan === "haccp";
     const trialEligible = isHaccp && !addSiteMode && !trialUsed;
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      ui_mode: "embedded_page",
+    const sessionParams = {
+      mode: "subscription" as const,
+      ui_mode: "embedded_page" as const,
       line_items: lineItems,
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       customer: stripeCustomerId,
@@ -211,7 +224,7 @@ serve(async (req) => {
       // (b) add +3.5% per transaction, both undesired for the HACCP launch.
       automatic_tax: { enabled: false },
       allow_promotion_codes: false,
-      payment_method_collection: "always",
+      payment_method_collection: "always" as const,
       metadata: {
         organisation_id: organisationId, plan, cycle,
         add_site_mode: addSiteMode ? "true" : "false",
@@ -223,7 +236,16 @@ serve(async (req) => {
         // so the subscription auto-activates when the trial ends.
         ...(trialEligible && { trial_period_days: 14 }),
       },
-    });
+    };
+
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionParams);
+    } catch (err) {
+      if (!isMissingStripeCustomerError(err)) throw err;
+      stripeCustomerId = await createAndStoreStripeCustomer();
+      session = await stripe.checkout.sessions.create({ ...sessionParams, customer: stripeCustomerId });
+    }
 
     // Lock the trial flag the moment a trial session is minted, so a
     // refresh / re-attempt in the same browser cannot produce a second
