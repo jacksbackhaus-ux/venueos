@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { ALL_MODULES, type ModuleName } from "@/lib/plans";
-import { isModuleVisibleInLaunch } from "@/lib/launchFlags";
+import { isModuleVisibleInLaunch, VISIBLE_MODULES, LAUNCH_MODE } from "@/lib/launchFlags";
 
 export interface ModuleActivationRow {
   id: string;
@@ -76,10 +76,13 @@ export function useModuleAccess() {
   // remain in the codebase and re-enable when LAUNCH_MODE flips back to "full".
   const isActive = (mod: ModuleName) => {
     if (!isModuleVisibleInLaunch(mod)) return false;
+    // HACCP launch: every module shipped with the launch plan is always on
+    // for customers — the £4.99 plan includes the full HACCP suite. Module
+    // activation rows are kept for the "full" product mode only.
+    if (LAUNCH_MODE === "haccp" && VISIBLE_MODULES.has(mod)) return true;
     return trialActive ? true : !!activeMap[mod];
   };
-  const activeModules = (trialActive ? [...ALL_MODULES] : ALL_MODULES.filter(m => activeMap[m]))
-    .filter(isModuleVisibleInLaunch);
+  const activeModules = ALL_MODULES.filter(isActive);
 
   return { loading, rows, isActive, activeModules, refresh };
 }
