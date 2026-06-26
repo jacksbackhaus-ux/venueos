@@ -483,9 +483,9 @@ const Settings = () => {
       toast.error("You can't deactivate your own account.");
       return;
     }
-    const patch: Record<string, unknown> = active
-      ? { status: 'active', deactivated_at: null, deactivated_by: null }
-      : { status: 'suspended', deactivated_at: new Date().toISOString(), deactivated_by: appUser?.id ?? null };
+    const patch = active
+      ? { status: 'active' as const, deactivated_at: null, deactivated_by: null }
+      : { status: 'suspended' as const, deactivated_at: new Date().toISOString(), deactivated_by: appUser?.id ?? null };
     const { error } = await supabase.from('users').update(patch).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
