@@ -203,17 +203,31 @@ export default function Pricing() {
                   setShowCheckout(true);
                 }}
               >
-                {paidActive ? "Manage subscription" : isTrialing ? "Continue trial" : "Start 14-day free trial"}
+                {paidActive
+                  ? "Manage subscription"
+                  : isTrialing
+                    ? "Subscribe to continue"
+                    : "Start 14-day free trial"}
               </Button>
             )}
-            <p className="text-xs text-muted-foreground text-center">No card required. Cancel anytime.</p>
+            <p className="text-xs text-muted-foreground text-center">
+              {showCheckout
+                ? (isTrialing
+                    ? "Your subscription starts after your trial ends. Cancel anytime."
+                    : "Cancel anytime.")
+                : (paidActive
+                    ? "Cancel anytime."
+                    : isTrialing
+                      ? "Add payment to keep access after your trial ends."
+                      : "No card required for your 14-day trial. Cancel anytime.")}
+            </p>
           </CardContent>
         </Card>
 
         <div className="text-center text-xs text-muted-foreground space-y-2 max-w-2xl mx-auto">
           <p className="flex items-center justify-center gap-1">
             <ShieldCheck className="h-3.5 w-3.5" />
-            All prices in GBP. VAT may apply. Data retained for 7 years after cancellation.
+            Prices in GBP. VAT not currently charged. Data retained for 7 years after cancellation.
           </p>
           <p>5% of every subscription goes to carbon removal via Stripe Climate.</p>
         </div>
