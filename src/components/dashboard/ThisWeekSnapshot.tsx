@@ -80,6 +80,7 @@ export function ThisWeekSnapshot({ siteId }: Props) {
   if (!showSection) return null;
 
   if (!hasBusiness) {
+    if (!showCommercialModules) return null;
     return (
       <Card className="p-5 bg-muted/40 border-dashed">
         <div className="flex items-center gap-3">
