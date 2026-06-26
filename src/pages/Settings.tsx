@@ -483,11 +483,16 @@ const Settings = () => {
       toast.error("You can't deactivate your own account.");
       return;
     }
-    const { error } = await supabase.from('users').update({ status: active ? 'active' : 'suspended' }).eq('id', id);
+    const patch: Record<string, unknown> = active
+      ? { status: 'active', deactivated_at: null, deactivated_by: null }
+      : { status: 'suspended', deactivated_at: new Date().toISOString(), deactivated_by: appUser?.id ?? null };
+    const { error } = await supabase.from('users').update(patch).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
     void syncHaccpUserQuantity();
-    toast.success(active ? "Staff member reactivated — PIN login restored" : "Staff member deactivated — PIN login revoked. Their historical records are preserved.");
+    toast.success(active
+      ? "Staff member reactivated — PIN login restored. Your subscription will adjust by +£1/month on the next billing cycle."
+      : "Staff member deactivated — PIN login revoked. Subscription will adjust by −£1/month. Their historical records are preserved.");
   };
 
   const openEditStaff = (s: StaffMember) => {
