@@ -215,13 +215,14 @@ export default function Pricing() {
               {showCheckout
                 ? (isTrialing
                     ? "Your subscription starts after your trial ends. Cancel anytime."
-                    : "Cancel anytime.")
+                    : "Card required to start your trial. You won't be charged until your 14-day trial ends — cancel anytime before then.")
                 : (paidActive
                     ? "Cancel anytime."
                     : isTrialing
                       ? "Add payment to keep access after your trial ends."
-                      : "No card required for your 14-day trial. Cancel anytime.")}
+                      : "Card required. No charge for 14 days — cancel anytime during your trial.")}
             </p>
+
           </CardContent>
         </Card>
 
