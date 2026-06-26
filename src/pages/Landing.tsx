@@ -305,8 +305,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <SEO
-        title="MiseOS — Digital HACCP & Food Safety for UK Small Food Businesses"
-        description="Replace paper food safety records. Digital HACCP, temperatures, cleaning and Inspection Pack for UK bakeries, cafés and small restaurants. £4.99/site/month. 14-day free trial."
+        title="MiseOS — Digital HACCP for UK Food Businesses"
+        description="Digital HACCP, temperatures and cleaning logs for UK bakeries, cafés and small restaurants. Inspection-ready records. £4.99/site/month. 14-day free trial."
         path="/"
       />
       <Nav />
