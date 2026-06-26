@@ -144,15 +144,30 @@ serve(async (req) => {
     // Reuse the org's Stripe customer if we have one; otherwise create a
     // single customer and persist it so future checkouts cannot mint a
     // brand-new customer (which would let users get another free trial).
-    let stripeCustomerId = existingSub?.stripe_customer_id ?? null;
+    let stripeCustomerId: string | null = existingSub?.stripe_customer_id ?? null;
+    if (stripeCustomerId) {
+      // Verify the stored customer still exists in the current Stripe
+      // account/mode. Stored IDs from another mode (or deleted customers)
+      // produce "No such customer" errors at checkout — recover by
+      // creating a fresh one and overwriting the stale id.
+      try {
+        const existing = await stripe.customers.retrieve(stripeCustomerId);
+        if ((existing as { deleted?: boolean }).deleted) stripeCustomerId = null;
+      } catch (err) {
+        const code = (err as { code?: string }).code;
+        if (code === "resource_missing") {
+          stripeCustomerId = null;
+        } else {
+          throw err;
+        }
+      }
+    }
     if (!stripeCustomerId) {
       const created = await stripe.customers.create({
         ...(userEmail && { email: userEmail }),
         metadata: { organisation_id: organisationId },
       });
       stripeCustomerId = created.id;
-      // Persist immediately. Upsert so first-time orgs without a row
-      // still get the customer recorded.
       await service.from("subscriptions").upsert({
         organisation_id: organisationId,
         stripe_customer_id: stripeCustomerId,
