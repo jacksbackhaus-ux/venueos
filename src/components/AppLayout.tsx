@@ -507,6 +507,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* FAB */}
           <FAB />
 
+          {/* Feedback widget — hidden during impersonation (see component) */}
+          <FeedbackWidget />
+
           {/* Mobile bottom nav */}
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40 flex">
             <button
