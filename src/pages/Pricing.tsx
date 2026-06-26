@@ -51,6 +51,10 @@ export default function Pricing() {
   const [sites, setSites] = useState(draft?.sites ?? 1);
   const [users, setUsers] = useState(draft?.users ?? 1);
   const [showCheckout, setShowCheckout] = useState(Boolean(draft?.showCheckout));
+  const [quotaConflict, setQuotaConflict] = useState<UserQuotaConflict | null>(null);
+  const [selectedToDeactivate, setSelectedToDeactivate] = useState<Set<string>>(new Set());
+  const [deactivating, setDeactivating] = useState(false);
+  const [checkoutAttempt, setCheckoutAttempt] = useState(0);
 
   useEffect(() => {
     try { sessionStorage.setItem(SS_KEY, JSON.stringify({ cycle, sites, users, showCheckout })); } catch { /* noop */ }
