@@ -31,13 +31,30 @@ export default function Pricing() {
   const navigate = useNavigate();
   const { appUser, isLoading: authLoading } = useAuth();
   const { subscription, loading, trialActive, trialDaysLeft, paidActive } = useOrgAccess();
-  const [cycle, setCycle] = useState<Cycle>("month");
-  const [sites, setSites] = useState(1);
-  const [users, setUsers] = useState(1);
-  const [showCheckout, setShowCheckout] = useState(false);
+
+  // Persist user choices across tab switches / re-renders so an embedded
+  // checkout in progress is never accidentally reset.
+  const SS_KEY = "miseos.pricing.draft";
+  const loadDraft = () => {
+    try {
+      const raw = sessionStorage.getItem(SS_KEY);
+      return raw ? (JSON.parse(raw) as { cycle?: Cycle; sites?: number; users?: number; showCheckout?: boolean }) : null;
+    } catch { return null; }
+  };
+  const draft = loadDraft();
+
+  const [cycle, setCycle] = useState<Cycle>(draft?.cycle ?? "month");
+  const [sites, setSites] = useState(draft?.sites ?? 1);
+  const [users, setUsers] = useState(draft?.users ?? 1);
+  const [showCheckout, setShowCheckout] = useState(Boolean(draft?.showCheckout));
+
+  useEffect(() => {
+    try { sessionStorage.setItem(SS_KEY, JSON.stringify({ cycle, sites, users, showCheckout })); } catch { /* noop */ }
+  }, [cycle, sites, users, showCheckout]);
 
   useEffect(() => {
     if (!appUser?.organisation_id) return;
+    if (draft) return; // don't overwrite restored draft
     void (async () => {
       const [{ count: siteCount }, { count: userCount }] = await Promise.all([
         supabase.from("sites").select("id", { count: "exact", head: true })
@@ -48,6 +65,7 @@ export default function Pricing() {
       setSites(Math.max(1, siteCount ?? 1));
       setUsers(Math.max(1, userCount ?? 1));
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appUser?.organisation_id]);
 
   if (authLoading || loading) {
