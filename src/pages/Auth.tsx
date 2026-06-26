@@ -29,7 +29,7 @@ export default function Auth() {
           <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-sm">
             <span className="text-base font-bold text-primary-foreground">M</span>
           </div>
-          <h1 className="font-heading text-xl font-bold text-foreground mt-3">MiseOS</h1>
+          <h1 className="font-heading text-xl font-bold text-foreground mt-3">Sign in to MiseOS</h1>
         </div>
 
         {screen === "choose" && <RoleChooser onChoose={setScreen} />}
