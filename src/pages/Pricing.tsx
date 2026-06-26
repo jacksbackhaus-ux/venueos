@@ -10,7 +10,11 @@ import { Check, Sparkles, Loader2, ShieldCheck, Users, Building2 } from "lucide-
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
-import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { StripeEmbeddedCheckout, type UserQuotaConflict } from "@/components/StripeEmbeddedCheckout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { syncHaccpUserQuantity } from "@/lib/billingSync";
+import { toast } from "sonner";
 
 /**
  * MiseOS HACCP — single launch plan.
