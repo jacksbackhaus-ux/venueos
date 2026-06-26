@@ -24,6 +24,19 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
   const { isSuperAdmin } = useSuperAdmin();
   const { appUser } = useAuth();
   const hasCustomerProfile = !!appUser;
+  const [newFeedback, setNewFeedback] = useState<number>(0);
+
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      const { count } = await (supabase as any)
+        .from("feedback")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "new");
+      if (!cancel) setNewFeedback(count || 0);
+    })();
+    return () => { cancel = true; };
+  }, [pathname]);
 
   const handleExit = async () => {
     if (hasCustomerProfile) {
@@ -74,6 +87,11 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
               >
                 <item.icon className="h-3.5 w-3.5" />
                 {item.label}
+                {item.showBadge && newFeedback > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-400 text-foreground text-[10px] font-bold h-4 min-w-4 px-1">
+                    {newFeedback}
+                  </span>
+                )}
               </NavLink>
             );
           })}
