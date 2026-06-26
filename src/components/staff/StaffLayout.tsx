@@ -1,7 +1,8 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Building2, FileClock, Database, ArrowLeft, Wrench, ShieldCheck, LogOut,
+  LayoutDashboard, Users, Building2, FileClock, Database, ArrowLeft, Wrench, ShieldCheck, LogOut, MessageSquareHeart,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ const NAV = [
   { to: "/staff", end: true, label: "Dashboard", icon: LayoutDashboard },
   { to: "/staff/users", label: "Users", icon: Users },
   { to: "/staff/orgs", label: "Tenants", icon: Building2 },
+  { to: "/staff/feedback", label: "Feedback", icon: MessageSquareHeart, showBadge: true },
   { to: "/staff/access", label: "Access", icon: ShieldCheck, requiresSuperAdmin: true },
   { to: "/staff/ops", label: "Ops Log", icon: FileClock, requiresSuperAdmin: true },
   { to: "/staff/migrations", label: "Migrations", icon: Database },
