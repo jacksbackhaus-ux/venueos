@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
 import type { PlanId, BillingCycle } from "@/lib/plans";
 
+export interface UserQuotaConflict {
+  activeUserCount: number;
+  allowedUserCount: number;
+  mustDeactivate: number;
+  deactivatable: Array<{ id: string; name: string; email: string | null; auth_type: string; is_owner: boolean }>;
+}
+
 interface Props {
   /** Plan id. Use "haccp" for the new MiseOS HACCP launch product. */
   plan: PlanId | "haccp";
@@ -15,6 +22,8 @@ interface Props {
   userQuantity?: number;
   returnUrl?: string;
   addSiteMode?: boolean;
+  /** Called when the requested seat count is lower than current active users. */
+  onUserQuotaConflict?: (conflict: UserQuotaConflict) => void;
 }
 
 /**
