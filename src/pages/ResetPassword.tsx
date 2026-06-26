@@ -93,7 +93,7 @@ export default function ResetPassword() {
                     <Input id="new-password" type={show ? "text" : "password"} placeholder="Min 6 characters"
                       value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                     <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShow(!show)} tabIndex={-1}>
+                      onClick={() => setShow(!show)} tabIndex={-1} aria-label={show ? "Hide password" : "Show password"}>
                       {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
