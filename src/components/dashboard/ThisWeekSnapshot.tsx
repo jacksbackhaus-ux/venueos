@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useRole } from "@/hooks/useRole";
+import { showCommercialModules } from "@/lib/launchFlags";
 import { TrendingDown, TrendingUp, Minus, Sparkles } from "lucide-react";
 
 interface Props { siteId: string | undefined; }
@@ -79,6 +80,7 @@ export function ThisWeekSnapshot({ siteId }: Props) {
   if (!showSection) return null;
 
   if (!hasBusiness) {
+    if (!showCommercialModules) return null;
     return (
       <Card className="p-5 bg-muted/40 border-dashed">
         <div className="flex items-center gap-3">

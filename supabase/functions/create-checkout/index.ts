@@ -136,6 +136,8 @@ serve(async (req) => {
       line_items: lineItems,
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       ...(userEmail && { customer_email: userEmail }),
+      // MiseOS is not currently collecting VAT — keep checkout total = subtotal.
+      automatic_tax: { enabled: false },
       managed_payments: { enabled: true },
       metadata: {
         organisation_id: organisationId, plan, cycle,

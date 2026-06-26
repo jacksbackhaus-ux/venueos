@@ -291,7 +291,9 @@ export function SitesBillingSection() {
           <CardHeader>
             <CardTitle className="text-base">Add another site</CardTitle>
             <CardDescription>
-              Each additional site is billed at the same per-site price as your current plan.
+              {HACCP_LAUNCH
+                ? "Each site is £4.99/month. The first user is included. Each additional user is £1/month. Annual billing gives 2 months free."
+                : "Each additional site is billed at the same per-site price as your current plan."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -316,8 +318,9 @@ export function SitesBillingSection() {
                   <p className="text-xs text-muted-foreground">
                     {HACCP_LAUNCH ? (
                       <>
-                        Based on your current plan (MiseOS HACCP) — £4.99/mo per site, plus £1/month per additional user.
+                        MiseOS HACCP — £4.99/month per site, first user included, £1/month per additional user.
                         {" Billed "}{cycle === "year" ? "yearly (2 months free)" : "monthly"}.
+                        {" Prices in GBP. VAT not currently charged."}
                       </>
                     ) : (
                       <>
