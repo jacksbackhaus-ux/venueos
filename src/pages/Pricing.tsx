@@ -30,7 +30,7 @@ type Cycle = "month" | "year";
 export default function Pricing() {
   const navigate = useNavigate();
   const { appUser, isLoading: authLoading } = useAuth();
-  const { subscription, loading, trialActive, trialDaysLeft, paidActive } = useOrgAccess();
+  const { subscription, loading, trialActive, trialDaysLeft, paidActive, trialEligible } = useOrgAccess();
 
   // Persist user choices across tab switches / re-renders so an embedded
   // checkout in progress is never accidentally reset.
@@ -94,9 +94,11 @@ export default function Pricing() {
       />
       <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-8">
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-semibold">
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${trialEligible ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
             <Sparkles className="h-3.5 w-3.5" />
-            14-day free trial — card required, no charge until trial ends
+            {trialEligible
+              ? "14-day free trial — card required, no charge until trial ends"
+              : "Your free trial has ended. Subscribe to continue."}
           </div>
 
           <h1 className="font-heading text-3xl md:text-4xl font-bold">
@@ -206,21 +208,21 @@ export default function Pricing() {
               >
                 {paidActive
                   ? "Manage subscription"
-                  : isTrialing
-                    ? "Subscribe to continue"
-                    : "Start 14-day free trial"}
+                  : trialEligible
+                    ? "Start 14-day free trial"
+                    : "Subscribe"}
               </Button>
             )}
             <p className="text-xs text-muted-foreground text-center">
               {showCheckout
-                ? (isTrialing
-                    ? "Your subscription starts after your trial ends. Cancel anytime."
-                    : "Card required to start your trial. You won't be charged until your 14-day trial ends — cancel anytime before then.")
+                ? (trialEligible
+                    ? "Card required to start your trial. You won't be charged until your 14-day trial ends — cancel anytime before then."
+                    : "Your subscription starts immediately. Cancel anytime.")
                 : (paidActive
                     ? "Cancel anytime."
-                    : isTrialing
-                      ? "Add payment to keep access after your trial ends."
-                      : "Card required. No charge for 14 days — cancel anytime during your trial.")}
+                    : trialEligible
+                      ? "Card required. No charge for 14 days — cancel anytime during your trial."
+                      : "Your free trial has already been used. Subscribe to continue — cancel anytime.")}
             </p>
 
           </CardContent>
