@@ -195,11 +195,16 @@ export default function Pricing() {
             {showCheckout && appUser ? (
               <div className="rounded-lg border overflow-hidden">
                 <StripeEmbeddedCheckout
+                  key={checkoutAttempt}
                   plan="haccp"
                   cycle={cycle}
                   siteQuantity={sites}
                   userQuantity={extraUsers}
                   returnUrl={`${window.location.origin}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`}
+                  onUserQuotaConflict={(c) => {
+                    setQuotaConflict(c);
+                    setSelectedToDeactivate(new Set());
+                  }}
                 />
                 <div className="p-2 border-t bg-muted/20 flex justify-end">
                   <Button variant="ghost" size="sm" onClick={() => setShowCheckout(false)}>Cancel</Button>
