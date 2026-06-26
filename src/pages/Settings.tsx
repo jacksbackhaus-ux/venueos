@@ -213,13 +213,18 @@ const Settings = () => {
     setBakeryName(currentSite.name || "");
     setBakeryAddress(currentSite.address || "");
 
-    const [unitsRes, cleaningRes, sectionsRes, usersRes, membershipsRes] = await Promise.all([
+    const [unitsRes, cleaningRes, sectionsRes, usersRes, membershipsRes, staffCodesRes] = await Promise.all([
       supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
-      supabase.from('users').select('id, display_name, email, status, auth_type, staff_code').eq('organisation_id', currentSite.organisation_id),
+      supabase.from('users').select('id, display_name, email, status, auth_type').eq('organisation_id', currentSite.organisation_id),
       supabase.from('memberships').select('user_id, site_role, active').eq('site_id', currentSite.id),
+      supabase.rpc('list_org_user_staff_codes', { _org_id: currentSite.organisation_id }),
     ]);
+    const staffCodeMap = new Map<string, string>();
+    (staffCodesRes.data as any[] | null)?.forEach((r) => {
+      if (r?.staff_code) staffCodeMap.set(r.user_id, r.staff_code);
+    });
 
     if (unitsRes.data) {
       setTempUnits(unitsRes.data.map((u: any) => ({
