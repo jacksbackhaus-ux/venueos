@@ -96,8 +96,9 @@ export default function Pricing() {
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-semibold">
             <Sparkles className="h-3.5 w-3.5" />
-            14-day free trial — no card required
+            14-day free trial — card required, no charge until trial ends
           </div>
+
           <h1 className="font-heading text-3xl md:text-4xl font-bold">
             Simple pricing. One plan. No surprises.
           </h1>
