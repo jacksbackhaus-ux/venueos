@@ -213,6 +213,7 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        <h1 className="font-heading text-2xl font-bold text-foreground text-center mb-6">Set up your MiseOS business</h1>
         <Card>
           <CardHeader>
             <CardTitle>Set up your business</CardTitle>
