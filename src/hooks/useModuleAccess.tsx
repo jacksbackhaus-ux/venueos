@@ -76,6 +76,10 @@ export function useModuleAccess() {
   // remain in the codebase and re-enable when LAUNCH_MODE flips back to "full".
   const isActive = (mod: ModuleName) => {
     if (!isModuleVisibleInLaunch(mod)) return false;
+    // HACCP launch: every module shipped with the launch plan is always on
+    // for customers — the £4.99 plan includes the full HACCP suite. Module
+    // activation rows are kept for the "full" product mode only.
+    if (LAUNCH_MODE === "haccp" && VISIBLE_MODULES.has(mod)) return true;
     return trialActive ? true : !!activeMap[mod];
   };
   const activeModules = (trialActive ? [...ALL_MODULES] : ALL_MODULES.filter(m => activeMap[m]))
