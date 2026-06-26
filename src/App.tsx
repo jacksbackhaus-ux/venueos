@@ -52,6 +52,7 @@ import StaffOrgDetail from "./pages/staff/StaffOrgDetail";
 import StaffOpsLog from "./pages/staff/StaffOpsLog";
 import StaffMigrations from "./pages/staff/StaffMigrations";
 import StaffAccess from "./pages/staff/StaffAccess";
+import StaffFeedbackInbox, { StaffFeedbackDetail } from "./pages/staff/StaffFeedbackInbox";
 import { StaffGuard } from "./components/staff/StaffGuard";
 
 import { StaffLayout } from "./components/staff/StaffLayout";
@@ -303,6 +304,8 @@ function AppRoutes() {
       <Route path="/staff/access" element={<AuthGuard><StaffGuard><StaffLayout><StaffAccess /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/ops" element={<AuthGuard><StaffGuard><StaffLayout><StaffOpsLog /></StaffLayout></StaffGuard></AuthGuard>} />
       <Route path="/staff/migrations" element={<AuthGuard><StaffGuard><StaffLayout><StaffMigrations /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/feedback" element={<AuthGuard><StaffGuard><StaffLayout><StaffFeedbackInbox /></StaffLayout></StaffGuard></AuthGuard>} />
+      <Route path="/staff/feedback/:id" element={<AuthGuard><StaffGuard><StaffLayout><StaffFeedbackDetail /></StaffLayout></StaffGuard></AuthGuard>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

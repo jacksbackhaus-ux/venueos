@@ -1,7 +1,8 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Building2, FileClock, Database, ArrowLeft, Wrench, ShieldCheck, LogOut,
+  LayoutDashboard, Users, Building2, FileClock, Database, ArrowLeft, Wrench, ShieldCheck, LogOut, MessageSquareHeart,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ const NAV = [
   { to: "/staff", end: true, label: "Dashboard", icon: LayoutDashboard },
   { to: "/staff/users", label: "Users", icon: Users },
   { to: "/staff/orgs", label: "Tenants", icon: Building2 },
+  { to: "/staff/feedback", label: "Feedback", icon: MessageSquareHeart, showBadge: true },
   { to: "/staff/access", label: "Access", icon: ShieldCheck, requiresSuperAdmin: true },
   { to: "/staff/ops", label: "Ops Log", icon: FileClock, requiresSuperAdmin: true },
   { to: "/staff/migrations", label: "Migrations", icon: Database },
@@ -22,6 +24,19 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
   const { isSuperAdmin } = useSuperAdmin();
   const { appUser } = useAuth();
   const hasCustomerProfile = !!appUser;
+  const [newFeedback, setNewFeedback] = useState<number>(0);
+
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      const { count } = await (supabase as any)
+        .from("feedback")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "new");
+      if (!cancel) setNewFeedback(count || 0);
+    })();
+    return () => { cancel = true; };
+  }, [pathname]);
 
   const handleExit = async () => {
     if (hasCustomerProfile) {
@@ -72,6 +87,11 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
               >
                 <item.icon className="h-3.5 w-3.5" />
                 {item.label}
+                {item.showBadge && newFeedback > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-400 text-foreground text-[10px] font-bold h-4 min-w-4 px-1">
+                    {newFeedback}
+                  </span>
+                )}
               </NavLink>
             );
           })}

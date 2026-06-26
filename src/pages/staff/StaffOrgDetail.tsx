@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { SubscriptionManager } from "@/components/staff/SubscriptionManager";
+import { OrgFeedbackList } from "@/pages/staff/StaffFeedbackInbox";
 import { deriveTierFromFlags, TIERS, type TierId } from "@/lib/plans";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -326,6 +327,10 @@ export default function StaffOrgDetail() {
 
       {/* SECTION E — Internal support notes */}
       <SupportNotes orgId={c360.organisation.id} />
+
+      {/* SECTION G — Customer feedback */}
+      <OrgFeedbackList orgId={c360.organisation.id} />
+
 
       <Dialog open={showImpersonate} onOpenChange={setShowImpersonate}>
         <DialogContent>

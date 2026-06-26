@@ -14,6 +14,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { useRole } from "@/hooks/useRole";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Badge } from "@/components/ui/badge";
@@ -506,6 +507,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* FAB */}
           <FAB />
+
+          {/* Feedback widget — hidden during impersonation (see component) */}
+          <FeedbackWidget />
 
           {/* Mobile bottom nav */}
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40 flex">

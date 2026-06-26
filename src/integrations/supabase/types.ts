@@ -1206,6 +1206,76 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          browser_info: string | null
+          created_at: string
+          description: string
+          id: string
+          internal_notes: string | null
+          organisation_id: string
+          page: string | null
+          screenshot_url: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          browser_info?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          internal_notes?: string | null
+          organisation_id: string
+          page?: string | null
+          screenshot_url?: string | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          browser_info?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          internal_notes?: string | null
+          organisation_id?: string
+          page?: string | null
+          screenshot_url?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback_entries: {
         Row: {
           action_taken: string | null
