@@ -310,12 +310,14 @@ export default function Landing() {
         path="/"
       />
       <Nav />
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <Pricing />
-      <FAQ />
-      <CTA />
+      <main>
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <Pricing />
+        <FAQ />
+        <CTA />
+      </main>
       <Footer />
     </div>
   );
