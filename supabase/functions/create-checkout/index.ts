@@ -130,24 +130,32 @@ serve(async (req) => {
       lineItems.push({ price: legacyPriceId, quantity: siteQuantity });
     }
 
+    const isHaccp = plan === "haccp";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       ui_mode: "embedded_page",
       line_items: lineItems,
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       ...(userEmail && { customer_email: userEmail }),
-      // MiseOS is not currently collecting VAT — keep checkout total = subtotal.
+      // MiseOS does not collect VAT. We intentionally do NOT enable
+      // managed_payments — it would (a) reject automatic_tax:false and
+      // (b) add +3.5% per transaction, both undesired for the HACCP launch.
       automatic_tax: { enabled: false },
-      managed_payments: { enabled: true },
+      allow_promotion_codes: false,
+      payment_method_collection: "always",
       metadata: {
         organisation_id: organisationId, plan, cycle,
         add_site_mode: addSiteMode ? "true" : "false",
-        managed_payments: "true",
       },
       subscription_data: {
         metadata: { organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
+        // 14-day free trial for new HACCP subscriptions only. Card is
+        // required at signup (payment_method_collection above), so the
+        // subscription auto-activates when the trial ends unless cancelled.
+        ...(isHaccp && !addSiteMode && { trial_period_days: 14 }),
       },
     });
+
 
     return new Response(JSON.stringify({ clientSecret: session.client_secret }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
