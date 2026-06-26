@@ -5717,6 +5717,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_org_user_staff_codes: {
+        Args: { _org_id: string }
+        Returns: {
+          staff_code: string
+          user_id: string
+        }[]
+      }
       messenger_mark_read: { Args: { _channel_id: string }; Returns: undefined }
       move_to_dlq: {
         Args: {
