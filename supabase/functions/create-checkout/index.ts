@@ -145,6 +145,52 @@ serve(async (req) => {
       }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // --- HACCP user-quota guard --------------------------------------
+    // The billed seat count (siteQuantity + userQuantity) must cover every
+    // currently-active user in the organisation. If the owner asks to
+    // subscribe for fewer than they have active, return a structured 409
+    // so the frontend can show a "choose who to deactivate" flow.
+    // The owner themselves is always included — they are returned with
+    // is_owner=true so the UI can lock the checkbox.
+    if (plan === "haccp" && !addSiteMode) {
+      const includedAndPaid = siteQuantity + userQuantity; // total seats requested
+      const { data: orgUsers } = await service
+        .from("users")
+        .select("id, display_name, email, auth_type")
+        .eq("organisation_id", organisationId)
+        .eq("status", "active");
+      const activeUsers = (orgUsers ?? []) as Array<{ id: string; display_name: string; email: string | null; auth_type: string }>;
+      const activeCount = activeUsers.length;
+
+      if (activeCount > includedAndPaid) {
+        // Identify the owner so the UI can exclude them from deactivation
+        const { data: ownerRows } = await service
+          .from("org_users")
+          .select("user_id")
+          .eq("organisation_id", organisationId)
+          .eq("org_role", "org_owner")
+          .eq("active", true);
+        const ownerIds = new Set(((ownerRows ?? []) as Array<{ user_id: string }>).map(r => r.user_id));
+        const deactivatable = activeUsers
+          .filter(u => !ownerIds.has(u.id))
+          .map(u => ({
+            id: u.id,
+            name: u.display_name,
+            email: u.email,
+            auth_type: u.auth_type,
+            is_owner: false,
+          }));
+        return new Response(JSON.stringify({
+          code: "user_quota_too_low",
+          error: `You have ${activeCount} active user${activeCount === 1 ? "" : "s"} but the plan you selected only covers ${includedAndPaid}. Choose ${activeCount - includedAndPaid} user${activeCount - includedAndPaid === 1 ? "" : "s"} to deactivate, or increase the number of paid users.`,
+          activeUserCount: activeCount,
+          allowedUserCount: includedAndPaid,
+          mustDeactivate: activeCount - includedAndPaid,
+          deactivatable,
+        }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const trialUsed = Boolean(
       existingSub?.has_used_trial ||
       existingSub?.trial_end ||
