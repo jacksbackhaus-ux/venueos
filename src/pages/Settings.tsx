@@ -1524,9 +1524,11 @@ const Settings = () => {
             <AlertDialogDescription>
               Their PIN login will be revoked immediately and they'll no longer appear in active staff lists or on the kiosk login screen.
               <br /><br />
-              All historical records they completed — temperature logs, day sheet sign-offs, cleaning, deliveries, incidents — will be fully preserved with their name attached.
+              <span className="font-medium text-foreground">Billing impact:</span> your subscription will reduce by £1/month (prorated) on the next sync.
               <br /><br />
-              You can reactivate them at any time from the Deactivated tab.
+              All historical records they completed — temperature logs, day sheet sign-offs, cleaning, deliveries, incidents — will be fully preserved with their name attached for the full HACCP retention period.
+              <br /><br />
+              You can reactivate them at any time from the Deactivated tab (this will add £1/month back).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
