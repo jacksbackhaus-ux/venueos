@@ -1,3 +1,4 @@
+import { SEO } from "@/components/SEO";
 // True Margin Engine — Cost & Margin redesign.
 // Replaces the old single-list view with a typed Recipes tab (menu items vs prep
 // batches), an Ingredients setup tab, a Settings tab (VAT mode, derived labour
@@ -102,6 +103,7 @@ export default function CostMargin() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
+      <SEO title="Profit & Pricing — MiseOS" description="Know your true cost, set the right price, and protect your margin on every menu item." path="/cost-margin" noindex />
       <div className="flex flex-wrap gap-3 items-start justify-between">
         <div>
           <h1 className="font-heading font-bold text-2xl flex items-center gap-2">

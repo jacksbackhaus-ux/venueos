@@ -1,3 +1,4 @@
+import { SEO } from "@/components/SEO";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -130,6 +131,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto pb-12">
+      <SEO title="Dashboard — MiseOS" description="Operator command centre: Safe to Trade score, priority actions, today and this week at a glance." path="/" noindex />
       {/* Date nav + closed-day control */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
         <div className="flex items-center justify-between rounded-lg border bg-card px-2 py-1.5">

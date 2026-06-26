@@ -1,3 +1,4 @@
+import { SEO } from "@/components/SEO";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
@@ -580,6 +581,7 @@ const Settings = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto">
+      <SEO title="Settings — MiseOS" description="Configure modules, users, branding and site settings for your MiseOS workspace." path="/settings" noindex />
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">

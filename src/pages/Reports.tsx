@@ -1,3 +1,4 @@
+import { SEO } from "@/components/SEO";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -206,6 +207,7 @@ const Reports = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
+      <SEO title="Inspection Pack — MiseOS" description="EHO-ready compliance evidence: pillar scores, temperature, cleaning, allergens, and full audit export." path="/reports" noindex />
       {/* Premium header */}
       <PageHeader
         icon={<FileText className="h-5 w-5" />}
