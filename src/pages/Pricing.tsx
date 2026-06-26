@@ -10,7 +10,11 @@ import { Check, Sparkles, Loader2, ShieldCheck, Users, Building2 } from "lucide-
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
-import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { StripeEmbeddedCheckout, type UserQuotaConflict } from "@/components/StripeEmbeddedCheckout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { syncHaccpUserQuantity } from "@/lib/billingSync";
+import { toast } from "sonner";
 
 /**
  * MiseOS HACCP — single launch plan.
@@ -47,6 +51,10 @@ export default function Pricing() {
   const [sites, setSites] = useState(draft?.sites ?? 1);
   const [users, setUsers] = useState(draft?.users ?? 1);
   const [showCheckout, setShowCheckout] = useState(Boolean(draft?.showCheckout));
+  const [quotaConflict, setQuotaConflict] = useState<UserQuotaConflict | null>(null);
+  const [selectedToDeactivate, setSelectedToDeactivate] = useState<Set<string>>(new Set());
+  const [deactivating, setDeactivating] = useState(false);
+  const [checkoutAttempt, setCheckoutAttempt] = useState(0);
 
   useEffect(() => {
     try { sessionStorage.setItem(SS_KEY, JSON.stringify({ cycle, sites, users, showCheckout })); } catch { /* noop */ }
@@ -187,11 +195,16 @@ export default function Pricing() {
             {showCheckout && appUser ? (
               <div className="rounded-lg border overflow-hidden">
                 <StripeEmbeddedCheckout
+                  key={checkoutAttempt}
                   plan="haccp"
                   cycle={cycle}
                   siteQuantity={sites}
                   userQuantity={extraUsers}
                   returnUrl={`${window.location.origin}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`}
+                  onUserQuotaConflict={(c) => {
+                    setQuotaConflict(c);
+                    setSelectedToDeactivate(new Set());
+                  }}
                 />
                 <div className="p-2 border-t bg-muted/20 flex justify-end">
                   <Button variant="ghost" size="sm" onClick={() => setShowCheckout(false)}>Cancel</Button>
@@ -241,6 +254,108 @@ export default function Pricing() {
           <ClimatePledge />
         </div>
       </div>
+
+      <Dialog open={!!quotaConflict} onOpenChange={(o) => { if (!o) setQuotaConflict(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Choose users to deactivate</DialogTitle>
+            <DialogDescription>
+              {quotaConflict && (
+                <>
+                  You have <b>{quotaConflict.activeUserCount}</b> active user{quotaConflict.activeUserCount === 1 ? "" : "s"} but
+                  the plan you selected only covers <b>{quotaConflict.allowedUserCount}</b>{" "}
+                  ({sites} included with your site{sites === 1 ? "" : "s"} + {extraUsers} paid extra).
+                  Select <b>{quotaConflict.mustDeactivate}</b> user{quotaConflict.mustDeactivate === 1 ? "" : "s"} to deactivate, or go back and increase the paid user count.
+                  <br /><br />
+                  Deactivated users lose login access but their historical records (temperatures, cleaning, day sheets, etc.) are kept for the full HACCP retention period.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-1.5 max-h-72 overflow-y-auto -mx-1 px-1">
+            {quotaConflict?.deactivatable.map((u) => {
+              const checked = selectedToDeactivate.has(u.id);
+              return (
+                <label
+                  key={u.id}
+                  className={`flex items-center gap-3 p-2.5 rounded-md border cursor-pointer ${checked ? "border-destructive/40 bg-destructive/5" : "hover:bg-muted/50"}`}
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(v) => {
+                      setSelectedToDeactivate((prev) => {
+                        const next = new Set(prev);
+                        if (v) next.add(u.id); else next.delete(u.id);
+                        return next;
+                      });
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{u.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {u.email || `Staff code · ${u.auth_type}`}
+                    </p>
+                  </div>
+                </label>
+              );
+            })}
+            {quotaConflict?.deactivatable.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-4">
+                Only the owner is active — increase the paid user count instead.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setQuotaConflict(null)} disabled={deactivating}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={
+                deactivating ||
+                !quotaConflict ||
+                selectedToDeactivate.size !== quotaConflict.mustDeactivate
+              }
+              onClick={async () => {
+                if (!quotaConflict || !appUser) return;
+                setDeactivating(true);
+                const ids = Array.from(selectedToDeactivate);
+                const { error: updErr } = await supabase
+                  .from("users")
+                  .update({
+                    status: "suspended",
+                    deactivated_at: new Date().toISOString(),
+                    deactivated_by: appUser.id,
+                  })
+                  .in("id", ids);
+                if (updErr) {
+                  toast.error(updErr.message || "Could not deactivate selected users.");
+                  setDeactivating(false);
+                  return;
+                }
+                // Best-effort billing sync (no-op if no live subscription yet).
+                void syncHaccpUserQuantity();
+                toast.success(
+                  `Deactivated ${ids.length} user${ids.length === 1 ? "" : "s"}. Their historical records are preserved.`
+                );
+                setDeactivating(false);
+                setQuotaConflict(null);
+                setSelectedToDeactivate(new Set());
+                // Re-mount StripeEmbeddedCheckout to retry create-checkout
+                setCheckoutAttempt((n) => n + 1);
+              }}
+            >
+              {deactivating
+                ? "Deactivating…"
+                : quotaConflict
+                ? `Deactivate ${selectedToDeactivate.size}/${quotaConflict.mustDeactivate} & continue`
+                : "Deactivate & continue"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

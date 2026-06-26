@@ -483,11 +483,16 @@ const Settings = () => {
       toast.error("You can't deactivate your own account.");
       return;
     }
-    const { error } = await supabase.from('users').update({ status: active ? 'active' : 'suspended' }).eq('id', id);
+    const patch = active
+      ? { status: 'active' as const, deactivated_at: null, deactivated_by: null }
+      : { status: 'suspended' as const, deactivated_at: new Date().toISOString(), deactivated_by: appUser?.id ?? null };
+    const { error } = await supabase.from('users').update(patch).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
     void syncHaccpUserQuantity();
-    toast.success(active ? "Staff member reactivated — PIN login restored" : "Staff member deactivated — PIN login revoked. Their historical records are preserved.");
+    toast.success(active
+      ? "Staff member reactivated — PIN login restored. Your subscription will adjust by +£1/month on the next billing cycle."
+      : "Staff member deactivated — PIN login revoked. Subscription will adjust by −£1/month. Their historical records are preserved.");
   };
 
   const openEditStaff = (s: StaffMember) => {
@@ -1519,9 +1524,11 @@ const Settings = () => {
             <AlertDialogDescription>
               Their PIN login will be revoked immediately and they'll no longer appear in active staff lists or on the kiosk login screen.
               <br /><br />
-              All historical records they completed — temperature logs, day sheet sign-offs, cleaning, deliveries, incidents — will be fully preserved with their name attached.
+              <span className="font-medium text-foreground">Billing impact:</span> your subscription will reduce by £1/month (prorated) on the next sync.
               <br /><br />
-              You can reactivate them at any time from the Deactivated tab.
+              All historical records they completed — temperature logs, day sheet sign-offs, cleaning, deliveries, incidents — will be fully preserved with their name attached for the full HACCP retention period.
+              <br /><br />
+              You can reactivate them at any time from the Deactivated tab (this will add £1/month back).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

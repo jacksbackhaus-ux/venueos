@@ -5438,6 +5438,8 @@ export type Database = {
           auth_type: Database["public"]["Enums"]["auth_type"]
           auth_user_id: string | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
           display_name: string
           email: string | null
           hourly_rate: number | null
@@ -5451,6 +5453,8 @@ export type Database = {
           auth_type?: Database["public"]["Enums"]["auth_type"]
           auth_user_id?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           display_name: string
           email?: string | null
           hourly_rate?: number | null
@@ -5464,6 +5468,8 @@ export type Database = {
           auth_type?: Database["public"]["Enums"]["auth_type"]
           auth_user_id?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           display_name?: string
           email?: string | null
           hourly_rate?: number | null
@@ -5479,6 +5485,20 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_deactivated_by_fkey"
+            columns: ["deactivated_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_deactivated_by_fkey"
+            columns: ["deactivated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
