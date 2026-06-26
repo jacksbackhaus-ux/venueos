@@ -108,6 +108,59 @@ serve(async (req) => {
       });
     }
 
+    // --- Trial eligibility + Stripe customer reuse -----------------------
+    // Per-org rule: a free trial is granted at most ONCE. We look up the
+    // existing subscription row to decide both (a) whether to block this
+    // checkout (already actively paying) and (b) whether to attach
+    // trial_period_days to the new session.
+    const { data: existingSub } = await service
+      .from("subscriptions")
+      .select("id, status, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id, trial_end, has_used_trial")
+      .eq("organisation_id", organisationId)
+      .maybeSingle();
+
+    const nowMs = Date.now();
+    const periodActive = !existingSub?.current_period_end ||
+      new Date(existingSub.current_period_end).getTime() > nowMs;
+    const alreadyPaying =
+      existingSub?.stripe_subscription_id &&
+      ["active", "trialing", "past_due"].includes(existingSub.status || "") &&
+      periodActive &&
+      !existingSub.cancel_at_period_end;
+
+    if (alreadyPaying) {
+      return new Response(JSON.stringify({
+        error: "Your organisation already has an active subscription. Manage it from the billing portal.",
+        portalRedirect: true,
+      }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const trialUsed = Boolean(
+      existingSub?.has_used_trial ||
+      existingSub?.trial_end ||
+      existingSub?.stripe_subscription_id
+    );
+
+    // Reuse the org's Stripe customer if we have one; otherwise create a
+    // single customer and persist it so future checkouts cannot mint a
+    // brand-new customer (which would let users get another free trial).
+    let stripeCustomerId = existingSub?.stripe_customer_id ?? null;
+    if (!stripeCustomerId) {
+      const created = await stripe.customers.create({
+        ...(userEmail && { email: userEmail }),
+        metadata: { organisation_id: organisationId },
+      });
+      stripeCustomerId = created.id;
+      // Persist immediately. Upsert so first-time orgs without a row
+      // still get the customer recorded.
+      await service.from("subscriptions").upsert({
+        organisation_id: organisationId,
+        stripe_customer_id: stripeCustomerId,
+        status: existingSub?.status ?? "incomplete",
+        environment,
+      }, { onConflict: "organisation_id" });
+    }
+
     // Resolve lookup keys → Stripe price ids.
     async function resolvePrice(lookupKey: string): Promise<string> {
       const list = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, limit: 1 });
@@ -131,12 +184,13 @@ serve(async (req) => {
     }
 
     const isHaccp = plan === "haccp";
+    const trialEligible = isHaccp && !addSiteMode && !trialUsed;
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       ui_mode: "embedded_page",
       line_items: lineItems,
       return_url: returnUrl || `${req.headers.get("origin")}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      ...(userEmail && { customer_email: userEmail }),
+      customer: stripeCustomerId,
       // MiseOS does not collect VAT. We intentionally do NOT enable
       // managed_payments — it would (a) reject automatic_tax:false and
       // (b) add +3.5% per transaction, both undesired for the HACCP launch.
@@ -149,12 +203,26 @@ serve(async (req) => {
       },
       subscription_data: {
         metadata: { organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
-        // 14-day free trial for new HACCP subscriptions only. Card is
-        // required at signup (payment_method_collection above), so the
-        // subscription auto-activates when the trial ends unless cancelled.
-        ...(isHaccp && !addSiteMode && { trial_period_days: 14 }),
+        // 14-day free trial ONLY for orgs that have never used one.
+        // Card is required at signup (payment_method_collection above),
+        // so the subscription auto-activates when the trial ends.
+        ...(trialEligible && { trial_period_days: 14 }),
       },
     });
+
+    // Lock the trial flag the moment a trial session is minted, so a
+    // refresh / re-attempt in the same browser cannot produce a second
+    // trial even before Stripe webhooks land.
+    if (trialEligible) {
+      await service.from("subscriptions").upsert({
+        organisation_id: organisationId,
+        stripe_customer_id: stripeCustomerId,
+        status: existingSub?.status ?? "incomplete",
+        environment,
+        has_used_trial: true,
+      }, { onConflict: "organisation_id" });
+    }
+
 
 
     return new Response(JSON.stringify({ clientSecret: session.client_secret }), {
