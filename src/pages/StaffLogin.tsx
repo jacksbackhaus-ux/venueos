@@ -96,6 +96,7 @@ export default function StaffLogin() {
           <h1 className="font-heading text-2xl font-bold text-foreground">MiseOS Staff</h1>
         </div>
 
+        <h2 className="sr-only">Internal staff sign-in</h2>
         <Card>
           <CardHeader>
             <CardTitle>Internal Sign In</CardTitle>

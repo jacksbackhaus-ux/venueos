@@ -123,6 +123,7 @@ export default function Pricing() {
           </div>
         </div>
 
+        <h2 className="sr-only">MiseOS HACCP plan</h2>
         <Card className="border-primary border-2 shadow-lg">
           <CardHeader className="text-center">
             <Badge className="mx-auto bg-primary text-primary-foreground w-fit">MiseOS HACCP</Badge>

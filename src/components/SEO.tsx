@@ -5,11 +5,12 @@ interface SEOProps {
   description: string;
   path?: string;
   type?: "website" | "article";
+  noindex?: boolean;
 }
 
 const SITE_URL = "https://mise-os.app";
 
-export function SEO({ title, description, path = "/", type = "website" }: SEOProps) {
+export function SEO({ title, description, path = "/", type = "website", noindex = false }: SEOProps) {
   const url = `${SITE_URL}${path}`;
   return (
     <Helmet>
@@ -22,6 +23,7 @@ export function SEO({ title, description, path = "/", type = "website" }: SEOPro
       <meta property="og:type" content={type} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
     </Helmet>
   );
 }

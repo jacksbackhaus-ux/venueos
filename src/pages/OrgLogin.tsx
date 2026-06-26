@@ -115,7 +115,7 @@ export default function OrgLogin() {
         {/* Branded header */}
         <div className="flex flex-col items-center mb-8 text-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={`${displayName} logo`} className="h-16 w-16 rounded-2xl object-cover shadow-sm" />
+            <img src={logoUrl} alt={`${displayName} — staff and manager login portal`} className="h-16 w-16 rounded-2xl object-cover shadow-sm" />
           ) : (
             <div
               className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm"
@@ -126,7 +126,7 @@ export default function OrgLogin() {
               </span>
             </div>
           )}
-          <h1 className="font-heading text-xl font-bold text-foreground mt-3">{displayName}</h1>
+          <h1 className="font-heading text-xl font-bold text-foreground mt-3">Log in to {displayName}</h1>
           <div className="h-0.5 w-10 rounded-full mt-2" style={{ background: accent }} aria-hidden />
         </div>
 
