@@ -14,6 +14,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { useRole } from "@/hooks/useRole";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Badge } from "@/components/ui/badge";
