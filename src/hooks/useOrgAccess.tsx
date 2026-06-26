@@ -26,6 +26,7 @@ export interface OrgSubscription {
   locked_at: string | null;
   organisation_id: string;
   updated_at: string | null;
+  has_used_trial?: boolean;
 }
 
 /** Snapshot of plan state for the org. Shape preserved for existing consumers; values are now derived from `tier`. */
@@ -151,6 +152,14 @@ export function useOrgAccess() {
     ?? (trialActive ? "essentials" : null);
   const plan = planFromTier(effectiveTier);
 
+  // A free trial is granted at most once per org. Eligible when no
+  // subscription row exists yet, or the row has never used a trial and
+  // has no Stripe subscription on file.
+  const trialEligible = !subscription
+    || (!subscription.has_used_trial
+        && !subscription.trial_end
+        && !subscription.stripe_subscription_id);
+
   return {
     subscription,
     loading,
@@ -166,5 +175,6 @@ export function useOrgAccess() {
     plan,
     tier: effectiveTier,
     cycle: (subscription?.billing_interval ?? "month") as BillingCycle,
+    trialEligible,
   };
 }

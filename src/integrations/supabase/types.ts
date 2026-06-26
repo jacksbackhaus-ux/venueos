@@ -4730,6 +4730,7 @@ export type Database = {
           current_period_end: string | null
           current_period_start: string | null
           environment: string
+          has_used_trial: boolean
           hq_quantity: number
           id: string
           is_comped: boolean
@@ -4760,6 +4761,7 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           environment?: string
+          has_used_trial?: boolean
           hq_quantity?: number
           id?: string
           is_comped?: boolean
@@ -4790,6 +4792,7 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           environment?: string
+          has_used_trial?: boolean
           hq_quantity?: number
           id?: string
           is_comped?: boolean
