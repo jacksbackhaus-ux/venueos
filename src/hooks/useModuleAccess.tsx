@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { ALL_MODULES, type ModuleName } from "@/lib/plans";
-import { isModuleVisibleInLaunch } from "@/lib/launchFlags";
+import { isModuleVisibleInLaunch, VISIBLE_MODULES, LAUNCH_MODE } from "@/lib/launchFlags";
 
 export interface ModuleActivationRow {
   id: string;
