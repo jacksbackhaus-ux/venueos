@@ -77,6 +77,7 @@ export default function Compliance() {
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6 pb-12">
+      <SEO title="Stay Compliant — MiseOS" description="Inspection readiness across the three UK Food Hygiene Rating pillars." path="/compliance" noindex />
       <header className="space-y-1">
         <h1 className="font-heading font-bold text-2xl flex items-center gap-2">
           <ShieldCheck className="h-6 w-6 text-primary" /> Stay Compliant

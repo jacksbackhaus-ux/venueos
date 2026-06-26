@@ -234,6 +234,7 @@ export default function Haccp() {
   // ---------- List view ----------
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <SEO title="HACCP Plans — MiseOS" description="Build, publish and review HACCP plans with hazards, critical control points and monitoring." path="/haccp" noindex />
       <motion.header
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
         className="flex items-start justify-between gap-3 flex-wrap"

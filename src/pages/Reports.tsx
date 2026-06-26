@@ -206,6 +206,7 @@ const Reports = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
+      <SEO title="Inspection Pack — MiseOS" description="EHO-ready compliance evidence: pillar scores, temperature, cleaning, allergens, and full audit export." path="/reports" noindex />
       {/* Premium header */}
       <PageHeader
         icon={<FileText className="h-5 w-5" />}
