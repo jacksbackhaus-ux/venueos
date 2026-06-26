@@ -82,8 +82,7 @@ export function useModuleAccess() {
     if (LAUNCH_MODE === "haccp" && VISIBLE_MODULES.has(mod)) return true;
     return trialActive ? true : !!activeMap[mod];
   };
-  const activeModules = (trialActive ? [...ALL_MODULES] : ALL_MODULES.filter(m => activeMap[m]))
-    .filter(isModuleVisibleInLaunch);
+  const activeModules = ALL_MODULES.filter(isActive);
 
   return { loading, rows, isActive, activeModules, refresh };
 }
