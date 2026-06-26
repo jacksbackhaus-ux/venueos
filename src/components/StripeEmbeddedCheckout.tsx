@@ -33,6 +33,7 @@ interface Props {
  */
 export function StripeEmbeddedCheckout({
   plan, cycle, siteQuantity = 1, userQuantity = 0, returnUrl, addSiteMode = false,
+  onUserQuotaConflict,
 }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
@@ -51,21 +52,39 @@ export function StripeEmbeddedCheckout({
 
     (async () => {
       try {
-        const { data, error: invokeErr } = await supabase.functions.invoke("create-checkout", {
-          body: {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const url = `https://${projectRef}.supabase.co/functions/v1/create-checkout`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
             plan, cycle, siteQuantity, userQuantity, addSiteMode,
             returnUrl: returnUrl || `${window.location.origin}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
             environment: stripeEnvironment,
-          },
+          }),
         });
+        const data = await res.json().catch(() => ({} as Record<string, unknown>));
         if (cancelled) return;
-        if (invokeErr || !data?.clientSecret) {
-          const msg = (data && (data as { error?: string }).error) || invokeErr?.message || "Could not start checkout";
-          console.error("[create-checkout] failed", { invokeErr, data });
+
+        if (res.status === 409 && (data as { code?: string }).code === "user_quota_too_low") {
+          onUserQuotaConflict?.(data as UserQuotaConflict);
+          setError((data as { error?: string }).error || "Too many active users for this plan.");
+          return;
+        }
+
+        if (!res.ok || !(data as { clientSecret?: string }).clientSecret) {
+          const msg = (data as { error?: string }).error || "Could not start checkout";
+          console.error("[create-checkout] failed", { status: res.status, data });
           setError(msg);
           return;
         }
-        setSecret(data.clientSecret as string);
+        setSecret((data as { clientSecret: string }).clientSecret);
       } catch (e) {
         if (cancelled) return;
         console.error("[create-checkout] threw", e);
@@ -76,7 +95,7 @@ export function StripeEmbeddedCheckout({
     })();
 
     return () => { cancelled = true; window.clearTimeout(timeout); };
-  }, [plan, cycle, siteQuantity, userQuantity, returnUrl, addSiteMode, attempt]);
+  }, [plan, cycle, siteQuantity, userQuantity, returnUrl, addSiteMode, attempt, onUserQuotaConflict]);
 
   const fetchClientSecret = useCallback(async (): Promise<string> => {
     // Stripe's provider calls this once; we already have it.
