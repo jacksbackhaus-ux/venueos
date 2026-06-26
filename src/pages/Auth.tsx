@@ -29,7 +29,7 @@ export default function Auth() {
           <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-sm">
             <span className="text-base font-bold text-primary-foreground">M</span>
           </div>
-          <h1 className="font-heading text-xl font-bold text-foreground mt-3">MiseOS</h1>
+          <h1 className="font-heading text-xl font-bold text-foreground mt-3">Sign in to MiseOS</h1>
         </div>
 
         {screen === "choose" && <RoleChooser onChoose={setScreen} />}
@@ -154,7 +154,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, {
       <Input ref={ref} id={id} type={show ? "text" : "password"} placeholder={placeholder}
         value={value} onChange={onChange} required={required} minLength={6} />
       <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-        onClick={() => setShow(!show)} tabIndex={-1}>
+        onClick={() => setShow(!show)} tabIndex={-1} aria-label={show ? "Hide password" : "Show password"}>
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
     </div>

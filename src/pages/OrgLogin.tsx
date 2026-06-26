@@ -115,7 +115,7 @@ export default function OrgLogin() {
         {/* Branded header */}
         <div className="flex flex-col items-center mb-8 text-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={displayName} className="h-16 w-16 rounded-2xl object-cover shadow-sm" />
+            <img src={logoUrl} alt={`${displayName} logo`} className="h-16 w-16 rounded-2xl object-cover shadow-sm" />
           ) : (
             <div
               className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm"

@@ -72,7 +72,7 @@ export default function ResetPassword() {
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center mr-3">
             <span className="text-sm font-bold text-primary-foreground">V</span>
           </div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">MiseOS</h1>
+          <h1 className="font-heading text-2xl font-bold text-foreground">Reset your MiseOS password</h1>
         </div>
 
         <Card>
@@ -93,7 +93,7 @@ export default function ResetPassword() {
                     <Input id="new-password" type={show ? "text" : "password"} placeholder="Min 6 characters"
                       value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                     <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShow(!show)} tabIndex={-1}>
+                      onClick={() => setShow(!show)} tabIndex={-1} aria-label={show ? "Hide password" : "Show password"}>
                       {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>

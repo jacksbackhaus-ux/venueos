@@ -41,7 +41,7 @@ function Nav() {
     <nav className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-6xl mx-auto px-4 h-20 flex items-center justify-between">
         <a href="#top" className="flex items-center gap-2.5">
-          <img src={miseosLogo} alt="MiseOS" className="h-10 md:h-12 w-auto" />
+          <img src={miseosLogo} alt="MiseOS logo" className="h-10 md:h-12 w-auto" />
           <span className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">MiseOS</span>
         </a>
         <div className="hidden md:flex items-center gap-8">
@@ -288,7 +288,7 @@ function Footer() {
     <footer className="border-t border-slate-200 bg-white">
       <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm text-slate-500">
-          <img src={miseosLogo} alt="MiseOS" className="h-8 w-auto" />
+          <img src={miseosLogo} alt="MiseOS logo" className="h-8 w-auto" />
           <span>© {new Date().getFullYear()} MiseOS · Built for UK food businesses</span>
         </div>
         <div className="flex items-center gap-5 text-sm text-slate-500">
@@ -305,17 +305,19 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <SEO
-        title="MiseOS — Digital HACCP & Food Safety for UK Small Food Businesses"
-        description="Replace paper food safety records. Digital HACCP, temperatures, cleaning and Inspection Pack for UK bakeries, cafés and small restaurants. £4.99/site/month. 14-day free trial."
+        title="MiseOS — Digital HACCP for UK Food Businesses"
+        description="Digital HACCP, temperatures and cleaning logs for UK bakeries, cafés and small restaurants. Inspection-ready records. £4.99/site/month. 14-day free trial."
         path="/"
       />
       <Nav />
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <Pricing />
-      <FAQ />
-      <CTA />
+      <main>
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <Pricing />
+        <FAQ />
+        <CTA />
+      </main>
       <Footer />
     </div>
   );
