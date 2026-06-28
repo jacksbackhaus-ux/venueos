@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: 'Confirm your email to start your free MiseOS HACCP trial',
+  invite: "You've been invited to join your team on MiseOS",
+  magiclink: 'Your MiseOS sign-in link',
+  recovery: 'Reset your MiseOS password',
+  email_change: 'Confirm your new MiseOS email address',
+  reauthentication: 'Your MiseOS verification code',
 }
 
 // Template mapping
@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "venueos"
+const SITE_NAME = "MiseOS"
 const SENDER_DOMAIN = "notify.mise-os.app"
 const ROOT_DOMAIN = "mise-os.app"
 const FROM_DOMAIN = "mise-os.app" // Domain shown in From address (may be root or sender subdomain)
