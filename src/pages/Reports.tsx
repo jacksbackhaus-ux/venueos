@@ -196,6 +196,7 @@ const Reports = () => {
           })
           .catch((e) => console.warn("inspection-pack-ready email failed", e));
       }
+    } catch (err: any) {
       toast({ title: "Export failed", description: err.message, variant: "destructive" });
     } finally {
       setExporting(false);
