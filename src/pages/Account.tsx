@@ -17,11 +17,22 @@ import { toast } from "sonner";
 import { LoginUrlCard } from "@/components/LoginUrlCard";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
 
-// Launch pricing — single MiseOS HACCP plan.
-const SITE_MONTHLY = 4.99;
-const SITE_ANNUAL = 49.90;
-const USER_MONTHLY = 1.00;
-const USER_ANNUAL = 10.00;
+// Launch pricing — single MiseOS HACCP plan. Used only as a sanity check;
+// the displayed numbers below come from Stripe (single source of truth).
+const USER_MONTHLY = 1.0;
+
+type BillingSummary = {
+  cycle: "month" | "year";
+  site_quantity: number;
+  extra_user_quantity: number;
+  site_unit_amount: number;
+  user_unit_amount: number;
+  currency: string;
+  total: number;
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+};
 
 export default function Account() {
   const navigate = useNavigate();
@@ -30,23 +41,34 @@ export default function Account() {
     subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft,
     cycle, paidActive,
   } = useOrgAccess();
-  const [siteCount, setSiteCount] = useState<number>(1);
-  const [userCount, setUserCount] = useState<number>(1);
   const [savingCycle, setSavingCycle] = useState(false);
+  const [summary, setSummary] = useState<BillingSummary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
-    if (!appUser?.organisation_id) return;
+    if (!paidActive || !subscription?.stripe_subscription_id) {
+      setSummary(null);
+      setSummaryError(null);
+      return;
+    }
+    let cancelled = false;
+    setSummaryLoading(true);
+    setSummaryError(null);
     void (async () => {
-      const [{ count: sCount }, { count: uCount }] = await Promise.all([
-        supabase.from("sites").select("id", { count: "exact", head: true })
-          .eq("organisation_id", appUser.organisation_id).eq("active", true),
-        supabase.from("users").select("id", { count: "exact", head: true })
-          .eq("organisation_id", appUser.organisation_id).eq("status", "active"),
-      ]);
-      setSiteCount(Math.max(1, sCount ?? 1));
-      setUserCount(Math.max(1, uCount ?? 1));
+      const { data, error } = await supabase.functions.invoke("get-haccp-billing-summary", { body: {} });
+      if (cancelled) return;
+      if (error || !data?.ok) {
+        setSummary(null);
+        setSummaryError((data as { error?: string })?.error || error?.message || "Unable to load billing details");
+      } else {
+        setSummary(data as BillingSummary);
+      }
+      setSummaryLoading(false);
     })();
-  }, [appUser?.organisation_id]);
+    return () => { cancelled = true; };
+  }, [paidActive, subscription?.stripe_subscription_id]);
 
   if (orgRole?.org_role !== "org_owner") {
     return (
@@ -62,11 +84,8 @@ export default function Account() {
     return <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
-  const sitePrice = cycle === "year" ? SITE_ANNUAL : SITE_MONTHLY;
-  const userPrice = cycle === "year" ? USER_ANNUAL : USER_MONTHLY;
-  const extraUsers = Math.max(0, userCount - 1);
-  const total = (siteCount * sitePrice) + (extraUsers * userPrice);
-  const monthlyEquivalent = cycle === "year" ? total / 12 : total;
+  const displayCycle = summary?.cycle ?? cycle;
+  const monthlyEquivalent = summary ? (summary.cycle === "year" ? summary.total / 12 : summary.total) : 0;
 
   const switchCycle = async (next: "month" | "year") => {
     if (!appUser?.organisation_id || next === cycle) return;
@@ -91,6 +110,16 @@ export default function Account() {
       .eq("organisation_id", appUser.organisation_id);
     if (error) toast.error(error.message);
     else toast.success(`Cancellation scheduled. You'll keep access until ${endLabel}.`);
+  };
+
+  const handleOpenPortal = async () => {
+    setPortalLoading(true);
+    try {
+      await openCustomerPortal();
+    } catch (e) {
+      toast.error("We couldn't open your billing portal — please try again or contact support.");
+      setPortalLoading(false);
+    }
   };
 
   return (
