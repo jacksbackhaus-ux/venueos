@@ -16,8 +16,20 @@ export function getStripe(): Promise<Stripe | null> {
 
 export async function openCustomerPortal(returnUrl?: string) {
   const { data, error } = await supabase.functions.invoke("customer-portal", {
-    body: { returnUrl: returnUrl || window.location.href, environment: stripeEnvironment },
+    body: { returnUrl: returnUrl || `${window.location.origin}/account`, environment: stripeEnvironment },
   });
-  if (error || !data?.url) throw new Error(error?.message || "Could not open billing portal");
+  // FunctionsHttpError exposes the JSON body via error.context.
+  if (error) {
+    let serverMsg = error.message;
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === "function") {
+        const body = await ctx.json();
+        if (body?.error) serverMsg = body.error;
+      }
+    } catch { /* ignore */ }
+    throw new Error(serverMsg || "Could not open billing portal");
+  }
+  if (!data?.url) throw new Error("Could not open billing portal");
   window.location.href = data.url;
 }
