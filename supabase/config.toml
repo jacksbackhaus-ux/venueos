@@ -1,34 +1,31 @@
 project_id = "elcmnvgbmzusogudpenp"
 
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
-
-[functions.get-stripe-price]
-verify_jwt = true
-
-[functions.payments-webhook]
-verify_jwt = false
-
-[functions.stripe-admin-migrate]
-verify_jwt = true
-
-[functions.sync-haccp-user-quantity]
-verify_jwt = true
-
-[functions.suggest-sales-mapping]
-verify_jwt = true
-
-[functions.generate-sales-insights]
-verify_jwt = true
-
-[functions.process-email-queue]
-verify_jwt = true
-
-[functions.send-transactional-email]
-verify_jwt = true
-
-[functions.send-feedback-notification]
-verify_jwt = true
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.create-checkout]
+    verify_jwt = false
+  [functions.customer-portal]
+    verify_jwt = false
+  [functions.generate-sales-insights]
+    verify_jwt = true
+  [functions.get-stripe-price]
+    verify_jwt = true
+  [functions.payments-webhook]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.send-feedback-notification]
+    verify_jwt = true
+  [functions.send-transactional-email]
+    verify_jwt = true
+  [functions.stripe-admin-migrate]
+    verify_jwt = true
+  [functions.suggest-sales-mapping]
+    verify_jwt = true
+  [functions.sync-haccp-user-quantity]
+    verify_jwt = true
+  [functions.send-trial-reminders]
+    verify_jwt = true
+  [functions.send-compliance-reminders]
+    verify_jwt = true
