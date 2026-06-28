@@ -4804,16 +4804,19 @@ export type Database = {
           hq_quantity: number
           id: string
           is_comped: boolean
+          last_compliance_reminder_on: string | null
           locked_at: string | null
           organisation_id: string
           site_quantity: number
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          subscription_active_emailed_at: string | null
           term_end: string | null
           term_start: string | null
           tier: string | null
           trial_end: string | null
+          trial_reminder_sent_at: string | null
           updated_at: string
         }
         Insert: {
@@ -4835,16 +4838,19 @@ export type Database = {
           hq_quantity?: number
           id?: string
           is_comped?: boolean
+          last_compliance_reminder_on?: string | null
           locked_at?: string | null
           organisation_id: string
           site_quantity?: number
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_active_emailed_at?: string | null
           term_end?: string | null
           term_start?: string | null
           tier?: string | null
           trial_end?: string | null
+          trial_reminder_sent_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -4866,16 +4872,19 @@ export type Database = {
           hq_quantity?: number
           id?: string
           is_comped?: boolean
+          last_compliance_reminder_on?: string | null
           locked_at?: string | null
           organisation_id?: string
           site_quantity?: number
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_active_emailed_at?: string | null
           term_end?: string | null
           term_start?: string | null
           tier?: string | null
           trial_end?: string | null
+          trial_reminder_sent_at?: string | null
           updated_at?: string
         }
         Relationships: [
