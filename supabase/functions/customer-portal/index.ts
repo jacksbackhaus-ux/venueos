@@ -66,8 +66,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("customer-portal error:", e);
-    return new Response(JSON.stringify({ error: "Unable to open billing portal" }), {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("customer-portal error:", msg);
+    // Common Stripe portal config error — surface clearly to the UI.
+    const friendly = /No configuration provided|customer portal/i.test(msg)
+      ? "Stripe Customer Portal isn't configured yet. Please contact support."
+      : msg;
+    return new Response(JSON.stringify({ error: friendly }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
