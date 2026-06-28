@@ -17,11 +17,22 @@ import { toast } from "sonner";
 import { LoginUrlCard } from "@/components/LoginUrlCard";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
 
-// Launch pricing — single MiseOS HACCP plan.
-const SITE_MONTHLY = 4.99;
-const SITE_ANNUAL = 49.90;
-const USER_MONTHLY = 1.00;
-const USER_ANNUAL = 10.00;
+// Launch pricing — single MiseOS HACCP plan. Used only as a sanity check;
+// the displayed numbers below come from Stripe (single source of truth).
+const USER_MONTHLY = 1.0;
+
+type BillingSummary = {
+  cycle: "month" | "year";
+  site_quantity: number;
+  extra_user_quantity: number;
+  site_unit_amount: number;
+  user_unit_amount: number;
+  currency: string;
+  total: number;
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+};
 
 export default function Account() {
   const navigate = useNavigate();
@@ -30,23 +41,34 @@ export default function Account() {
     subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft,
     cycle, paidActive,
   } = useOrgAccess();
-  const [siteCount, setSiteCount] = useState<number>(1);
-  const [userCount, setUserCount] = useState<number>(1);
   const [savingCycle, setSavingCycle] = useState(false);
+  const [summary, setSummary] = useState<BillingSummary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
-    if (!appUser?.organisation_id) return;
+    if (!paidActive || !subscription?.stripe_subscription_id) {
+      setSummary(null);
+      setSummaryError(null);
+      return;
+    }
+    let cancelled = false;
+    setSummaryLoading(true);
+    setSummaryError(null);
     void (async () => {
-      const [{ count: sCount }, { count: uCount }] = await Promise.all([
-        supabase.from("sites").select("id", { count: "exact", head: true })
-          .eq("organisation_id", appUser.organisation_id).eq("active", true),
-        supabase.from("users").select("id", { count: "exact", head: true })
-          .eq("organisation_id", appUser.organisation_id).eq("status", "active"),
-      ]);
-      setSiteCount(Math.max(1, sCount ?? 1));
-      setUserCount(Math.max(1, uCount ?? 1));
+      const { data, error } = await supabase.functions.invoke("get-haccp-billing-summary", { body: {} });
+      if (cancelled) return;
+      if (error || !data?.ok) {
+        setSummary(null);
+        setSummaryError((data as { error?: string })?.error || error?.message || "Unable to load billing details");
+      } else {
+        setSummary(data as BillingSummary);
+      }
+      setSummaryLoading(false);
     })();
-  }, [appUser?.organisation_id]);
+    return () => { cancelled = true; };
+  }, [paidActive, subscription?.stripe_subscription_id]);
 
   if (orgRole?.org_role !== "org_owner") {
     return (
@@ -62,11 +84,8 @@ export default function Account() {
     return <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
-  const sitePrice = cycle === "year" ? SITE_ANNUAL : SITE_MONTHLY;
-  const userPrice = cycle === "year" ? USER_ANNUAL : USER_MONTHLY;
-  const extraUsers = Math.max(0, userCount - 1);
-  const total = (siteCount * sitePrice) + (extraUsers * userPrice);
-  const monthlyEquivalent = cycle === "year" ? total / 12 : total;
+  const displayCycle = summary?.cycle ?? cycle;
+  const monthlyEquivalent = summary ? (summary.cycle === "year" ? summary.total / 12 : summary.total) : 0;
 
   const switchCycle = async (next: "month" | "year") => {
     if (!appUser?.organisation_id || next === cycle) return;
@@ -91,6 +110,16 @@ export default function Account() {
       .eq("organisation_id", appUser.organisation_id);
     if (error) toast.error(error.message);
     else toast.success(`Cancellation scheduled. You'll keep access until ${endLabel}.`);
+  };
+
+  const handleOpenPortal = async () => {
+    setPortalLoading(true);
+    try {
+      await openCustomerPortal();
+    } catch (e) {
+      toast.error("We couldn't open your billing portal — please try again or contact support.");
+      setPortalLoading(false);
+    }
   };
 
   return (
@@ -132,31 +161,59 @@ export default function Account() {
             </p>
           )}
 
-          {/* Price breakdown */}
+          {/* Price breakdown — sourced from Stripe (single source of truth) */}
           <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What you pay</p>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{siteCount} site{siteCount === 1 ? "" : "s"} × £{sitePrice.toFixed(2)}</span>
-                <span className="font-medium">£{(siteCount * sitePrice).toFixed(2)}</span>
+
+            {summaryLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading your billing details…
               </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{extraUsers} extra user{extraUsers === 1 ? "" : "s"} × £{userPrice.toFixed(2)}</span>
-                <span className="font-medium">£{(extraUsers * userPrice).toFixed(2)}</span>
-              </div>
-              <div className="flex items-end justify-between pt-2 border-t">
-                <span className="text-xs text-muted-foreground">Total {cycle === "year" ? "per year" : "per month"}</span>
-                <div className="text-right">
-                  <p className="text-2xl font-bold">£{total.toFixed(2)}</p>
-                  {cycle === "year" && (
-                    <p className="text-[11px] text-muted-foreground">≈ £{monthlyEquivalent.toFixed(2)}/month</p>
-                  )}
+            )}
+
+            {!summaryLoading && summaryError && (
+              <p className="text-sm text-destructive">
+                We couldn't load your billing details. Please refresh or try again later.
+              </p>
+            )}
+
+            {!summaryLoading && !summaryError && !paidActive && (
+              <p className="text-sm text-muted-foreground">
+                {trialActive
+                  ? "You're on a free trial. Billing details will appear here once your subscription starts."
+                  : "No active subscription yet."}
+              </p>
+            )}
+
+            {!summaryLoading && !summaryError && summary && (
+              <>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{summary.site_quantity} site{summary.site_quantity === 1 ? "" : "s"} × £{summary.site_unit_amount.toFixed(2)}</span>
+                    <span className="font-medium">£{(summary.site_quantity * summary.site_unit_amount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{summary.extra_user_quantity} extra user{summary.extra_user_quantity === 1 ? "" : "s"} × £{summary.user_unit_amount.toFixed(2)}</span>
+                    <span className="font-medium">£{(summary.extra_user_quantity * summary.user_unit_amount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-end justify-between pt-2 border-t">
+                    <span className="text-xs text-muted-foreground">Total {displayCycle === "year" ? "per year" : "per month"}</span>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold">£{summary.total.toFixed(2)}</p>
+                      {displayCycle === "year" && (
+                        <p className="text-[11px] text-muted-foreground">≈ £{monthlyEquivalent.toFixed(2)}/month</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Adding a user adds £{USER_MONTHLY.toFixed(2)}/month to your subscription. Owner is included free.
-            </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Adding a user adds £{USER_MONTHLY.toFixed(2)}/month to your subscription on the next invoice. Owner is included free.
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  This reflects what you are currently billed for via Stripe. To change your user count, manage users in Settings.
+                </p>
+              </>
+            )}
           </div>
 
           {paidActive && subscription?.current_period_end && (
@@ -187,8 +244,11 @@ export default function Account() {
               </Button>
             )}
             {subscription?.stripe_customer_id && (
-              <Button variant="outline" size="sm" onClick={() => openCustomerPortal().catch(e => toast.error(e.message))}>
-                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Invoices & payment method
+              <Button variant="outline" size="sm" onClick={handleOpenPortal} disabled={portalLoading}>
+                {portalLoading
+                  ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  : <ExternalLink className="h-3.5 w-3.5 mr-1.5" />}
+                Invoices & payment method
               </Button>
             )}
           </div>

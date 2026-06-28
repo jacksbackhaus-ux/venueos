@@ -19,5 +19,5 @@ export async function openCustomerPortal(returnUrl?: string) {
     body: { returnUrl: returnUrl || window.location.href, environment: stripeEnvironment },
   });
   if (error || !data?.url) throw new Error(error?.message || "Could not open billing portal");
-  window.open(data.url, "_blank");
+  window.location.href = data.url;
 }
