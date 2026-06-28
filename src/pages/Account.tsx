@@ -117,7 +117,8 @@ export default function Account() {
     try {
       await openCustomerPortal();
     } catch (e) {
-      toast.error("We couldn't open your billing portal — please try again or contact support.");
+      const msg = e instanceof Error ? e.message : "We couldn't open your billing portal.";
+      toast.error(msg);
       setPortalLoading(false);
     }
   };
