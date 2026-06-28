@@ -518,6 +518,25 @@ const Settings = () => {
     if (error) { toast.error(error.message); return; }
     setStaff((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
     void syncHaccpUserQuantity();
+
+    // If we just deactivated a staff member who has an email, let them know.
+    if (!active) {
+      const target = staff.find((s) => s.id === id);
+      if (target?.email) {
+        const firstName = (target.name || "").trim().split(/\s+/)[0] || null;
+        supabase.functions
+          .invoke("send-transactional-email", {
+            body: {
+              templateName: "staff-deactivated",
+              recipientEmail: target.email,
+              idempotencyKey: `staff-deactivated:${id}:${new Date().toISOString().slice(0, 10)}`,
+              templateData: { first_name: firstName, organisation_name: null },
+            },
+          })
+          .catch((e) => console.warn("staff-deactivated email failed", e));
+      }
+    }
+
     toast.success(active
       ? "Staff member reactivated — PIN login restored. Your subscription will adjust by +£1/month on the next billing cycle."
       : "Staff member deactivated — PIN login revoked. Subscription will adjust by −£1/month. Their historical records are preserved.");
