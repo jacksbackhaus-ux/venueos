@@ -161,31 +161,59 @@ export default function Account() {
             </p>
           )}
 
-          {/* Price breakdown */}
+          {/* Price breakdown — sourced from Stripe (single source of truth) */}
           <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What you pay</p>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{siteCount} site{siteCount === 1 ? "" : "s"} × £{sitePrice.toFixed(2)}</span>
-                <span className="font-medium">£{(siteCount * sitePrice).toFixed(2)}</span>
+
+            {summaryLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading your billing details…
               </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{extraUsers} extra user{extraUsers === 1 ? "" : "s"} × £{userPrice.toFixed(2)}</span>
-                <span className="font-medium">£{(extraUsers * userPrice).toFixed(2)}</span>
-              </div>
-              <div className="flex items-end justify-between pt-2 border-t">
-                <span className="text-xs text-muted-foreground">Total {cycle === "year" ? "per year" : "per month"}</span>
-                <div className="text-right">
-                  <p className="text-2xl font-bold">£{total.toFixed(2)}</p>
-                  {cycle === "year" && (
-                    <p className="text-[11px] text-muted-foreground">≈ £{monthlyEquivalent.toFixed(2)}/month</p>
-                  )}
+            )}
+
+            {!summaryLoading && summaryError && (
+              <p className="text-sm text-destructive">
+                We couldn't load your billing details. Please refresh or try again later.
+              </p>
+            )}
+
+            {!summaryLoading && !summaryError && !paidActive && (
+              <p className="text-sm text-muted-foreground">
+                {trialActive
+                  ? "You're on a free trial. Billing details will appear here once your subscription starts."
+                  : "No active subscription yet."}
+              </p>
+            )}
+
+            {!summaryLoading && !summaryError && summary && (
+              <>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />{summary.site_quantity} site{summary.site_quantity === 1 ? "" : "s"} × £{summary.site_unit_amount.toFixed(2)}</span>
+                    <span className="font-medium">£{(summary.site_quantity * summary.site_unit_amount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{summary.extra_user_quantity} extra user{summary.extra_user_quantity === 1 ? "" : "s"} × £{summary.user_unit_amount.toFixed(2)}</span>
+                    <span className="font-medium">£{(summary.extra_user_quantity * summary.user_unit_amount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-end justify-between pt-2 border-t">
+                    <span className="text-xs text-muted-foreground">Total {displayCycle === "year" ? "per year" : "per month"}</span>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold">£{summary.total.toFixed(2)}</p>
+                      {displayCycle === "year" && (
+                        <p className="text-[11px] text-muted-foreground">≈ £{monthlyEquivalent.toFixed(2)}/month</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Adding a user adds £{USER_MONTHLY.toFixed(2)}/month to your subscription. Owner is included free.
-            </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Adding a user adds £{USER_MONTHLY.toFixed(2)}/month to your subscription on the next invoice. Owner is included free.
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  This reflects what you are currently billed for via Stripe. To change your user count, manage users in Settings.
+                </p>
+              </>
+            )}
           </div>
 
           {paidActive && subscription?.current_period_end && (
@@ -216,8 +244,11 @@ export default function Account() {
               </Button>
             )}
             {subscription?.stripe_customer_id && (
-              <Button variant="outline" size="sm" onClick={() => openCustomerPortal().catch(e => toast.error(e.message))}>
-                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Invoices & payment method
+              <Button variant="outline" size="sm" onClick={handleOpenPortal} disabled={portalLoading}>
+                {portalLoading
+                  ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  : <ExternalLink className="h-3.5 w-3.5 mr-1.5" />}
+                Invoices & payment method
               </Button>
             )}
           </div>
