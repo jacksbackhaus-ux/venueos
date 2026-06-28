@@ -473,6 +473,29 @@ const Settings = () => {
     }
 
     toast.success(`Staff member added — Staff ID: ${staffId}`);
+
+    // If the new staff member has an email, send the branded invite email.
+    if (staffForm.email) {
+      const orgName = appUser?.organisation?.name ?? null;
+      const inviterFirst = (appUser?.display_name || "").trim().split(/\s+/)[0] || null;
+      const firstName = (staffForm.name || "").trim().split(/\s+/)[0] || null;
+      supabase.functions
+        .invoke("send-transactional-email", {
+          body: {
+            templateName: "staff-invited",
+            recipientEmail: staffForm.email,
+            idempotencyKey: `staff-invite:${newUser.id}`,
+            templateData: {
+              first_name: firstName,
+              organisation_name: orgName,
+              inviter_name: inviterFirst,
+              accept_url: "https://mise-os.app/auth",
+            },
+          },
+        })
+        .catch((e) => console.warn("staff-invited email failed", e));
+    }
+
     setShowAddStaff(false);
     setStaffForm({ name: "", email: "", role: "staff", pin: "", staffId: "" });
     void syncHaccpUserQuantity();
