@@ -476,7 +476,7 @@ const Settings = () => {
 
     // If the new staff member has an email, send the branded invite email.
     if (staffForm.email) {
-      const orgName = appUser?.organisation?.name ?? null;
+      const orgName = currentSite?.organisation_name ?? null;
       const inviterFirst = (appUser?.display_name || "").trim().split(/\s+/)[0] || null;
       const firstName = (staffForm.name || "").trim().split(/\s+/)[0] || null;
       supabase.functions
