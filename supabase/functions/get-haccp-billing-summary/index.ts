@@ -50,9 +50,9 @@ Deno.serve(async (req) => {
     const caller = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } }, auth: { persistSession: false },
     });
-    const { data: claimsData, error: claimsErr } = await caller.auth.getClaims();
-    if (claimsErr || !claimsData?.claims) return json(401, { ok: false, error: "invalid session" });
-    const authUid = claimsData.claims.sub as string;
+    const { data: userData, error: userErr } = await caller.auth.getUser();
+    if (userErr || !userData?.user) return json(401, { ok: false, error: "invalid session" });
+    const authUid = userData.user.id;
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const { data: appUser } = await admin.from("users")
