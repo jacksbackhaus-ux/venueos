@@ -31,7 +31,7 @@ serve(async (req) => {
 
     const { data: appUser } = await service.from("users")
       .select("id, organisation_id")
-      .eq("auth_user_id", claimsData.claims.sub).eq("status", "active").maybeSingle();
+      .eq("auth_user_id", authUid).eq("status", "active").maybeSingle();
     if (!appUser?.organisation_id) {
       return new Response(JSON.stringify({ error: "No organisation" }), { status: 400, headers: corsHeaders });
     }
