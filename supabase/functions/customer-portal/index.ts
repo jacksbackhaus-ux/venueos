@@ -17,12 +17,13 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsErr || !claimsData?.claims) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const authUid = userData.user.id;
 
     const { returnUrl, environment } = await req.json();
     const env = (environment || "sandbox") as StripeEnv;
@@ -30,7 +31,7 @@ serve(async (req) => {
 
     const { data: appUser } = await service.from("users")
       .select("id, organisation_id")
-      .eq("auth_user_id", claimsData.claims.sub).eq("status", "active").maybeSingle();
+      .eq("auth_user_id", authUid).eq("status", "active").maybeSingle();
     if (!appUser?.organisation_id) {
       return new Response(JSON.stringify({ error: "No organisation" }), { status: 400, headers: corsHeaders });
     }
@@ -65,8 +66,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("customer-portal error:", e);
-    return new Response(JSON.stringify({ error: "Unable to open billing portal" }), {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("customer-portal error:", msg);
+    // Common Stripe portal config error — surface clearly to the UI.
+    const friendly = /No configuration provided|customer portal/i.test(msg)
+      ? "Stripe Customer Portal isn't configured yet. Please contact support."
+      : msg;
+    return new Response(JSON.stringify({ error: friendly }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
