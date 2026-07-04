@@ -62,13 +62,15 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      console.error("[create-checkout] auth failed", userErr);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userEmail = claimsData.claims.email as string | undefined;
+    const userEmail = userData.user.email as string | undefined;
+    const authUserId = userData.user.id;
 
     const body = await req.json();
     const plan = (body.plan ?? "haccp") as PlanId;
