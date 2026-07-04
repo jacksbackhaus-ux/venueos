@@ -46,7 +46,6 @@ export const HIDDEN_MODULES: ReadonlySet<ModuleName> = new Set<ModuleName>(
     ? [
         "shifts",
         "timesheets",
-        "batch_tracking",
         "waste_log",
         "cost_margin",
         "tip_tracker",
@@ -61,6 +60,7 @@ export const VISIBLE_MODULES: ReadonlySet<ModuleName> = new Set<ModuleName>([
   "day_sheet",
   "temperatures",
   "cleaning",
+  "batch_tracking",
   "customer_feedback",
   "allergens",
   "suppliers",
