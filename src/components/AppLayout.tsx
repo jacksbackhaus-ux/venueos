@@ -20,6 +20,7 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ModuleName } from "@/lib/plans";
+import { showMessenger } from "@/lib/launchFlags";
 
 type NavLeaf = {
   title: string;
@@ -39,12 +40,13 @@ const operationsItems: NavLeaf[] = [
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures", desc: "Fridge/freezer logs" },
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning", desc: "Cleaning schedule" },
   { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log", desc: "Track wastage" },
-  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking", desc: "Production traceability" },
+  { title: "Batch & Traceability", url: "/batches", icon: Package, mod: "batch_tracking", desc: "Production traceability" },
   { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker", desc: "Staff tip distribution" },
 ];
 
 // Stay Compliant
 const complianceItems: NavLeaf[] = [
+  { title: "Compliance Overview", url: "/compliance", icon: ShieldCheck, desc: "Inspection readiness" },
   { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp", desc: "Hazard plan" },
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens", desc: "Recipes & PPDS labels" },
   { title: "Suppliers", url: "/suppliers", icon: Truck, mod: "suppliers", desc: "Deliveries & suppliers" },
@@ -53,7 +55,7 @@ const complianceItems: NavLeaf[] = [
   { title: "PPM Schedule", url: "/ppm-schedule", icon: Wrench, mod: "ppm_schedule", desc: "Planned maintenance" },
   { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training", desc: "Certifications" },
   { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback", desc: "Reviews & complaints" },
-  { title: "Reports", url: "/reports", icon: FileText, mod: "reports", desc: "EHO-ready exports" },
+  { title: "Inspection Pack", url: "/reports", icon: FileText, mod: "reports", desc: "EHO-ready exports" },
 ];
 
 // Protect Margin
@@ -529,13 +531,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="text-[10px] font-medium">Run Day</span>
             </button>
 
-            <button
-              className={tabClass(isChatActive)}
-              onClick={() => { setSheet(null); navigate("/messenger"); }}
-            >
-              <MessageSquare className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Chat</span>
-            </button>
+            {showMessenger && (
+              <button
+                className={tabClass(isChatActive)}
+                onClick={() => { setSheet(null); navigate("/messenger"); }}
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-[10px] font-medium">Chat</span>
+              </button>
+            )}
 
             <button
               className={tabClass(isComplianceActive || sheet === "compliance")}

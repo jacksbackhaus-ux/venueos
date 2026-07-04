@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { showCommercialModules } from "@/lib/launchFlags";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -454,7 +455,7 @@ export default function Batches() {
                     </div>
 
                     {/* LINE 1b — Cost & margin snapshot */}
-                    {(batch.unit_cost_snapshot != null || batch.margin_pct != null) && (
+                    {showCommercialModules && (batch.unit_cost_snapshot != null || batch.margin_pct != null) && (
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         {batch.unit_cost_snapshot != null && (
                           <span className="text-muted-foreground tabular-nums">

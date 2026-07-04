@@ -23,6 +23,7 @@ const dailyHaccp: NavItem[] = [
   { to: "/day-sheet", label: "Day Sheet", desc: "Opening & closing checks", icon: ClipboardList, mod: "day_sheet" },
   { to: "/temperatures", label: "Temperatures", desc: "Fridge/freezer logs", icon: Thermometer, mod: "temperatures" },
   { to: "/cleaning", label: "Cleaning", desc: "Daily cleaning schedule", icon: SprayCan, mod: "cleaning" },
+  { to: "/batches", label: "Batch & Traceability", desc: "Record what you made and keep a clear traceability trail", icon: Package, mod: "batch_tracking" },
 ];
 
 // HACCP launch — Food Safety & Compliance
