@@ -20,6 +20,7 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ModuleName } from "@/lib/plans";
+import { showMessenger } from "@/lib/launchFlags";
 
 type NavLeaf = {
   title: string;
