@@ -454,7 +454,7 @@ export default function Batches() {
                     </div>
 
                     {/* LINE 1b — Cost & margin snapshot */}
-                    {(batch.unit_cost_snapshot != null || batch.margin_pct != null) && (
+                    {showCommercialModules && (batch.unit_cost_snapshot != null || batch.margin_pct != null) && (
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         {batch.unit_cost_snapshot != null && (
                           <span className="text-muted-foreground tabular-nums">
