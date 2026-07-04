@@ -39,12 +39,13 @@ const operationsItems: NavLeaf[] = [
   { title: "Temperatures", url: "/temperatures", icon: Thermometer, mod: "temperatures", desc: "Fridge/freezer logs" },
   { title: "Cleaning", url: "/cleaning", icon: SprayCan, mod: "cleaning", desc: "Cleaning schedule" },
   { title: "Waste Log", url: "/waste-log", icon: Trash2, mod: "waste_log", desc: "Track wastage" },
-  { title: "Batch Tracking", url: "/batches", icon: Package, mod: "batch_tracking", desc: "Production traceability" },
+  { title: "Batch & Traceability", url: "/batches", icon: Package, mod: "batch_tracking", desc: "Production traceability" },
   { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker", desc: "Staff tip distribution" },
 ];
 
 // Stay Compliant
 const complianceItems: NavLeaf[] = [
+  { title: "Compliance Overview", url: "/compliance", icon: ShieldCheck, desc: "Inspection readiness" },
   { title: "HACCP Plan", url: "/haccp", icon: BookCheck, mod: "haccp", desc: "Hazard plan" },
   { title: "Allergens & Labels", url: "/allergens", icon: Wheat, mod: "allergens", desc: "Recipes & PPDS labels" },
   { title: "Suppliers", url: "/suppliers", icon: Truck, mod: "suppliers", desc: "Deliveries & suppliers" },
@@ -53,7 +54,7 @@ const complianceItems: NavLeaf[] = [
   { title: "PPM Schedule", url: "/ppm-schedule", icon: Wrench, mod: "ppm_schedule", desc: "Planned maintenance" },
   { title: "Staff Training", url: "/staff-training", icon: GraduationCap, mod: "staff_training", desc: "Certifications" },
   { title: "Customer Feedback", url: "/customer-feedback", icon: MessageSquareHeart, mod: "customer_feedback", desc: "Reviews & complaints" },
-  { title: "Reports", url: "/reports", icon: FileText, mod: "reports", desc: "EHO-ready exports" },
+  { title: "Inspection Pack", url: "/reports", icon: FileText, mod: "reports", desc: "EHO-ready exports" },
 ];
 
 // Protect Margin
