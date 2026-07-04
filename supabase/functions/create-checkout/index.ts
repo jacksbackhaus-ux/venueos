@@ -97,7 +97,7 @@ serve(async (req) => {
     const { data: appUser } = await service
       .from("users")
       .select("id, organisation_id")
-      .eq("auth_user_id", claimsData.claims.sub)
+      .eq("auth_user_id", authUserId)
       .eq("status", "active")
       .maybeSingle();
     if (!appUser?.organisation_id) {
