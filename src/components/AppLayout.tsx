@@ -531,13 +531,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="text-[10px] font-medium">Run Day</span>
             </button>
 
-            <button
-              className={tabClass(isChatActive)}
-              onClick={() => { setSheet(null); navigate("/messenger"); }}
-            >
-              <MessageSquare className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Chat</span>
-            </button>
+            {showMessenger && (
+              <button
+                className={tabClass(isChatActive)}
+                onClick={() => { setSheet(null); navigate("/messenger"); }}
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-[10px] font-medium">Chat</span>
+              </button>
+            )}
 
             <button
               className={tabClass(isComplianceActive || sheet === "compliance")}
