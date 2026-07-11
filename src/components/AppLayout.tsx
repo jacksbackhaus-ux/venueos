@@ -20,7 +20,9 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ModuleName } from "@/lib/plans";
-import { showMessenger } from "@/lib/launchFlags";
+import { showMessenger, showMultiSiteHQ, LAUNCH_MODE } from "@/lib/launchFlags";
+
+const HACCP = LAUNCH_MODE === "haccp";
 
 type NavLeaf = {
   title: string;
@@ -152,20 +154,22 @@ function SiteSwitcherSheet({
               </button>
             );
           })}
-     {/* All Sites Overview link */}
-          <button
-            onClick={() => { navigate("/hq"); onClose(); }}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-muted transition-colors mt-2 border-t pt-4"
-          >
-            <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-              <Building2 className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">All Sites Overview</p>
-              <p className="text-xs text-muted-foreground">Compliance across all locations</p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-          </button>
+     {/* All Sites Overview link — hidden in HACCP launch */}
+          {showMultiSiteHQ && (
+            <button
+              onClick={() => { navigate("/hq"); onClose(); }}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-muted transition-colors mt-2 border-t pt-4"
+            >
+              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">All Sites Overview</p>
+                <p className="text-xs text-muted-foreground">Compliance across all locations</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -335,7 +339,7 @@ function MoreSheetExtras({ onClose }: { onClose: () => void }) {
   const isOrgOwner = orgRole?.org_role === "org_owner";
 
   const orgItems: NavLeaf[] = [
-    ...(isHQ && role.isManager
+    ...(showMultiSiteHQ && isHQ && role.isManager
       ? [{ title: "All Sites Overview", url: "/hq", icon: Building2, desc: "Compliance across all locations" }]
       : []),
     ...(isOrgOwner
@@ -570,7 +574,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <BottomSheet
             open={sheet === "ops"}
             onClose={() => setSheet(null)}
-            title="Run the Day"
+            title={HACCP ? "Daily" : "Run the Day"}
             items={visibleOps}
           />
 
@@ -578,7 +582,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <BottomSheet
             open={sheet === "compliance"}
             onClose={() => setSheet(null)}
-            title="Stay Compliant"
+            title={HACCP ? "Food Safety & Compliance" : "Stay Compliant"}
             items={visibleCompliance}
           />
 
@@ -586,7 +590,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <BottomSheet
             open={sheet === "more"}
             onClose={() => setSheet(null)}
-            title="Protect Margin & More"
+            title={HACCP ? "More" : "Protect Margin & More"}
             items={visibleBusiness}
             extras={<MoreSheetExtras onClose={() => setSheet(null)} />}
           />
