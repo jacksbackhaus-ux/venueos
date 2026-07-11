@@ -70,7 +70,15 @@ import { Lock } from "lucide-react";
 import { FullScreenLoader } from "@/components/FullScreenLoader";
 import type { ModuleName } from "@/lib/plans";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 /**
  * Safety net before sending an authenticated email/password user to /onboarding.
