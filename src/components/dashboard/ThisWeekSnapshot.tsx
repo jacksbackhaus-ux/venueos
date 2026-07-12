@@ -86,10 +86,9 @@ export function ThisWeekSnapshot({ siteId }: Props) {
         <div className="flex items-center gap-3">
           <Sparkles className="h-5 w-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold">Unlock weekly business performance</p>
-            <p className="text-xs text-muted-foreground">Enable the Business plan to see labour, waste, margin and production trends.</p>
+            <p className="text-sm font-semibold">Weekly performance snapshot</p>
+            <p className="text-xs text-muted-foreground">This feature is not available in the HACCP launch plan.</p>
           </div>
-          <Link to="/settings"><Button size="sm" variant="outline">Upgrade</Button></Link>
         </div>
       </Card>
     );
@@ -118,13 +117,15 @@ export function ThisWeekSnapshot({ siteId }: Props) {
         {isActive("waste_log") && (
           <Tile title="Waste cost" value={`£${data.wasteNow.toFixed(0)}`} sub={<Trend now={data.wasteNow} prev={data.wastePrev} />} />
         )}
-        <Tile
-          title="Margin health"
-          value={isActive("cost_margin") ? "Live" : "—"}
-          sub={<Link to={isActive("cost_margin") ? "/cost-margin" : "/settings"} className="text-xs text-primary hover:underline">
-            {isActive("cost_margin") ? "Open Profit & Pricing" : "Enable Business plan"}
-          </Link>}
-        />
+        {isActive("cost_margin") && (
+          <Tile
+            title="Margin health"
+            value="Live"
+            sub={<Link to="/cost-margin" className="text-xs text-primary hover:underline">
+              Open Profit & Pricing
+            </Link>}
+          />
+        )}
         <Tile title="Production" value={data.prodNow.toLocaleString()} sub={<Trend now={data.prodNow} prev={data.prodPrev} />} />
       </div>
     </div>

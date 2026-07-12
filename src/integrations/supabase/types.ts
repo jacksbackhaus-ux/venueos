@@ -5720,6 +5720,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       end_internal_impersonation: { Args: never; Returns: Json }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
