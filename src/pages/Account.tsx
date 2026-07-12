@@ -158,7 +158,7 @@ export default function Account() {
           )}
           {!compedActive && trialActive && (
             <p className="rounded-md bg-success/10 text-success px-3 py-2 font-medium">
-              Free trial — {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left. No card required.
+              Free trial — {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left. No charge until your trial ends.
             </p>
           )}
 

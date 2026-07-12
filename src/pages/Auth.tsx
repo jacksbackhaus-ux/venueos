@@ -382,7 +382,7 @@ export function ManagerSignupCard({
         <CardContent className="p-6 space-y-5">
           <div>
             <h2 className="font-heading text-xl font-bold text-foreground">Create account</h2>
-            <p className="text-xs text-muted-foreground mt-1">Up and running in minutes. No card required.</p>
+            <p className="text-xs text-muted-foreground mt-1">Up and running in minutes. No charge until your trial ends.</p>
           </div>
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-1.5">

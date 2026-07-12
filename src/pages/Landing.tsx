@@ -118,7 +118,7 @@ function Hero() {
             </a>
           </div>
           <p className="mt-4 text-sm text-slate-500">
-            No card required · Cancel anytime · 14-day free trial
+            14-day free trial · No charge until your trial ends · Cancel anytime
           </p>
         </motion.div>
       </div>
@@ -212,7 +212,7 @@ function Pricing() {
               "Inspection Pack (PDF + Excel)",
               "Unlimited records & 7-year retention",
               "Customer Feedback log",
-              "14-day free trial, no card required",
+              "14-day free trial · no charge until trial ends",
             ].map((f) => (
               <li key={f} className="flex items-start gap-2">
                 <Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: BRAND_SAGE }} />
@@ -270,7 +270,7 @@ function CTA() {
     <Section className="text-center">
       <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Stop chasing paper. Start logging digitally.</h2>
       <p className="mt-4 text-slate-600 max-w-xl mx-auto">
-        Try MiseOS free for 14 days. No card required.
+        Start your 14-day trial. Card required, but you won't be charged until the trial ends. Cancel anytime.
       </p>
       <div className="mt-8">
         <a href={AUTH_URL}>
