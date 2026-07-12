@@ -34,8 +34,8 @@ type NavLeaf = {
 
 // ─── Nav data (mirrors the 3-pillar desktop sidebar) ──────────────────────────
 
-// Run the Day
-const operationsItems: NavLeaf[] = [
+// Run the Day — full-mode module list (filtered per launch mode below)
+const ALL_OPERATIONS_ITEMS: NavLeaf[] = [
   { title: "Shifts", url: "/shifts", icon: CalendarClock, mod: "shifts", desc: "Staff rota" },
   { title: "Timesheets", url: "/timesheets", icon: Clock, mod: "timesheets", desc: "Hours & payroll" },
   { title: "Day Sheet", url: "/day-sheet", icon: ClipboardList, mod: "day_sheet", desc: "Opening & closing" },
@@ -45,6 +45,13 @@ const operationsItems: NavLeaf[] = [
   { title: "Batch & Traceability", url: "/batches", icon: Package, mod: "batch_tracking", desc: "Production traceability" },
   { title: "Tip Tracker", url: "/tip-tracker", icon: PoundSterling, mod: "tip_tracker", desc: "Staff tip distribution" },
 ];
+
+// HACCP launch: only these Daily items are enumerated for customer nav.
+const HACCP_OPERATIONS_ITEMS: NavLeaf[] = ALL_OPERATIONS_ITEMS.filter((i) =>
+  ["day_sheet", "temperatures", "cleaning", "batch_tracking"].includes(i.mod ?? "")
+);
+
+const operationsItems: NavLeaf[] = HACCP ? HACCP_OPERATIONS_ITEMS : ALL_OPERATIONS_ITEMS;
 
 // Stay Compliant
 const complianceItems: NavLeaf[] = [
@@ -60,10 +67,12 @@ const complianceItems: NavLeaf[] = [
   { title: "Inspection Pack", url: "/reports", icon: FileText, mod: "reports", desc: "EHO-ready exports" },
 ];
 
-// Protect Margin
-const businessItems: NavLeaf[] = [
-  { title: "Profit & Pricing", url: "/cost-margin", icon: Calculator, mod: "cost_margin", desc: "Cost, pricing & margin" },
-];
+// Protect Margin — hidden entirely in HACCP launch, preserved for full mode.
+const businessItems: NavLeaf[] = HACCP
+  ? []
+  : [
+      { title: "Profit & Pricing", url: "/cost-margin", icon: Calculator, mod: "cost_margin", desc: "Cost, pricing & margin" },
+    ];
 
 const quickActions = [
   { title: "Log a temp", url: "/temperatures", icon: Thermometer, color: "bg-blue-500" },
