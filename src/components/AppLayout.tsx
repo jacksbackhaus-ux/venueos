@@ -511,15 +511,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 className="ml-auto gap-1.5 border-primary/30 bg-primary/5 text-foreground"
               >
                 <MapPin className="h-3 w-3 text-primary" />
-                <span className="font-medium">{currentSite.name}</span>
-                {isHQ && (
+                <span className="font-medium">Working at {currentSite.name}</span>
+                {currentRoleLabel && (
                   <span className="text-[10px] text-muted-foreground ml-1">
-                    HQ view
+                    ({currentRoleLabel})
                   </span>
                 )}
               </Badge>
             )}
           </header>
+
 
           {/* Mobile header */}
           <header className="md:hidden flex h-14 items-center border-b bg-card px-4 shrink-0 gap-3">
