@@ -373,16 +373,25 @@ function FAB() {
 
 function MoreSheetExtras({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
-  const { isHQ, orgRole } = useAuth();
+  const { orgRole } = useAuth();
   const role = useRole();
   const { isSuperAdmin } = useSuperAdmin();
-  const { hasSelectedSite } = useSite();
+  const { hasSelectedSite, sites, memberships } = useSite();
 
   const isOrgOwner = orgRole?.org_role === "org_owner";
+  const isOrgManager =
+    orgRole?.org_role === "org_owner" ||
+    orgRole?.org_role === "hq_admin" ||
+    orgRole?.org_role === "hq_auditor";
+  const hasManagerMembership = memberships.some(
+    (m) => m.site_role === "owner" || m.site_role === "supervisor",
+  );
+  const canSeeAllSites =
+    showMultiSiteHQ && sites.length >= 2 && (isOrgManager || hasManagerMembership);
 
   const orgItems: NavLeaf[] = [
-    ...(showMultiSiteHQ && isHQ && role.isManager
-      ? [{ title: "All Sites Overview", url: "/hq", icon: Building2, desc: "Compliance across all locations" }]
+    ...(canSeeAllSites
+      ? [{ title: "All Sites", url: "/hq", icon: Building2, desc: "Compliance across your sites" }]
       : []),
     ...(isOrgOwner
       ? [{ title: "Account & Billing", url: "/account", icon: CreditCard, desc: "Subscription & invoices" }]
