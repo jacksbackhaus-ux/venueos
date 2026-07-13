@@ -193,12 +193,22 @@ function ModuleGuard({ module, children }: { module: ModuleName; children: React
 }
 
 function RequireSite({ children }: { children: React.ReactNode }) {
-  const { hasSelectedSite, isLoading, sites } = useSite();
-  const { isHQ, staffSession } = useAuth();
+  const { hasSelectedSite, isLoading, sites, memberships } = useSite();
+  const { isHQ, orgRole, staffSession } = useAuth();
   if (isLoading) return null;
   if (staffSession) return <>{children}</>;
-  if (!hasSelectedSite && sites.length > 1) return <Navigate to="/select-site" replace />;
   if (isHQ && !hasSelectedSite) return <Navigate to="/hq" replace />;
+  if (!hasSelectedSite && sites.length > 1) {
+    const isOrgManager =
+      orgRole?.org_role === "org_owner" ||
+      orgRole?.org_role === "hq_admin" ||
+      orgRole?.org_role === "hq_auditor";
+    const hasManagerMembership = memberships.some(
+      (m) => m.site_role === "owner" || m.site_role === "supervisor",
+    );
+    if (isOrgManager || hasManagerMembership) return <Navigate to="/hq" replace />;
+    return <Navigate to="/select-site" replace />;
+  }
   return <>{children}</>;
 }
 
