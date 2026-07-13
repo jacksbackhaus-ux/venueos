@@ -560,10 +560,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </header>
 
+          {/* Mobile persistent "Working at [Site] ([Role])" indicator */}
+          {showSiteIndicator && (
+            <div className="md:hidden bg-primary/5 border-b border-primary/10 px-4 py-1.5">
+              <p className="text-[11px] text-muted-foreground truncate">
+                Working at{" "}
+                <span className="font-semibold text-foreground">{currentSite.name}</span>
+                {currentRoleLabel && <span> ({currentRoleLabel})</span>}
+              </p>
+            </div>
+          )}
+
           {/* Main content */}
           <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
             {children}
           </main>
+
 
           {/* FAB */}
           <FAB />
