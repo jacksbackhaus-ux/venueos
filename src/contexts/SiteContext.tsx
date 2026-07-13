@@ -25,6 +25,7 @@ interface SiteContextType {
   currentSite: Site | null;
   currentMembership: Membership | null;
   sites: Site[];
+  memberships: Membership[];
   setCurrentSiteId: (id: string) => void;
   isLoading: boolean;
   organisationId: string | null;
