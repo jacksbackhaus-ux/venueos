@@ -51,24 +51,36 @@ function ScoreBadge({ score }: { score: number | null }) {
 
 export default function AllSitesOverview() {
   const { orgRole, appUser } = useAuth();
-  const { setCurrentSiteId } = useSite();
+  const { setCurrentSiteId, memberships, sites: accessibleSites } = useSite();
   const navigate = useNavigate();
   const [sites, setSites] = useState<SiteOverview[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+
+  const isOrgManager =
+    orgRole?.org_role === "org_owner" ||
+    orgRole?.org_role === "hq_admin" ||
+    orgRole?.org_role === "hq_auditor";
+  const hasManagerMembership = memberships.some(
+    (m) => m.site_role === "owner" || m.site_role === "supervisor",
+  );
+  const canView = isOrgManager || hasManagerMembership;
 
   const load = async () => {
     if (!appUser) return;
     setLoading(true);
 
     const todayIso = new Date().toISOString().slice(0, 10);
+    const accessibleIds = new Set(accessibleSites.map((s) => s.id));
 
     const { data: sitesData } = await supabase
       .from("sites")
       .select("id, name, address, active")
+      .in("id", Array.from(accessibleIds).length ? Array.from(accessibleIds) : ["00000000-0000-0000-0000-000000000000"])
       .order("name");
 
     const overviews: SiteOverview[] = [];
+
 
     for (const site of sitesData || []) {
       // Look up today's day sheet for this site (if any) so we can count entries.
