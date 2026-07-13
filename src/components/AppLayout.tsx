@@ -441,11 +441,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentSite, hasSelectedSite, sites } = useSite();
-  const { isHQ } = useAuth();
+  const { currentSite, currentMembership, hasSelectedSite, sites, memberships } = useSite();
+  const { isHQ, orgRole } = useAuth();
   const { isActive: isModuleActive } = useModuleAccess();
   const { logoUrl, businessName } = useBranding();
 
+  const isOrgOwner = orgRole?.org_role === "org_owner";
+  const currentRoleLabel = siteRoleLabel(currentMembership?.site_role, { isOrgOwner });
   const showSiteIndicator = hasSelectedSite && currentSite;
   const isMultiSite = sites.length > 1;
 
