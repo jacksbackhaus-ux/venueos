@@ -90,8 +90,21 @@ function SiteSwitcherSheet({
   open: boolean;
   onClose: () => void;
 }) {
-  const { sites, currentSite, setCurrentSiteId } = useSite();
+  const { sites, memberships, currentSite, setCurrentSiteId } = useSite();
+  const { orgRole } = useAuth();
+  const role = useRole();
   const navigate = useNavigate();
+
+  const isOrgOwner = orgRole?.org_role === "org_owner";
+  const isOrgManager =
+    orgRole?.org_role === "org_owner" ||
+    orgRole?.org_role === "hq_admin" ||
+    orgRole?.org_role === "hq_auditor";
+  const hasManagerMembership = memberships.some(
+    (m) => m.site_role === "owner" || m.site_role === "supervisor",
+  );
+  const canSeeAllSites =
+    showMultiSiteHQ && sites.length >= 2 && (isOrgManager || hasManagerMembership);
 
   const handleSelect = (siteId: string) => {
     setCurrentSiteId(siteId);
@@ -109,17 +122,46 @@ function SiteSwitcherSheet({
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
         <div className="flex items-center justify-between px-5 py-3 border-b">
-          <p className="font-heading font-bold text-base">Switch Site</p>
+          <div className="min-w-0">
+            <p className="font-heading font-bold text-base">Switch Site</p>
+            {currentSite && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                Currently working at {currentSite.name}
+                {siteRoleLabel(memberships.find((m) => m.site_id === currentSite.id)?.site_role, {
+                  isOrgOwner,
+                }) && ` (${siteRoleLabel(memberships.find((m) => m.site_id === currentSite.id)?.site_role, { isOrgOwner })})`}
+              </p>
+            )}
+          </div>
           <button
             onClick={onClose}
-            className="h-7 w-7 flex items-center justify-center rounded-full bg-muted text-muted-foreground"
+            className="h-7 w-7 flex items-center justify-center rounded-full bg-muted text-muted-foreground shrink-0"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="px-3 py-2 pb-10 max-h-[50vh] overflow-y-auto">
+        <div className="px-3 py-2 pb-10 max-h-[60vh] overflow-y-auto">
+          {canSeeAllSites && (
+            <button
+              onClick={() => { navigate("/hq"); onClose(); }}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-muted transition-colors mb-2 border border-primary/20 bg-primary/5"
+            >
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">All Sites (Overview)</p>
+                <p className="text-xs text-muted-foreground">Compliance across your sites</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </button>
+          )}
           {sites.map((site) => {
             const isSelected = site.id === currentSite?.id;
+            const roleLabel = siteRoleLabel(
+              memberships.find((m) => m.site_id === site.id)?.site_role,
+              { isOrgOwner },
+            );
             return (
               <button
                 key={site.id}
@@ -145,17 +187,15 @@ function SiteSwitcherSheet({
                 <div className="flex-1 min-w-0">
                   <p
                     className={cn(
-                      "text-sm font-semibold",
+                      "text-sm font-semibold truncate",
                       isSelected ? "text-primary" : "text-foreground"
                     )}
                   >
                     {site.name}
                   </p>
-                  {site.address && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {site.address}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground truncate">
+                    {roleLabel || site.address || ""}
+                  </p>
                 </div>
                 {isSelected && (
                   <Check className="h-4 w-4 text-primary shrink-0" />
@@ -163,20 +203,12 @@ function SiteSwitcherSheet({
               </button>
             );
           })}
-     {/* All Sites Overview link — hidden in HACCP launch */}
-          {showMultiSiteHQ && (
+          {role.canViewSettings && (
             <button
-              onClick={() => { navigate("/hq"); onClose(); }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-muted transition-colors mt-2 border-t pt-4"
+              onClick={() => { navigate("/settings"); onClose(); }}
+              className="w-full text-xs text-muted-foreground hover:text-foreground text-center pt-3"
             >
-              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">All Sites Overview</p>
-                <p className="text-xs text-muted-foreground">Compliance across all locations</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              Manage sites & users →
             </button>
           )}
         </div>
