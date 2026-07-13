@@ -193,12 +193,22 @@ function ModuleGuard({ module, children }: { module: ModuleName; children: React
 }
 
 function RequireSite({ children }: { children: React.ReactNode }) {
-  const { hasSelectedSite, isLoading, sites } = useSite();
-  const { isHQ, staffSession } = useAuth();
+  const { hasSelectedSite, isLoading, sites, memberships } = useSite();
+  const { isHQ, orgRole, staffSession } = useAuth();
   if (isLoading) return null;
   if (staffSession) return <>{children}</>;
-  if (!hasSelectedSite && sites.length > 1) return <Navigate to="/select-site" replace />;
   if (isHQ && !hasSelectedSite) return <Navigate to="/hq" replace />;
+  if (!hasSelectedSite && sites.length > 1) {
+    const isOrgManager =
+      orgRole?.org_role === "org_owner" ||
+      orgRole?.org_role === "hq_admin" ||
+      orgRole?.org_role === "hq_auditor";
+    const hasManagerMembership = memberships.some(
+      (m) => m.site_role === "owner" || m.site_role === "supervisor",
+    );
+    if (isOrgManager || hasManagerMembership) return <Navigate to="/hq" replace />;
+    return <Navigate to="/select-site" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -272,16 +282,16 @@ function AppRoutes() {
       <Route path="/cleaning" element={moduleRoute("cleaning", <Cleaning />)} />
       <Route path="/waste-log" element={moduleRoute("waste_log", <WasteLog />)} />
       <Route path="/customer-feedback" element={moduleRoute("customer_feedback", <CustomerFeedback />)} />
-      <Route path="/ppm-schedule" element={moduleRoute("ppm_schedule", <PPMSchedule />)} />
-      <Route path="/allergens" element={moduleRoute("allergens", <Allergens />)} />
-      <Route path="/suppliers" element={moduleRoute("suppliers", <Suppliers />)} />
-      <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <PestMaintenance />)} />
+      <Route path="/ppm-schedule" element={moduleRoute("ppm_schedule", <RoleGuard require="supervisorPlus" inline><PPMSchedule /></RoleGuard>)} />
+      <Route path="/allergens" element={moduleRoute("allergens", <RoleGuard require="supervisorPlus" inline><Allergens /></RoleGuard>)} />
+      <Route path="/suppliers" element={moduleRoute("suppliers", <RoleGuard require="supervisorPlus" inline><Suppliers /></RoleGuard>)} />
+      <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <RoleGuard require="supervisorPlus" inline><PestMaintenance /></RoleGuard>)} />
       <Route path="/incidents" element={moduleRoute("incidents", <Incidents />)} />
       <Route path="/compliance" element={siteRoute(<Compliance />)} />
       <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
-      <Route path="/staff-training" element={moduleRoute("staff_training", <StaffTraining />)} />
-      <Route path="/haccp" element={moduleRoute("haccp", <Haccp />)} />
+      <Route path="/staff-training" element={moduleRoute("staff_training", <RoleGuard require="supervisorPlus" inline><StaffTraining /></RoleGuard>)} />
+      <Route path="/haccp" element={moduleRoute("haccp", <RoleGuard require="supervisorPlus" inline><Haccp /></RoleGuard>)} />
       <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
       <Route path="/sales" element={moduleRoute("cost_margin", <Sales />)} />
       <Route path="/timesheets" element={moduleRoute("timesheets", <Timesheets />)} />

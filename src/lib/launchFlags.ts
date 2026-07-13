@@ -27,8 +27,13 @@ export const showCommercialModules = !HACCP;
 /** Operational-but-not-HACCP modules (Shifts, Timesheets, Batch Tracking, Waste Log). */
 export const showOperationalCommercialModules = !HACCP;
 
-/** Multi-site HQ console (future paid upgrade). */
-export const showMultiSiteHQ = !HACCP;
+/**
+ * Multi-site "All Sites" overview.
+ * Enabled in HACCP launch mode too — the view surfaces HACCP compliance
+ * status across all sites the user has access to (see HQDashboard.tsx).
+ * Nav still hides "All Sites" for single-site users at render time.
+ */
+export const showMultiSiteHQ = true;
 
 /** Team Messenger (kept in build, hidden from customer UI at launch). */
 export const showMessenger = !HACCP;

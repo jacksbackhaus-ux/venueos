@@ -14,6 +14,7 @@ import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
+import { SiteSwitcher } from "@/components/SiteSwitcher";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -92,7 +93,7 @@ export function AppSidebar() {
   const { isSuperAdmin } = useSuperAdmin();
   const { isInternalStaff } = useInternalStaff();
   const role = useRole();
-  const { currentSite, hasSelectedSite, clearSelectedSite } = useSite();
+  const { currentSite, hasSelectedSite, clearSelectedSite, sites, memberships } = useSite();
   const { isActive: isModuleActive } = useModuleAccess();
 
   const isActive = (path: string) =>
@@ -104,9 +105,14 @@ export function AppSidebar() {
   // Always-visible items for org_owner / hq_admin
   const isOrgManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
   const isOrgOwner = orgRole?.org_role === "org_owner";
+  const hasManagerMembership = memberships.some(
+    (m) => m.site_role === "owner" || m.site_role === "supervisor",
+  );
+  const canSeeAllSites =
+    showMultiSiteHQ && sites.length >= 2 && (isOrgManager || hasManagerMembership);
 
   const orgNav: NavLeaf[] = [
-    ...(showMultiSiteHQ && isHQ && role.isManager ? [{ title: "All Sites Overview", url: "/hq", icon: Building2 }] : []),
+    ...(canSeeAllSites ? [{ title: "All Sites", url: "/hq", icon: Building2 }] : []),
     ...(isOrgOwner ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(role.canViewSettings ? [{ title: "Settings", url: "/settings", icon: Settings }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
@@ -154,27 +160,16 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {hasSelectedSite && currentSite && !collapsed && (
+        {!collapsed && sites.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Viewing Site</SidebarGroupLabel>
             <SidebarGroupContent>
-              <div className="mx-2 rounded-md border border-primary/20 bg-primary/5 p-2 flex items-start gap-2">
-                <MapPin className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-foreground truncate">{currentSite.name}</p>
-                  {isHQ && (
-                    <button
-                      onClick={clearSelectedSite}
-                      className="text-[10px] text-muted-foreground hover:text-foreground underline mt-0.5"
-                    >
-                      Switch site
-                    </button>
-                  )}
-                </div>
+              <div className="px-2 py-1">
+                <SiteSwitcher variant="sidebar" />
               </div>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
 
         {dailyOps.length > 0 && (
           <CollapsibleGroup id="run-the-day" label={HACCP ? "Daily" : "Run the Day"} collapsed={collapsed}>

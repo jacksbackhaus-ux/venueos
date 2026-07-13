@@ -25,6 +25,7 @@ interface SiteContextType {
   currentSite: Site | null;
   currentMembership: Membership | null;
   sites: Site[];
+  memberships: Membership[];
   setCurrentSiteId: (id: string) => void;
   isLoading: boolean;
   organisationId: string | null;
@@ -101,8 +102,11 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
         setSites(fetchedSites);
         setMemberships(fetchedMemberships);
 
+        // Auto-pick only when there's a single accessible site. Multi-site users
+        // land on the site switcher / All Sites view (RequireSite handles routing).
         if (!currentSiteId || !accessibleSiteIds.has(currentSiteId)) {
-          const fallbackSiteId = fetchedMemberships[0]?.site_id || null;
+          const fallbackSiteId =
+            fetchedMemberships.length === 1 ? fetchedMemberships[0].site_id : null;
           setCurrentSiteIdState(fallbackSiteId);
         }
       } catch (error) {
@@ -150,7 +154,7 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SiteContext.Provider value={{
-      currentSite, currentMembership, sites, setCurrentSiteId,
+      currentSite, currentMembership, sites, memberships, setCurrentSiteId,
       isLoading, organisationId, hasSelectedSite, clearSelectedSite,
     }}>
       {children}

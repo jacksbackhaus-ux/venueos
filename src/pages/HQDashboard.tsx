@@ -51,24 +51,36 @@ function ScoreBadge({ score }: { score: number | null }) {
 
 export default function AllSitesOverview() {
   const { orgRole, appUser } = useAuth();
-  const { setCurrentSiteId } = useSite();
+  const { setCurrentSiteId, memberships, sites: accessibleSites } = useSite();
   const navigate = useNavigate();
   const [sites, setSites] = useState<SiteOverview[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+
+  const isOrgManager =
+    orgRole?.org_role === "org_owner" ||
+    orgRole?.org_role === "hq_admin" ||
+    orgRole?.org_role === "hq_auditor";
+  const hasManagerMembership = memberships.some(
+    (m) => m.site_role === "owner" || m.site_role === "supervisor",
+  );
+  const canView = isOrgManager || hasManagerMembership;
 
   const load = async () => {
     if (!appUser) return;
     setLoading(true);
 
     const todayIso = new Date().toISOString().slice(0, 10);
+    const accessibleIds = new Set(accessibleSites.map((s) => s.id));
 
     const { data: sitesData } = await supabase
       .from("sites")
       .select("id, name, address, active")
+      .in("id", Array.from(accessibleIds).length ? Array.from(accessibleIds) : ["00000000-0000-0000-0000-000000000000"])
       .order("name");
 
     const overviews: SiteOverview[] = [];
+
 
     for (const site of sitesData || []) {
       // Look up today's day sheet for this site (if any) so we can count entries.
@@ -166,20 +178,18 @@ export default function AllSitesOverview() {
     navigate("/reports");
   };
 
-  if (
-    !orgRole ||
-    !["org_owner", "hq_admin", "hq_auditor"].includes(orgRole.org_role)
-  ) {
+  if (!canView) {
     return (
       <div className="p-6 text-center">
         <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h2 className="font-heading font-bold text-lg">Access Denied</h2>
         <p className="text-sm text-muted-foreground">
-          You need multi-site permissions to view this page.
+          You need Manager access on at least one site to view All Sites.
         </p>
       </div>
     );
   }
+
 
   const activeSites = sites.filter((s) => s.active);
   const totalBreaches =
@@ -197,10 +207,10 @@ export default function AllSitesOverview() {
           </div>
           <div>
             <h1 className="text-xl font-heading font-bold text-foreground">
-              All Sites Overview
+              All Sites
             </h1>
             <p className="text-xs text-muted-foreground">
-              Last updated {lastRefresh.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+              HACCP compliance across your sites · Last updated {lastRefresh.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
         </div>
