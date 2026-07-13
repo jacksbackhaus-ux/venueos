@@ -283,15 +283,15 @@ function AppRoutes() {
       <Route path="/waste-log" element={moduleRoute("waste_log", <WasteLog />)} />
       <Route path="/customer-feedback" element={moduleRoute("customer_feedback", <CustomerFeedback />)} />
       <Route path="/ppm-schedule" element={moduleRoute("ppm_schedule", <PPMSchedule />)} />
-      <Route path="/allergens" element={moduleRoute("allergens", <Allergens />)} />
-      <Route path="/suppliers" element={moduleRoute("suppliers", <Suppliers />)} />
-      <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <PestMaintenance />)} />
+      <Route path="/allergens" element={moduleRoute("allergens", <RoleGuard require="supervisorPlus" inline><Allergens /></RoleGuard>)} />
+      <Route path="/suppliers" element={moduleRoute("suppliers", <RoleGuard require="supervisorPlus" inline><Suppliers /></RoleGuard>)} />
+      <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <RoleGuard require="supervisorPlus" inline><PestMaintenance /></RoleGuard>)} />
       <Route path="/incidents" element={moduleRoute("incidents", <Incidents />)} />
       <Route path="/compliance" element={siteRoute(<Compliance />)} />
       <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
-      <Route path="/staff-training" element={moduleRoute("staff_training", <StaffTraining />)} />
-      <Route path="/haccp" element={moduleRoute("haccp", <Haccp />)} />
+      <Route path="/staff-training" element={moduleRoute("staff_training", <RoleGuard require="supervisorPlus" inline><StaffTraining /></RoleGuard>)} />
+      <Route path="/haccp" element={moduleRoute("haccp", <RoleGuard require="supervisorPlus" inline><Haccp /></RoleGuard>)} />
       <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
       <Route path="/sales" element={moduleRoute("cost_margin", <Sales />)} />
       <Route path="/timesheets" element={moduleRoute("timesheets", <Timesheets />)} />
