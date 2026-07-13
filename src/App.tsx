@@ -282,7 +282,7 @@ function AppRoutes() {
       <Route path="/cleaning" element={moduleRoute("cleaning", <Cleaning />)} />
       <Route path="/waste-log" element={moduleRoute("waste_log", <WasteLog />)} />
       <Route path="/customer-feedback" element={moduleRoute("customer_feedback", <CustomerFeedback />)} />
-      <Route path="/ppm-schedule" element={moduleRoute("ppm_schedule", <PPMSchedule />)} />
+      <Route path="/ppm-schedule" element={moduleRoute("ppm_schedule", <RoleGuard require="supervisorPlus" inline><PPMSchedule /></RoleGuard>)} />
       <Route path="/allergens" element={moduleRoute("allergens", <RoleGuard require="supervisorPlus" inline><Allergens /></RoleGuard>)} />
       <Route path="/suppliers" element={moduleRoute("suppliers", <RoleGuard require="supervisorPlus" inline><Suppliers /></RoleGuard>)} />
       <Route path="/pest-maintenance" element={moduleRoute("pest_maintenance", <RoleGuard require="supervisorPlus" inline><PestMaintenance /></RoleGuard>)} />
