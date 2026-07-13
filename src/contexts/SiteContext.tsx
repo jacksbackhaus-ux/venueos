@@ -154,7 +154,7 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SiteContext.Provider value={{
-      currentSite, currentMembership, sites, setCurrentSiteId,
+      currentSite, currentMembership, sites, memberships, setCurrentSiteId,
       isLoading, organisationId, hasSelectedSite, clearSelectedSite,
     }}>
       {children}
