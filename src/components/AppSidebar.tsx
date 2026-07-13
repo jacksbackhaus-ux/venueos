@@ -105,9 +105,14 @@ export function AppSidebar() {
   // Always-visible items for org_owner / hq_admin
   const isOrgManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
   const isOrgOwner = orgRole?.org_role === "org_owner";
+  const hasManagerMembership = memberships.some(
+    (m) => m.site_role === "owner" || m.site_role === "supervisor",
+  );
+  const canSeeAllSites =
+    showMultiSiteHQ && sites.length >= 2 && (isOrgManager || hasManagerMembership);
 
   const orgNav: NavLeaf[] = [
-    ...(showMultiSiteHQ && isHQ && role.isManager ? [{ title: "All Sites Overview", url: "/hq", icon: Building2 }] : []),
+    ...(canSeeAllSites ? [{ title: "All Sites", url: "/hq", icon: Building2 }] : []),
     ...(isOrgOwner ? [{ title: "Account & Billing", url: "/account", icon: CreditCard }] : []),
     ...(role.canViewSettings ? [{ title: "Settings", url: "/settings", icon: Settings }] : []),
     ...(isSuperAdmin ? [{ title: "Super Admin", url: "/admin", icon: ShieldCheck }] : []),
