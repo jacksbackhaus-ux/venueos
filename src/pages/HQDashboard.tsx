@@ -207,10 +207,10 @@ export default function AllSitesOverview() {
           </div>
           <div>
             <h1 className="text-xl font-heading font-bold text-foreground">
-              All Sites Overview
+              All Sites
             </h1>
             <p className="text-xs text-muted-foreground">
-              Last updated {lastRefresh.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+              HACCP compliance across your sites · Last updated {lastRefresh.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
         </div>
