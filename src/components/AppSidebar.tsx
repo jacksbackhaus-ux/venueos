@@ -93,7 +93,7 @@ export function AppSidebar() {
   const { isSuperAdmin } = useSuperAdmin();
   const { isInternalStaff } = useInternalStaff();
   const role = useRole();
-  const { currentSite, hasSelectedSite, clearSelectedSite } = useSite();
+  const { currentSite, hasSelectedSite, clearSelectedSite, sites, memberships } = useSite();
   const { isActive: isModuleActive } = useModuleAccess();
 
   const isActive = (path: string) =>
