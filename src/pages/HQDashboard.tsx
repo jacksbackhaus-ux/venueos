@@ -178,20 +178,18 @@ export default function AllSitesOverview() {
     navigate("/reports");
   };
 
-  if (
-    !orgRole ||
-    !["org_owner", "hq_admin", "hq_auditor"].includes(orgRole.org_role)
-  ) {
+  if (!canView) {
     return (
       <div className="p-6 text-center">
         <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h2 className="font-heading font-bold text-lg">Access Denied</h2>
         <p className="text-sm text-muted-foreground">
-          You need multi-site permissions to view this page.
+          You need Manager access on at least one site to view All Sites.
         </p>
       </div>
     );
   }
+
 
   const activeSites = sites.filter((s) => s.active);
   const totalBreaches =
