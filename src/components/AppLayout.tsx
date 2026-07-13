@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ModuleName } from "@/lib/plans";
 import { showMessenger, showMultiSiteHQ, LAUNCH_MODE } from "@/lib/launchFlags";
+import { siteRoleLabel } from "@/lib/siteRoleLabel";
 
 const HACCP = LAUNCH_MODE === "haccp";
 
