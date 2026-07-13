@@ -102,8 +102,11 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
         setSites(fetchedSites);
         setMemberships(fetchedMemberships);
 
+        // Auto-pick only when there's a single accessible site. Multi-site users
+        // land on the site switcher / All Sites view (RequireSite handles routing).
         if (!currentSiteId || !accessibleSiteIds.has(currentSiteId)) {
-          const fallbackSiteId = fetchedMemberships[0]?.site_id || null;
+          const fallbackSiteId =
+            fetchedMemberships.length === 1 ? fetchedMemberships[0].site_id : null;
           setCurrentSiteIdState(fallbackSiteId);
         }
       } catch (error) {
