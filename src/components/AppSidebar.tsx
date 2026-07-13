@@ -154,27 +154,16 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {hasSelectedSite && currentSite && !collapsed && (
+        {!collapsed && sites.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Viewing Site</SidebarGroupLabel>
             <SidebarGroupContent>
-              <div className="mx-2 rounded-md border border-primary/20 bg-primary/5 p-2 flex items-start gap-2">
-                <MapPin className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-foreground truncate">{currentSite.name}</p>
-                  {isHQ && (
-                    <button
-                      onClick={clearSelectedSite}
-                      className="text-[10px] text-muted-foreground hover:text-foreground underline mt-0.5"
-                    >
-                      Switch site
-                    </button>
-                  )}
-                </div>
+              <div className="px-2 py-1">
+                <SiteSwitcher variant="sidebar" />
               </div>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
 
         {dailyOps.length > 0 && (
           <CollapsibleGroup id="run-the-day" label={HACCP ? "Daily" : "Run the Day"} collapsed={collapsed}>
