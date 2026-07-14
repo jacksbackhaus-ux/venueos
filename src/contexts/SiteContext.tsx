@@ -51,8 +51,13 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   const [currentSiteId, setCurrentSiteIdState] = useState<string | null>(() => readStoredSiteId());
   const [hqExplicitSelection, setHqExplicitSelection] = useState<boolean>(() => readStoredHqSelection());
   const [isLoading, setIsLoading] = useState(true);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
+    // Mark loading synchronously on any auth change so consumers don't
+    // briefly see "not loading + empty sites" before the fetch begins.
+    setIsLoading(true);
+    let cancelled = false;
     const fetchContext = async () => {
       try {
         if (staffSession) {
