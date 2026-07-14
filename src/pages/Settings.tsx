@@ -460,38 +460,99 @@ const Settings = () => {
 
     if (!currentSite) { toast.error("No site selected."); return; }
 
-    const { data: newUser, error } = await supabase.from('users').insert({
-      organisation_id: organisationId,
-      display_name: staffForm.name,
-      email: staffForm.email || null,
-      auth_type: 'staff_code',
-      staff_code: staffId,
-      status: 'active',
-    }).select('id').single();
-    if (error || !newUser) {
-      if (error?.code === '23505') {
-        toast.error(`Staff ID "${staffId}" is already in use. Choose a different one.`);
-      } else {
-        toast.error(error?.message || "Could not create staff member.");
-      }
+    // Determine target sites/roles. Multi-site orgs use staffSiteRows;
+    // single-site orgs fall back to the legacy top-level role.
+    let targetRows: SiteAccessRow[] = staffSiteRows.filter((r) => r.site_id);
+    if (accessibleSites.length <= 1 || targetRows.length === 0) {
+      const legacyRole: SiteAccessRow["site_role"] =
+        staffForm.role === "supervisor" || staffForm.role === "owner" || staffForm.role === "manager"
+          ? "owner"
+          : "staff";
+      targetRows = [{ site_id: currentSite.id, site_role: legacyRole }];
+    }
+
+    // Prevent duplicate site selection within the form.
+    const uniqueSiteIds = new Set(targetRows.map((r) => r.site_id));
+    if (uniqueSiteIds.size !== targetRows.length) {
+      toast.error("Each site can only appear once in the site access list.");
       return;
     }
 
-    // Create membership so staff can log in via PIN on this site
-    const siteRole = staffForm.role === 'supervisor' ? 'supervisor' : 'staff';
-    const { error: memErr } = await supabase.from('memberships').insert({
-      site_id: currentSite.id,
-      user_id: newUser.id,
-      site_role: siteRole,
-      active: true,
-    });
-    if (memErr) {
-      toast.error(`Staff created but membership failed: ${memErr.message}. They won't be able to log in until this is fixed.`);
+    // Idempotency: reuse existing user by email if present, otherwise create.
+    let newUserId: string | null = null;
+    if (staffForm.email) {
+      const { data: existing } = await supabase
+        .from('users')
+        .select('id')
+        .eq('organisation_id', organisationId)
+        .eq('email', staffForm.email)
+        .maybeSingle();
+      if (existing?.id) newUserId = existing.id;
+    }
+
+    if (!newUserId) {
+      const { data: newUser, error } = await supabase.from('users').insert({
+        organisation_id: organisationId,
+        display_name: staffForm.name,
+        email: staffForm.email || null,
+        auth_type: 'staff_code',
+        staff_code: staffId,
+        status: 'active',
+      }).select('id').single();
+      if (error || !newUser) {
+        if (error?.code === '23505') {
+          toast.error(`Staff ID "${staffId}" is already in use. Choose a different one.`);
+        } else {
+          toast.error(error?.message || "Could not create staff member.");
+        }
+        return;
+      }
+      newUserId = newUser.id;
+    }
+
+    // Insert one membership per site. Skip sites where the user already has a
+    // membership (keeps the flow idempotent).
+    const { data: existingMems } = await supabase
+      .from('memberships')
+      .select('site_id')
+      .eq('user_id', newUserId);
+    const existingSiteIds = new Set((existingMems || []).map((m: any) => m.site_id));
+
+    const rowsToInsert = targetRows.filter((r) => !existingSiteIds.has(r.site_id));
+    let successCount = 0;
+    let failCount = 0;
+    for (const row of rowsToInsert) {
+      const { error: memErr } = await supabase.from('memberships').insert({
+        site_id: row.site_id,
+        user_id: newUserId,
+        site_role: row.site_role,
+        active: true,
+      });
+      if (memErr) {
+        failCount += 1;
+        console.warn("[add-staff] membership insert failed", row, memErr);
+      } else {
+        successCount += 1;
+      }
+    }
+
+    if (successCount === 0 && rowsToInsert.length > 0) {
+      toast.error("Staff created but no site memberships could be assigned. Please try again from the Users list.");
       loadAll();
       return;
     }
 
-    toast.success(`Staff member added — Staff ID: ${staffId}`);
+    const skipped = targetRows.length - rowsToInsert.length;
+    if (failCount > 0) {
+      toast.warning(`User invited with access to ${successCount} site${successCount === 1 ? "" : "s"} · ${failCount} failed${skipped ? ` · ${skipped} already had access` : ""}.`);
+    } else {
+      toast.success(
+        targetRows.length > 1
+          ? `User invited with access to ${targetRows.length} site${targetRows.length === 1 ? "" : "s"}${skipped ? ` (${skipped} already had access)` : ""}.`
+          : `Staff member added — Staff ID: ${staffId}`
+      );
+    }
+
 
     // If the new staff member has an email, send the branded invite email.
     if (staffForm.email) {
