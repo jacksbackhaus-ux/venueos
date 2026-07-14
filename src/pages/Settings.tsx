@@ -136,8 +136,9 @@ const roleBadgeColor: Record<string, string> = {
 };
 
 const Settings = () => {
-  const { currentSite, currentMembership, organisationId } = useSite();
+  const { currentSite, currentMembership, organisationId, sites: accessibleSites } = useSite();
   const { appUser, staffSession, orgRole, signOut, setStaffSession } = useAuth();
+  const { trialActive } = useOrgAccess();
   const canManageStaff =
     orgRole?.org_role === 'org_owner' ||
     currentMembership?.site_role === 'owner' ||
