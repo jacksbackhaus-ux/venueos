@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import {
   Building2, MapPin, CheckCircle2, AlertTriangle,
   ExternalLink, Shield, Thermometer, ClipboardList,
-  ArrowRight, RefreshCw,
+  ArrowRight, RefreshCw, GraduationCap, Wrench, Package,
+  SprayCan,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,21 @@ interface SiteOverview {
   todays_tasks_total: number;
   todays_tasks_done: number;
   closed_today: boolean;
+  training_expiring: number | null;
+  ppm_overdue: number | null;
+}
+
+type Severity = "red" | "amber";
+
+interface AttentionItem {
+  id: string;
+  site_id: string;
+  site_name: string;
+  title: string;
+  severity: Severity;
+  time: number; // sort tiebreaker
+  route: string;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 function complianceScore(done: number, total: number, closed: boolean) {
@@ -49,11 +65,43 @@ function ScoreBadge({ score }: { score: number | null }) {
   );
 }
 
+function CounterPill({
+  icon: Icon,
+  label,
+  count,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  count: number | null;
+}) {
+  if (count === null) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded-full px-2.5 py-1">
+        <Icon className="h-3 w-3" />— {label}
+      </span>
+    );
+  }
+  const tone =
+    count === 0
+      ? "text-success bg-success/10"
+      : count >= 3
+      ? "text-destructive bg-destructive/10"
+      : "text-warning bg-warning/10";
+  return (
+    <span className={`flex items-center gap-1 text-xs rounded-full px-2.5 py-1 ${tone}`}>
+      <Icon className="h-3 w-3" />
+      {count} {label}
+    </span>
+  );
+}
+
 export default function AllSitesOverview() {
   const { orgRole, appUser } = useAuth();
   const { setCurrentSiteId, memberships, sites: accessibleSites } = useSite();
   const navigate = useNavigate();
   const [sites, setSites] = useState<SiteOverview[]>([]);
+  const [attention, setAttention] = useState<AttentionItem[]>([]);
+  const [showAllAttention, setShowAllAttention] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
@@ -71,16 +119,23 @@ export default function AllSitesOverview() {
     setLoading(true);
 
     const todayIso = new Date().toISOString().slice(0, 10);
+    const in7DaysIso = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const in30DaysIso = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     const accessibleIds = new Set(accessibleSites.map((s) => s.id));
 
     const { data: sitesData } = await supabase
       .from("sites")
       .select("id, name, address, active")
-      .in("id", Array.from(accessibleIds).length ? Array.from(accessibleIds) : ["00000000-0000-0000-0000-000000000000"])
+      .in(
+        "id",
+        Array.from(accessibleIds).length
+          ? Array.from(accessibleIds)
+          : ["00000000-0000-0000-0000-000000000000"],
+      )
       .order("name");
 
     const overviews: SiteOverview[] = [];
-
+    const collectedAttention: AttentionItem[] = [];
 
     for (const site of sitesData || []) {
       // Look up today's day sheet for this site (if any) so we can count entries.
@@ -98,6 +153,12 @@ export default function AllSitesOverview() {
         { count: openIncidents },
         { data: daySheetSections },
         { count: completedCount },
+        { data: trainingRecords },
+        { data: ppmCompletions },
+        { data: ppmActiveTasks },
+        { data: overdueCleaning },
+        { data: rejectedDeliveries },
+        { data: recentOpenIncidents },
       ] = await Promise.all([
         supabase
           .from("batches")
@@ -133,20 +194,74 @@ export default function AllSitesOverview() {
               .eq("day_sheet_id", todaySheet.id)
               .eq("done", true)
           : Promise.resolve({ count: 0 } as { count: number }),
+        supabase
+          .from("training_records")
+          .select("id, training_name, expiry_date")
+          .eq("site_id", site.id)
+          .not("expiry_date", "is", null)
+          .gte("expiry_date", todayIso)
+          .lte("expiry_date", in30DaysIso),
+        supabase
+          .from("ppm_completions")
+          .select("task_id, next_due_date")
+          .eq("site_id", site.id)
+          .lt("next_due_date", todayIso),
+        supabase
+          .from("ppm_tasks")
+          .select("id")
+          .eq("site_id", site.id)
+          .eq("is_active", true),
+        supabase
+          .from("cleaning_tasks")
+          .select("id, area, task")
+          .eq("site_id", site.id)
+          .eq("active", true),
+        supabase
+          .from("delivery_logs")
+          .select("id, logged_at")
+          .eq("site_id", site.id)
+          .eq("accepted", false)
+          .gte("logged_at", `${todayIso}T00:00:00`),
+        supabase
+          .from("incidents")
+          .select("id, title, reported_at")
+          .eq("site_id", site.id)
+          .in("status", ["open", "investigating"])
+          .order("reported_at", { ascending: false })
+          .limit(5),
       ]);
 
-      // Closed-day exemption: if today is marked closed for this site, skip compliance scoring.
+      // Closed-day exemption for compliance and attention feed.
       const { data: closedToday } = await supabase
         .from("closed_days")
         .select("id")
         .eq("site_id", site.id)
         .eq("closed_date", todayIso)
         .maybeSingle();
+      const isClosedToday = !!closedToday;
 
       const totalItems = (daySheetSections || []).reduce(
         (acc: number, s: { day_sheet_items?: { id: string }[] | null }) =>
           acc + (s.day_sheet_items?.length || 0),
         0,
+      );
+
+      // Training expiring (30 days)
+      const trainingExpiring =
+        trainingRecords === null ? null : (trainingRecords || []).length;
+
+      // PPM overdue — unique task ids where next_due_date < today AND task active.
+      const activeTaskIds = new Set((ppmActiveTasks || []).map((t: any) => t.id));
+      const overdueTaskIds = new Set<string>();
+      (ppmCompletions || []).forEach((c: any) => {
+        if (activeTaskIds.has(c.task_id)) overdueTaskIds.add(c.task_id);
+      });
+      const ppmOverdue =
+        (ppmActiveTasks || []).length === 0 ? null : overdueTaskIds.size;
+
+      // Training expiring within 7 days (attention feed)
+      const trainingExpiringSoon = (trainingRecords || []).filter(
+        (r: any) => r.expiry_date && r.expiry_date <= in7DaysIso,
       );
 
       overviews.push({
@@ -157,25 +272,158 @@ export default function AllSitesOverview() {
         open_incidents: openIncidents || 0,
         todays_tasks_total: totalItems,
         todays_tasks_done: completedCount || 0,
-        closed_today: !!closedToday,
+        closed_today: isClosedToday,
+        training_expiring: trainingExpiring,
+        ppm_overdue: ppmOverdue,
       });
+
+      // ── Needs Attention items — closed-day exempt for time-of-day items ──
+      if (!isClosedToday) {
+        // Missing temperature logs today (no temp log at all today)
+        const { count: tempLogsToday } = await supabase
+          .from("temp_logs")
+          .select("*", { count: "exact", head: true })
+          .eq("site_id", site.id)
+          .gte("logged_at", `${todayIso}T00:00:00`)
+          .lte("logged_at", `${todayIso}T23:59:59`);
+        if ((tempLogsToday || 0) === 0) {
+          collectedAttention.push({
+            id: `temp-missing-${site.id}`,
+            site_id: site.id,
+            site_name: site.name,
+            title: "Missing temperature logs today",
+            severity: "red",
+            time: 0,
+            route: "/temperatures",
+            icon: Thermometer,
+          });
+        }
+        if ((tempBreaches || 0) > 0) {
+          collectedAttention.push({
+            id: `temp-breach-${site.id}`,
+            site_id: site.id,
+            site_name: site.name,
+            title: `${tempBreaches} temperature breach${tempBreaches === 1 ? "" : "es"} today`,
+            severity: "red",
+            time: 1,
+            route: "/temperatures",
+            icon: Thermometer,
+          });
+        }
+
+        // Incomplete day sheet
+        if (totalItems > 0 && (completedCount || 0) < totalItems) {
+          collectedAttention.push({
+            id: `daysheet-${site.id}`,
+            site_id: site.id,
+            site_name: site.name,
+            title: `Day sheet incomplete (${completedCount || 0}/${totalItems})`,
+            severity: "amber",
+            time: 2,
+            route: "/day-sheet",
+            icon: ClipboardList,
+          });
+        }
+
+        // Overdue cleaning: tasks with no log today
+        if ((overdueCleaning || []).length > 0) {
+          const { data: cleanedToday } = await supabase
+            .from("cleaning_logs")
+            .select("task_id")
+            .eq("site_id", site.id)
+            .eq("log_date", todayIso)
+            .eq("done", true);
+          const doneIds = new Set((cleanedToday || []).map((r: any) => r.task_id));
+          const overdueCount = (overdueCleaning || []).filter(
+            (t: any) => !doneIds.has(t.id),
+          ).length;
+          if (overdueCount > 0) {
+            collectedAttention.push({
+              id: `clean-${site.id}`,
+              site_id: site.id,
+              site_name: site.name,
+              title: `${overdueCount} overdue cleaning task${overdueCount === 1 ? "" : "s"}`,
+              severity: "amber",
+              time: 3,
+              route: "/cleaning",
+              icon: SprayCan,
+            });
+          }
+        }
+
+        // Delivery rejections needing action
+        if ((rejectedDeliveries || []).length > 0) {
+          collectedAttention.push({
+            id: `deliv-${site.id}`,
+            site_id: site.id,
+            site_name: site.name,
+            title: `${rejectedDeliveries!.length} delivery rejection${rejectedDeliveries!.length === 1 ? "" : "s"} to review`,
+            severity: "amber",
+            time: 4,
+            route: "/suppliers",
+            icon: Package,
+          });
+        }
+      }
+
+      // These are always relevant (not tied to today's operating status)
+      (recentOpenIncidents || []).forEach((inc: any, i: number) => {
+        collectedAttention.push({
+          id: `inc-${inc.id}`,
+          site_id: site.id,
+          site_name: site.name,
+          title: inc.title || "Open incident",
+          severity: "red",
+          time: 10 + i,
+          route: "/incidents",
+          icon: AlertTriangle,
+        });
+      });
+
+      if (trainingExpiringSoon.length > 0) {
+        collectedAttention.push({
+          id: `train-${site.id}`,
+          site_id: site.id,
+          site_name: site.name,
+          title: `${trainingExpiringSoon.length} training expiring within 7 days`,
+          severity: "amber",
+          time: 20,
+          route: "/staff-training",
+          icon: GraduationCap,
+        });
+      }
+
+      if (ppmOverdue && ppmOverdue > 0) {
+        collectedAttention.push({
+          id: `ppm-${site.id}`,
+          site_id: site.id,
+          site_name: site.name,
+          title: `${ppmOverdue} PPM task${ppmOverdue === 1 ? "" : "s"} overdue`,
+          severity: "amber",
+          time: 21,
+          route: "/ppm-schedule",
+          icon: Wrench,
+        });
+      }
     }
 
+    // Sort: severity (red first), then time
+    collectedAttention.sort((a, b) => {
+      if (a.severity !== b.severity) return a.severity === "red" ? -1 : 1;
+      return a.time - b.time;
+    });
+
     setSites(overviews);
+    setAttention(collectedAttention);
     setLastRefresh(new Date());
     setLoading(false);
   };
 
   useEffect(() => { load(); }, [appUser]);
 
-  const switchToSite = (siteId: string) => {
+  const switchToSite = (siteId: string, route = "/") => {
     setCurrentSiteId(siteId);
-    navigate("/");
-  };
-
-  const viewSiteReports = (siteId: string) => {
-    setCurrentSiteId(siteId);
-    navigate("/reports");
+    navigate(route);
   };
 
   if (!canView) {
@@ -190,12 +438,13 @@ export default function AllSitesOverview() {
     );
   }
 
-
   const activeSites = sites.filter((s) => s.active);
   const totalBreaches =
     sites.reduce((n, s) => n + s.temp_breaches, 0) +
     sites.reduce((n, s) => n + s.quarantined_batches, 0) +
     sites.reduce((n, s) => n + s.open_incidents, 0);
+
+  const visibleAttention = showAllAttention ? attention : attention.slice(0, 10);
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto">
@@ -206,20 +455,13 @@ export default function AllSitesOverview() {
             <Building2 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-heading font-bold text-foreground">
-              All Sites
-            </h1>
+            <h1 className="text-xl font-heading font-bold text-foreground">All Sites</h1>
             <p className="text-xs text-muted-foreground">
               HACCP compliance across your sites · Last updated {lastRefresh.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={load}
-          disabled={loading}
-        >
+        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
@@ -237,11 +479,7 @@ export default function AllSitesOverview() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p
-              className={`text-2xl font-heading font-bold ${
-                totalBreaches > 0 ? "text-destructive" : "text-success"
-              }`}
-            >
+            <p className={`text-2xl font-heading font-bold ${totalBreaches > 0 ? "text-destructive" : "text-success"}`}>
               {totalBreaches}
             </p>
             <p className="text-xs text-muted-foreground">Active Alerts</p>
@@ -253,11 +491,7 @@ export default function AllSitesOverview() {
               {activeSites.length > 0
                 ? Math.round(
                     activeSites.reduce((sum, s) => {
-                      const score = complianceScore(
-                        s.todays_tasks_done,
-                        s.todays_tasks_total,
-                        s.closed_today
-                      );
+                      const score = complianceScore(s.todays_tasks_done, s.todays_tasks_total, s.closed_today);
                       return sum + (score ?? 100);
                     }, 0) / activeSites.length
                   )
@@ -271,9 +505,7 @@ export default function AllSitesOverview() {
 
       {/* Sites */}
       <div className="space-y-3">
-        <h2 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-          Sites
-        </h2>
+        <h2 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wide">Sites</h2>
 
         {loading ? (
           <div className="space-y-3">
@@ -292,11 +524,7 @@ export default function AllSitesOverview() {
           <p className="text-sm text-muted-foreground">No sites found.</p>
         ) : (
           sites.map((site, idx) => {
-            const score = complianceScore(
-              site.todays_tasks_done,
-              site.todays_tasks_total,
-              site.closed_today
-            );
+            const score = complianceScore(site.todays_tasks_done, site.todays_tasks_total, site.closed_today);
             const hasAlerts =
               site.temp_breaches > 0 ||
               site.quarantined_batches > 0 ||
@@ -309,25 +537,13 @@ export default function AllSitesOverview() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
               >
-                <Card
-                  className={
-                    hasAlerts
-                      ? "border-destructive/30 bg-destructive/5"
-                      : ""
-                  }
-                >
+                <Card className={hasAlerts ? "border-destructive/30 bg-destructive/5" : ""}>
                   <CardContent className="p-4 space-y-3">
-                    {/* Site name + status */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-heading font-bold text-sm">
-                            {site.name}
-                          </h3>
-                          <Badge
-                            variant={site.active ? "default" : "secondary"}
-                            className="text-[10px]"
-                          >
+                          <h3 className="font-heading font-bold text-sm">{site.name}</h3>
+                          <Badge variant={site.active ? "default" : "secondary"} className="text-[10px]">
                             {site.active ? "Active" : "Inactive"}
                           </Badge>
                           <ScoreBadge score={score} />
@@ -341,7 +557,7 @@ export default function AllSitesOverview() {
                       </div>
                     </div>
 
-                    {/* Alert pills */}
+                    {/* Alert / counter pills */}
                     <div className="flex flex-wrap gap-2">
                       {site.temp_breaches > 0 && (
                         <span className="flex items-center gap-1 text-xs text-destructive bg-destructive/10 rounded-full px-2.5 py-1">
@@ -367,6 +583,8 @@ export default function AllSitesOverview() {
                           {site.todays_tasks_done}/{site.todays_tasks_total} tasks today
                         </span>
                       )}
+                      <CounterPill icon={GraduationCap} label="expiring" count={site.training_expiring} />
+                      <CounterPill icon={Wrench} label="overdue" count={site.ppm_overdue} />
                       {!hasAlerts &&
                         site.todays_tasks_total > 0 &&
                         site.todays_tasks_done === site.todays_tasks_total && (
@@ -377,22 +595,11 @@ export default function AllSitesOverview() {
                         )}
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-2 pt-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => viewSiteReports(site.id)}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                        Reports
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => switchToSite(site.id, "/reports")}>
+                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Reports
                       </Button>
-                      <Button
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => switchToSite(site.id)}
-                      >
+                      <Button size="sm" className="flex-1" onClick={() => switchToSite(site.id)}>
                         Open Site
                         <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                       </Button>
@@ -404,6 +611,56 @@ export default function AllSitesOverview() {
           })
         )}
       </div>
+
+      {/* ── Needs Attention Across Sites ── */}
+      {!loading && (
+        <div className="space-y-3">
+          <h2 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+            Needs Attention Across Sites
+          </h2>
+          {attention.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center space-y-2">
+                <CheckCircle2 className="h-8 w-8 mx-auto text-success" />
+                <p className="text-sm text-muted-foreground">All sites are on track today.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {visibleAttention.map((item) => {
+                const Icon = item.icon;
+                const dot = item.severity === "red" ? "bg-destructive" : "bg-warning";
+                return (
+                  <Card key={item.id}>
+                    <CardContent className="p-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${dot}`} />
+                        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.site_name}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => switchToSite(item.site_id, item.route)}>
+                        Open
+                        <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {!showAllAttention && attention.length > 10 && (
+                <button
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => setShowAllAttention(true)}
+                >
+                  View all {attention.length} items
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

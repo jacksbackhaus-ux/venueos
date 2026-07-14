@@ -28,6 +28,7 @@ interface SiteContextType {
   memberships: Membership[];
   setCurrentSiteId: (id: string) => void;
   isLoading: boolean;
+  hasHydrated: boolean;
   organisationId: string | null;
   hasSelectedSite: boolean;
   clearSelectedSite: () => void;
@@ -50,8 +51,13 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   const [currentSiteId, setCurrentSiteIdState] = useState<string | null>(() => readStoredSiteId());
   const [hqExplicitSelection, setHqExplicitSelection] = useState<boolean>(() => readStoredHqSelection());
   const [isLoading, setIsLoading] = useState(true);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
+    // Mark loading synchronously on any auth change so consumers don't
+    // briefly see "not loading + empty sites" before the fetch begins.
+    setIsLoading(true);
+    let cancelled = false;
     const fetchContext = async () => {
       try {
         if (staffSession) {
@@ -111,15 +117,21 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to load site context.', error);
-        setSites([]);
-        setMemberships([]);
+        if (!cancelled) {
+          setSites([]);
+          setMemberships([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+          setHasHydrated(true);
+        }
       }
     };
 
     void fetchContext();
-  }, [appUser, staffSession, isAuthenticated, currentSiteId]);
+    return () => { cancelled = true; };
+  }, [appUser, staffSession, isAuthenticated]);
 
   useEffect(() => {
     if (currentSiteId) {
@@ -155,7 +167,7 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   return (
     <SiteContext.Provider value={{
       currentSite, currentMembership, sites, memberships, setCurrentSiteId,
-      isLoading, organisationId, hasSelectedSite, clearSelectedSite,
+      isLoading, hasHydrated, organisationId, hasSelectedSite, clearSelectedSite,
     }}>
       {children}
     </SiteContext.Provider>

@@ -61,6 +61,7 @@ import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
 import { BrandingSection } from "@/components/settings/BrandingSection";
 import { ToggleLeft, MessageSquare, Palette } from "lucide-react";
 import { showMessenger, showModulesSettingsTab, showBrandingSettingsTab } from "@/lib/launchFlags";
+import { useOrgAccess } from "@/hooks/useOrgAccess";
 
 // ─── Temperature Units ───
 type TempUnit = {
@@ -136,8 +137,9 @@ const roleBadgeColor: Record<string, string> = {
 };
 
 const Settings = () => {
-  const { currentSite, currentMembership, organisationId } = useSite();
+  const { currentSite, currentMembership, organisationId, sites: accessibleSites } = useSite();
   const { appUser, staffSession, orgRole, signOut, setStaffSession } = useAuth();
+  const { trialActive } = useOrgAccess();
   const canManageStaff =
     orgRole?.org_role === 'org_owner' ||
     currentMembership?.site_role === 'owner' ||
@@ -185,6 +187,10 @@ const Settings = () => {
   const [staff, setStaff] = useState<StaffMember[]>(defaultStaff);
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "", staffId: "" });
+  // Per-site access rows for multi-site orgs. Owner may assign one user to
+  // several sites, each with its own role (Manager or Staff).
+  type SiteAccessRow = { site_id: string; site_role: "owner" | "staff" };
+  const [staffSiteRows, setStaffSiteRows] = useState<SiteAccessRow[]>([]);
   const [staffView, setStaffView] = useState<"active" | "deactivated">("active");
   const [confirmDeactivate, setConfirmDeactivate] = useState<StaffMember | null>(null);
   const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
@@ -272,6 +278,19 @@ const Settings = () => {
   }, [currentSite, appUser?.id]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Initialise site-access rows whenever the Add Staff dialog opens.
+  useEffect(() => {
+    if (!showAddStaff) return;
+    const defaultSiteId = currentSite?.id || accessibleSites[0]?.id;
+    if (!defaultSiteId) { setStaffSiteRows([]); return; }
+    const defaultRole: SiteAccessRow["site_role"] =
+      staffForm.role === "owner" || staffForm.role === "manager" ? "owner" : "staff";
+    setStaffSiteRows([{ site_id: defaultSiteId, site_role: defaultRole }]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddStaff]);
+
+  const activeStaffCount = staff.filter((s) => s.active && s.id !== appUser?.id).length;
 
 
   // Allergen config
@@ -441,38 +460,99 @@ const Settings = () => {
 
     if (!currentSite) { toast.error("No site selected."); return; }
 
-    const { data: newUser, error } = await supabase.from('users').insert({
-      organisation_id: organisationId,
-      display_name: staffForm.name,
-      email: staffForm.email || null,
-      auth_type: 'staff_code',
-      staff_code: staffId,
-      status: 'active',
-    }).select('id').single();
-    if (error || !newUser) {
-      if (error?.code === '23505') {
-        toast.error(`Staff ID "${staffId}" is already in use. Choose a different one.`);
-      } else {
-        toast.error(error?.message || "Could not create staff member.");
-      }
+    // Determine target sites/roles. Multi-site orgs use staffSiteRows;
+    // single-site orgs fall back to the legacy top-level role.
+    let targetRows: SiteAccessRow[] = staffSiteRows.filter((r) => r.site_id);
+    if (accessibleSites.length <= 1 || targetRows.length === 0) {
+      const legacyRole: SiteAccessRow["site_role"] =
+        staffForm.role === "supervisor" || staffForm.role === "owner" || staffForm.role === "manager"
+          ? "owner"
+          : "staff";
+      targetRows = [{ site_id: currentSite.id, site_role: legacyRole }];
+    }
+
+    // Prevent duplicate site selection within the form.
+    const uniqueSiteIds = new Set(targetRows.map((r) => r.site_id));
+    if (uniqueSiteIds.size !== targetRows.length) {
+      toast.error("Each site can only appear once in the site access list.");
       return;
     }
 
-    // Create membership so staff can log in via PIN on this site
-    const siteRole = staffForm.role === 'supervisor' ? 'supervisor' : 'staff';
-    const { error: memErr } = await supabase.from('memberships').insert({
-      site_id: currentSite.id,
-      user_id: newUser.id,
-      site_role: siteRole,
-      active: true,
-    });
-    if (memErr) {
-      toast.error(`Staff created but membership failed: ${memErr.message}. They won't be able to log in until this is fixed.`);
+    // Idempotency: reuse existing user by email if present, otherwise create.
+    let newUserId: string | null = null;
+    if (staffForm.email) {
+      const { data: existing } = await supabase
+        .from('users')
+        .select('id')
+        .eq('organisation_id', organisationId)
+        .eq('email', staffForm.email)
+        .maybeSingle();
+      if (existing?.id) newUserId = existing.id;
+    }
+
+    if (!newUserId) {
+      const { data: newUser, error } = await supabase.from('users').insert({
+        organisation_id: organisationId,
+        display_name: staffForm.name,
+        email: staffForm.email || null,
+        auth_type: 'staff_code',
+        staff_code: staffId,
+        status: 'active',
+      }).select('id').single();
+      if (error || !newUser) {
+        if (error?.code === '23505') {
+          toast.error(`Staff ID "${staffId}" is already in use. Choose a different one.`);
+        } else {
+          toast.error(error?.message || "Could not create staff member.");
+        }
+        return;
+      }
+      newUserId = newUser.id;
+    }
+
+    // Insert one membership per site. Skip sites where the user already has a
+    // membership (keeps the flow idempotent).
+    const { data: existingMems } = await supabase
+      .from('memberships')
+      .select('site_id')
+      .eq('user_id', newUserId);
+    const existingSiteIds = new Set((existingMems || []).map((m: any) => m.site_id));
+
+    const rowsToInsert = targetRows.filter((r) => !existingSiteIds.has(r.site_id));
+    let successCount = 0;
+    let failCount = 0;
+    for (const row of rowsToInsert) {
+      const { error: memErr } = await supabase.from('memberships').insert({
+        site_id: row.site_id,
+        user_id: newUserId,
+        site_role: row.site_role,
+        active: true,
+      });
+      if (memErr) {
+        failCount += 1;
+        console.warn("[add-staff] membership insert failed", row, memErr);
+      } else {
+        successCount += 1;
+      }
+    }
+
+    if (successCount === 0 && rowsToInsert.length > 0) {
+      toast.error("Staff created but no site memberships could be assigned. Please try again from the Users list.");
       loadAll();
       return;
     }
 
-    toast.success(`Staff member added — Staff ID: ${staffId}`);
+    const skipped = targetRows.length - rowsToInsert.length;
+    if (failCount > 0) {
+      toast.warning(`User invited with access to ${successCount} site${successCount === 1 ? "" : "s"} · ${failCount} failed${skipped ? ` · ${skipped} already had access` : ""}.`);
+    } else {
+      toast.success(
+        targetRows.length > 1
+          ? `User invited with access to ${targetRows.length} site${targetRows.length === 1 ? "" : "s"}${skipped ? ` (${skipped} already had access)` : ""}.`
+          : `Staff member added — Staff ID: ${staffId}`
+      );
+    }
+
 
     // If the new staff member has an email, send the branded invite email.
     if (staffForm.email) {
@@ -484,7 +564,7 @@ const Settings = () => {
           body: {
             templateName: "staff-invited",
             recipientEmail: staffForm.email,
-            idempotencyKey: `staff-invite:${newUser.id}`,
+            idempotencyKey: `staff-invite:${newUserId}`,
             templateData: {
               first_name: firstName,
               organisation_name: orgName,
@@ -909,6 +989,13 @@ const Settings = () => {
               <Plus className="h-3 w-3" /> Add Staff
             </Button>
           </div>
+
+          {/* £1/user helper note */}
+          <p className="text-[11px] text-muted-foreground -mt-1">
+            {activeStaffCount === 0 && trialActive
+              ? "Users are £1/month each after your trial ends."
+              : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
+          </p>
 
           {/* Active / Deactivated toggle */}
           <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/30">
@@ -1455,19 +1542,97 @@ const Settings = () => {
               <Label className="text-sm">Email</Label>
               <Input type="email" placeholder="jane@venue.co.uk" value={staffForm.email} onChange={(e) => setStaffForm((f) => ({ ...f, email: e.target.value }))} />
             </div>
-            <div>
-              <Label className="text-sm">Role</Label>
-              <Select value={staffForm.role} onValueChange={(v: StaffMember["role"]) => setStaffForm((f) => ({ ...f, role: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="owner">Owner / Manager</SelectItem>
-                  <SelectItem value="readonly">Read-only (EHO)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {accessibleSites.length <= 1 ? (
+              <div>
+                <Label className="text-sm">Role</Label>
+                <Select value={staffForm.role} onValueChange={(v: StaffMember["role"]) => setStaffForm((f) => ({ ...f, role: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="supervisor">Supervisor</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="owner">Owner / Manager</SelectItem>
+                    <SelectItem value="readonly">Read-only (EHO)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-sm">Site access</Label>
+                <div className="space-y-2">
+                  {staffSiteRows.map((row, idx) => {
+                    const usedElsewhere = new Set(
+                      staffSiteRows.filter((_, i) => i !== idx).map((r) => r.site_id)
+                    );
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Select
+                          value={row.site_id}
+                          onValueChange={(v) =>
+                            setStaffSiteRows((rows) =>
+                              rows.map((r, i) => (i === idx ? { ...r, site_id: v } : r))
+                            )
+                          }
+                        >
+                          <SelectTrigger className="flex-1"><SelectValue placeholder="Choose site" /></SelectTrigger>
+                          <SelectContent>
+                            {accessibleSites.map((s) => (
+                              <SelectItem key={s.id} value={s.id} disabled={usedElsewhere.has(s.id)}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={row.site_role}
+                          onValueChange={(v: SiteAccessRow["site_role"]) =>
+                            setStaffSiteRows((rows) =>
+                              rows.map((r, i) => (i === idx ? { ...r, site_role: v } : r))
+                            )
+                          }
+                        >
+                          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="staff">Staff</SelectItem>
+                            <SelectItem value="owner">Manager</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {staffSiteRows.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 w-9 p-0"
+                            onClick={() =>
+                              setStaffSiteRows((rows) => rows.filter((_, i) => i !== idx))
+                            }
+                            title="Remove this site"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {staffSiteRows.length < accessibleSites.length && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => {
+                      const used = new Set(staffSiteRows.map((r) => r.site_id));
+                      const next = accessibleSites.find((s) => !used.has(s.id));
+                      if (next) setStaffSiteRows((rows) => [...rows, { site_id: next.id, site_role: "staff" }]);
+                    }}
+                  >
+                    <Plus className="h-3 w-3" /> Add another site
+                  </Button>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  Choose Manager or Staff per site. The same person can be a Manager at one site and Staff at another.
+                </p>
+              </div>
+            )}
             <div>
               <Label className="text-sm">Staff ID (kiosk login)</Label>
               <Input
@@ -1481,6 +1646,11 @@ const Settings = () => {
                 Letters, numbers and dashes. Must be unique within your organisation.
               </p>
             </div>
+            <p className="text-[11px] text-muted-foreground border-t pt-2">
+              {activeStaffCount === 0 && trialActive
+                ? "Users are £1/month each after your trial ends."
+                : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddStaff(false)}>Cancel</Button>

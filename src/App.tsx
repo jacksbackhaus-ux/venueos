@@ -193,9 +193,11 @@ function ModuleGuard({ module, children }: { module: ModuleName; children: React
 }
 
 function RequireSite({ children }: { children: React.ReactNode }) {
-  const { hasSelectedSite, isLoading, sites, memberships } = useSite();
-  const { isHQ, orgRole, staffSession } = useAuth();
-  if (isLoading) return null;
+  const { hasSelectedSite, isLoading, hasHydrated, sites, memberships } = useSite();
+  const { isHQ, orgRole, staffSession, isLoading: authLoading } = useAuth();
+  // Wait for BOTH auth and site context to fully hydrate before deciding
+  // where to send the user. Prevents a slow-network flash of /select-site.
+  if (authLoading || isLoading || !hasHydrated) return <FullScreenLoader />;
   if (staffSession) return <>{children}</>;
   if (isHQ && !hasSelectedSite) return <Navigate to="/hq" replace />;
   if (!hasSelectedSite && sites.length > 1) {
