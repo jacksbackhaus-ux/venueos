@@ -117,15 +117,21 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to load site context.', error);
-        setSites([]);
-        setMemberships([]);
+        if (!cancelled) {
+          setSites([]);
+          setMemberships([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+          setHasHydrated(true);
+        }
       }
     };
 
     void fetchContext();
-  }, [appUser, staffSession, isAuthenticated, currentSiteId]);
+    return () => { cancelled = true; };
+  }, [appUser, staffSession, isAuthenticated]);
 
   useEffect(() => {
     if (currentSiteId) {
