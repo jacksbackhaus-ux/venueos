@@ -990,6 +990,13 @@ const Settings = () => {
             </Button>
           </div>
 
+          {/* £1/user helper note */}
+          <p className="text-[11px] text-muted-foreground -mt-1">
+            {activeStaffCount === 0 && trialActive
+              ? "Users are £1/month each after your trial ends."
+              : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
+          </p>
+
           {/* Active / Deactivated toggle */}
           <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/30">
             <button
