@@ -187,6 +187,10 @@ const Settings = () => {
   const [staff, setStaff] = useState<StaffMember[]>(defaultStaff);
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [staffForm, setStaffForm] = useState({ name: "", email: "", role: "staff" as StaffMember["role"], pin: "", staffId: "" });
+  // Per-site access rows for multi-site orgs. Owner may assign one user to
+  // several sites, each with its own role (Manager or Staff).
+  type SiteAccessRow = { site_id: string; site_role: "owner" | "staff" };
+  const [staffSiteRows, setStaffSiteRows] = useState<SiteAccessRow[]>([]);
   const [staffView, setStaffView] = useState<"active" | "deactivated">("active");
   const [confirmDeactivate, setConfirmDeactivate] = useState<StaffMember | null>(null);
   const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
