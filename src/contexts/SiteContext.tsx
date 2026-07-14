@@ -28,6 +28,7 @@ interface SiteContextType {
   memberships: Membership[];
   setCurrentSiteId: (id: string) => void;
   isLoading: boolean;
+  hasHydrated: boolean;
   organisationId: string | null;
   hasSelectedSite: boolean;
   clearSelectedSite: () => void;
