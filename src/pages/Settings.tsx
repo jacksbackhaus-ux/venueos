@@ -61,6 +61,7 @@ import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
 import { BrandingSection } from "@/components/settings/BrandingSection";
 import { ToggleLeft, MessageSquare, Palette } from "lucide-react";
 import { showMessenger, showModulesSettingsTab, showBrandingSettingsTab } from "@/lib/launchFlags";
+import { useOrgAccess } from "@/hooks/useOrgAccess";
 
 // ─── Temperature Units ───
 type TempUnit = {
