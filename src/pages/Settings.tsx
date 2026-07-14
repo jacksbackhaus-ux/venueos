@@ -564,7 +564,7 @@ const Settings = () => {
           body: {
             templateName: "staff-invited",
             recipientEmail: staffForm.email,
-            idempotencyKey: `staff-invite:${newUser.id}`,
+            idempotencyKey: `staff-invite:${newUserId}`,
             templateData: {
               first_name: firstName,
               organisation_name: orgName,
