@@ -279,6 +279,19 @@ const Settings = () => {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  // Initialise site-access rows whenever the Add Staff dialog opens.
+  useEffect(() => {
+    if (!showAddStaff) return;
+    const defaultSiteId = currentSite?.id || accessibleSites[0]?.id;
+    if (!defaultSiteId) { setStaffSiteRows([]); return; }
+    const defaultRole: SiteAccessRow["site_role"] =
+      staffForm.role === "owner" || staffForm.role === "manager" ? "owner" : "staff";
+    setStaffSiteRows([{ site_id: defaultSiteId, site_role: defaultRole }]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddStaff]);
+
+  const activeStaffCount = staff.filter((s) => s.active && s.id !== appUser?.id).length;
+
 
   // Allergen config
   const [requireApproval, setRequireApproval] = useState(true);
