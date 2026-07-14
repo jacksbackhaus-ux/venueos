@@ -1542,19 +1542,97 @@ const Settings = () => {
               <Label className="text-sm">Email</Label>
               <Input type="email" placeholder="jane@venue.co.uk" value={staffForm.email} onChange={(e) => setStaffForm((f) => ({ ...f, email: e.target.value }))} />
             </div>
-            <div>
-              <Label className="text-sm">Role</Label>
-              <Select value={staffForm.role} onValueChange={(v: StaffMember["role"]) => setStaffForm((f) => ({ ...f, role: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="owner">Owner / Manager</SelectItem>
-                  <SelectItem value="readonly">Read-only (EHO)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {accessibleSites.length <= 1 ? (
+              <div>
+                <Label className="text-sm">Role</Label>
+                <Select value={staffForm.role} onValueChange={(v: StaffMember["role"]) => setStaffForm((f) => ({ ...f, role: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="supervisor">Supervisor</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="owner">Owner / Manager</SelectItem>
+                    <SelectItem value="readonly">Read-only (EHO)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-sm">Site access</Label>
+                <div className="space-y-2">
+                  {staffSiteRows.map((row, idx) => {
+                    const usedElsewhere = new Set(
+                      staffSiteRows.filter((_, i) => i !== idx).map((r) => r.site_id)
+                    );
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Select
+                          value={row.site_id}
+                          onValueChange={(v) =>
+                            setStaffSiteRows((rows) =>
+                              rows.map((r, i) => (i === idx ? { ...r, site_id: v } : r))
+                            )
+                          }
+                        >
+                          <SelectTrigger className="flex-1"><SelectValue placeholder="Choose site" /></SelectTrigger>
+                          <SelectContent>
+                            {accessibleSites.map((s) => (
+                              <SelectItem key={s.id} value={s.id} disabled={usedElsewhere.has(s.id)}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={row.site_role}
+                          onValueChange={(v: SiteAccessRow["site_role"]) =>
+                            setStaffSiteRows((rows) =>
+                              rows.map((r, i) => (i === idx ? { ...r, site_role: v } : r))
+                            )
+                          }
+                        >
+                          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="staff">Staff</SelectItem>
+                            <SelectItem value="owner">Manager</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {staffSiteRows.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 w-9 p-0"
+                            onClick={() =>
+                              setStaffSiteRows((rows) => rows.filter((_, i) => i !== idx))
+                            }
+                            title="Remove this site"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {staffSiteRows.length < accessibleSites.length && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => {
+                      const used = new Set(staffSiteRows.map((r) => r.site_id));
+                      const next = accessibleSites.find((s) => !used.has(s.id));
+                      if (next) setStaffSiteRows((rows) => [...rows, { site_id: next.id, site_role: "staff" }]);
+                    }}
+                  >
+                    <Plus className="h-3 w-3" /> Add another site
+                  </Button>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  Choose Manager or Staff per site. The same person can be a Manager at one site and Staff at another.
+                </p>
+              </div>
+            )}
             <div>
               <Label className="text-sm">Staff ID (kiosk login)</Label>
               <Input
@@ -1568,6 +1646,11 @@ const Settings = () => {
                 Letters, numbers and dashes. Must be unique within your organisation.
               </p>
             </div>
+            <p className="text-[11px] text-muted-foreground border-t pt-2">
+              {activeStaffCount === 0 && trialActive
+                ? "Users are £1/month each after your trial ends."
+                : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddStaff(false)}>Cancel</Button>
