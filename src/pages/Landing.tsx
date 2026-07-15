@@ -221,7 +221,7 @@ function Pricing() {
               </li>
             ))}
           </ul>
-          <a href={AUTH_URL} className="block mt-6">
+          <a href={SIGNUP_URL} className="block mt-6">
             <Button size="lg" className="w-full text-white" style={{ backgroundColor: BRAND_SAGE }}>
               Start 14-day free trial
             </Button>
