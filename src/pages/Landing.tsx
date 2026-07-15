@@ -54,7 +54,7 @@ function Nav() {
         </div>
         <div className="hidden md:flex items-center gap-2">
           <a href={AUTH_URL}><Button variant="outline" size="sm">Log In</Button></a>
-          <a href={AUTH_URL}>
+          <a href={SIGNUP_URL}>
             <Button size="sm" style={{ backgroundColor: BRAND_SAGE }} className="hover:opacity-90 text-white">
               Start Free Trial
             </Button>
