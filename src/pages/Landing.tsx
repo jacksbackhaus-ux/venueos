@@ -274,7 +274,7 @@ function CTA() {
         Start your 14-day trial. Card required, but you won't be charged until the trial ends. Cancel anytime.
       </p>
       <div className="mt-8">
-        <a href={AUTH_URL}>
+        <a href={SIGNUP_URL}>
           <Button size="lg" style={{ backgroundColor: BRAND_SAGE }} className="hover:opacity-90 text-white h-12 px-7 text-base font-semibold">
             Start free trial <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
