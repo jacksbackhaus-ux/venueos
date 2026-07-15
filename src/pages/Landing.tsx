@@ -11,6 +11,7 @@ import miseosLogo from "@/assets/miseos-logo.png";
 import { SEO } from "@/components/SEO";
 
 const AUTH_URL = "/auth";
+const SIGNUP_URL = "/auth?mode=signup";
 
 // Brand palette
 const BRAND_SAGE = "#3d8a6a";
