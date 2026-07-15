@@ -407,7 +407,7 @@ export function ManagerSignupCard({
             </div>
             <Button type="submit" className="w-full rounded-lg" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Create account
+              Start free trial
             </Button>
           </form>
 
