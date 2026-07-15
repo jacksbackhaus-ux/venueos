@@ -1,5 +1,5 @@
-import { useState, forwardRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, forwardRef, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,12 @@ import { SEO } from "@/components/SEO";
 type Screen = "choose" | "manager-login" | "manager-signup" | "manager-forgot" | "staff";
 
 export default function Auth() {
-  const [screen, setScreen] = useState<Screen>("choose");
+  const [searchParams] = useSearchParams();
+  const initialScreen: Screen =
+    searchParams.get("mode") === "signup" || searchParams.get("signup") === "true"
+      ? "manager-signup"
+      : "choose";
+  const [screen, setScreen] = useState<Screen>(initialScreen);
 
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col items-center justify-center p-4">
@@ -381,8 +386,8 @@ export function ManagerSignupCard({
       <Card className="border bg-card shadow-none">
         <CardContent className="p-6 space-y-5">
           <div>
-            <h2 className="font-heading text-xl font-bold text-foreground">Create account</h2>
-            <p className="text-xs text-muted-foreground mt-1">Up and running in minutes. No charge until your trial ends.</p>
+            <h2 className="font-heading text-xl font-bold text-foreground">Start your 14-day free trial</h2>
+            <p className="text-xs text-muted-foreground mt-1">No charge until your trial ends. Cancel anytime.</p>
           </div>
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-1.5">
@@ -402,7 +407,7 @@ export function ManagerSignupCard({
             </div>
             <Button type="submit" className="w-full rounded-lg" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Create account
+              Start free trial
             </Button>
           </form>
 

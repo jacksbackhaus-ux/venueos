@@ -216,7 +216,7 @@ export default function Pricing() {
                 size="lg"
                 onClick={() => {
                   if (paidActive) { navigate("/account"); return; }
-                  if (!appUser) { navigate("/auth"); return; }
+                  if (!appUser) { navigate("/auth?mode=signup"); return; }
                   setShowCheckout(true);
                 }}
               >

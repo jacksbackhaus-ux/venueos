@@ -11,6 +11,7 @@ import miseosLogo from "@/assets/miseos-logo.png";
 import { SEO } from "@/components/SEO";
 
 const AUTH_URL = "/auth";
+const SIGNUP_URL = "/auth?mode=signup";
 
 // Brand palette
 const BRAND_SAGE = "#3d8a6a";
@@ -53,7 +54,7 @@ function Nav() {
         </div>
         <div className="hidden md:flex items-center gap-2">
           <a href={AUTH_URL}><Button variant="outline" size="sm">Log In</Button></a>
-          <a href={AUTH_URL}>
+          <a href={SIGNUP_URL}>
             <Button size="sm" style={{ backgroundColor: BRAND_SAGE }} className="hover:opacity-90 text-white">
               Start Free Trial
             </Button>
@@ -72,7 +73,7 @@ function Nav() {
           ))}
           <div className="pt-3 border-t border-slate-200 flex flex-col gap-2">
             <a href={AUTH_URL}><Button variant="outline" className="w-full">Log In</Button></a>
-            <a href={AUTH_URL}>
+            <a href={SIGNUP_URL}>
               <Button className="w-full text-white" style={{ backgroundColor: BRAND_SAGE }}>Start Free Trial</Button>
             </a>
           </div>
@@ -106,7 +107,7 @@ function Hero() {
             in minutes, not hours.
           </p>
           <div className="mt-9 flex flex-wrap gap-3 justify-center">
-            <a href={AUTH_URL}>
+            <a href={SIGNUP_URL}>
               <Button size="lg" style={{ backgroundColor: BRAND_SAGE }} className="hover:opacity-90 text-white h-12 px-7 text-base font-semibold">
                 Start 14-day free trial <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -220,7 +221,7 @@ function Pricing() {
               </li>
             ))}
           </ul>
-          <a href={AUTH_URL} className="block mt-6">
+          <a href={SIGNUP_URL} className="block mt-6">
             <Button size="lg" className="w-full text-white" style={{ backgroundColor: BRAND_SAGE }}>
               Start 14-day free trial
             </Button>
@@ -273,7 +274,7 @@ function CTA() {
         Start your 14-day trial. Card required, but you won't be charged until the trial ends. Cancel anytime.
       </p>
       <div className="mt-8">
-        <a href={AUTH_URL}>
+        <a href={SIGNUP_URL}>
           <Button size="lg" style={{ backgroundColor: BRAND_SAGE }} className="hover:opacity-90 text-white h-12 px-7 text-base font-semibold">
             Start free trial <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
