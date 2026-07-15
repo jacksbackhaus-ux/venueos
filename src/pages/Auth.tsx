@@ -13,7 +13,12 @@ import { SEO } from "@/components/SEO";
 type Screen = "choose" | "manager-login" | "manager-signup" | "manager-forgot" | "staff";
 
 export default function Auth() {
-  const [screen, setScreen] = useState<Screen>("choose");
+  const [searchParams] = useSearchParams();
+  const initialScreen: Screen =
+    searchParams.get("mode") === "signup" || searchParams.get("signup") === "true"
+      ? "manager-signup"
+      : "choose";
+  const [screen, setScreen] = useState<Screen>(initialScreen);
 
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col items-center justify-center p-4">
