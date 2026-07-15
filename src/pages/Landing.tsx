@@ -73,7 +73,7 @@ function Nav() {
           ))}
           <div className="pt-3 border-t border-slate-200 flex flex-col gap-2">
             <a href={AUTH_URL}><Button variant="outline" className="w-full">Log In</Button></a>
-            <a href={AUTH_URL}>
+            <a href={SIGNUP_URL}>
               <Button className="w-full text-white" style={{ backgroundColor: BRAND_SAGE }}>Start Free Trial</Button>
             </a>
           </div>
