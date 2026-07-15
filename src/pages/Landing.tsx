@@ -107,7 +107,7 @@ function Hero() {
             in minutes, not hours.
           </p>
           <div className="mt-9 flex flex-wrap gap-3 justify-center">
-            <a href={AUTH_URL}>
+            <a href={SIGNUP_URL}>
               <Button size="lg" style={{ backgroundColor: BRAND_SAGE }} className="hover:opacity-90 text-white h-12 px-7 text-base font-semibold">
                 Start 14-day free trial <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
