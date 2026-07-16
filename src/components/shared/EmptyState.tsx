@@ -18,13 +18,17 @@ interface EmptyStateProps {
  */
 export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
   return (
-    <Card className={cn("border-dashed", className)}>
-      <CardContent className="py-10 flex flex-col items-center text-center gap-3">
-        {icon && <div className="text-muted-foreground">{icon}</div>}
-        <div className="space-y-1 max-w-sm">
-          <div className="font-heading font-semibold text-base">{title}</div>
+    <Card className={cn("border-dashed bg-muted/30 shadow-soft", className)}>
+      <CardContent className="py-12 px-6 flex flex-col items-center text-center gap-4">
+        {icon && (
+          <div className="text-muted-foreground/80 rounded-full bg-muted/60 p-3">
+            {icon}
+          </div>
+        )}
+        <div className="space-y-1.5 max-w-sm">
+          <div className="font-heading font-semibold text-lg">{title}</div>
           {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
           )}
         </div>
         {action}
