@@ -159,15 +159,20 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
   // -------- PRODUCTION --------
   const batchCount = data.batchesToday.length;
   const unitsProduced = data.batchesToday.reduce((s: number, b: any) => s + (Number(b.quantity_produced) || 0), 0);
-  const prodLines: Tile["lines"] = [
-    { text: `${batchCount} batch${batchCount === 1 ? '' : 'es'}`, tone: batchCount > 0 ? "ok" : "muted" },
-    { text: `${unitsProduced.toLocaleString()} units`, tone: unitsProduced > 0 ? "ok" : "muted" },
-  ];
+  const prodLines: Tile["lines"] = batchCount === 0
+    ? [
+        { text: "No batches yet today", tone: "muted" },
+        { text: "Tap to log a batch", tone: "muted" },
+      ]
+    : [
+        { text: `${batchCount} batch${batchCount === 1 ? '' : 'es'}`, tone: "ok" },
+        { text: `${unitsProduced.toLocaleString()} units`, tone: unitsProduced > 0 ? "ok" : "muted" },
+      ];
 
-  const tiles: Tile[] = [
+  const allTiles: (Tile & { mod?: string })[] = [
     { href: "/temperatures", label: "Temperatures", icon: Thermometer, lines: tempLines },
     { href: "/cleaning", label: "Cleaning", icon: SprayCan, lines: cleanLines },
-    { href: "/shifts", label: "Staff", icon: Users, lines: [
+    { href: "/shifts", label: "Staff", icon: Users, mod: "shifts", lines: [
       { text: `On shift: ${onShiftNow}`, tone: onShiftNow > 0 ? "ok" : "muted" },
       { text: `Scheduled: ${data.shifts.length}`, tone: "muted" },
     ]},
@@ -175,8 +180,11 @@ export function TodayAtAGlance({ siteId, dateISO }: Props) {
     { href: "/batches", label: "Production", icon: Package, lines: prodLines },
   ];
 
+  // Hide Staff card in HACCP launch mode (shifts module disabled via launch flag).
+  const tiles = allTiles.filter((t) => !(t.mod === "shifts" && !showOperationalCommercialModules));
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3">
       {tiles.map((t) => (
         <Link key={t.label} to={t.href} className="group">
           <Card className="p-4 h-full hover:border-primary/40 transition-colors">
