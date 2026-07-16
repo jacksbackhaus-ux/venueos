@@ -159,7 +159,7 @@ const Dashboard = () => {
               <p className="text-xs sm:text-sm truncate">
                 {isClosed
                   ? `Closed${(closedDay as any)?.closed_by_name ? ` by ${(closedDay as any).closed_by_name}` : ""} — excluded from compliance.`
-                  : "Site closed on this day? Mark it so it doesn't count against compliance."}
+                  : "Site closed today?"}
               </p>
             </div>
             {canCloseDay && (
