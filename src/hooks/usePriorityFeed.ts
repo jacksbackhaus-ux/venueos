@@ -12,6 +12,16 @@ export interface PriorityItem {
   actionLabel: string;
   /** Sort key: lower = more urgent within a severity band. */
   rank: number;
+  /**
+   * Optional grouping key. When 2+ items in the feed share the same
+   * groupKey, they collapse into a single row with a count.
+   * Single-instance items render individually with their original title.
+   */
+  groupKey?: string;
+  /** Plural noun used to build the collapsed title, e.g. "cleaning tasks missed yesterday". */
+  groupLabel?: string;
+  /** Populated after grouping — number of underlying items this row represents. */
+  count?: number;
 }
 
 const SEVERITY_RANK: Record<Severity, number> = {
