@@ -52,7 +52,11 @@
     --input: 214 32% 91%;
     --ring: 217 91% 60%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
+
+    /* Softer, slightly warm-tinted elevation used by shadow-soft / shadow-soft-lg utilities */
+    --shadow-soft: 0 1px 3px rgba(31, 31, 29, 0.06), 0 4px 12px rgba(31, 31, 29, 0.04);
+    --shadow-soft-lg: 0 2px 6px rgba(31, 31, 29, 0.06), 0 12px 32px rgba(31, 31, 29, 0.06);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
@@ -129,6 +133,32 @@
   }
   .status-pending {
     @apply bg-muted text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  /* Soft, slightly warm elevation used across cards, popovers and sheets. */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-soft-lg {
+    box-shadow: var(--shadow-soft-lg);
+  }
+}
+
+/* ── Micro-interactions ─────────────────────────────────────────────────
+   Calm, premium motion. Kept global but scoped to interactive elements
+   so we don't disturb layout.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    transition: transform 100ms ease-out, background-color 150ms ease-out,
+      color 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out;
+  }
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(0.98);
   }
 }
 

@@ -101,9 +101,11 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
   const orgFallbackName = currentSite?.name ?? "";
 
-  const value: BrandingContextValue = useMemo(() => {
+  const value: BrandingContextValue & { hasCustomPrimary: boolean; hasCustomSecondary: boolean } = useMemo(() => {
     const logoUrl = resolveLogoUrl(data?.logo_url ?? null);
     const businessName = data?.business_display_name?.trim() || orgFallbackName || "MiseOS";
+    const hasCustomPrimary = !!data?.primary_colour;
+    const hasCustomSecondary = !!data?.secondary_colour;
     const primaryColour = data?.primary_colour || DEFAULT_PRIMARY;
     const secondaryColour = data?.secondary_colour || DEFAULT_SECONDARY;
     return {
@@ -113,13 +115,21 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
       secondaryColour,
       isLoaded: isFetched,
       organisationId,
+      hasCustomPrimary,
+      hasCustomSecondary,
       refresh: () => qc.invalidateQueries({ queryKey: ["org-branding", organisationId] }),
     };
   }, [data, isFetched, orgFallbackName, organisationId, qc]);
 
-  // Apply CSS custom properties so opt-in styles (.bg-brand-primary etc.) reflect branding.
+  // Apply CSS custom properties. --brand-* vars always reflect the resolved
+  // colour so the /login branded surface keeps working. Semantic tokens
+  // (--primary, --ring, --sidebar-primary) are ONLY overridden when the
+  // organisation has actually saved a custom colour — otherwise the default
+  // system palette from index.css is used unchanged.
   useEffect(() => {
     const root = document.documentElement;
+
+    // Always keep --brand-* in sync (used by [data-branded] surfaces only).
     root.style.setProperty("--brand-primary", value.primaryColour);
     root.style.setProperty("--brand-primary-hover", darkenHex(value.primaryColour, 0.1));
     root.style.setProperty(
@@ -132,20 +142,22 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
       shouldUseDarkText(value.secondaryColour) ? "#0f172a" : "#ffffff",
     );
 
-    // Override semantic primary tokens so Switches, Progress bars, AI summary highlights,
-    // ring/focus styles, sidebar accents etc. all pick up the brand colour automatically.
-    // Status colours (success/warning/breach) are intentionally untouched.
-    const primaryHsl = hexToHslString(value.primaryColour);
-    const primaryFg = shouldUseDarkText(value.primaryColour) ? "222 47% 11%" : "0 0% 100%";
-    if (primaryHsl) {
-      root.style.setProperty("--primary", primaryHsl);
-      root.style.setProperty("--primary-foreground", primaryFg);
-      root.style.setProperty("--ring", primaryHsl);
-      root.style.setProperty("--sidebar-primary", primaryHsl);
-      root.style.setProperty("--sidebar-primary-foreground", primaryFg);
-      root.style.setProperty("--sidebar-ring", primaryHsl);
+    // Semantic primary tokens: only override when the org has a custom colour.
+    // Status colours (success/warning/breach) are always untouched.
+    const primaryTokens = ["--primary", "--ring", "--sidebar-primary", "--sidebar-ring"];
+    const fgTokens = ["--primary-foreground", "--sidebar-primary-foreground"];
+    if (value.hasCustomPrimary) {
+      const primaryHsl = hexToHslString(value.primaryColour);
+      const primaryFg = shouldUseDarkText(value.primaryColour) ? "222 47% 11%" : "0 0% 100%";
+      if (primaryHsl) {
+        primaryTokens.forEach((t) => root.style.setProperty(t, primaryHsl));
+        fgTokens.forEach((t) => root.style.setProperty(t, primaryFg));
+      }
+    } else {
+      // Clear any previously-applied overrides so the CSS defaults win again.
+      [...primaryTokens, ...fgTokens].forEach((t) => root.style.removeProperty(t));
     }
-  }, [value.primaryColour, value.secondaryColour]);
+  }, [value.primaryColour, value.secondaryColour, value.hasCustomPrimary]);
 
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;
 }

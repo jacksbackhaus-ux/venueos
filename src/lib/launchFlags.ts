@@ -40,7 +40,13 @@ export const showMessenger = !HACCP;
 
 /** Settings tabs that should only appear in the full product. */
 export const showModulesSettingsTab = !HACCP;
-export const showBrandingSettingsTab = !HACCP;
+/**
+ * Branding (logo + brand colours) is available in HACCP launch mode.
+ * Owners can upload a logo and set an accent colour that flows through
+ * primary buttons, active nav, focus rings, toggles and progress bars.
+ * When no custom brand colour is saved, the default system palette is used.
+ */
+export const showBrandingSettingsTab = true;
 
 /** Show the multi-tier billing UI (sites/billing section with PLANS/TIERS). */
 export const showLegacyBillingUI = !HACCP;
