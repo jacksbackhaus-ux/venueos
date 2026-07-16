@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Thermometer, SprayCan, Users, ClipboardCheck, ChevronRight, Package } from "lucide-react";
 import { classifySection, currentOpsWindow, isToday, parseHHMM } from "@/lib/opsTime";
+import { showOperationalCommercialModules } from "@/lib/launchFlags";
 
 interface Props { siteId: string | undefined; dateISO: string; }
 
