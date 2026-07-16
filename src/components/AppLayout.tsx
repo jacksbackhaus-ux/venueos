@@ -523,7 +523,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
 
           {/* Mobile header */}
-          <header className="md:hidden flex h-14 items-center border-b bg-card px-4 shrink-0 gap-3">
+          <header className="md:hidden flex h-14 items-center border-b bg-card px-3 shrink-0 gap-2">
             {logoUrl ? (
               <img src={logoUrl} alt={businessName} className="h-7 w-7 rounded-lg object-cover shrink-0" />
             ) : (
@@ -531,7 +531,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <ShieldCheck className="h-4 w-4 text-primary-foreground" />
               </div>
             )}
-            <h1 className="font-heading font-semibold text-sm text-foreground">
+            <h1 className="font-heading font-semibold text-[13px] text-foreground truncate min-w-0 flex-1">
               {businessName || "MiseOS"}
             </h1>
 
@@ -540,7 +540,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               isMultiSite ? (
                 <button
                   onClick={() => setSheet("sites")}
-                  className="ml-auto flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 max-w-[50%]"
+                  className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 shrink-0 max-w-[45%]"
                 >
                   <MapPin className="h-3 w-3 text-primary shrink-0" />
                   <span className="text-xs font-medium truncate text-foreground">
@@ -551,7 +551,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               ) : (
                 <Badge
                   variant="outline"
-                  className="ml-auto gap-1 border-primary/30 bg-primary/5 text-foreground max-w-[45%]"
+                  className="gap-1 border-primary/30 bg-primary/5 text-foreground shrink-0 max-w-[45%]"
                 >
                   <MapPin className="h-3 w-3 text-primary shrink-0" />
                   <span className="font-medium truncate">{currentSite.name}</span>
@@ -580,8 +580,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* FAB */}
           <FAB />
 
-          {/* Feedback widget — hidden during impersonation (see component) */}
-          <FeedbackWidget />
+          {/* Feedback launcher is no longer floated in the corner — feedback is
+              accessible from the "Send feedback" link at the bottom of the
+              Dashboard (see DashboardFeedback). The <FeedbackWidget/> component
+              is preserved and can be re-mounted here if we ever want the
+              global floating launcher back. */}
 
           {/* Mobile bottom nav */}
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40 flex">

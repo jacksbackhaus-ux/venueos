@@ -69,19 +69,19 @@ export function PriorityFeed({ siteId, dateISO, currentUserId }: Props) {
                 >
                   <Link
                     to={item.href}
-                    className="flex items-center gap-3 rounded-xl border bg-card p-3 hover:border-primary/40 hover:shadow-sm transition-all group"
+                    className="flex items-start gap-2.5 rounded-xl border bg-card px-3 py-2.5 hover:border-primary/40 hover:shadow-sm transition-all group"
                   >
-                    <span className={`h-2.5 w-2.5 rounded-full ${s.dot} shrink-0 mt-0.5`} aria-hidden />
+                    <span className={`h-2.5 w-2.5 rounded-full ${s.dot} shrink-0 mt-1.5`} aria-hidden />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
+                      <p className="text-sm font-semibold text-foreground leading-snug break-words line-clamp-2">{item.title}</p>
                       {item.subtitle && (
                         <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subtitle}</p>
                       )}
                     </div>
-                    <Badge variant="outline" className={`text-[10px] font-semibold shrink-0 ${s.chip}`}>
+                    <Badge variant="outline" className={`text-[10px] font-semibold shrink-0 mt-0.5 px-1.5 ${s.chip}`}>
                       {s.label}
                     </Badge>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1 group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 </motion.li>
               );
