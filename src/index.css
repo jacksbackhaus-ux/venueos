@@ -136,6 +136,32 @@
   }
 }
 
+@layer utilities {
+  /* Soft, slightly warm elevation used across cards, popovers and sheets. */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-soft-lg {
+    box-shadow: var(--shadow-soft-lg);
+  }
+}
+
+/* ── Micro-interactions ─────────────────────────────────────────────────
+   Calm, premium motion. Kept global but scoped to interactive elements
+   so we don't disturb layout.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    transition: transform 100ms ease-out, background-color 150ms ease-out,
+      color 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out;
+  }
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(0.98);
+  }
+}
+
 /* ── Per-org branded login surface ──────────────────────────────────────
    Scope only to [data-branded] so we never affect the rest of the app
    or semantic colours (success / warning / breach).
