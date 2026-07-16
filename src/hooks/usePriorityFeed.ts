@@ -108,6 +108,8 @@ export function usePriorityFeed(
           href: "/temperatures",
           actionLabel: "Fix now",
           rank: 0,
+          groupKey: "temp-breach",
+          groupLabel: "temperature breaches to action",
         });
       });
 
@@ -121,6 +123,8 @@ export function usePriorityFeed(
           href: "/incidents",
           actionLabel: "Review",
           rank: 1,
+          groupKey: "incident-open",
+          groupLabel: "open incidents",
         });
       });
 
@@ -140,6 +144,8 @@ export function usePriorityFeed(
             href: "/temperatures",
             actionLabel: "Log",
             rank: 2,
+            groupKey: "temp-am-overdue",
+            groupLabel: "AM temperature checks overdue",
           });
         }
         if (pmOverdue && !pmDone.has(u.id)) {
@@ -150,6 +156,8 @@ export function usePriorityFeed(
             href: "/temperatures",
             actionLabel: "Log",
             rank: 3,
+            groupKey: "temp-pm-overdue",
+            groupLabel: "PM temperature checks overdue",
           });
         }
       });
@@ -166,6 +174,8 @@ export function usePriorityFeed(
               href: "/cleaning",
               actionLabel: "Catch up",
               rank: 4,
+              groupKey: "clean-missed-yesterday",
+              groupLabel: "cleaning tasks missed yesterday",
             });
           }
         });
@@ -184,6 +194,8 @@ export function usePriorityFeed(
           href: "/staff-training",
           actionLabel: "Renew",
           rank: 5,
+          groupKey: "training-expiring",
+          groupLabel: "staff training records expiring soon",
         });
       });
 
@@ -197,10 +209,12 @@ export function usePriorityFeed(
           href: "/batches",
           actionLabel: "Discard",
           rank: 6,
+          groupKey: "batch-past-useby",
+          groupLabel: "batches past use-by",
         });
       });
 
-      // 🔵 Your shifts today
+      // 🔵 Your shifts today (never grouped — each shift is individually meaningful)
       (shiftsTodayRes.data ?? []).forEach((s: any) => {
         items.push({
           id: `shift-${s.id}`,
@@ -214,8 +228,33 @@ export function usePriorityFeed(
       });
 
       items.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || a.rank - b.rank);
+
+      // ── Consolidate identical action types into a single row with a count.
+      // Preserves severity/order — the collapsed row sits where the first
+      // matching item would have been. Single-instance items keep their
+      // original task-specific title.
+      const grouped: PriorityItem[] = [];
+      const seen = new Map<string, number>();
+      for (const it of items) {
+        if (!it.groupKey) { grouped.push({ ...it, count: 1 }); continue; }
+        const idx = seen.get(it.groupKey);
+        if (idx == null) {
+          seen.set(it.groupKey, grouped.length);
+          grouped.push({ ...it, count: 1 });
+        } else {
+          const existing = grouped[idx];
+          const nextCount = (existing.count ?? 1) + 1;
+          grouped[idx] = {
+            ...existing,
+            count: nextCount,
+            title: `${nextCount} ${existing.groupLabel ?? "items"}`,
+            subtitle: undefined,
+          };
+        }
+      }
+
       // Dashboard rule: max 5 priority items — keep scannable.
-      return items.slice(0, 5);
+      return grouped.slice(0, 5);
     },
   });
 }
