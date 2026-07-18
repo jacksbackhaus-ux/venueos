@@ -24,6 +24,7 @@ import { useRole } from "@/hooks/useRole";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type Source = "in_person" | "google" | "social_media" | "email" | "phone" | "other";
 type Category = "food_quality" | "service" | "cleanliness" | "allergen_concern" | "complaint" | "compliment" | "suggestion";
@@ -379,10 +380,11 @@ const CustomerFeedback = () => {
                   By Category
                 </div>
                 {monthEntries.length === 0 ? (
-                  <div className="text-center py-6 text-sm text-muted-foreground">
-                    <AlertCircle className="h-6 w-6 mx-auto mb-2 opacity-40" />
-                    No feedback logged this month yet.
-                  </div>
+                  <EmptyState
+                    icon={<MessageSquareHeart className="h-6 w-6" />}
+                    title="No feedback this month"
+                    description="Log guest compliments and complaints to build a review trail inspectors love to see."
+                  />
                 ) : (
                   <div className="space-y-2">
                     {CATEGORIES.map(cat => {

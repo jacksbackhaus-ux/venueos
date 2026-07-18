@@ -22,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 const priorityColors: Record<string, string> = {
   low: "bg-muted text-muted-foreground",
@@ -338,22 +339,12 @@ const PestMaintenance = () => {
           </div>
 
           {ppmTasks.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30 text-muted-foreground" />
-                <p className="text-sm font-medium text-muted-foreground">No PPM tasks set up yet</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Add planned maintenance tasks to track them here.
-                </p>
-                <Button
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => navigate("/ppm-schedule")}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add PPM tasks
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={<Wrench className="h-6 w-6" />}
+              title="No planned maintenance yet"
+              description="Track fridge servicing, extractor cleans, and equipment checks on a set schedule."
+              action={<Button size="sm" onClick={() => navigate("/ppm-schedule")}><Plus className="h-4 w-4 mr-1" /> Add PPM task</Button>}
+            />
           ) : (
             ppmTasks.map((task: any) => {
               const latestCompletion = task.ppm_completions?.[task.ppm_completions.length - 1];

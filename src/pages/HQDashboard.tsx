@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
 import { supabase } from "@/integrations/supabase/client";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 interface SiteOverview {
   id: string;
@@ -521,7 +522,11 @@ export default function AllSitesOverview() {
             ))}
           </div>
         ) : sites.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No sites found.</p>
+          <EmptyState
+            icon={<Building2 className="h-6 w-6" />}
+            title="No sites yet"
+            description="Add your first site in Settings to see a live compliance overview across every location."
+          />
         ) : (
           sites.map((site, idx) => {
             const score = complianceScore(site.todays_tasks_done, site.todays_tasks_total, site.closed_today);

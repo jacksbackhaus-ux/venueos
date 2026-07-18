@@ -25,6 +25,7 @@ import { useRole } from "@/hooks/useRole";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, parseISO, addMonths, isBefore } from "date-fns";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 // ============= Types =============
 type StepType =
@@ -261,12 +262,12 @@ export default function Haccp() {
           {plansQ.isLoading ? (
             <div className="p-10 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
           ) : (plansQ.data ?? []).length === 0 ? (
-            <div className="p-10 text-center space-y-2">
-              <BookCheck className="h-8 w-8 mx-auto text-muted-foreground" />
-              <p className="font-medium">No HACCP plans yet</p>
-              <p className="text-sm text-muted-foreground">
-                {isSupervisorPlus ? "Create your first plan to get started." : "Your manager hasn't published a plan yet."}
-              </p>
+            <div className="p-4">
+              <EmptyState
+                icon={<BookCheck className="h-6 w-6" />}
+                title="No HACCP plans yet"
+                description={isSupervisorPlus ? "Create your first HACCP plan to define hazards, controls, and review cycles." : "Your manager hasn't published a HACCP plan yet."}
+              />
             </div>
           ) : (
             <ul className="divide-y">

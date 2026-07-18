@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Truck, Plus, CheckCircle2, XCircle, Search, ChevronRight, Clock, Thermometer, Package, AlertTriangle, Camera, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -162,12 +163,12 @@ const Suppliers = () => {
       {isLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
 
       {!isLoading && suppliers.length === 0 && (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">
-          <Truck className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No suppliers yet</p>
-          <p className="text-sm mt-1 mb-4">Add your first supplier to start logging deliveries.</p>
-          <Button onClick={openAddSupplier} className="gap-2"><Plus className="h-4 w-4" /> Add Supplier</Button>
-        </CardContent></Card>
+        <EmptyState
+          icon={<Truck className="h-6 w-6" />}
+          title="No suppliers added"
+          description="Add your first supplier so you can log deliveries and traceability records."
+          action={<Button onClick={openAddSupplier} className="gap-2"><Plus className="h-4 w-4" /> Add supplier</Button>}
+        />
       )}
 
       {suppliers.length > 0 && (
@@ -202,7 +203,14 @@ const Suppliers = () => {
                 </Card>
               </motion.div>
             ))}
-            {deliveries.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No deliveries logged yet.</p>}
+            {deliveries.length === 0 && (
+              <EmptyState
+                icon={<Package className="h-6 w-6" />}
+                title="No deliveries logged"
+                description="Log incoming deliveries with temperature and packaging checks to keep traceability tight."
+                action={<Button onClick={() => setShowNewDelivery(true)} className="gap-2"><Plus className="h-4 w-4" /> Log delivery</Button>}
+              />
+            )}
           </TabsContent>
           <TabsContent value="suppliers" className="mt-4 space-y-3">
             <div className="flex items-center gap-2">

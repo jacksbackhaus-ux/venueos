@@ -21,6 +21,7 @@ import {
   startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   format, eachDayOfInterval, parseISO, subDays,
 } from "date-fns";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type Frequency = "daily" | "weekly" | "monthly";
 type TopTab = Frequency | "history";
@@ -191,11 +192,11 @@ const Cleaning = () => {
       {tasksLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
 
       {!tasksLoading && tasks.length === 0 && (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">
-          <SprayCan className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No cleaning tasks configured</p>
-          <p className="text-sm mt-1">Add cleaning tasks in Settings to start tracking.</p>
-        </CardContent></Card>
+        <EmptyState
+          icon={<SprayCan className="h-6 w-6" />}
+          title="No cleaning tasks yet"
+          description="Add daily, weekly, and monthly cleaning tasks in Settings to start tracking completion."
+        />
       )}
 
       {tasks.length > 0 && (
