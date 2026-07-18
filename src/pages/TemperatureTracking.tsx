@@ -22,6 +22,7 @@ import { EquipmentHealthAlert } from "@/components/temperature/EquipmentHealthAl
 import { RetrospectiveBanner } from "@/components/RetrospectiveBanner";
 import { useRetrospective } from "@/hooks/useRetrospective";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type TempUnit = {
   id: string; name: string; type: string;
@@ -426,11 +427,11 @@ const TemperatureTracking = () => {
       )}
 
       {!unitsLoading && units.length === 0 && (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">
-          <Thermometer className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No temperature units configured</p>
-          <p className="text-sm mt-1">Add fridges and freezers in Settings.</p>
-        </CardContent></Card>
+        <EmptyState
+          icon={<Thermometer className="h-6 w-6" />}
+          title="No fridges or freezers yet"
+          description="Add your temperature units in Settings so staff can log twice-daily checks."
+        />
       )}
 
       {/* ── SECTION 2: FOOD & PROCESS CHECKS ──────────────────────────────── */}

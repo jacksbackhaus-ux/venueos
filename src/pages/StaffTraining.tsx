@@ -25,6 +25,7 @@ import { useRole } from "@/hooks/useRole";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, differenceInDays, parseISO } from "date-fns";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type TrainingType =
   | "induction" | "food_safety" | "allergens" | "haccp"
@@ -286,8 +287,12 @@ export default function StaffTraining() {
                   <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                 </div>
               ) : (teamQ.data ?? []).length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  No active staff at this site yet.
+                <div className="p-4">
+                  <EmptyState
+                    icon={<GraduationCap className="h-6 w-6" />}
+                    title="No active staff yet"
+                    description="Add team members in Settings to start tracking training and expiries."
+                  />
                 </div>
               ) : (
                 <ul className="divide-y">
@@ -344,8 +349,12 @@ export default function StaffTraining() {
                       .filter(r => r.user_id === selectedMember.id);
                     if (userRecs.length === 0) {
                       return (
-                        <div className="p-6 text-center text-sm text-muted-foreground">
-                          No training records yet.
+                        <div className="p-4">
+                          <EmptyState
+                            icon={<FileText className="h-6 w-6" />}
+                            title="No training records yet"
+                            description="Add a training record — food safety, allergens, or induction — to start the compliance clock."
+                          />
                         </div>
                       );
                     }
@@ -429,8 +438,12 @@ export default function StaffTraining() {
                   <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                 </div>
               ) : (reqsQ.data ?? []).length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  No requirements defined yet.
+                <div className="p-4">
+                  <EmptyState
+                    icon={<ShieldCheck className="h-6 w-6" />}
+                    title="No training requirements yet"
+                    description="Define the certifications your team needs so gaps and expiries show up automatically."
+                  />
                 </div>
               ) : (
                 <ul className="divide-y">

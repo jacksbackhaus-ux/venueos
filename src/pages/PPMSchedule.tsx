@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import {
   format, parseISO, addDays, addMonths, differenceInDays,
 } from "date-fns";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type Frequency = "weekly" | "monthly" | "quarterly" | "biannual" | "annual";
 type Category =
@@ -388,20 +389,16 @@ const PPMSchedule = () => {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : activeTasks.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                <Wrench className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                No PPM tasks set up yet.
-                {isSupervisorPlus && (
-                  <div className="mt-3">
-                    <Button size="sm" onClick={() => { resetTaskForm(); setShowTaskDialog(true); }}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add your first task
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={<Wrench className="h-6 w-6" />}
+              title="No PPM tasks yet"
+              description="Schedule preventative maintenance so nothing gets missed between inspections."
+              action={isSupervisorPlus ? (
+                <Button size="sm" onClick={() => { resetTaskForm(); setShowTaskDialog(true); }}>
+                  <Plus className="h-4 w-4 mr-1" /> Add first task
+                </Button>
+              ) : undefined}
+            />
           ) : (
             FREQUENCIES.map(f => {
               const list = tasksByFrequency.get(f.value) || [];

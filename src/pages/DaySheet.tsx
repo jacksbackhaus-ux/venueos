@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { DateNavigator } from "@/components/DateNavigator";
 import { RetrospectiveBanner } from "@/components/RetrospectiveBanner";
 import { useRetrospective } from "@/hooks/useRetrospective";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 const DaySheet = () => {
   const { currentSite, organisationId } = useSite();
@@ -296,11 +297,11 @@ const locked = !canEdit; // staff/supervisors locked on past days; managers can 
       {sectionsLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
 
       {!sectionsLoading && sections.length === 0 && (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">
-          <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No day sheet sections configured</p>
-          <p className="text-sm mt-1">Add sections and check items in Settings to start using day sheets.</p>
-        </CardContent></Card>
+        <EmptyState
+          icon={<ClipboardList className="h-6 w-6" />}
+          title="No day sheet sections yet"
+          description="Add opening, service, and close sections in Settings to start running your day."
+        />
       )}
 
       {totalItems > 0 && (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Plus, CheckCircle2, Clock, ShieldCheck, Thermometer, Bug, Wheat, Package, Camera, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -145,7 +146,14 @@ const Incidents = () => {
             </motion.div>
           );
         })}
-        {filtered.length === 0 && !isLoading && <p className="text-center text-sm text-muted-foreground py-8">No incidents found.</p>}
+        {filtered.length === 0 && !isLoading && (
+          <EmptyState
+            icon={<AlertTriangle className="h-6 w-6" />}
+            title="No incidents logged"
+            description="Log an incident to keep your compliance records complete and inspection-ready."
+            action={<Button onClick={() => setShowNew(true)} className="gap-2"><Plus className="h-4 w-4" /> Log incident</Button>}
+          />
+        )}
       </div>
 
       <Dialog open={showNew} onOpenChange={setShowNew}>

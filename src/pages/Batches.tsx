@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { format, differenceInCalendarDays, startOfWeek, startOfMonth } from "date-fns";
 import { calcBatchProductionCost, loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
 import { displayBatchNumber, formatBatchNumber } from "@/lib/batchNumber";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type BatchStatus = 'in_progress' | 'complete' | 'quarantined' | 'disposed';
 
@@ -424,12 +425,11 @@ export default function Batches() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : filteredBatches.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">No batches yet. Log your first bake to get started.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Package className="h-6 w-6" />}
+          title="No batches logged"
+          description="Log your first batch to build a full traceability trail — recipe, quantity, and use-by."
+        />
       ) : (
         <div className="space-y-3">
           {filteredBatches.map((batch, idx) => {

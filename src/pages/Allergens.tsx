@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -236,11 +237,11 @@ const Allergens = () => {
       {(ingLoading || recLoading) && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
 
       {!ingLoading && !recLoading && recipes.length === 0 && ingredients.length === 0 && (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">
-          <Wheat className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No recipes or ingredients yet</p>
-          <p className="text-sm mt-1">Add ingredients first, then build your recipes.</p>
-        </CardContent></Card>
+        <EmptyState
+          icon={<Wheat className="h-6 w-6" />}
+          title="No recipes or ingredients yet"
+          description="Add ingredients first, then build recipes to auto-generate allergen labels."
+        />
       )}
 
       {(recipes.length > 0 || ingredients.length > 0) && (
