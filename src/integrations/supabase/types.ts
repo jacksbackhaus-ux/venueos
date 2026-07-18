@@ -5582,6 +5582,65 @@ export type Database = {
           },
         ]
       }
+      training_individual_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          site_id: string
+          training_catalog_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          site_id: string
+          training_catalog_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          site_id?: string
+          training_catalog_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_individual_assignments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_individual_assignments_training_catalog_id_fkey"
+            columns: ["training_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "training_requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_individual_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_individual_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_records: {
         Row: {
           certificate_url: string | null
@@ -5593,6 +5652,7 @@ export type Database = {
           notes: string | null
           organisation_id: string
           site_id: string
+          training_catalog_id: string | null
           training_name: string
           training_type: string
           user_id: string
@@ -5607,6 +5667,7 @@ export type Database = {
           notes?: string | null
           organisation_id: string
           site_id: string
+          training_catalog_id?: string | null
           training_name: string
           training_type: string
           user_id: string
@@ -5621,6 +5682,7 @@ export type Database = {
           notes?: string | null
           organisation_id?: string
           site_id?: string
+          training_catalog_id?: string | null
           training_name?: string
           training_type?: string
           user_id?: string
@@ -5631,6 +5693,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_records_training_catalog_id_fkey"
+            columns: ["training_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "training_requirements"
             referencedColumns: ["id"]
           },
           {
@@ -5652,7 +5721,9 @@ export type Database = {
       training_requirements: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
+          is_active: boolean
           is_mandatory: boolean
           renewal_period_months: number | null
           required_for_roles: string[]
@@ -5662,7 +5733,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean
           is_mandatory?: boolean
           renewal_period_months?: number | null
           required_for_roles?: string[]
@@ -5672,7 +5745,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean
           is_mandatory?: boolean
           renewal_period_months?: number | null
           required_for_roles?: string[]

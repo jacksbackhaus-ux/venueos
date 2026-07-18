@@ -292,7 +292,7 @@ function AppRoutes() {
       <Route path="/compliance" element={siteRoute(<Compliance />)} />
       <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
-      <Route path="/staff-training" element={moduleRoute("staff_training", <RoleGuard require="supervisorPlus" inline><StaffTraining /></RoleGuard>)} />
+      <Route path="/staff-training" element={moduleRoute("staff_training", <StaffTraining />)} />
       <Route path="/haccp" element={moduleRoute("haccp", <RoleGuard require="supervisorPlus" inline><Haccp /></RoleGuard>)} />
       <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
       <Route path="/sales" element={moduleRoute("cost_margin", <Sales />)} />
