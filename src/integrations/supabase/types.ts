@@ -199,6 +199,174 @@ export type Database = {
           },
         ]
       }
+      batch_actions: {
+        Row: {
+          action_type: string
+          batch_id: string
+          id: string
+          new_use_by: string | null
+          notes: string | null
+          organisation_id: string
+          performed_at: string
+          performed_by_name: string | null
+          performed_by_user_id: string | null
+          previous_use_by: string | null
+          reason: string | null
+          site_id: string
+        }
+        Insert: {
+          action_type: string
+          batch_id: string
+          id?: string
+          new_use_by?: string | null
+          notes?: string | null
+          organisation_id: string
+          performed_at?: string
+          performed_by_name?: string | null
+          performed_by_user_id?: string | null
+          previous_use_by?: string | null
+          reason?: string | null
+          site_id: string
+        }
+        Update: {
+          action_type?: string
+          batch_id?: string
+          id?: string
+          new_use_by?: string | null
+          notes?: string | null
+          organisation_id?: string
+          performed_at?: string
+          performed_by_name?: string | null
+          performed_by_user_id?: string | null
+          previous_use_by?: string | null
+          reason?: string | null
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_actions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_actions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_actions_performed_by_user_id_fkey"
+            columns: ["performed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_actions_performed_by_user_id_fkey"
+            columns: ["performed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_actions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batch_products: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by_user_id: string | null
+          default_batch_size: number | null
+          default_recipe_number: number | null
+          default_shelf_life_days: number | null
+          default_unit: string
+          id: string
+          last_used_at: string | null
+          name: string
+          organisation_id: string
+          recipe_id: string | null
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by_user_id?: string | null
+          default_batch_size?: number | null
+          default_recipe_number?: number | null
+          default_shelf_life_days?: number | null
+          default_unit?: string
+          id?: string
+          last_used_at?: string | null
+          name: string
+          organisation_id: string
+          recipe_id?: string | null
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by_user_id?: string | null
+          default_batch_size?: number | null
+          default_recipe_number?: number | null
+          default_shelf_life_days?: number | null
+          default_unit?: string
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          organisation_id?: string
+          recipe_id?: string | null
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_products_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_products_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_products_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_products_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_products_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_stage_events: {
         Row: {
           batch_id: string
@@ -307,6 +475,7 @@ export type Database = {
           margin_pct: number | null
           notes: string | null
           organisation_id: string
+          product_id: string | null
           product_name: string
           quantity_produced: number | null
           quantity_unit: string | null
@@ -335,6 +504,7 @@ export type Database = {
           margin_pct?: number | null
           notes?: string | null
           organisation_id: string
+          product_id?: string | null
           product_name: string
           quantity_produced?: number | null
           quantity_unit?: string | null
@@ -363,6 +533,7 @@ export type Database = {
           margin_pct?: number | null
           notes?: string | null
           organisation_id?: string
+          product_id?: string | null
           product_name?: string
           quantity_produced?: number | null
           quantity_unit?: string | null
@@ -400,6 +571,13 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "batch_products"
             referencedColumns: ["id"]
           },
           {
@@ -5933,7 +6111,12 @@ export type Database = {
     }
     Enums: {
       auth_type: "email" | "staff_code"
-      batch_status: "in_progress" | "complete" | "quarantined" | "disposed"
+      batch_status:
+        | "in_progress"
+        | "complete"
+        | "quarantined"
+        | "disposed"
+        | "used"
       internal_role: "support" | "onboarding" | "ops" | "engineering"
       messenger_channel_type: "direct" | "group" | "system" | "role"
       messenger_message_type: "user" | "system" | "shift_card"
@@ -6077,7 +6260,13 @@ export const Constants = {
   public: {
     Enums: {
       auth_type: ["email", "staff_code"],
-      batch_status: ["in_progress", "complete", "quarantined", "disposed"],
+      batch_status: [
+        "in_progress",
+        "complete",
+        "quarantined",
+        "disposed",
+        "used",
+      ],
       internal_role: ["support", "onboarding", "ops", "engineering"],
       messenger_channel_type: ["direct", "group", "system", "role"],
       messenger_message_type: ["user", "system", "shift_card"],
