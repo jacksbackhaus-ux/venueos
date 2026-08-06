@@ -202,3 +202,27 @@ export function dismissPrompt(key: string, siteId: string) {
     localStorage.setItem(`miseos_prompt_${key}_${siteId}`, "1");
   } catch { /* storage unavailable — prompt simply shows again */ }
 }
+
+/**
+ * Safe-to-Trade hero band labels, worded for the premises type.
+ * Commercial and production keep the original wording exactly.
+ */
+export function bandLabelsFor(
+  type: PremisesType | null | undefined,
+): Record<"green" | "amber" | "red", string> | undefined {
+  if (type === "home") {
+    return {
+      green: "Ready to bake",
+      amber: "Ready to bake — with risks",
+      red: "Not ready to bake",
+    };
+  }
+  if (type === "mobile") {
+    return {
+      green: "Ready to trade",
+      amber: "Ready to trade — with risks",
+      red: "Not ready to trade",
+    };
+  }
+  return undefined;
+}
