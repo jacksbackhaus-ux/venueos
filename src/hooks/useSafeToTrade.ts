@@ -37,12 +37,46 @@ export interface SafeToTradeResult {
  * plus yesterday's closing work (closing items + PM temps), drive the score.
  * Closing window adds today's closing items + PM temps.
  * Cleaning tasks only count once their due_time has passed.
+ *
+ * On-demand sites (home kitchens, market traders, bake-to-order units) are
+ * scored across declared PRODUCTION DAYS only. A calendar day with no
+ * production day scores nothing and costs nothing — it is neutral.
  */
-export function useSafeToTrade(siteId: string | undefined, dateISO: string) {
+export interface SafeToTradeOptions {
+  /** Site declares production days instead of operating every calendar day. */
+  onDemand?: boolean;
+  /** Whether a production day exists for dateISO (required when onDemand). */
+  hasProductionDay?: boolean;
+}
+
+export function useSafeToTrade(
+  siteId: string | undefined,
+  dateISO: string,
+  opts: SafeToTradeOptions = {},
+) {
+  const onDemand = !!opts.onDemand;
+  const hasProductionDay = !!opts.hasProductionDay;
   return useQuery<SafeToTradeResult>({
     queryKey: ["safe-to-trade", siteId, dateISO, onDemand, hasProductionDay],
     enabled: !!siteId,
     queryFn: async () => {
+      // No declared production on this day — neutral, not a failure.
+      if (onDemand && !hasProductionDay) {
+        return {
+          score: 100,
+          band: "green" as Band,
+          reasons: [],
+          isClosed: false,
+          isNonProductionDay: true,
+          breakdown: {
+            temperatures: 100, cleaning: 100, daySheet: 100,
+            openIncidents: 0, activeBreaches: 0, expiredBatches: 0,
+            yesterdayClosingMissing: 0, yesterdayWasClosed: false,
+            window: "opening" as const,
+          },
+        };
+      }
+
       const viewingToday = isToday(dateISO);
       // For past dates, evaluate as if the full day window has elapsed.
       const window = viewingToday ? currentOpsWindow() : "closing";
