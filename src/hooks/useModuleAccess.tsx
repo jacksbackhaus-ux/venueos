@@ -4,6 +4,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { ALL_MODULES, type ModuleName } from "@/lib/plans";
 import { isModuleVisibleInLaunch, VISIBLE_MODULES, LAUNCH_MODE } from "@/lib/launchFlags";
+import { isModuleVisibleForPremises } from "@/lib/premises";
 
 export interface ModuleActivationRow {
   id: string;
@@ -21,7 +22,7 @@ export interface ModuleActivationRow {
  * toggles a module in Settings.
  */
 export function useModuleAccess() {
-  const { currentSite } = useSite();
+  const { currentSite, premisesType } = useSite();
   const { trialActive } = useOrgAccess();
   const siteId = currentSite?.id || null;
   const [rows, setRows] = useState<ModuleActivationRow[]>([]);
@@ -76,6 +77,11 @@ export function useModuleAccess() {
   // remain in the codebase and re-enable when LAUNCH_MODE flips back to "full".
   const isActive = (mod: ModuleName) => {
     if (!isModuleVisibleInLaunch(mod)) return false;
+    // Premises type trims modules that make no sense for this kind of place
+    // (e.g. a home kitchen has no Day Sheet — the Production Day replaces it).
+    // Hidden modules stay in the codebase and return the moment the premises
+    // type changes.
+    if (!isModuleVisibleForPremises(mod, premisesType)) return false;
     // HACCP launch: every module shipped with the launch plan is always on
     // for customers — the £4.99 plan includes the full HACCP suite. Module
     // activation rows are kept for the "full" product mode only.
