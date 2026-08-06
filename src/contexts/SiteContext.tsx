@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
+import {
+  premisesLabels,
+  type OperatingMode,
+  type PremisesLabels,
+  type PremisesType,
+} from '@/lib/premises';
 
 interface Site {
   id: string;
@@ -11,6 +17,10 @@ interface Site {
   active: boolean;
   site_code: string;
   created_at: string;
+  premises_type: PremisesType;
+  operating_mode: OperatingMode;
+  archived_at: string | null;
+  archived_reason: string | null;
 }
 
 interface Membership {
@@ -25,6 +35,8 @@ interface SiteContextType {
   currentSite: Site | null;
   currentMembership: Membership | null;
   sites: Site[];
+  /** Sites the user can reach that have been archived (read-only). */
+  archivedSites: Site[];
   memberships: Membership[];
   setCurrentSiteId: (id: string) => void;
   isLoading: boolean;
@@ -32,7 +44,18 @@ interface SiteContextType {
   organisationId: string | null;
   hasSelectedSite: boolean;
   clearSelectedSite: () => void;
+  /** Premises type of the current site (defaults to commercial). */
+  premisesType: PremisesType;
+  /** How compliance days are declared for the current site. */
+  operatingMode: OperatingMode;
+  /** True when the current site declares production days instead of calendar days. */
+  isOnDemand: boolean;
+  /** True when the current site is archived — everything is read-only. */
+  isArchived: boolean;
+  /** Customer-facing wording for the current premises type. */
+  labels: PremisesLabels;
 }
+
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
