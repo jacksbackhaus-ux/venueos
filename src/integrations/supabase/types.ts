@@ -3303,6 +3303,94 @@ export type Database = {
           },
         ]
       }
+      production_days: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          is_retrospective: boolean
+          notes: string | null
+          organisation_id: string
+          production_date: string
+          site_id: string
+          started_at: string
+          started_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          is_retrospective?: boolean
+          notes?: string | null
+          organisation_id: string
+          production_date: string
+          site_id: string
+          started_at?: string
+          started_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          is_retrospective?: boolean
+          notes?: string | null
+          organisation_id?: string
+          production_date?: string
+          site_id?: string
+          started_at?: string
+          started_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_days_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_days_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_days_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_days_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_days_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_days_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_devices: {
         Row: {
           created_at: string
@@ -4645,6 +4733,131 @@ export type Database = {
           },
         ]
       }
+      site_events: {
+        Row: {
+          batch_ids: string[]
+          created_at: string
+          event_date: string
+          id: string
+          location: string | null
+          logged_by: string | null
+          logged_by_name: string | null
+          name: string
+          notes: string | null
+          organisation_id: string
+          site_id: string
+          transport_temp: number | null
+          transport_temp_checked: boolean
+          updated_at: string
+        }
+        Insert: {
+          batch_ids?: string[]
+          created_at?: string
+          event_date: string
+          id?: string
+          location?: string | null
+          logged_by?: string | null
+          logged_by_name?: string | null
+          name: string
+          notes?: string | null
+          organisation_id: string
+          site_id: string
+          transport_temp?: number | null
+          transport_temp_checked?: boolean
+          updated_at?: string
+        }
+        Update: {
+          batch_ids?: string[]
+          created_at?: string
+          event_date?: string
+          id?: string
+          location?: string | null
+          logged_by?: string | null
+          logged_by_name?: string | null
+          name?: string
+          notes?: string | null
+          organisation_id?: string
+          site_id?: string
+          transport_temp?: number | null
+          transport_temp_checked?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_events_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_events_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_events_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_events_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_kitchen_setup: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          items: Json
+          organisation_id: string
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          organisation_id: string
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          organisation_id?: string
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_kitchen_setup_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_kitchen_setup_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_overheads_monthly: {
         Row: {
           created_at: string
@@ -4702,6 +4915,63 @@ export type Database = {
         }
         Relationships: []
       }
+      site_registrations: {
+        Row: {
+          created_at: string
+          fhrs_rating: number | null
+          id: string
+          last_inspection_date: string | null
+          local_authority_name: string | null
+          notes: string | null
+          organisation_id: string
+          registration_date: string | null
+          registration_reference: string | null
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fhrs_rating?: number | null
+          id?: string
+          last_inspection_date?: string | null
+          local_authority_name?: string | null
+          notes?: string | null
+          organisation_id: string
+          registration_date?: string | null
+          registration_reference?: string | null
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fhrs_rating?: number | null
+          id?: string
+          last_inspection_date?: string | null
+          local_authority_name?: string | null
+          notes?: string | null
+          organisation_id?: string
+          registration_date?: string | null
+          registration_reference?: string | null
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_registrations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_registrations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_tax_settings: {
         Row: {
           created_at: string
@@ -4753,37 +5023,127 @@ export type Database = {
           },
         ]
       }
+      site_transfers: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          from_site_id: string
+          id: string
+          organisation_id: string
+          started_at: string
+          status: string
+          to_site_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          from_site_id: string
+          id?: string
+          organisation_id: string
+          started_at?: string
+          status?: string
+          to_site_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          from_site_id?: string
+          id?: string
+          organisation_id?: string
+          started_at?: string
+          status?: string
+          to_site_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_transfers_from_site_id_fkey"
+            columns: ["from_site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_transfers_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_transfers_to_site_id_fkey"
+            columns: ["to_site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sites: {
         Row: {
           active: boolean
           address: string | null
+          archived_at: string | null
+          archived_reason: string | null
           created_at: string
           id: string
           name: string
+          operating_mode: string
           organisation_id: string
           owner_user_id: string | null
+          premises_type: string
           site_code: string
           timezone: string
         }
         Insert: {
           active?: boolean
           address?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
           created_at?: string
           id?: string
           name: string
+          operating_mode?: string
           organisation_id: string
           owner_user_id?: string | null
+          premises_type?: string
           site_code?: string
           timezone?: string
         }
         Update: {
           active?: boolean
           address?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
           created_at?: string
           id?: string
           name?: string
+          operating_mode?: string
           organisation_id?: string
           owner_user_id?: string | null
+          premises_type?: string
           site_code?: string
           timezone?: string
         }
@@ -5999,16 +6359,28 @@ export type Database = {
         Args: { _user_id: string; _week_start: string }
         Returns: number
       }
-      handle_signup: {
-        Args: {
-          _display_name: string
-          _email: string
-          _org_name: string
-          _site_address?: string
-          _site_name: string
-        }
-        Returns: Json
-      }
+      handle_signup:
+        | {
+            Args: {
+              _display_name: string
+              _email: string
+              _org_name: string
+              _site_address?: string
+              _site_name: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _display_name: string
+              _email: string
+              _org_name: string
+              _premises_type?: string
+              _site_address?: string
+              _site_name: string
+            }
+            Returns: Json
+          }
       has_channel_audit_access: {
         Args: { _channel_id: string }
         Returns: boolean
@@ -6104,6 +6476,7 @@ export type Database = {
         Args: { _site_id: string }
         Returns: undefined
       }
+      seed_premises_defaults: { Args: { _site_id: string }; Returns: undefined }
       slugify_org_name: { Args: { _name: string }; Returns: string }
       staff_get_customer_360: { Args: { _org_id: string }; Returns: Json }
       staff_get_org_detail: { Args: { _org_id: string }; Returns: Json }
