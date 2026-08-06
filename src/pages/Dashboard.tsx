@@ -22,6 +22,10 @@ import { ProfitSnapshot } from "@/components/dashboard/ProfitSnapshot";
 import { showCommercialModules } from "@/lib/launchFlags";
 import { DashboardFeedback } from "@/components/dashboard/DashboardFeedback";
 import { Card } from "@/components/ui/card";
+import { ProductionDayCalm } from "@/components/dashboard/ProductionDayCalm";
+import { FinishProductionDaySheet } from "@/components/dashboard/FinishProductionDaySheet";
+import { useProductionDay, useProductionDays } from "@/hooks/useProductionDay";
+import { bandLabelsFor } from "@/lib/premises";
 
 /**
  * Operator Command Centre.
@@ -30,7 +34,7 @@ import { Card } from "@/components/ui/card";
  * Reuses existing hooks/components — no new data systems.
  */
 const Dashboard = () => {
-  const { currentSite, currentMembership } = useSite();
+  const { currentSite, currentMembership, premisesType, isOnDemand, labels, isArchived } = useSite();
   const { staffSession, appUser } = useAuth();
   const queryClient = useQueryClient();
   const siteId = currentSite?.id;
@@ -48,6 +52,17 @@ const Dashboard = () => {
   const displayName = appUser?.display_name ?? (staffSession as any)?.display_name ?? undefined;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  // ── On-demand (production day) sites ─────────────────────────────
+  const {
+    productionDay, hasProductionDay, isLoading: pdLoading, start, finish,
+  } = useProductionDay(isOnDemand ? siteId : undefined, selectedDate);
+  const { data: recentDays = [], isLoading: daysLoading } = useProductionDays(
+    isOnDemand ? siteId : undefined,
+    30,
+  );
+  const [finishOpen, setFinishOpen] = useState(false);
+  const canWriteProduction = !isArchived && role !== "read_only" && !!role;
 
   const minDate = currentSite?.created_at?.slice(0, 10);
   const isAtFloor = !!minDate && selectedDate <= minDate;
@@ -129,6 +144,38 @@ const Dashboard = () => {
     );
   }
 
+  // Calm state: on-demand site, no declared production for this day.
+  if (isOnDemand && !pdLoading && !hasProductionDay) {
+    return (
+      <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto pb-12">
+        <SEO title="Dashboard — MiseOS" description="Start a production day when you work — MiseOS tracks your food safety records only on the days you produce." path="/" noindex />
+        <h1 className="sr-only">Dashboard</h1>
+        <ProductionDayCalm
+          days={recentDays}
+          loading={daysLoading}
+          starting={start.isPending}
+          canWrite={canWriteProduction}
+          label={labels.productionDay}
+          todayISO={todayStr}
+          minDateISO={minDate}
+          onStart={() => start.mutate(selectedDate, {
+            onError: (e: any) => toast.error(e.message ?? "Could not start the day"),
+          })}
+          onLogPastDay={(d) => {
+            setSelectedDate(d);
+            start.mutate(d, {
+              onError: (e: any) => toast.error(e.message ?? "Could not log that day"),
+            });
+          }}
+          onOpenDay={(d) => setSelectedDate(d)}
+        />
+        <div className="pt-2 flex justify-center">
+          <DashboardFeedback />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto pb-12">
       <SEO title="Dashboard — MiseOS" description="Operator command centre: Safe to Trade score, priority actions, today and this week at a glance." path="/" noindex />
@@ -152,7 +199,16 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {(isClosed || canCloseDay) && (
+        {isOnDemand && (
+          <p className="text-sm font-semibold text-foreground px-1">
+            {labels.productionDay} — {isToday ? viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : dateStr}
+            {productionDay?.completed_at && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">Finished</span>
+            )}
+          </p>
+        )}
+
+        {!isOnDemand && (isClosed || canCloseDay) && (
           <div className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${isClosed ? "bg-muted/40" : "bg-card"}`}>
             <div className="flex items-center gap-2 min-w-0">
               {isClosed ? <Lock className="h-4 w-4 text-muted-foreground shrink-0" /> : <Unlock className="h-4 w-4 text-muted-foreground shrink-0" />}
@@ -177,10 +233,19 @@ const Dashboard = () => {
         dateISO={selectedDate}
         greeting={isToday ? greeting : undefined}
         displayName={displayName}
+        onDemand={isOnDemand}
+        hasProductionDay={hasProductionDay}
+        bandLabels={bandLabelsFor(premisesType)}
       />
 
       {/* 2 — PRIORITY FEED (what needs doing now) */}
-      <PriorityFeed siteId={siteId} dateISO={selectedDate} currentUserId={currentUserId} />
+      <PriorityFeed
+        siteId={siteId}
+        dateISO={selectedDate}
+        currentUserId={currentUserId}
+        onDemand={isOnDemand}
+        hasProductionDay={hasProductionDay}
+      />
 
       {/* 3 — TODAY OVERVIEW */}
       {!isClosed && (
@@ -195,6 +260,34 @@ const Dashboard = () => {
 
       {/* 5 — PROFIT SNAPSHOT (hidden in HACCP launch mode) */}
       {showCommercialModules && <ProfitSnapshot siteId={siteId} />}
+
+      {/* Finish production day (on-demand sites only) */}
+      {isOnDemand && productionDay && !productionDay.completed_at && canWriteProduction && (
+        <div className="pt-2">
+          <Button variant="secondary" className="w-full" onClick={() => setFinishOpen(true)}>
+            Finish {labels.productionDay.toLowerCase()}
+          </Button>
+        </div>
+      )}
+      {isOnDemand && productionDay && (
+        <FinishProductionDaySheet
+          open={finishOpen}
+          onOpenChange={setFinishOpen}
+          siteId={siteId}
+          dateISO={selectedDate}
+          label={labels.productionDay}
+          saving={finish.isPending}
+          onFinish={(notes) =>
+            finish.mutate(notes, {
+              onSuccess: () => {
+                setFinishOpen(false);
+                toast.success(`${labels.productionDay} finished`);
+              },
+              onError: (e: any) => toast.error(e.message ?? "Could not finish the day"),
+            })
+          }
+        />
+      )}
 
       {/* Feedback link */}
       <div className="pt-4 flex justify-center">

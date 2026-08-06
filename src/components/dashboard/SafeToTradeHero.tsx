@@ -10,6 +10,12 @@ interface Props {
   dateISO: string;
   greeting?: string;
   displayName?: string;
+  /** Site declares production days instead of operating every calendar day. */
+  onDemand?: boolean;
+  /** Whether a production day exists for dateISO (required when onDemand). */
+  hasProductionDay?: boolean;
+  /** Premises-specific wording, e.g. "Ready to bake" for a home kitchen. */
+  bandLabels?: Record<"green" | "amber" | "red", string>;
 }
 
 const BAND_STYLES = {
@@ -39,8 +45,10 @@ const BAND_STYLES = {
   },
 };
 
-export function SafeToTradeHero({ siteId, dateISO, greeting, displayName }: Props) {
-  const { data, isLoading } = useSafeToTrade(siteId, dateISO);
+export function SafeToTradeHero({
+  siteId, dateISO, greeting, displayName, onDemand, hasProductionDay, bandLabels,
+}: Props) {
+  const { data, isLoading } = useSafeToTrade(siteId, dateISO, { onDemand, hasProductionDay });
 
   if (isLoading || !data) {
     return (
@@ -67,6 +75,7 @@ export function SafeToTradeHero({ siteId, dateISO, greeting, displayName }: Prop
   }
 
   const style = BAND_STYLES[data.band];
+  const bandLabel = bandLabels?.[data.band] ?? style.label;
 
   return (
     <motion.section
@@ -88,7 +97,7 @@ export function SafeToTradeHero({ siteId, dateISO, greeting, displayName }: Prop
             </span>
             <span className="text-2xl">{style.emoji}</span>
           </div>
-          <p className="text-base md:text-lg font-semibold text-foreground mt-1">{style.label}</p>
+          <p className="text-base md:text-lg font-semibold text-foreground mt-1">{bandLabel}</p>
         </div>
         <div className="hidden sm:flex h-14 w-14 rounded-full bg-card/80 backdrop-blur items-center justify-center shrink-0 shadow-sm">
           <ShieldCheck className={`h-7 w-7 ${style.text}`} />

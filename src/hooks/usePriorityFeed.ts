@@ -34,15 +34,28 @@ const SEVERITY_RANK: Record<Severity, number> = {
  * Unified "what should I do right now" feed, derived from existing data only.
  * Capped at 8 items so it stays scannable. Returns [] for closed days.
  */
+export interface PriorityFeedOptions {
+  /** Site declares production days instead of operating every calendar day. */
+  onDemand?: boolean;
+  /** Whether a production day exists for dateISO (required when onDemand). */
+  hasProductionDay?: boolean;
+}
+
 export function usePriorityFeed(
   siteId: string | undefined,
   dateISO: string,
   currentUserId: string | null,
+  opts: PriorityFeedOptions = {},
 ) {
+  const onDemand = !!opts.onDemand;
+  const hasProductionDay = !!opts.hasProductionDay;
   return useQuery<PriorityItem[]>({
-    queryKey: ["priority-feed", siteId, dateISO, currentUserId],
+    queryKey: ["priority-feed", siteId, dateISO, currentUserId, onDemand, hasProductionDay],
     enabled: !!siteId,
     queryFn: async () => {
+      // On-demand sites: nothing is due on a day with no declared production.
+      if (onDemand && !hasProductionDay) return [];
+
       const dayStart = `${dateISO}T00:00:00`;
       const dayEnd = `${dateISO}T23:59:59`;
       const yesterday = new Date(dateISO);
@@ -162,8 +175,10 @@ export function usePriorityFeed(
         }
       });
 
-      // 🟠 Cleaning tasks missed yesterday — exempt if yesterday was a closed day
-      if (!yesterdayWasClosed) {
+      // 🟠 Cleaning tasks missed yesterday — exempt if yesterday was a closed
+      // day, and never surfaced for on-demand sites (yesterday may simply not
+      // have been a production day).
+      if (!onDemand && !yesterdayWasClosed) {
         const yDoneIds = new Set((cleaningLogsYesterdayRes.data ?? []).filter((l: any) => l.done).map((l: any) => l.task_id));
         (cleaningTasksRes.data ?? []).forEach((t: any) => {
           if (!yDoneIds.has(t.id)) {
