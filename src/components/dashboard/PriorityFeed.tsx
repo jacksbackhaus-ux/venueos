@@ -10,6 +10,10 @@ interface Props {
   siteId: string | undefined;
   dateISO: string;
   currentUserId: string | null;
+  /** Site declares production days instead of operating every calendar day. */
+  onDemand?: boolean;
+  /** Whether a production day exists for dateISO (required when onDemand). */
+  hasProductionDay?: boolean;
 }
 
 const SEVERITY_STYLE: Record<Severity, { dot: string; label: string; chip: string }> = {
@@ -30,8 +34,10 @@ const SEVERITY_STYLE: Record<Severity, { dot: string; label: string; chip: strin
   },
 };
 
-export function PriorityFeed({ siteId, dateISO, currentUserId }: Props) {
-  const { data, isLoading } = usePriorityFeed(siteId, dateISO, currentUserId);
+export function PriorityFeed({ siteId, dateISO, currentUserId, onDemand, hasProductionDay }: Props) {
+  const { data, isLoading } = usePriorityFeed(siteId, dateISO, currentUserId, {
+    onDemand, hasProductionDay,
+  });
 
   return (
     <Card>
