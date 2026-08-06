@@ -187,14 +187,26 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   const organisationId = appUser?.organisation_id || staffSession?.organisation_id || null;
   const hasSelectedSite = !!currentMembership || (hqExplicitSelection && !!currentSite);
 
+  // Archived sites stay reachable (read-only) but are kept out of the default lists.
+  const liveSites = sites.filter((s) => !s.archived_at);
+  const archivedSites = sites.filter((s) => !!s.archived_at);
+
+  const premisesType: PremisesType = currentSite?.premises_type ?? 'commercial';
+  const operatingMode: OperatingMode = currentSite?.operating_mode ?? 'scheduled';
+
   return (
     <SiteContext.Provider value={{
-      currentSite, currentMembership, sites, memberships, setCurrentSiteId,
+      currentSite, currentMembership, sites: liveSites, archivedSites, memberships, setCurrentSiteId,
       isLoading, hasHydrated, organisationId, hasSelectedSite, clearSelectedSite,
+      premisesType, operatingMode,
+      isOnDemand: operatingMode === 'on_demand',
+      isArchived: !!currentSite?.archived_at,
+      labels: premisesLabels(premisesType),
     }}>
       {children}
     </SiteContext.Provider>
   );
+
 }
 
 export function useSite() {
