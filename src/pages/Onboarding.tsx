@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Building2, LogOut, Link2, Copy, Check, ArrowRight } from "lucide-react";
+import { Loader2, Building2, LogOut, Link2, Copy, Check, ArrowRight, Store, Home, Truck, Factory } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrandingSection } from "@/components/settings/BrandingSection";
 import { buildOrgLoginUrl } from "@/lib/publicAppUrl";
+import { PREMISES_TYPES, premisesMeta, type PremisesType } from "@/lib/premises";
+
+const PREMISES_ICONS = { Store, Home, Truck, Factory } as const;
 
 /**
  * Shown after a verified user signs in but has no profile yet.
@@ -20,7 +23,8 @@ export default function Onboarding() {
   const { user, refreshAppUser, signOut, appUser, isLoading } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState<"form" | "welcome" | "branding">("form");
+  const [step, setStep] = useState<"premises" | "form" | "welcome" | "branding">("premises");
+  const [premisesType, setPremisesType] = useState<PremisesType>("commercial");
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string>("");
   const [copied, setCopied] = useState(false);
@@ -34,7 +38,7 @@ export default function Onboarding() {
   // If profile already exists AND we are not in the post-signup welcome screen,
   // bounce to dashboard. (During the welcome step we WANT to keep showing it.)
   useEffect(() => {
-    if (!isLoading && appUser && step === "form") {
+    if (!isLoading && appUser && (step === "form" || step === "premises")) {
       navigate("/", { replace: true });
     }
   }, [appUser, isLoading, navigate, step]);
@@ -69,7 +73,8 @@ export default function Onboarding() {
       _display_name: form.displayName.trim(),
       _email: user?.email || '',
       _site_address: form.siteAddress.trim() || null,
-    });
+      _premises_type: premisesType,
+    } as any);
     if (error) {
       console.error('Onboarding error:', error);
       toast.error("Setup failed: " + error.message);
@@ -230,6 +235,45 @@ export default function Onboarding() {
     );
   }
 
+  if (step === "premises") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <h1 className="font-heading text-2xl font-bold text-foreground text-center mb-2">
+            Where do you make food?
+          </h1>
+          <p className="text-sm text-muted-foreground text-center mb-6">
+            This sets up the right checks for you. You can change it any time in Settings.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {PREMISES_TYPES.map((p) => {
+              const Icon = PREMISES_ICONS[p.icon];
+              return (
+                <button
+                  key={p.type}
+                  type="button"
+                  onClick={() => { setPremisesType(p.type); setStep("form"); }}
+                  className="rounded-2xl border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
+                >
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <p className="mt-3 font-heading font-semibold text-sm leading-tight">{p.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground leading-snug">{p.examples}</p>
+                </button>
+              );
+            })}
+          </div>
+          <Button type="button" variant="ghost" className="w-full mt-6" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4 mr-2" /> Sign out
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const premises = premisesMeta(premisesType);
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -239,7 +283,9 @@ export default function Onboarding() {
           <CardHeader>
             <CardTitle>Set up your business</CardTitle>
             <CardDescription>
-              Welcome{user?.email ? `, ${user.email}` : ""}. Tell us about your organisation and first location to get started. You can add more sites and configure everything else from Settings later.
+              {premises.title} · <button type="button" onClick={() => setStep("premises")} className="text-primary underline underline-offset-2">change</button>
+              <br />
+              Tell us about your business and where you work. You can add more places and configure everything else from Settings later.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -255,12 +301,12 @@ export default function Onboarding() {
                   onChange={e => setForm(f => ({ ...f, orgName: e.target.value }))} required />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="o-site">First Site Name *</Label>
-                <Input id="o-site" placeholder="e.g. High Street Branch" value={form.siteName}
+                <Label htmlFor="o-site">{premisesType === "home" ? "Kitchen name *" : premisesType === "mobile" ? "Unit or stall name *" : "First site name *"}</Label>
+                <Input id="o-site" placeholder={premisesType === "home" ? "e.g. Home kitchen" : premisesType === "mobile" ? "e.g. The Bread Van" : "e.g. High Street Branch"} value={form.siteName}
                   onChange={e => setForm(f => ({ ...f, siteName: e.target.value }))} required />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="o-addr">Site Address (optional)</Label>
+                <Label htmlFor="o-addr">Address (optional)</Label>
                 <Input id="o-addr" value={form.siteAddress}
                   onChange={e => setForm(f => ({ ...f, siteAddress: e.target.value }))} />
               </div>
