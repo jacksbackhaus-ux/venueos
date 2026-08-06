@@ -26,7 +26,6 @@ import { ProductionDayCalm } from "@/components/dashboard/ProductionDayCalm";
 import { FinishProductionDaySheet } from "@/components/dashboard/FinishProductionDaySheet";
 import { useProductionDay, useProductionDays } from "@/hooks/useProductionDay";
 import { bandLabelsFor } from "@/lib/premises";
-import { SitePromptStrip } from "@/components/dashboard/SitePromptStrip";
 
 /**
  * Operator Command Centre.
@@ -151,7 +150,6 @@ const Dashboard = () => {
       <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto pb-12">
         <SEO title="Dashboard — MiseOS" description="Start a production day when you work — MiseOS tracks your food safety records only on the days you produce." path="/" noindex />
         <h1 className="sr-only">Dashboard</h1>
-        <SitePromptStrip />
         <ProductionDayCalm
           days={recentDays}
           loading={daysLoading}
@@ -293,7 +291,6 @@ const Dashboard = () => {
 
       {/* Feedback link */}
       <div className="pt-4 flex justify-center">
-        <SitePromptStrip />
         <DashboardFeedback />
       </div>
     </div>
