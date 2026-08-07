@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { KITCHEN_SETUP_ITEMS } from "@/lib/premises";
+
 import { format, eachDayOfInterval, parseISO } from "date-fns";
 import type { ReportData } from "./reports";
 
