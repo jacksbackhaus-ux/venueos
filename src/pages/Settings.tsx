@@ -59,6 +59,10 @@ import { ModuleManagementSection } from "@/components/ModuleManagementSection";
 import { MessengerSettingsSection } from "@/components/messenger/MessengerSettingsSection";
 import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
 import { BrandingSection } from "@/components/settings/BrandingSection";
+import { RegistrationCard } from "@/components/settings/RegistrationCard";
+import { KitchenSetupCard } from "@/components/settings/KitchenSetupCard";
+import { CloseSiteCard } from "@/components/settings/CloseSiteCard";
+
 import { ToggleLeft, MessageSquare, Palette } from "lucide-react";
 import { showMessenger, showModulesSettingsTab, showBrandingSettingsTab } from "@/lib/launchFlags";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
@@ -137,7 +141,7 @@ const roleBadgeColor: Record<string, string> = {
 };
 
 const Settings = () => {
-  const { currentSite, currentMembership, organisationId, sites: accessibleSites } = useSite();
+  const { currentSite, currentMembership, organisationId, sites: accessibleSites, premisesType } = useSite();
   const { appUser, staffSession, orgRole, signOut, setStaffSession } = useAuth();
   const { trialActive } = useOrgAccess();
   const canManageStaff =
@@ -1226,6 +1230,15 @@ const Settings = () => {
 
           <Separator />
 
+          {/* Council registration — printed on the Inspection Pack cover */}
+          <RegistrationCard canEdit={canManageStaff} />
+
+          {/* Home kitchens: one-time safe-setup check */}
+          {premisesType === "home" && <KitchenSetupCard canEdit={canManageStaff} />}
+
+          <Separator />
+
+
           <div>
             <h3 className="font-heading font-semibold text-sm mb-3">Operating Days</h3>
             <p className="text-xs text-muted-foreground mb-2">Required daily tasks will only be generated on operating days</p>
@@ -1298,7 +1311,15 @@ const Settings = () => {
               <Plus className="h-3 w-3" /> Upload Logo for Reports
             </Button>
           </div>
+
+          {orgRole?.org_role === "org_owner" && (
+            <>
+              <Separator />
+              <CloseSiteCard />
+            </>
+          )}
         </TabsContent>
+
 
         {/* ════════ ACCOUNT ════════ */}
         <TabsContent value="account" className="mt-4 space-y-4">

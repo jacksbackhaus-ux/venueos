@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import type { ModuleName } from "@/lib/plans";
 import { showMessenger, showMultiSiteHQ, LAUNCH_MODE } from "@/lib/launchFlags";
 import { siteRoleLabel } from "@/lib/siteRoleLabel";
+import { SiteTransferBanner } from "@/components/SiteTransferBanner";
+
 
 const HACCP = LAUNCH_MODE === "haccp";
 
@@ -571,7 +573,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
+          {/* Move / closing window banner (dismissible, both sites) */}
+          <SiteTransferBanner />
+
           {/* Main content */}
+
           <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
             {children}
           </main>

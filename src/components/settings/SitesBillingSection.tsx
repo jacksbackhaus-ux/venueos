@@ -20,6 +20,11 @@ import {
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { openCustomerPortal } from "@/lib/stripe";
 import { LAUNCH_MODE } from "@/lib/launchFlags";
+import {
+  PREMISES_TYPES, defaultOperatingMode, premisesBadge, type PremisesType,
+} from "@/lib/premises";
+import { Store, Home, Truck, Factory } from "lucide-react";
+
 
 const HACCP_LAUNCH = LAUNCH_MODE === "haccp";
 const HACCP_SITE_MONTHLY = 4.99;
@@ -91,7 +96,11 @@ export function SitesBillingSection() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newSiteName, setNewSiteName] = useState("");
   const [newSiteAddress, setNewSiteAddress] = useState("");
+  const [newPremisesType, setNewPremisesType] = useState<PremisesType>("commercial");
+  const [movingFromSiteId, setMovingFromSiteId] = useState<string>("");
+  const [keepBoth, setKeepBoth] = useState<boolean | null>(null);
   const [creating, setCreating] = useState(false);
+
 
   const loadSites = useCallback(async () => {
     if (!orgId) return;
@@ -115,8 +124,12 @@ export function SitesBillingSection() {
   const cycle: BillingCycle = (subscription?.billing_interval as BillingCycle) ?? "month";
   const currentPlan = resolveCurrentPlan(subscription);
   const siteQuantity = subscription?.site_quantity ?? 1;
-  const siteCount = sites.filter(s => s.active).length;
+  const activeSites = sites.filter(s => s.active);
+  const siteCount = activeSites.length;
   const slotsAvailable = Math.max(0, siteQuantity - siteCount);
+  // Only ask the "keeping both?" question when there's an existing site to move from.
+  const canAskMoving = activeSites.length >= 1;
+
   const _rawAdditionalSitePrice = perSiteCost(subscription, cycle);
   const additionalSitePrice = HACCP_LAUNCH
     ? (cycle === "year" ? HACCP_SITE_ANNUAL : HACCP_SITE_MONTHLY)
@@ -187,26 +200,65 @@ export function SitesBillingSection() {
       toast.error("You don't have any unused site slots on your subscription.");
       return;
     }
+    if (canAskMoving && keepBoth === null) {
+      toast.error("Let us know whether you're keeping your existing site open.");
+      return;
+    }
     setCreating(true);
-    const { error } = await supabase.from("sites").insert({
-      organisation_id: orgId,
-      name: newSiteName.trim(),
-      address: newSiteAddress.trim() || null,
-      owner_user_id: appUser.id,
-    });
-    setCreating(false);
+    const { data: created, error } = await supabase
+      .from("sites")
+      .insert({
+        organisation_id: orgId,
+        name: newSiteName.trim(),
+        address: newSiteAddress.trim() || null,
+        owner_user_id: appUser.id,
+        premises_type: newPremisesType,
+        operating_mode: defaultOperatingMode(newPremisesType),
+      } as any)
+      .select("id")
+      .maybeSingle();
     if (error) {
+      setCreating(false);
       console.error("Create site failed", error);
       toast.error(error.message || "Could not create site.");
       return;
     }
-    toast.success("New site created.");
+
+    // "I'm moving" → open a 14-day transfer window; both sites stay editable,
+    // billing stays at one site, the old site auto-archives at day 14.
+    if (canAskMoving && keepBoth === false && created?.id) {
+      const fromId = movingFromSiteId || activeSites[0]?.id;
+      const { error: transferError } = await supabase.from("site_transfers" as any).insert({
+        organisation_id: orgId,
+        from_site_id: fromId,
+        to_site_id: created.id,
+        created_by: appUser.id,
+      } as any);
+      if (transferError) {
+        console.error("Transfer window failed", transferError);
+        toast.error(
+          transferError.message?.includes("one_active_per_org")
+            ? "You already have a move in progress. Finish or cancel it first."
+            : "Site created, but the move window could not be started.",
+        );
+      } else {
+        toast.success("New site created — you have 14 days to move across.");
+      }
+    } else {
+      toast.success("New site created.");
+    }
+
+    setCreating(false);
     setShowCreateDialog(false);
     setNewSiteName("");
     setNewSiteAddress("");
+    setNewPremisesType("commercial");
+    setKeepBoth(null);
+    setMovingFromSiteId("");
     clearSuccessParams();
     await loadSites();
   };
+
 
   // ──────────────────────────── UI ────────────────────────────
   if (loading) {
@@ -397,7 +449,7 @@ export function SitesBillingSection() {
 
       {/* Create new site dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Set up your new site</DialogTitle>
             <DialogDescription>
@@ -424,6 +476,83 @@ export function SitesBillingSection() {
                 onChange={(e) => setNewSiteAddress(e.target.value)}
               />
             </div>
+
+            {/* Premises type — 2x2 picker, same wording as onboarding */}
+            <div className="space-y-1.5">
+              <Label>What kind of place is it?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {PREMISES_TYPES.map((p) => {
+                  const Icon = p.icon === "Home" ? Home : p.icon === "Truck" ? Truck : p.icon === "Factory" ? Factory : Store;
+                  const active = newPremisesType === p.type;
+                  return (
+                    <button
+                      key={p.type}
+                      type="button"
+                      onClick={() => setNewPremisesType(p.type)}
+                      className={`rounded-lg border p-3 text-left transition-colors ${active ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
+                    >
+                      <Icon className={`h-4 w-4 mb-1.5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                      <p className="text-xs font-semibold leading-tight">{p.title}</p>
+                      <p className="text-[11px] text-muted-foreground leading-tight">{p.examples}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Keeping both, or moving? */}
+            {canAskMoving && (
+              <div className="space-y-2 rounded-lg border p-3">
+                {activeSites.length > 1 && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="moving-from">Which site might you be leaving?</Label>
+                    <select
+                      id="moving-from"
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                      value={movingFromSiteId || activeSites[0]?.id || ""}
+                      onChange={(e) => setMovingFromSiteId(e.target.value)}
+                    >
+                      {activeSites.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <p className="text-sm font-medium">
+                  Are you keeping{" "}
+                  {(activeSites.find((s) => s.id === (movingFromSiteId || activeSites[0]?.id))?.name) ?? "your existing site"}{" "}
+                  open?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={keepBoth === true ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setKeepBoth(true)}
+                  >
+                    Keeping both
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={keepBoth === false ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setKeepBoth(false)}
+                  >
+                    I'm moving
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {keepBoth === false
+                    ? "Both sites stay active and editable for 14 days, then the old one becomes read-only. You'll be billed for one site."
+                    : "Keeping both means two active sites, billed for two."}
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              You can change the premises type later in Settings → Site. New site type: {premisesBadge(newPremisesType)}.
+            </p>
+
             {siteCount >= siteQuantity && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
@@ -433,6 +562,7 @@ export function SitesBillingSection() {
               </Alert>
             )}
           </div>
+
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
             <Button onClick={handleCreateSite} disabled={creating || siteCount >= siteQuantity}>
