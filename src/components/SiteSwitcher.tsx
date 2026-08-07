@@ -17,10 +17,12 @@ import { showMultiSiteHQ } from "@/lib/launchFlags";
  */
 export function SiteSwitcher({ variant = "sidebar" }: { variant?: "sidebar" | "header" }) {
   const [open, setOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const navigate = useNavigate();
-  const { sites, memberships, currentSite, currentMembership, setCurrentSiteId } = useSite();
+  const { sites, archivedSites, memberships, currentSite, currentMembership, setCurrentSiteId } = useSite();
   const { orgRole } = useAuth();
   const role = useRole();
+
 
   const isOrgOwner = orgRole?.org_role === "org_owner";
   const isHQAdmin =
@@ -158,6 +160,39 @@ export function SiteSwitcher({ variant = "sidebar" }: { variant?: "sidebar" | "h
             );
           })}
         </div>
+
+        {archivedSites.length > 0 && (
+          <div className="border-t">
+            <button
+              type="button"
+              onClick={() => setShowArchived((v) => !v)}
+              className="w-full px-3 py-2 text-left text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showArchived ? "Hide" : "Show"} closed sites ({archivedSites.length})
+            </button>
+            {showArchived && (
+              <div className="pb-1">
+                {archivedSites.map((site) => (
+                  <button
+                    key={site.id}
+                    type="button"
+                    onClick={() => handleSelect(site.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                  >
+                    <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate text-muted-foreground">{site.name}</p>
+                      <p className="text-[11px] text-muted-foreground">Closed · read-only</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
 
         {role.canViewSettings && (
           <div className="border-t px-3 py-2">

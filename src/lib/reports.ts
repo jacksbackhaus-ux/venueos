@@ -98,7 +98,15 @@ export interface ReportData {
   wasteCostTotal: number;
   // Cost & Margin summary (only populated when caller has access)
   costMargin?: CostMarginSummary;
+  // Premises context — drives which sections the Inspection Pack prints
+  premisesType: "commercial" | "home" | "mobile" | "production";
+  operatingMode: "scheduled" | "on_demand";
+  registration: any | null;
+  kitchenSetup: any | null;
+  siteEvents: any[];
+  productionDays: any[];
 }
+
 
 export interface CostMarginRecipeRow {
   id: string;
@@ -152,8 +160,10 @@ export async function fetchReportData(
     membershipsRes, closedDaysRes,
     trainingRecordsRes, trainingReqsRes,
     haccpPlansRes, ppmTasksRes, ppmCompletionsRes, wasteLogsRes,
+    registrationRes, kitchenSetupRes, siteEventsRes, productionDaysRes,
   ] = await Promise.all([
-    supabase.from("sites").select("name").eq("id", siteId).maybeSingle(),
+    supabase.from("sites").select("name, premises_type, operating_mode").eq("id", siteId).maybeSingle(),
+
     supabase.from("organisations").select("name").eq("id", orgId).maybeSingle(),
     supabase.from("temp_logs").select("*, temp_units(name)").eq("site_id", siteId).gte("logged_at", fromIso).lte("logged_at", toIso),
     supabase.from("cleaning_tasks").select("id, task, area, frequency, active").eq("site_id", siteId).eq("active", true),
@@ -175,7 +185,12 @@ export async function fetchReportData(
     supabase.from("ppm_tasks").select("*").eq("site_id", siteId).eq("is_active", true),
     supabase.from("ppm_completions").select("*").eq("site_id", siteId),
     supabase.from("waste_logs").select("*").eq("site_id", siteId).gte("shift_date", fromDate).lte("shift_date", toDate),
+    supabase.from("site_registrations" as any).select("*").eq("site_id", siteId).maybeSingle(),
+    supabase.from("site_kitchen_setup" as any).select("*").eq("site_id", siteId).maybeSingle(),
+    supabase.from("site_events" as any).select("*").eq("site_id", siteId).gte("event_date", fromDate).lte("event_date", toDate).order("event_date", { ascending: false }),
+    supabase.from("production_days" as any).select("*").eq("site_id", siteId).gte("production_date", fromDate).lte("production_date", toDate).order("production_date", { ascending: false }),
   ]);
+
 
   const tempLogsRaw = tempRes.data || [];
   // We filter out closed-day temp logs further down, once closedSet is built.
@@ -448,6 +463,13 @@ export async function fetchReportData(
     range,
     siteName: siteRes.data?.name || "Site",
     orgName: orgRes.data?.name || "Organisation",
+    premisesType: ((siteRes.data as any)?.premises_type ?? "commercial"),
+    operatingMode: ((siteRes.data as any)?.operating_mode ?? "scheduled"),
+    registration: (registrationRes as any)?.data ?? null,
+    kitchenSetup: (kitchenSetupRes as any)?.data ?? null,
+    siteEvents: ((siteEventsRes as any)?.data ?? []) as any[],
+    productionDays: ((productionDaysRes as any)?.data ?? []) as any[],
+
     pillars,
     overallScore,
     ratingEstimate,

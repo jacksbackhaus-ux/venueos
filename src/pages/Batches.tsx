@@ -24,6 +24,9 @@ import { format, differenceInCalendarDays, addDays, parseISO } from "date-fns";
 import { calcBatchProductionCost, loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
 import { displayBatchNumber, formatBatchNumber } from "@/lib/batchNumber";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { isSmallScale } from "@/lib/premises";
+import { MarketsEventsTab } from "@/components/batches/MarketsEventsTab";
+
 
 type BatchStatus = 'in_progress' | 'complete' | 'quarantined' | 'disposed' | 'used';
 type ActionType = 'used' | 'disposed' | 'extended' | 'quarantined' | 'unquarantined';
@@ -110,13 +113,16 @@ function needsAttention(b: Batch): boolean {
 
 export default function Batches() {
   const { appUser, isReadOnly } = useAuth();
-  const { currentSite, organisationId } = useSite();
+  const { currentSite, organisationId, premisesType } = useSite();
+
   const { plan, trialActive, compedActive } = useOrgAccess();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [products, setProducts] = useState<BatchProduct[]>([]);
   const [costRecipes, setCostRecipes] = useState<RecipeWithCost[]>([]);
   const [filter, setFilter] = useState<'all' | 'attention' | 'active' | 'used' | 'disposed'>('all');
+  const [view, setView] = useState<'batches' | 'events'>('batches');
   const [searchQuery, setSearchQuery] = useState("");
+
   const [loading, setLoading] = useState(true);
 
   // Create flow
@@ -308,25 +314,57 @@ export default function Batches() {
     setShowCreate(true);
   };
 
+  // Markets & events is a tab inside this module, for home kitchens and market traders.
+  const showEvents = isSmallScale(premisesType);
+  const batchOptions = batches.map((b) => ({
+    id: b.id,
+    label: `${b.product_name} — ${displayBatchNumber(b.product_name, b.recipe_number, b.batch_code)}`,
+  }));
+
+  const moduleHeader = (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Package className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-heading font-bold text-foreground">Batch Tracking</h1>
+          <p className="text-sm text-muted-foreground">What did we bake today?</p>
+        </div>
+      </div>
+      {!isReadOnly && view === 'batches' && (
+        <Button onClick={openCreate} size="sm">
+          <Plus className="h-4 w-4 mr-1" /> New Batch
+        </Button>
+      )}
+    </div>
+  );
+
+  const viewSwitcher = showEvents ? (
+    <Tabs value={view} onValueChange={(v) => setView(v as 'batches' | 'events')}>
+      <TabsList>
+        <TabsTrigger value="batches">Batches</TabsTrigger>
+        <TabsTrigger value="events">Markets &amp; events</TabsTrigger>
+      </TabsList>
+    </Tabs>
+  ) : null;
+
+  if (showEvents && view === 'events') {
+    return (
+      <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto pb-16">
+        {moduleHeader}
+        {viewSwitcher}
+        <MarketsEventsTab batchOptions={batchOptions} readOnly={!!isReadOnly} />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto pb-16">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Package className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-heading font-bold text-foreground">Batch Tracking</h1>
-            <p className="text-sm text-muted-foreground">What did we bake today?</p>
-          </div>
-        </div>
-        {!isReadOnly && (
-          <Button onClick={openCreate} size="sm">
-            <Plus className="h-4 w-4 mr-1" /> New Batch
-          </Button>
-        )}
-      </div>
+      {moduleHeader}
+      {viewSwitcher}
+
 
       {/* Today summary */}
       <Card className="bg-muted/30 border-dashed shadow-soft">

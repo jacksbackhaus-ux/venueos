@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { KITCHEN_SETUP_ITEMS } from "@/lib/premises";
+
 import { format, eachDayOfInterval, parseISO } from "date-fns";
 import type { ReportData } from "./reports";
 
@@ -34,6 +36,16 @@ const readinessColor = (b: typeof DEFAULT_BRAND, r: "green" | "amber" | "red") =
 
 const readinessLabel = (r: "green" | "amber" | "red") =>
   r === "green" ? "READY" : r === "amber" ? "PARTIAL READINESS" : "ACTION REQUIRED";
+
+function premisesTypeLabel(type: string): string {
+  switch (type) {
+    case "home": return "Home kitchen (registered domestic premises)";
+    case "mobile": return "Mobile / market trader";
+    case "production": return "Prep or production unit";
+    default: return "Commercial premises";
+  }
+}
+
 
 export function generateInspectionPackPdf(
   data: ReportData,
@@ -110,6 +122,7 @@ export function generateInspectionPackPdf(
     titleX, 48
   );
   doc.text(`Generated: ${format(new Date(data.generatedAt), "d MMM yyyy 'at' HH:mm")}`, titleX, 55);
+  doc.text(`Premises type: ${premisesTypeLabel(data.premisesType)}`, titleX, 62);
   doc.setTextColor(0, 0, 0);
 
   // Statement of source
@@ -121,8 +134,28 @@ export function generateInspectionPackPdf(
   );
   doc.setTextColor(0, 0, 0);
 
+  // Registration details — the first thing an inspector asks for
+  {
+    const r = data.registration;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.text("Registration details", margin, 86);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    const rows: string[] = r
+      ? [
+          `Local authority: ${r.local_authority || "—"}`,
+          `Registration date: ${r.registration_date ? format(new Date(r.registration_date), "d MMM yyyy") : "—"}`,
+          `Reference: ${r.reference_number || "—"}`,
+          `Last inspection: ${r.last_inspection_date ? format(new Date(r.last_inspection_date), "d MMM yyyy") : "—"}`,
+          `Food hygiene rating: ${r.hygiene_rating === null || r.hygiene_rating === undefined ? "Not yet rated" : `${r.hygiene_rating} / 5`}`,
+        ]
+      : ["Registration details have not been added in MiseOS."];
+    let ry = 92;
+    rows.forEach((line) => { doc.text(line, margin, ry); ry += 4.5; });
+  }
+
+
   // Inspection readiness traffic light
-  let y = 90;
+  let y = 122;
   doc.setFillColor(...readinessColor(BRAND, data.readiness));
   doc.roundedRect(margin, y, pw - margin * 2, 18, 3, 3, "F");
   doc.setTextColor(255, 255, 255);
@@ -258,6 +291,86 @@ export function generateInspectionPackPdf(
       }
     },
   });
+
+  // ====== PREMISES-SPECIFIC EVIDENCE (home / mobile) ======
+  const isSmallScale = data.premisesType === "home" || data.premisesType === "mobile";
+
+  if (data.operatingMode === "on_demand" && data.productionDays.length > 0) {
+    doc.addPage(); header("Production days");
+    let py = 28;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text(data.premisesType === "mobile" ? "Trading days" : "Production days", margin, py); py += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text(
+      "This premises declares the days it produces food. Days not listed here were non-production days and carry no checks.",
+      margin, py + 3,
+    );
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: py + 8,
+      head: [["Date", "Started", "Finished", "Notes"]],
+      body: data.productionDays.map((d: any) => [
+        d.production_date ? format(new Date(d.production_date), "d MMM yyyy") : "—",
+        d.started_at ? format(new Date(d.started_at), "HH:mm") : "—",
+        d.finished_at ? format(new Date(d.finished_at), "HH:mm") : "Open",
+        d.notes || "—",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  if (data.premisesType === "home" && data.kitchenSetup) {
+    doc.addPage(); header("Kitchen setup check");
+    let ky = 28;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text("Kitchen setup check", margin, ky); ky += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text("A one-time check that this domestic kitchen is suitable for food production.", margin, ky + 3);
+    doc.setTextColor(0, 0, 0);
+    const answers = (data.kitchenSetup.answers || {}) as Record<string, { checked?: boolean; note?: string }>;
+    autoTable(doc, {
+      startY: ky + 8,
+      head: [["Requirement", "Confirmed", "Note"]],
+      body: KITCHEN_SETUP_ITEMS.map((item) => [
+        item.label,
+        answers[item.key]?.checked ? "Yes" : "Not confirmed",
+        answers[item.key]?.note || "—",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      columnStyles: { 0: { cellWidth: 90 } },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  if (isSmallScale && data.siteEvents.length > 0) {
+    doc.addPage(); header("Markets & events");
+    let my = 28;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text("Markets & events", margin, my); my += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text("Where food was sold, with transport temperature checks where recorded.", margin, my + 3);
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: my + 8,
+      head: [["Date", "Event", "Location", "Transport temp", "Notes"]],
+      body: data.siteEvents.map((e: any) => [
+        e.event_date ? format(new Date(e.event_date), "d MMM yyyy") : "—",
+        e.name || "—",
+        e.location || "—",
+        e.transport_temp_checked
+          ? (e.transport_temp_c !== null && e.transport_temp_c !== undefined ? `${e.transport_temp_c}°C` : "Checked")
+          : "Not checked",
+        e.notes || "—",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      margin: { left: margin, right: margin },
+    });
+  }
+
 
   // ====== AI Compliance Assessment (optional) ======
   if (aiNarrative && aiNarrative.trim().length > 0) {
