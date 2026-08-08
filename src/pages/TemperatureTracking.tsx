@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { COOK_COMBOS } from "@/lib/sfbb";
+import { ProbeCalibrationCard } from "@/components/temperature/ProbeCalibrationCard";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Thermometer, CheckCircle2, XCircle, Clock,
