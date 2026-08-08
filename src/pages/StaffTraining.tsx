@@ -19,6 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FitnessToWorkTab } from "@/components/staff/FitnessToWorkTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useSite } from "@/contexts/SiteContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -416,10 +417,11 @@ export default function StaffTraining() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="space-y-4">
         {!isStaffOnly && (
-          <TabsList className="grid grid-cols-3 w-full md:w-auto">
+          <TabsList className="grid grid-cols-4 w-full md:w-auto">
             <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="individual" disabled={!selectedUserId}>Individual</TabsTrigger>
             <TabsTrigger value="catalog">Trainings</TabsTrigger>
+            <TabsTrigger value="fitness">Fitness to work</TabsTrigger>
           </TabsList>
         )}
 
@@ -609,6 +611,12 @@ export default function StaffTraining() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+        {/* ---------------- FITNESS TO WORK (SFBB 48-hour rule) ---------------- */}
+        {!isStaffOnly && (
+          <TabsContent value="fitness" className="space-y-4">
+            <FitnessToWorkTab readOnly={!canManage} />
           </TabsContent>
         )}
       </Tabs>

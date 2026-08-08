@@ -21,6 +21,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { buildRange, fetchReportData } from "@/lib/reports";
 import type { ModuleName } from "@/lib/plans";
+import { ReviewsCard } from "@/components/compliance/ReviewsCard";
 
 const QUICK_ACTIONS: { to: string; label: string; icon: React.ElementType; mod?: ModuleName }[] = [
   { to: "/temperatures",   label: "Temperatures",  icon: Thermometer,    mod: "temperatures" },
@@ -122,6 +123,9 @@ export default function Compliance() {
               </div>
             </CardContent>
           </Card>
+
+          {/* SFBB periodic review */}
+          <ReviewsCard />
 
           {/* Top compliance issues */}
           <Card>
