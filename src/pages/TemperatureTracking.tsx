@@ -42,7 +42,7 @@ const PROCESS_CHECKS: {
   type: ProcessType; label: string; icon: React.ElementType;
   color: string; min: number; max: number; target: string;
 }[] = [
-  { type: "Cooking",     label: "Cooking",     icon: Flame,      color: "bg-orange-100 text-orange-700 border-orange-200",  min: 75,  max: 200, target: "≥ 75°C core temp" },
+  { type: "Cooking",     label: "Cooking",     icon: Flame,      color: "bg-orange-100 text-orange-700 border-orange-200",  min: 60,  max: 200, target: "75°C for 30s (or equivalent)" },
   { type: "Reheating",   label: "Reheating",   icon: Flame,      color: "bg-red-100 text-red-700 border-red-200",           min: 75,  max: 200, target: "≥ 75°C core temp" },
   { type: "Hot Holding", label: "Hot Holding", icon: Wind,       color: "bg-amber-100 text-amber-700 border-amber-200",     min: 63,  max: 200, target: "≥ 63°C" },
   { type: "Cooling",     label: "Cooling",     icon: Snowflake,  color: "bg-blue-100 text-blue-700 border-blue-200",        min: -5,  max: 8,   target: "≤ 8°C within 90 min" },

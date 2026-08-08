@@ -16,6 +16,8 @@ import { showCommercialModules } from "@/lib/launchFlags";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecallsTab } from "@/components/batches/RecallsTab";
+
+type BatchView = 'batches' | 'events' | 'recalls';
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
@@ -121,7 +123,7 @@ export default function Batches() {
   const [products, setProducts] = useState<BatchProduct[]>([]);
   const [costRecipes, setCostRecipes] = useState<RecipeWithCost[]>([]);
   const [filter, setFilter] = useState<'all' | 'attention' | 'active' | 'used' | 'disposed'>('all');
-  const [view, setView] = useState<'batches' | 'events'>('batches');
+  const [view, setView] = useState<BatchView>('batches');
   const [searchQuery, setSearchQuery] = useState("");
 
   const [loading, setLoading] = useState(true);
