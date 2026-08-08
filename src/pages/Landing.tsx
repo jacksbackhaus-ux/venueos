@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   Menu, X, Check, ArrowRight, ShieldCheck, FileText, Thermometer,
   SprayCan, ClipboardCheck, BookCheck, Wheat, AlertTriangle, Leaf,
+  Truck, GraduationCap, WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -96,15 +97,14 @@ function Hero() {
       <div className="max-w-5xl mx-auto text-center">
         <motion.div {...fadeUp}>
           <Badge variant="outline" className="mb-6 border-slate-300 text-slate-700 font-medium">
-            For UK bakeries, cafés & independent kitchens
+            Built for UK bakeries, cafés & independent kitchens
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-slate-900 leading-[1.05]">
-            Digital HACCP & food safety,{" "}
-            <span style={{ color: BRAND_SAGE }}>without the paperwork</span>.
+            Food safety records done.{" "}
+            <span style={{ color: BRAND_SAGE }}>Before the inspector walks in</span>.
           </h1>
           <p className="mt-6 text-lg md:text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            Replace paper diaries with simple digital logs. Stay inspection-ready every day —
-            in minutes, not hours.
+            Replace paper diaries with simple digital logs. Log temperatures, cleaning, deliveries and incidents in minutes — then export an EHO-ready Inspection Pack whenever you need it.
           </p>
           <div className="mt-9 flex flex-wrap gap-3 justify-center">
             <a href={SIGNUP_URL}>
@@ -119,7 +119,7 @@ function Hero() {
             </a>
           </div>
           <p className="mt-4 text-sm text-slate-500">
-            14-day free trial · No charge until your trial ends · Cancel anytime
+            Card required. No charge until your trial ends. Cancel anytime.
           </p>
         </motion.div>
       </div>
@@ -129,24 +129,27 @@ function Hero() {
 
 function Features() {
   const features = [
-    { icon: Thermometer, title: "Temperatures", desc: "Log fridges, freezers, hot holding & cooking probes." },
-    { icon: SprayCan, title: "Cleaning", desc: "Daily, weekly and deep-clean schedules with sign-off." },
-    { icon: ClipboardCheck, title: "Day Sheet", desc: "Opening and closing checks the team can finish in minutes." },
-    { icon: BookCheck, title: "HACCP Plan", desc: "Build and publish a written HACCP plan — share with your EHO." },
-    { icon: Wheat, title: "Allergens & PPDS labels", desc: "Recipes, ingredients, Natasha's Law labels." },
-    { icon: AlertTriangle, title: "Incidents & Pest", desc: "Log non-conformances, pest sightings and corrective actions." },
-    { icon: FileText, title: "Inspection Pack", desc: "One-click EHO-ready PDF and Excel exports of all your records." },
-    { icon: ShieldCheck, title: "Inspection Readiness score", desc: "See how close to a 5-star FHRS your records look every day." },
+    { icon: Thermometer, title: "Temperature logs", desc: "Fridge, freezer, hot-holding and probe checks — logged in seconds with corrective actions." },
+    { icon: SprayCan, title: "Cleaning schedules", desc: "Daily, weekly and deep-clean tasks with sign-off, reminders and missed-task alerts." },
+    { icon: ClipboardCheck, title: "Day Sheet", desc: "Opening and closing checks the team can finish in minutes, every day." },
+    { icon: BookCheck, title: "HACCP Plan", desc: "Build and publish a written food safety management system — ready to share with your EHO." },
+    { icon: Wheat, title: "Allergens & PPDS", desc: "Track ingredients, recipes and Natasha's Law labels in one place." },
+    { icon: Truck, title: "Batch & Traceability", desc: "Log batches, mark used, sold or disposed, and trace ingredients from delivery to sale." },
+    { icon: AlertTriangle, title: "Incidents & Pest", desc: "Record non-conformances, pest sightings, maintenance issues and the fix you applied." },
+    { icon: GraduationCap, title: "Staff Training", desc: "Assign, record and track food hygiene and safety training for every team member." },
+    { icon: FileText, title: "Inspection Pack", desc: "One-click EHO-ready PDF and Excel export of all your records." },
+    { icon: ShieldCheck, title: "Inspection Readiness score", desc: "See how close your records look to a 5-star Food Hygiene Rating every day." },
+    { icon: WifiOff, title: "Works offline", desc: "Log on your phone even without signal. Entries sync automatically when you're back online." },
   ];
   return (
     <Section id="features" className="bg-slate-50">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Everything you need to stay compliant</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-900">What MiseOS does for you</h2>
         <p className="mt-3 text-slate-600 max-w-2xl mx-auto">
-          One simple app covering the records UK EHOs look for.
+          The daily and weekly records UK Environmental Health Officers expect, all in one simple app.
         </p>
       </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {features.map((f) => (
           <Card key={f.title} className="p-5 hover:shadow-md transition-shadow">
             <div className="h-10 w-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: `${BRAND_SAGE}1a` }}>
@@ -163,9 +166,9 @@ function Features() {
 
 function HowItWorks() {
   const steps = [
-    { n: "1", title: "Sign up in 60 seconds", desc: "Create your site, invite your team. No card, no setup call." },
-    { n: "2", title: "Log on phone or tablet", desc: "Temperatures, cleaning, deliveries, incidents — all in one place." },
-    { n: "3", title: "Stay inspection-ready", desc: "Export your Inspection Pack any time. Show the EHO with confidence." },
+    { n: "1", title: "Set up your site in minutes", desc: "Add your kitchen, fridges, team and daily schedule. No sales call, no spreadsheet import." },
+    { n: "2", title: "Log as you work", desc: "Tap through temperatures, cleaning and checks on your phone or tablet. It works offline, so a bad signal never stops you." },
+    { n: "3", title: "Stay ready for inspections", desc: "Export your Inspection Pack anytime — one PDF or Excel file with every record the EHO needs to see." },
   ];
   return (
     <Section id="how">
@@ -192,7 +195,7 @@ function Pricing() {
     <Section id="pricing" className="bg-slate-50">
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Simple pricing</h2>
-        <p className="mt-3 text-slate-600">One plan. No surprises. Cancel anytime.</p>
+        <p className="mt-3 text-slate-600">One plan. No tiers. No hidden fees. Cancel anytime.</p>
       </div>
       <div className="max-w-xl mx-auto">
         <Card className="p-8 border-2" style={{ borderColor: BRAND_SAGE }}>
@@ -205,15 +208,16 @@ function Pricing() {
             Includes 1 user. Each additional user: <strong>£1 / month</strong>.
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            Annual: pay for 10 months, get 12 (2 months free).
+            Pay annually and get 2 months free (equivalent to £49.90/year).
           </p>
           <ul className="mt-6 space-y-2 text-sm text-slate-700">
             {[
               "All HACCP & food safety modules",
               "Inspection Pack (PDF + Excel)",
               "Unlimited records & 7-year retention",
+              "Offline logging on mobile",
               "Customer Feedback log",
-              "14-day free trial · no charge until trial ends",
+              "14-day free trial",
             ].map((f) => (
               <li key={f} className="flex items-start gap-2">
                 <Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: BRAND_SAGE }} />
@@ -226,7 +230,7 @@ function Pricing() {
               Start 14-day free trial
             </Button>
           </a>
-          <p className="text-xs text-slate-500 text-center mt-3">No long contracts. Cancel anytime.</p>
+          <p className="text-xs text-slate-500 text-center mt-3">Card required. No charge until trial ends. Cancel anytime.</p>
         </Card>
         <p className="text-xs text-slate-500 text-center mt-6 flex items-center justify-center gap-1.5">
           <Leaf className="h-3.5 w-3.5" style={{ color: BRAND_SAGE }} />
@@ -239,12 +243,15 @@ function Pricing() {
 
 function FAQ() {
   const faqs = [
-    { q: "Is MiseOS suitable for my small business?", a: "Yes. MiseOS is designed specifically for UK bakeries, cafés, independent kitchens and small restaurants — typically 1–5 sites." },
-    { q: "Does it replace Safer Food Better Business (SFBB)?", a: "MiseOS digitises every diary record SFBB asks you to keep — temperatures, cleaning, opening/closing checks, supplier records, incidents and more — and lets you export them as an Inspection Pack." },
-    { q: "Will my Environmental Health Officer accept digital records?", a: "Yes. UK EHOs accept digital food safety records. The Inspection Pack export is laid out so an inspector can read everything quickly." },
-    { q: "What about my Food Hygiene Rating (FHRS)?", a: "MiseOS gives you an Inspection Readiness score and breakdown across the three FSA pillars (Hygiene, Premises, Confidence in Management) so you can address weak spots before an inspection." },
-    { q: "How long does setup take?", a: "Most owners are logging within 10 minutes. There's no setup call, no card and no contract — just sign up and start." },
-    { q: "What happens if I cancel?", a: "You keep access until the end of your billing period. Your data is retained for 7 years so you can re-export records if needed." },
+    { q: "Is MiseOS suitable for my small business?", a: "Yes. MiseOS is built for UK bakeries, cafés, home kitchens, food trucks and small restaurants — typically 1–5 sites. Whether you bake from home or run a small commercial kitchen, the app adapts to your premises type." },
+    { q: "I'm a home baker. Can I use MiseOS?", a: "Absolutely. Home kitchens and mobile food businesses are first-class premises types in MiseOS. You get a kitchen setup checklist, markets & events log, and simplified supplier records alongside all the standard food safety logs." },
+    { q: "Do I need a card to start the trial?", a: "Yes, a card is required to start the trial, but you won't be charged until the 14-day trial ends. Cancel anytime before then and nothing is billed." },
+    { q: "Does it work on mobile?", a: "Yes. MiseOS is designed for phones and tablets first. Your team can log temperatures, cleaning and checks while moving around the kitchen, and it works offline when your signal drops." },
+    { q: "Will my Environmental Health Officer accept digital records?", a: "Yes. UK EHOs accept digital food safety records. MiseOS exports an Inspection Pack in PDF and Excel with all the records they look for, laid out clearly so they can find what they need quickly." },
+    { q: "Does it replace Safer Food Better Business (SFBB)?", a: "MiseOS digitises the diary records SFBB asks you to keep — temperatures, cleaning, opening/closing checks, supplier records, incidents, training and more — and lets you export them as an Inspection Pack." },
+    { q: "How much do extra users cost?", a: "Each additional active user is £1 per month. The first user is included in the £4.99/site/month price. You can add or deactivate users as your team changes." },
+    { q: "Can I use MiseOS for multiple sites?", a: "Yes. Each site is £4.99/month with its own records, fridges, team and Inspection Pack. If you move to a new site, you can run a 14-day transfer window with both sites active while only paying for one." },
+    { q: "What happens if I cancel?", a: "You keep full access until the end of your billing period. Your records are retained for 7 years so you can re-export them whenever needed." },
   ];
   return (
     <Section id="faq">
@@ -271,7 +278,7 @@ function CTA() {
     <Section className="text-center">
       <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Stop chasing paper. Start logging digitally.</h2>
       <p className="mt-4 text-slate-600 max-w-xl mx-auto">
-        Start your 14-day trial. Card required, but you won't be charged until the trial ends. Cancel anytime.
+        Start your 14-day free trial today. Card required; no charge until the trial ends. Cancel anytime.
       </p>
       <div className="mt-8">
         <a href={SIGNUP_URL}>
@@ -307,7 +314,7 @@ export default function Landing() {
     <div className="min-h-screen bg-white text-slate-900">
       <SEO
         title="MiseOS — Digital HACCP for UK Food Businesses"
-        description="Digital HACCP, temperatures and cleaning logs for UK bakeries, cafés and small restaurants. Inspection-ready records. £4.99/site/month. 14-day free trial."
+        description="Digital HACCP, temperature logs, cleaning schedules and inspection-ready exports for UK bakeries, cafés and small restaurants. £4.99/site/month. 14-day free trial."
         path="/"
       />
       <Nav />
