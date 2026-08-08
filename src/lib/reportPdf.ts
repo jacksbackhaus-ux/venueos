@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { safeMethodDef } from "@/lib/sfbb";
 import { KITCHEN_SETUP_ITEMS } from "@/lib/premises";
 
 import { format, eachDayOfInterval, parseISO } from "date-fns";
@@ -371,6 +372,168 @@ export function generateInspectionPackPdf(
     });
   }
 
+
+  // ====== SFBB EVIDENCE ======
+  // Periodic reviews, process checks, probe calibration, fitness to work,
+  // documented safe methods and withdrawals. Sections only appear when the
+  // site actually has records, so existing customers see no empty pages.
+  const reviewLabel = data.operatingMode === "on_demand" ? "Periodic reviews" : "4-weekly reviews";
+
+  if (data.reviews.length > 0) {
+    doc.addPage(); header(reviewLabel);
+    let ry = 28;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text(reviewLabel, margin, ry); ry += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text("Completed reviews of the food safety management system.", margin, ry + 3);
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: ry + 8,
+      head: [["Period", data.operatingMode === "on_demand" ? "Production days" : "Completed", "Problems", "Action taken", "By"]],
+      body: data.reviews.map((r: any) => [
+        `${r.period_start} → ${r.period_end}`,
+        data.operatingMode === "on_demand"
+          ? String(r.production_days_covered ?? "—")
+          : (r.completed_at ? format(new Date(r.completed_at), "d MMM yyyy") : "—"),
+        r.problems_observed ? (r.problems_detail || "Yes") : "None",
+        r.action_taken || "—",
+        r.completed_by_name || "—",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  if (data.processTempLogs.length > 0) {
+    doc.addPage(); header("Process temperature checks");
+    let cy = 28;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text("Process temperature checks", margin, cy); cy += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text("Cooking, reheating, hot holding, cooling and delivery checks with corrective actions.", margin, cy + 3);
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: cy + 8,
+      head: [["Date", "Check", "Item", "Reading", "Result", "Corrective action"]],
+      body: data.processTempLogs.map((l: any) => [
+        l.logged_at ? format(new Date(l.logged_at), "d MMM HH:mm") : "—",
+        l.log_type || "—",
+        l.food_item || "—",
+        `${Number(l.value)}°C`,
+        l.pass ? "Pass" : "Fail",
+        l.corrective_action || "—",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  if (data.probeCalibrations.length > 0) {
+    doc.addPage(); header("Probe calibration");
+    let gy = 28;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text("Probe calibration", margin, gy); gy += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text("Iced water and boiling water accuracy checks.", margin, gy + 3);
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: gy + 8,
+      head: [["Date", "Probe", "Iced water", "Boiling water", "Result", "By"]],
+      body: data.probeCalibrations.map((c: any) => [
+        c.calibrated_at ? format(new Date(c.calibrated_at), "d MMM yyyy") : "—",
+        c.probe_name || "Probe",
+        `${c.iced_water_reading}°C`,
+        `${c.boiling_water_reading}°C`,
+        c.pass ? "Pass" : "Fail",
+        c.calibrated_by_name || "—",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  if (data.fitnessRecords.length > 0) {
+    doc.addPage(); header("Fitness to work");
+    let fy = 28;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text("Fitness to work", margin, fy); fy += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text("Staff illness exclusions, managed under the 48-hour symptom-free rule.", margin, fy + 3);
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: fy + 8,
+      head: [["Reported", "Person", "Symptoms", "Excluded from", "Cleared to return", "Status"]],
+      body: data.fitnessRecords.map((r: any) => [
+        r.reported_date || "—",
+        r.staff_name || "—",
+        r.symptoms || "—",
+        r.excluded_from || "—",
+        r.cleared_to_return || "—",
+        r.status === "cleared" ? "Cleared" : "Excluded",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  if (data.safeMethods.length > 0) {
+    doc.addPage(); header("Safe methods");
+    let sy = 28;
+    const documented = data.safeMethods.filter((m: any) => m.status === "documented").length;
+    const relevant = data.safeMethods.filter((m: any) => m.status !== "not_relevant").length;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text("Documented safe methods", margin, sy); sy += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text(
+      `Safe method completion record — ${documented} of ${relevant} relevant methods documented.`,
+      margin, sy + 3,
+    );
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: sy + 8,
+      head: [["Safe method", "Status", "How this is done"]],
+      body: data.safeMethods.map((m: any) => [
+        safeMethodDef(m.method_key)?.title ?? m.method_key,
+        m.status === "documented" ? "Documented" : m.status === "not_relevant" ? "Not relevant" : "To do",
+        m.how_text || "—",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      columnStyles: { 0: { cellWidth: 55 }, 1: { cellWidth: 25 } },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  if (data.recalls.length > 0) {
+    doc.addPage(); header("Withdrawals & recalls");
+    let wy = 28;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text("Withdrawals & recalls", margin, wy); wy += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
+    doc.text("Product withdrawn or recalled, with the action taken.", margin, wy + 3);
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: wy + 8,
+      head: [["Date", "Item", "Type", "Reason", "Source", "Batches", "Customers told", "Action"]],
+      body: data.recalls.map((r: any) => [
+        r.created_at ? format(new Date(r.created_at), "d MMM yyyy") : "—",
+        r.item_ref || "—",
+        r.item_type || "—",
+        r.reason || "—",
+        r.source || "—",
+        String((r.affected_batch_ids || []).length),
+        r.customers_informed ? "Yes" : "No",
+        r.action_taken || "—",
+      ]),
+      headStyles: { fillColor: BRAND.primary, textColor: 255 },
+      styles: { fontSize: 8, cellPadding: 2 },
+      margin: { left: margin, right: margin },
+    });
+  }
 
   // ====== AI Compliance Assessment (optional) ======
   if (aiNarrative && aiNarrative.trim().length > 0) {
