@@ -513,6 +513,9 @@ const TemperatureTracking = () => {
         )}
       </div>
 
+      {/* Probe calibration ("prove it") */}
+      <ProbeCalibrationCard readOnly={!canEdit} />
+
       {/* Unit readings log */}
       {unitLogs.length > 0 && (
         <div className="space-y-2">
