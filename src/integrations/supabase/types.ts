@@ -4135,11 +4135,16 @@ export type Database = {
       safe_methods: {
         Row: {
           category: string
+          completed_at: string | null
+          completed_by: string | null
+          completed_by_name: string | null
           created_at: string
           how_text: string | null
           id: string
           method_key: string
+          notes: string | null
           organisation_id: string
+          responses: Json
           site_id: string
           status: string
           updated_at: string
@@ -4148,11 +4153,16 @@ export type Database = {
         }
         Insert: {
           category: string
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
           created_at?: string
           how_text?: string | null
           id?: string
           method_key: string
+          notes?: string | null
           organisation_id: string
+          responses?: Json
           site_id: string
           status?: string
           updated_at?: string
@@ -4161,11 +4171,16 @@ export type Database = {
         }
         Update: {
           category?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
           created_at?: string
           how_text?: string | null
           id?: string
           method_key?: string
+          notes?: string | null
           organisation_id?: string
+          responses?: Json
           site_id?: string
           status?: string
           updated_at?: string
@@ -4411,6 +4426,132 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sfbb_documents: {
+        Row: {
+          created_at: string
+          date_completed: string | null
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          name: string
+          notes: string | null
+          organisation_id: string
+          review_date: string | null
+          site_id: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_completed?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          name: string
+          notes?: string | null
+          organisation_id: string
+          review_date?: string | null
+          site_id: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_completed?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          name?: string
+          notes?: string | null
+          organisation_id?: string
+          review_date?: string | null
+          site_id?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sfbb_documents_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sfbb_documents_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sfbb_system: {
+        Row: {
+          created_at: string
+          first_completed_at: string | null
+          id: string
+          last_reviewed_at: string | null
+          notes: string | null
+          organisation_id: string
+          review_reminder_dismissed_at: string | null
+          reviewed_by: string | null
+          reviewed_by_name: string | null
+          route: string
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_completed_at?: string | null
+          id?: string
+          last_reviewed_at?: string | null
+          notes?: string | null
+          organisation_id: string
+          review_reminder_dismissed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          route?: string
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_completed_at?: string | null
+          id?: string
+          last_reviewed_at?: string | null
+          notes?: string | null
+          organisation_id?: string
+          review_reminder_dismissed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          route?: string
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sfbb_system_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sfbb_system_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
