@@ -77,11 +77,8 @@ export function useReviews() {
   const lastComplete = (reviewsQ.data ?? []).find((r) => r.status === "complete") ?? null;
   const openReview = (reviewsQ.data ?? []).find((r) => r.status !== "complete") ?? null;
 
-  // Period start: the day after the last completed review, otherwise the
-  // earliest production day / 28-day window we can see. Existing customers
-  // start their first period today — nothing appears retroactively overdue.
-  const firstSeen = (reviewsQ.data ?? []).length === 0;
-
+  // Period start: the day after the last completed review, otherwise today —
+  // so existing customers never see retroactive overdue work.
   const productionDaysQ = useQuery<string[]>({
     queryKey: ["sfbb-review-production-days", siteId, lastComplete?.period_end ?? null],
     enabled: !!siteId && operatingMode === "on_demand",
