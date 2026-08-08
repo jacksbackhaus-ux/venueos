@@ -576,6 +576,22 @@ const TemperatureTracking = () => {
                     onKeyDown={(e) => e.key === "Enter" && foodItem.trim() && setProcessStep("keypad")}
                   />
                 </div>
+                {activeProcess?.type === "Cooking" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Safe time &amp; temperature used</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {COOK_TARGETS.map((c) => (
+                        <Button
+                          key={c.key} type="button" size="sm"
+                          variant={cookComboKey === c.key ? "default" : "outline"}
+                          onClick={() => setCookComboKey(c.key)}
+                        >
+                          {c.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {activeProcess && (
                   <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
                     Target: <span className="font-medium text-foreground">{processTargetLabel}</span>
