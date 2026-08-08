@@ -171,8 +171,12 @@ export function useReviews() {
     openReview,
     lastComplete,
     cadence,
-    /** True only when a review is genuinely due — never on a fresh account. */
-    isDue: cadence.due && !firstSeen ? true : cadence.due && !!lastComplete,
+    /**
+     * True only when a review is genuinely due. A brand-new site's first
+     * period starts today, so existing customers never see retroactive work.
+     */
+    isDue: cadence.due,
+
     startReview,
     saveReview,
   };
