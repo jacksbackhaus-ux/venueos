@@ -15,6 +15,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { showCommercialModules } from "@/lib/launchFlags";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RecallsTab } from "@/components/batches/RecallsTab";
+
+type BatchView = 'batches' | 'events' | 'recalls';
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
@@ -120,7 +123,7 @@ export default function Batches() {
   const [products, setProducts] = useState<BatchProduct[]>([]);
   const [costRecipes, setCostRecipes] = useState<RecipeWithCost[]>([]);
   const [filter, setFilter] = useState<'all' | 'attention' | 'active' | 'used' | 'disposed'>('all');
-  const [view, setView] = useState<'batches' | 'events'>('batches');
+  const [view, setView] = useState<BatchView>('batches');
   const [searchQuery, setSearchQuery] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -340,14 +343,25 @@ export default function Batches() {
     </div>
   );
 
-  const viewSwitcher = showEvents ? (
-    <Tabs value={view} onValueChange={(v) => setView(v as 'batches' | 'events')}>
+  const viewSwitcher = (
+    <Tabs value={view} onValueChange={(v) => setView(v as BatchView)}>
       <TabsList>
         <TabsTrigger value="batches">Batches</TabsTrigger>
-        <TabsTrigger value="events">Markets &amp; events</TabsTrigger>
+        {showEvents && <TabsTrigger value="events">Markets &amp; events</TabsTrigger>}
+        <TabsTrigger value="recalls">Withdrawals</TabsTrigger>
       </TabsList>
     </Tabs>
-  ) : null;
+  );
+
+  if (view === 'recalls') {
+    return (
+      <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto pb-16">
+        {moduleHeader}
+        {viewSwitcher}
+        <RecallsTab batchOptions={batchOptions} readOnly={!!isReadOnly} />
+      </div>
+    );
+  }
 
   if (showEvents && view === 'events') {
     return (

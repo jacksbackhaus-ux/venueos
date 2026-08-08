@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { COOK_COMBOS } from "@/lib/sfbb";
+import { ProbeCalibrationCard } from "@/components/temperature/ProbeCalibrationCard";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Thermometer, CheckCircle2, XCircle, Clock,
@@ -38,11 +41,13 @@ type TempLog = {
 
 type ProcessType = "Cooking" | "Reheating" | "Hot Holding" | "Cooling" | "Delivery";
 
+const COOK_TARGETS = COOK_COMBOS;
+
 const PROCESS_CHECKS: {
   type: ProcessType; label: string; icon: React.ElementType;
   color: string; min: number; max: number; target: string;
 }[] = [
-  { type: "Cooking",     label: "Cooking",     icon: Flame,      color: "bg-orange-100 text-orange-700 border-orange-200",  min: 75,  max: 200, target: "≥ 75°C core temp" },
+  { type: "Cooking",     label: "Cooking",     icon: Flame,      color: "bg-orange-100 text-orange-700 border-orange-200",  min: 60,  max: 200, target: "75°C for 30s (or equivalent)" },
   { type: "Reheating",   label: "Reheating",   icon: Flame,      color: "bg-red-100 text-red-700 border-red-200",           min: 75,  max: 200, target: "≥ 75°C core temp" },
   { type: "Hot Holding", label: "Hot Holding", icon: Wind,       color: "bg-amber-100 text-amber-700 border-amber-200",     min: 63,  max: 200, target: "≥ 63°C" },
   { type: "Cooling",     label: "Cooling",     icon: Snowflake,  color: "bg-blue-100 text-blue-700 border-blue-200",        min: -5,  max: 8,   target: "≤ 8°C within 90 min" },
@@ -86,6 +91,7 @@ const TemperatureTracking = () => {
   const [processTemp, setProcessTemp] = useState("");
   const [processStep, setProcessStep] = useState<"food" | "keypad" | "corrective" | "done">("food");
   const [processCorrectiveAction, setProcessCorrectiveAction] = useState("");
+  const [cookComboKey, setCookComboKey] = useState(COOK_COMBOS[1].key);
 
   const dayStart = new Date(`${selectedDate}T00:00:00`).toISOString();
   const dayEnd = new Date(new Date(`${selectedDate}T00:00:00`).getTime() + 86400000).toISOString();
@@ -172,8 +178,13 @@ const TemperatureTracking = () => {
 
   const processTempNum = parseFloat(processTemp);
   const activeProcess = PROCESS_CHECKS.find((p) => p.type === processDialog);
+  const cookCombo = COOK_COMBOS.find((c) => c.key === cookComboKey) ?? COOK_COMBOS[1];
+  // Cooking is judged against the chosen safe time/temperature combination —
+  // 80°C/6s through 60°C/45min are all equally safe.
+  const processMin = activeProcess?.type === "Cooking" ? cookCombo.temp : activeProcess?.min ?? 0;
   const processOutOfSpec = !isNaN(processTempNum) && activeProcess
-    ? processTempNum < activeProcess.min || processTempNum > activeProcess.max : false;
+    ? processTempNum < processMin || processTempNum > activeProcess.max : false;
+  const processTargetLabel = activeProcess?.type === "Cooking" ? cookCombo.label : activeProcess?.target ?? "";
 
   const handleProcessKey = (key: string) => {
     if (key === "backspace") { setProcessTemp((p) => p.slice(0, -1)); return; }
@@ -190,7 +201,10 @@ const TemperatureTracking = () => {
   const saveProcessLog = () => {
     if (!activeProcess || !foodItem.trim()) return;
     insertLog.mutate({
-      unit_id: null, food_item: foodItem.trim(),
+      unit_id: null,
+      food_item: activeProcess.type === "Cooking"
+        ? `${foodItem.trim()} (target ${cookCombo.label})`
+        : foodItem.trim(),
       value: processTempNum, pass: !processOutOfSpec,
       log_type: activeProcess.type,
       corrective_action: processCorrectiveAction || undefined,
@@ -502,6 +516,9 @@ const TemperatureTracking = () => {
         )}
       </div>
 
+      {/* Probe calibration ("prove it") */}
+      <ProbeCalibrationCard readOnly={!canEdit} />
+
       {/* Unit readings log */}
       {unitLogs.length > 0 && (
         <div className="space-y-2">
@@ -565,9 +582,25 @@ const TemperatureTracking = () => {
                     onKeyDown={(e) => e.key === "Enter" && foodItem.trim() && setProcessStep("keypad")}
                   />
                 </div>
+                {activeProcess?.type === "Cooking" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Safe time &amp; temperature used</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {COOK_TARGETS.map((c) => (
+                        <Button
+                          key={c.key} type="button" size="sm"
+                          variant={cookComboKey === c.key ? "default" : "outline"}
+                          onClick={() => setCookComboKey(c.key)}
+                        >
+                          {c.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {activeProcess && (
                   <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
-                    Target: <span className="font-medium text-foreground">{activeProcess.target}</span>
+                    Target: <span className="font-medium text-foreground">{processTargetLabel}</span>
                   </p>
                 )}
                 <Button className="w-full" disabled={!foodItem.trim()} onClick={() => setProcessStep("keypad")}>
@@ -588,7 +621,7 @@ const TemperatureTracking = () => {
                 </div>
                 {activeProcess && (
                   <p className="text-xs text-center text-muted-foreground">
-                    <span className="font-medium text-foreground">{foodItem}</span> · Target: {activeProcess.target}
+                    <span className="font-medium text-foreground">{foodItem}</span> · Target: {processTargetLabel}
                   </p>
                 )}
                 <div className="grid grid-cols-3 gap-2">
@@ -613,7 +646,7 @@ const TemperatureTracking = () => {
                   <XCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
                   <p className="text-2xl font-heading font-bold text-destructive">{processTempNum}°C</p>
                   <p className="text-sm text-destructive/80">
-                    {foodItem} — outside safe range for {activeProcess?.label} ({activeProcess?.target})
+                    {foodItem} — outside safe range for {activeProcess?.label} ({processTargetLabel})
                   </p>
                 </div>
                 <p className="text-sm font-semibold">What you did:</p>
