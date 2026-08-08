@@ -105,6 +105,13 @@ export interface ReportData {
   kitchenSetup: any | null;
   siteEvents: any[];
   productionDays: any[];
+  // SFBB evidence
+  reviews: any[];
+  processTempLogs: any[];
+  probeCalibrations: any[];
+  fitnessRecords: any[];
+  safeMethods: any[];
+  recalls: any[];
 }
 
 
@@ -161,6 +168,7 @@ export async function fetchReportData(
     trainingRecordsRes, trainingReqsRes,
     haccpPlansRes, ppmTasksRes, ppmCompletionsRes, wasteLogsRes,
     registrationRes, kitchenSetupRes, siteEventsRes, productionDaysRes,
+    reviewsRes, probeCalRes, fitnessRes, safeMethodsRes, recallsRes,
   ] = await Promise.all([
     supabase.from("sites").select("name, premises_type, operating_mode").eq("id", siteId).maybeSingle(),
 
@@ -189,6 +197,11 @@ export async function fetchReportData(
     supabase.from("site_kitchen_setup" as any).select("*").eq("site_id", siteId).maybeSingle(),
     supabase.from("site_events" as any).select("*").eq("site_id", siteId).gte("event_date", fromDate).lte("event_date", toDate).order("event_date", { ascending: false }),
     supabase.from("production_days" as any).select("*").eq("site_id", siteId).gte("production_date", fromDate).lte("production_date", toDate).order("production_date", { ascending: false }),
+    supabase.from("reviews" as any).select("*").eq("site_id", siteId).eq("status", "complete").order("period_end", { ascending: false }).limit(12),
+    supabase.from("probe_calibrations" as any).select("*").eq("site_id", siteId).order("calibrated_at", { ascending: false }).limit(24),
+    supabase.from("fitness_to_work" as any).select("*").eq("site_id", siteId).order("reported_date", { ascending: false }).limit(50),
+    supabase.from("safe_methods" as any).select("*").eq("site_id", siteId),
+    supabase.from("recalls" as any).select("*").eq("site_id", siteId).order("created_at", { ascending: false }).limit(50),
   ]);
 
 
@@ -469,6 +482,13 @@ export async function fetchReportData(
     kitchenSetup: (kitchenSetupRes as any)?.data ?? null,
     siteEvents: ((siteEventsRes as any)?.data ?? []) as any[],
     productionDays: ((productionDaysRes as any)?.data ?? []) as any[],
+    reviews: ((reviewsRes as any)?.data ?? []) as any[],
+    // Process checks are the food/process temp logs (no storage unit attached).
+    processTempLogs: (tempLogs ?? []).filter((t: any) => !t.unit_id),
+    probeCalibrations: ((probeCalRes as any)?.data ?? []) as any[],
+    fitnessRecords: ((fitnessRes as any)?.data ?? []) as any[],
+    safeMethods: ((safeMethodsRes as any)?.data ?? []) as any[],
+    recalls: ((recallsRes as any)?.data ?? []) as any[],
 
     pillars,
     overallScore,
