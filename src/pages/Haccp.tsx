@@ -1,4 +1,6 @@
 import { SEO } from "@/components/SEO";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SafeMethodsTab } from "@/components/haccp/SafeMethodsTab";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -257,6 +259,13 @@ export default function Haccp() {
         )}
       </motion.header>
 
+      <Tabs defaultValue="plans" className="space-y-4">
+        <TabsList className="grid grid-cols-2 w-full md:w-auto">
+          <TabsTrigger value="plans">Plans</TabsTrigger>
+          <TabsTrigger value="methods">Safe methods</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="plans">
       <Card>
         <CardContent className="p-0">
           {plansQ.isLoading ? (
@@ -327,6 +336,12 @@ export default function Haccp() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="methods">
+          <SafeMethodsTab canEdit={isSupervisorPlus} />
+        </TabsContent>
+      </Tabs>
 
       <NewPlanDialog
         open={newDialogOpen}
