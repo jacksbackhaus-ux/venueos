@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { computeReviewCadence } from "@/lib/sfbb";
 
 export type Severity = "critical" | "important" | "operational";
 
@@ -83,6 +84,8 @@ export function usePriorityFeed(
         trainingExpiringRes,
         shiftsTodayRes,
         batchesExpiredRes,
+        reviewsRes,
+        reviewProductionDaysRes,
       ] = await Promise.all([
         supabase.from("closed_days" as any).select("id").eq("site_id", siteId!).eq("closed_date", dateISO).maybeSingle(),
         supabase.from("closed_days" as any).select("closed_date").eq("site_id", siteId!).gte("closed_date", backWindowISO).lte("closed_date", dateISO),
@@ -97,6 +100,10 @@ export function usePriorityFeed(
           ? supabase.from("rota_assignments").select("id, start_time, end_time, position").eq("site_id", siteId!).eq("shift_date", dateISO).eq("user_id", currentUserId).is("cancelled_at", null)
           : Promise.resolve({ data: [] as any[] }),
         supabase.from("batches").select("id, product_name, use_by_date").eq("site_id", siteId!).neq("status", "disposed").lt("use_by_date", dateISO).limit(5),
+        supabase.from("reviews" as any).select("id, status, period_start, period_end").eq("site_id", siteId!).order("period_end", { ascending: false }).limit(10),
+        onDemand
+          ? supabase.from("production_days" as any).select("production_date").eq("site_id", siteId!)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
 
       if ((closedDayRes as any)?.data) return [];
@@ -241,6 +248,35 @@ export function usePriorityFeed(
           rank: 7,
         });
       });
+
+      // 🟠 SFBB periodic review due — one consolidated, never-spammy item.
+      // Only fires once a first period exists, so nothing appears retroactively.
+      {
+        const reviewRows = ((reviewsRes as any)?.data ?? []) as any[];
+        const lastComplete = reviewRows.find((r) => r.status === "complete") ?? null;
+        const openReview = reviewRows.find((r) => r.status !== "complete") ?? null;
+        const periodStart = openReview?.period_start ?? lastComplete?.period_end ?? null;
+        if (periodStart) {
+          const cadence = computeReviewCadence({
+            mode: onDemand ? "on_demand" : "scheduled",
+            periodStartISO: periodStart,
+            productionDates: (((reviewProductionDaysRes as any)?.data ?? []) as any[])
+              .map((r) => r.production_date as string),
+            todayISO: dateISO,
+          });
+          if (cadence.due) {
+            items.push({
+              id: "sfbb-review-due",
+              severity: "important",
+              title: `Your ${cadence.reviewLabel} is due`,
+              subtitle: "Takes a few minutes — even when nothing has gone wrong",
+              href: "/compliance",
+              actionLabel: "Start review",
+              rank: 4,
+            });
+          }
+        }
+      }
 
       items.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || a.rank - b.rank);
 
