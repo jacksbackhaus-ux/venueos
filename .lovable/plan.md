@@ -1,86 +1,75 @@
+# SFBB compliance completion
 
-# MiseOS HACCP Launch — Implementation Plan
+## What the modules already support (inspected)
 
-Massive but additive change. Nothing deleted; everything non-HACCP hidden behind a single feature flag. HACCP/compliance logic, auth, internal staff console, and DB schemas remain untouched.
+**Temperatures** (`src/pages/TemperatureTracking.tsx`, `temp_logs` / `temp_units`)
+- Already has storage checks (fridge/freezer units, AM/PM/Spot smart check type, min/max pass/fail, corrective-action step, retrospective tagging).
+- Already has a **Food & Process Checks** section with Cooking, Reheating, Hot Holding, Cooling and Delivery, each with food item, keypad reading, pass/fail vs target and corrective action. These are stored in `temp_logs` with `unit_id = null` and `log_type` = process name.
+- Missing: safe **time/temp combinations** for cooking (only a flat ≥75°C target), and **probe calibration** records entirely.
 
-## 1. Central feature flag
+**HACCP Plan** (`src/pages/Haccp.tsx`, `haccp_plans` / `haccp_steps`)
+- Covers the 7 HACCP principles (hazards, CCPs, critical limits, monitoring, corrective actions, verification, records) as free-text steps.
+- Does **not** capture the SFBB safe-method set (cross-contamination, cleaning, chilling, cooking, management) nor a Safe Method Completion Record. This is a genuine gap, so it becomes a second tab in the existing HACCP page rather than a new module.
 
-Create `src/lib/launchFlags.ts`:
-- `LAUNCH_MODE = "haccp"` (single source of truth)
-- `showAIFeatures = false`
-- `showCommercialModules = false` (shifts, timesheets, batches, waste, cost-margin, tips, sales)
-- `showMultiSiteHQ = false`
-- `VISIBLE_MODULES` set used by sidebar + module guards
-- `isModuleVisible(slug)` helper
+**Compliance Overview** (`src/pages/Compliance.tsx`) — readiness hero + quick actions, no tabs yet; the Reviews card slots in here.
+**Batches** (`src/pages/Batches.tsx`) — already tabbed (Batches / Markets & events) with a batch action system; recall becomes an action plus a third tab.
+**Staff Training** (`src/pages/StaffTraining.tsx`) — 3 tabs (Team / Individual / Trainings); Fitness to work becomes a fourth tab.
+**Inspection Pack** (`src/lib/reports.ts` → `reportPdf.ts`) — already premises-aware with registration, kitchen setup, production days and site events; new sections append to the same fetch + PDF.
 
-Hidden modules: shifts, timesheets, batches, waste-log, cost-margin, tip-tracker, sales, hq, plus AI widgets.
-Visible: dashboard, day-sheet, temperatures, cleaning, compliance, haccp, allergens, suppliers, incidents, pest-maintenance, ppm, staff-training, customer-feedback, reports (inspection pack), messenger, settings.
+## Schema (additive only)
 
-Internal staff console + impersonation bypass the flag entirely (already a separate layout).
+| Table | Purpose |
+|---|---|
+| `reviews` | periodic SFBB review: period_start/end, production_days_covered, status, problems_observed, problems_detail, action_taken, checklist jsonb, completed_by/at |
+| `probe_calibrations` | probe_name, iced_water_reading, boiling_water_reading, pass, calibrated_by/at, notes |
+| `fitness_to_work` | staff_name/user_id, reported_date, symptoms, excluded_from, cleared_to_return, status, notes, recorded_by |
+| `safe_methods` | site_id, method_key, category, status ('to_do' \| 'documented' \| 'not_relevant'), how_text, updated_by/at (unique per site+key) |
+| `recalls` | item_type, item_ref, reason, source, affected_batch_ids jsonb, action_taken, customers_informed, recorded_by |
 
-## 2. Stripe products & pricing
+Each table: site + org scoping, GRANTs, RLS via the existing `has_site_access` / `has_site_write_access` helpers, `created_at`/`updated_at` with the existing touch trigger. Nothing existing is altered. Process temp checks reuse `temp_logs` — no new table.
 
-Archive old products by leaving them in place; create new product `miseos_haccp` with 4 prices via `payments--batch_create_product`:
-- `miseos_haccp_site_monthly` £4.99/mo
-- `miseos_haccp_site_annual` £49.90/yr
-- `miseos_haccp_user_monthly` £1/mo (quantity = additional users)
-- `miseos_haccp_user_annual` £10/yr
+## Part 1 — Periodic review
 
-Update `supabase/functions/create-checkout/index.ts` to accept the new plan id `haccp` and create a checkout session with two line items (site + user qty). Keep legacy plan keys mapped so existing customers keep renewing on their old subs.
+- New `Reviews` card at the bottom of Compliance Overview: current period status, "Start review" / "Continue", and a list of completed reviews (date + who).
+- Cadence in a new `src/lib/reviewCadence.ts`: scheduled → 4 calendar weeks from the last completed review (or from site creation); on_demand → 20 production days counted from `production_days`, or 3 months elapsed, whichever hits first. Non-production and closed days simply do not count toward the 20.
+- Review sheet: the 13 SFBB questions as yes/no + optional note, plus problems observed / detail / action taken. Completable with zero problems in a few taps.
+- Priority feed: **one** consolidated item "Your 4-weekly review is due" (worded "periodic review" for on_demand), grouped like existing items so it never duplicates; dismissible for the day.
+- Backfill safety: for existing sites the first period starts at the migration date, so nothing is retroactively overdue.
 
-## 3. Customer migration (non-destructive)
+## Part 2 — Process temps + probe calibration
 
-Migration: add `tier = 'haccp'` (extend `TierId`) and set `subscriptions.tier = 'haccp'` for all currently-active orgs that have any access. Preserve trial_end, current_period_end, stripe ids, billing history. No charges, no deletions.
+- Extend the existing Cooking process dialog with the safe time/temp combos (80°C/6s, 75°C/30s, 70°C/2min, 65°C/10min, 60°C/45min) — chosen combo determines pass/fail and is stored in the existing `corrective_action`/note path plus food item text. No new process types needed; the other four already exist.
+- New collapsible "Probe calibration" card on the Temperatures page: iced-water and boiling-water readings, auto pass (-1…1 / 99…101), optional probe name and notes, plus a history list.
+- Gentle single dismissible reminder if no calibration in the last month (Compliance/dashboard item, never a failure).
+- Irrelevant process types stay visible but are never counted as missing.
 
-## 4. Plans/tier code
+## Part 3 — Fitness to work
 
-- `src/lib/plans.ts`: add `haccp` tier with allowedModules = VISIBLE_MODULES.
-- `src/hooks/useOrgAccess.tsx`: map `haccp` tier to a `PlanState` granting compliance modules.
-- `src/hooks/useModuleAccess.tsx`: gate by `isModuleVisible` when LAUNCH_MODE = haccp.
+- Fourth tab in Staff Training: "Fitness to work". Records list, "Report illness" sheet (staff picker or free-text name, symptoms, excluded from date), and "Mark cleared to return" with `symptom end + 48h` auto-suggested.
+- Low profile for single-user sites: tab still present, empty state explains the 48-hour rule.
 
-## 5. Roles
+## Part 4 — Documented safe methods
 
-Add `useEffectiveRole` mapping: `owner` → Owner/Admin, anything else (`supervisor`, `read_only`) → treated as Owner if customer-set; `staff` stays Staff. Hidden roles preserved in DB enums and code. UI invite form shows only Owner/Staff but accepts legacy values.
+- Second tab inside the HACCP page: "Safe methods", grouped by the five SFBB categories, each method a row with status chip and a sheet holding "How do you do this?".
+- Completion overview bar (documented / not relevant / to do) mirroring SFBB's completion record.
+- Premises-aware default set from `src/lib/premises.ts`: home/mobile get a leaner relevant list (acrylamide offered for bakery, hot holding available but not suggested); commercial/production get the full set. Rows start as "to do" and are never treated as failures or scored.
 
-## 6. Navigation / Dashboard
+## Part 5 — Product withdrawal & recall
 
-- `AppSidebar.tsx`: filter items by `isModuleVisible`.
-- `More.tsx`: same filter.
-- `App.tsx`: keep all routes (so re-enabling flag works); just hide from nav.
-- `Dashboard.tsx`: hide `ProfitSnapshot`, AI widgets when flag off; keep SafeToTrade, PriorityFeed, Today, ThisWeek.
+- "Flag for withdrawal/recall" added to the existing batch action menu, plus a "Recalls" tab in Batch & Traceability for ingredient/product-level records.
+- Recall sheet: reason, source, affected batches (pre-filled from the batch, otherwise multi-select; ingredient-linked batches suggested via existing recipe/ingredient links), action taken, customers informed toggle.
 
-## 7. Account & Billing
+## Part 6 — Inspection Pack
 
-`SitesBillingSection.tsx` (and Account.tsx): show MiseOS HACCP card with site count × £4.99 + extra users × £1, monthly/annual toggle, cancel-at-period-end, carbon pledge line. Hide old tier upgrade UI behind flag.
+`fetchReportData` gains parallel fetches for reviews, process temp logs, probe calibrations, fitness-to-work, safe methods and recalls; `reportPdf.ts` gains six sections after the existing evidence, worded per premises type (production/trading day framing for home & mobile, daily for commercial/production). Per site, never combined. New sections omit themselves when empty so existing customers' packs look unchanged.
 
-## 8. Landing + Pricing pages
+## Technical notes
 
-Rewrite `src/pages/Landing.tsx` and `src/pages/Pricing.tsx` to HACCP positioning, single plan, FAQ, carbon pledge. Remove AI/Margin/Sales copy.
+- One migration for the five tables; no changes to billing, auth, routing, or staff-console tables.
+- No new routes or nav entries: Reviews → `/compliance`, probe calibration → `/temperatures`, fitness to work → `/staff-training`, safe methods → `/haccp`, recalls → `/batches`.
+- Reminders route through the existing `usePriorityFeed` grouping and the existing `promptDismissed`/`dismissPrompt` helpers.
+- Scoring in `reports.ts` stays untouched, so no score regressions.
 
-## 9. AI hiding
+## Known friction
 
-Wrap `MorningBriefingCard`, `SalesInsightsCard`, `MarginWatchdogCard`, `CashflowInsightsCard`, `WasteInsightStrip`, `AIRotaSuggestButton`, `SmartRotaPanel`, smart-fill, AI narrative buttons in `{showAIFeatures && ...}`. Server functions untouched.
-
-## 10. Verification
-
-- HACCP module files not edited.
-- Auth files not edited.
-- Staff console (`src/pages/staff/*`, `StaffLayout`) not edited.
-- Re-enabling flag (`LAUNCH_MODE = "full"`) restores prior UI.
-
-## Technical notes (for engineers)
-
-- Single flag file imported wherever modules are listed.
-- DB migration: `ALTER TYPE` for tier enum if it's a Postgres enum, else just a text value; mark old subs with `tier='haccp'` only for currently-trialing/active rows (don't touch canceled history).
-- Stripe webhook (`payments-webhook`) already writes `tier` from price metadata; add `miseos_haccp_*` lookup keys → `tier='haccp'`.
-- Quantity on `miseos_haccp_user_*` line item = `max(0, total_users - 1)`.
-
-## Out of scope (explicit)
-
-- No edits to: HACCP plan, day sheet, temperatures, cleaning, allergens, suppliers, incidents, pest, PPM, training, feedback, inspection pack, messenger, auth, branded login, staff console, impersonation, multi-site data model.
-
-## Risk
-
-This touches ~25 files in one go. I'll batch edits and avoid HACCP/auth/staff paths. Stripe products created in sandbox; user must approve DB migration before it runs.
-
-Approve to proceed and I'll execute end-to-end.
+- Recall from an *ingredient* requires the user to confirm affected batches when no recipe→batch link exists — a multi-select step is unavoidable for a truthful traceability record.
