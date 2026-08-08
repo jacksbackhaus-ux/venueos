@@ -38,6 +38,8 @@ type TempLog = {
 
 type ProcessType = "Cooking" | "Reheating" | "Hot Holding" | "Cooling" | "Delivery";
 
+const COOK_TARGETS = COOK_COMBOS;
+
 const PROCESS_CHECKS: {
   type: ProcessType; label: string; icon: React.ElementType;
   color: string; min: number; max: number; target: string;
@@ -86,6 +88,7 @@ const TemperatureTracking = () => {
   const [processTemp, setProcessTemp] = useState("");
   const [processStep, setProcessStep] = useState<"food" | "keypad" | "corrective" | "done">("food");
   const [processCorrectiveAction, setProcessCorrectiveAction] = useState("");
+  const [cookComboKey, setCookComboKey] = useState(COOK_COMBOS[1].key);
 
   const dayStart = new Date(`${selectedDate}T00:00:00`).toISOString();
   const dayEnd = new Date(new Date(`${selectedDate}T00:00:00`).getTime() + 86400000).toISOString();
@@ -172,8 +175,13 @@ const TemperatureTracking = () => {
 
   const processTempNum = parseFloat(processTemp);
   const activeProcess = PROCESS_CHECKS.find((p) => p.type === processDialog);
+  const cookCombo = COOK_COMBOS.find((c) => c.key === cookComboKey) ?? COOK_COMBOS[1];
+  // Cooking is judged against the chosen safe time/temperature combination —
+  // 80°C/6s through 60°C/45min are all equally safe.
+  const processMin = activeProcess?.type === "Cooking" ? cookCombo.temp : activeProcess?.min ?? 0;
   const processOutOfSpec = !isNaN(processTempNum) && activeProcess
-    ? processTempNum < activeProcess.min || processTempNum > activeProcess.max : false;
+    ? processTempNum < processMin || processTempNum > activeProcess.max : false;
+  const processTargetLabel = activeProcess?.type === "Cooking" ? cookCombo.label : activeProcess?.target ?? "";
 
   const handleProcessKey = (key: string) => {
     if (key === "backspace") { setProcessTemp((p) => p.slice(0, -1)); return; }
@@ -190,7 +198,10 @@ const TemperatureTracking = () => {
   const saveProcessLog = () => {
     if (!activeProcess || !foodItem.trim()) return;
     insertLog.mutate({
-      unit_id: null, food_item: foodItem.trim(),
+      unit_id: null,
+      food_item: activeProcess.type === "Cooking"
+        ? `${foodItem.trim()} (target ${cookCombo.label})`
+        : foodItem.trim(),
       value: processTempNum, pass: !processOutOfSpec,
       log_type: activeProcess.type,
       corrective_action: processCorrectiveAction || undefined,
@@ -567,7 +578,7 @@ const TemperatureTracking = () => {
                 </div>
                 {activeProcess && (
                   <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
-                    Target: <span className="font-medium text-foreground">{activeProcess.target}</span>
+                    Target: <span className="font-medium text-foreground">{processTargetLabel}</span>
                   </p>
                 )}
                 <Button className="w-full" disabled={!foodItem.trim()} onClick={() => setProcessStep("keypad")}>
@@ -588,7 +599,7 @@ const TemperatureTracking = () => {
                 </div>
                 {activeProcess && (
                   <p className="text-xs text-center text-muted-foreground">
-                    <span className="font-medium text-foreground">{foodItem}</span> · Target: {activeProcess.target}
+                    <span className="font-medium text-foreground">{foodItem}</span> · Target: {processTargetLabel}
                   </p>
                 )}
                 <div className="grid grid-cols-3 gap-2">
@@ -613,7 +624,7 @@ const TemperatureTracking = () => {
                   <XCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
                   <p className="text-2xl font-heading font-bold text-destructive">{processTempNum}°C</p>
                   <p className="text-sm text-destructive/80">
-                    {foodItem} — outside safe range for {activeProcess?.label} ({activeProcess?.target})
+                    {foodItem} — outside safe range for {activeProcess?.label} ({processTargetLabel})
                   </p>
                 </div>
                 <p className="text-sm font-semibold">What you did:</p>
