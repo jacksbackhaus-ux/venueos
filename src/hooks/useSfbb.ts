@@ -333,8 +333,12 @@ export interface SafeMethodRow {
   id: string;
   method_key: string;
   category: string;
-  status: SafeMethodStatus;
+  status: string;
   how_text: string | null;
+  responses: Record<string, any> | null;
+  notes: string | null;
+  completed_at: string | null;
+  completed_by_name: string | null;
   updated_by_name: string | null;
   updated_at: string;
 }
@@ -358,16 +362,28 @@ export function useSafeMethods() {
 
   const save = useMutation({
     mutationFn: async (vars: {
-      method_key: string; category: string; status: SafeMethodStatus; how_text?: string | null;
+      method_key: string;
+      category: string;
+      status: string;
+      responses?: Record<string, any> | null;
+      notes?: string | null;
+      /** Legacy single free-text field, still written for older records. */
+      how_text?: string | null;
     }) => {
       if (!siteId || !orgId) throw new Error("No site");
+      const completed = vars.status === "completed" || vars.status === "documented";
       const { error } = await supabase.from("safe_methods" as never).upsert({
         site_id: siteId,
         organisation_id: orgId,
         method_key: vars.method_key,
         category: vars.category,
         status: vars.status,
+        responses: vars.responses ?? {},
+        notes: vars.notes?.trim() || null,
         how_text: vars.how_text?.trim() || null,
+        completed_at: completed ? new Date().toISOString() : null,
+        completed_by: completed ? userId : null,
+        completed_by_name: completed ? userName : null,
         updated_by: userId,
         updated_by_name: userName,
       } as never, { onConflict: "site_id,method_key" } as never);
@@ -381,6 +397,155 @@ export function useSafeMethods() {
 
   return { rows: q.data ?? [], byKey, isLoading: q.isLoading, save };
 }
+
+// ──────────────────────────────────────────────────────────────────
+// FOOD SAFETY MANAGEMENT SYSTEM (route + review dates)
+// ──────────────────────────────────────────────────────────────────
+
+export type SfbbRoute = "undecided" | "in_app" | "uploaded" | "both";
+
+export interface SfbbSystemRow {
+  id: string;
+  site_id: string;
+  route: SfbbRoute;
+  first_completed_at: string | null;
+  last_reviewed_at: string | null;
+  reviewed_by_name: string | null;
+  review_reminder_dismissed_at: string | null;
+  notes: string | null;
+}
+
+export function useSfbbSystem() {
+  const qc = useQueryClient();
+  const { siteId, orgId, userId, userName } = useActor();
+
+  const q = useQuery<SfbbSystemRow | null>({
+    queryKey: ["sfbb-system", siteId],
+    enabled: !!siteId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sfbb_system" as never)
+        .select("*")
+        .eq("site_id", siteId!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as unknown as SfbbSystemRow | null;
+    },
+  });
+
+  const update = useMutation({
+    mutationFn: async (patch: Partial<SfbbSystemRow> & { markReviewed?: boolean }) => {
+      if (!siteId || !orgId) throw new Error("No site");
+      const { markReviewed, ...rest } = patch;
+      const row: Record<string, any> = { site_id: siteId, organisation_id: orgId, ...rest };
+      if (markReviewed) {
+        row.last_reviewed_at = new Date().toISOString().slice(0, 10);
+        row.reviewed_by = userId;
+        row.reviewed_by_name = userName;
+      }
+      const { error } = await supabase
+        .from("sfbb_system" as never)
+        .upsert(row as never, { onConflict: "site_id" } as never);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sfbb-system", siteId] }),
+  });
+
+  return { system: q.data ?? null, isLoading: q.isLoading, update };
+}
+
+// ──────────────────────────────────────────────────────────────────
+// UPLOADED SFBB PACK DOCUMENTS
+// ──────────────────────────────────────────────────────────────────
+
+export interface SfbbDocumentRow {
+  id: string;
+  site_id: string;
+  name: string;
+  storage_path: string;
+  mime_type: string | null;
+  file_size: number | null;
+  date_completed: string | null;
+  review_date: string | null;
+  notes: string | null;
+  uploaded_by_name: string | null;
+  created_at: string;
+}
+
+export const SFBB_BUCKET = "sfbb-packs";
+
+export function useSfbbDocuments() {
+  const qc = useQueryClient();
+  const { siteId, orgId, userId, userName } = useActor();
+
+  const q = useQuery<SfbbDocumentRow[]>({
+    queryKey: ["sfbb-documents", siteId],
+    enabled: !!siteId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sfbb_documents" as never)
+        .select("*")
+        .eq("site_id", siteId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as SfbbDocumentRow[];
+    },
+  });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["sfbb-documents", siteId] });
+    qc.invalidateQueries({ queryKey: ["sfbb-system", siteId] });
+  };
+
+  const upload = useMutation({
+    mutationFn: async (vars: {
+      file: File; name: string; date_completed?: string | null;
+      review_date?: string | null; notes?: string | null;
+    }) => {
+      if (!siteId || !orgId) throw new Error("No site");
+      const ext = vars.file.name.split(".").pop()?.toLowerCase() ?? "pdf";
+      const path = `${siteId}/${crypto.randomUUID()}.${ext}`;
+      const up = await supabase.storage.from(SFBB_BUCKET).upload(path, vars.file, {
+        contentType: vars.file.type || undefined,
+        upsert: false,
+      });
+      if (up.error) throw up.error;
+
+      const { error } = await supabase.from("sfbb_documents" as never).insert({
+        site_id: siteId,
+        organisation_id: orgId,
+        name: vars.name.trim() || vars.file.name,
+        storage_path: path,
+        mime_type: vars.file.type || null,
+        file_size: vars.file.size,
+        date_completed: vars.date_completed || null,
+        review_date: vars.review_date || null,
+        notes: vars.notes?.trim() || null,
+        uploaded_by: userId,
+        uploaded_by_name: userName,
+      } as never);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationFn: async (doc: SfbbDocumentRow) => {
+      await supabase.storage.from(SFBB_BUCKET).remove([doc.storage_path]);
+      const { error } = await supabase.from("sfbb_documents" as never).delete().eq("id", doc.id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+  });
+
+  async function signedUrl(path: string): Promise<string | null> {
+    const { data } = await supabase.storage.from(SFBB_BUCKET).createSignedUrl(path, 60 * 10);
+    return data?.signedUrl ?? null;
+  }
+
+  return { docs: q.data ?? [], isLoading: q.isLoading, upload, remove, signedUrl };
+}
+
 
 // ──────────────────────────────────────────────────────────────────
 // RECALLS
