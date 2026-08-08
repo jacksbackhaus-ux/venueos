@@ -1548,6 +1548,75 @@ export type Database = {
           },
         ]
       }
+      fitness_to_work: {
+        Row: {
+          cleared_to_return: string | null
+          created_at: string
+          excluded_from: string | null
+          id: string
+          notes: string | null
+          organisation_id: string
+          recorded_by: string | null
+          recorded_by_name: string | null
+          reported_date: string
+          site_id: string
+          staff_name: string
+          status: string
+          symptoms: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          cleared_to_return?: string | null
+          created_at?: string
+          excluded_from?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          reported_date?: string
+          site_id: string
+          staff_name: string
+          status?: string
+          symptoms?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          cleared_to_return?: string | null
+          created_at?: string
+          excluded_from?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          reported_date?: string
+          site_id?: string
+          staff_name?: string
+          status?: string
+          symptoms?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fitness_to_work_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fitness_to_work_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       haccp_plans: {
         Row: {
           created_at: string
@@ -3303,6 +3372,66 @@ export type Database = {
           },
         ]
       }
+      probe_calibrations: {
+        Row: {
+          boiling_water_reading: number
+          calibrated_at: string
+          calibrated_by: string | null
+          calibrated_by_name: string | null
+          created_at: string
+          iced_water_reading: number
+          id: string
+          notes: string | null
+          organisation_id: string
+          pass: boolean
+          probe_name: string | null
+          site_id: string
+        }
+        Insert: {
+          boiling_water_reading: number
+          calibrated_at?: string
+          calibrated_by?: string | null
+          calibrated_by_name?: string | null
+          created_at?: string
+          iced_water_reading: number
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          pass: boolean
+          probe_name?: string | null
+          site_id: string
+        }
+        Update: {
+          boiling_water_reading?: number
+          calibrated_at?: string
+          calibrated_by?: string | null
+          calibrated_by_name?: string | null
+          created_at?: string
+          iced_water_reading?: number
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          pass?: boolean
+          probe_name?: string | null
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "probe_calibrations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "probe_calibrations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_days: {
         Row: {
           completed_at: string | null
@@ -3438,6 +3567,72 @@ export type Database = {
           },
           {
             foreignKeyName: "push_devices_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recalls: {
+        Row: {
+          action_taken: string | null
+          affected_batch_ids: Json
+          created_at: string
+          customers_informed: boolean
+          id: string
+          item_ref: string
+          item_type: string
+          organisation_id: string
+          reason: string
+          recorded_by: string | null
+          recorded_by_name: string | null
+          site_id: string
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_taken?: string | null
+          affected_batch_ids?: Json
+          created_at?: string
+          customers_informed?: boolean
+          id?: string
+          item_ref: string
+          item_type: string
+          organisation_id: string
+          reason: string
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          site_id: string
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_taken?: string | null
+          affected_batch_ids?: Json
+          created_at?: string
+          customers_informed?: boolean
+          id?: string
+          item_ref?: string
+          item_type?: string
+          organisation_id?: string
+          reason?: string
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          site_id?: string
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recalls_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recalls_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
@@ -3665,6 +3860,78 @@ export type Database = {
           },
         ]
       }
+      reviews: {
+        Row: {
+          action_taken: string | null
+          checklist: Json
+          completed_at: string | null
+          completed_by: string | null
+          completed_by_name: string | null
+          created_at: string
+          id: string
+          organisation_id: string
+          period_end: string
+          period_start: string
+          problems_detail: string | null
+          problems_observed: boolean
+          production_days_covered: number | null
+          site_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_taken?: string | null
+          checklist?: Json
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          id?: string
+          organisation_id: string
+          period_end: string
+          period_start: string
+          problems_detail?: string | null
+          problems_observed?: boolean
+          production_days_covered?: number | null
+          site_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_taken?: string | null
+          checklist?: Json
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          period_end?: string
+          period_start?: string
+          problems_detail?: string | null
+          problems_observed?: boolean
+          production_days_covered?: number | null
+          site_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rota_assignment_tasks: {
         Row: {
           created_at: string
@@ -3858,6 +4125,63 @@ export type Database = {
           },
           {
             foreignKeyName: "rota_audit_trail_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safe_methods: {
+        Row: {
+          category: string
+          created_at: string
+          how_text: string | null
+          id: string
+          method_key: string
+          organisation_id: string
+          site_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          how_text?: string | null
+          id?: string
+          method_key: string
+          organisation_id: string
+          site_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          how_text?: string | null
+          id?: string
+          method_key?: string
+          organisation_id?: string
+          site_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safe_methods_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safe_methods_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
