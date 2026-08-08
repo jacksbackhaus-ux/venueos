@@ -616,7 +616,7 @@ export default function StaffTraining() {
         {/* ---------------- FITNESS TO WORK (SFBB 48-hour rule) ---------------- */}
         {!isStaffOnly && (
           <TabsContent value="fitness" className="space-y-4">
-            <FitnessToWorkTab readOnly={!canManage} />
+            <FitnessToWorkTab readOnly={!isManager} />
           </TabsContent>
         )}
       </Tabs>
