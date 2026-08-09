@@ -268,6 +268,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthRedirect />} />
+      <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
       <Route path="/staff-login" element={<StaffLogin />} />
       {/* Alias — internal MiseOS employees only. Same component as /staff-login. */}
       <Route path="/internal-login" element={<StaffLogin />} />
