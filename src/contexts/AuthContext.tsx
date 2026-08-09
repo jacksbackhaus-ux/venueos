@@ -104,7 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // /onboarding when their row had any other auth_type set.
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        // Explicit column list — sensitive columns (hourly_rate, staff_code)
+        // are column-level revoked and must be read via controlled RPCs.
+        .select('id, auth_user_id, organisation_id, display_name, email, auth_type, status, created_at, last_login_at, deactivated_at, deactivated_by')
         .eq('auth_user_id', authUserId)
         .eq('status', 'active')
         .order('created_at', { ascending: true })
