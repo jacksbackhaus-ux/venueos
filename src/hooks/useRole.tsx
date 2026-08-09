@@ -14,11 +14,22 @@ export type EffectiveRole = 'manager' | 'supervisor' | 'staff' | 'read_only' | '
  */
 export function useRole() {
   const { orgRole, staffSession } = useAuth();
-  const { currentMembership } = useSite();
+  const { currentMembership, memberships } = useSite();
 
   // Server-sourced membership role takes priority over the client-stored
   // staff session role to avoid client-side privilege escalation.
-  const siteRole = currentMembership?.site_role || staffSession?.site_role || null;
+  // When no site is selected yet (multi-site users land on All Sites first),
+  // fall back to the strongest role the user holds across their memberships so
+  // they aren't locked out of the site-agnostic HQ view.
+  const bestAcrossSites =
+    memberships.some((m) => m.site_role === 'owner')
+      ? 'owner'
+      : memberships.some((m) => m.site_role === 'supervisor')
+        ? 'supervisor'
+        : null;
+  const siteRole =
+    currentMembership?.site_role || staffSession?.site_role || bestAcrossSites || null;
+
   const orgRoleName = orgRole?.org_role || null;
 
   // Resolve the effective role
