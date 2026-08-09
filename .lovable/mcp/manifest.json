@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://elcmnvgbmzusogudpenp.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "miseos",
+      "version": "0.1.0",
+      "title": "MiseOS"
+    },
+    "tools": [
+      {
+        "name": "list_sites",
+        "title": "List sites",
+        "description": "List the MiseOS sites (premises) the signed-in user can access, with premises type and operating mode.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_temperature_units",
+        "title": "List temperature units",
+        "description": "List the fridges, freezers and other monitored units for a site, with their pass/fail temperature range.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "site_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Site id from list_sites."
+            }
+          },
+          "required": [
+            "site_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_temperature_logs",
+        "title": "List temperature logs",
+        "description": "List recent temperature readings for a site, newest first, including whether each reading passed.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "site_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Site id from list_sites."
+            },
+            "days": {
+              "type": "integer",
+              "description": "How many days back to look. Defaults to 7, max 90."
+            },
+            "only_failures": {
+              "type": "boolean",
+              "description": "Return only readings that failed."
+            }
+          },
+          "required": [
+            "site_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "log_temperature",
+        "title": "Log a temperature reading",
+        "description": "Record a temperature reading for a site. Pass/fail is derived from the unit's range when a unit_id is given.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "site_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Site id from list_sites."
+            },
+            "value": {
+              "type": "number",
+              "description": "Temperature in degrees Celsius."
+            },
+            "unit_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Monitored unit id from list_temperature_units."
+            },
+            "log_type": {
+              "type": "string",
+              "description": "Reading type, e.g. unit, cooking, reheating, hot_holding, cooling, delivery."
+            },
+            "food_item": {
+              "type": "string",
+              "description": "Food item the reading relates to, for process checks."
+            },
+            "corrective_action": {
+              "type": "string",
+              "description": "Action taken if the reading failed."
+            },
+            "logged_by_name": {
+              "type": "string",
+              "description": "Who took the reading. Defaults to the signed-in user."
+            }
+          },
+          "required": [
+            "site_id",
+            "value"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_incidents",
+        "title": "List incidents",
+        "description": "List food safety incidents and non-conformances for a site, newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "site_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Site id from list_sites."
+            },
+            "status": {
+              "type": "string",
+              "description": "Filter by status, e.g. open or closed."
+            }
+          },
+          "required": [
+            "site_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_incident",
+        "title": "Report an incident",
+        "description": "Report a food safety incident or non-conformance for a site. Creates an open incident record.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "site_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Site id from list_sites."
+            },
+            "title": {
+              "type": "string",
+              "description": "Short summary of what happened."
+            },
+            "description": {
+              "type": "string",
+              "description": "What happened, in detail."
+            },
+            "immediate_action": {
+              "type": "string",
+              "description": "What was done straight away to make things safe."
+            },
+            "type": {
+              "type": "string",
+              "description": "Incident type, e.g. temperature, pest, allergen, equipment, other."
+            },
+            "root_cause": {
+              "type": "string",
+              "description": "Root cause, if already known."
+            },
+            "prevention": {
+              "type": "string",
+              "description": "How a repeat will be prevented."
+            }
+          },
+          "required": [
+            "site_id",
+            "title",
+            "description",
+            "immediate_action"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_batches",
+        "title": "List production batches",
+        "description": "List recent production batches for a site, newest first, with batch code, product, quantity and use-by date.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "site_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Site id from list_sites."
+            },
+            "days": {
+              "type": "integer",
+              "description": "How many days back to look. Defaults to 14, max 180."
+            }
+          },
+          "required": [
+            "site_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
