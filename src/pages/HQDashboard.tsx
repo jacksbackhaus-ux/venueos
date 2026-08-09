@@ -126,7 +126,7 @@ export default function AllSitesOverview() {
 
     const { data: sitesData } = await supabase
       .from("sites")
-      .select("id, name, address, active")
+      .select("id, name, address, active, operating_mode")
       .in(
         "id",
         Array.from(accessibleIds).length
@@ -233,13 +233,26 @@ export default function AllSitesOverview() {
       ]);
 
       // Closed-day exemption for compliance and attention feed.
-      const { data: closedToday } = await supabase
-        .from("closed_days")
-        .select("id")
-        .eq("site_id", site.id)
-        .eq("closed_date", todayIso)
-        .maybeSingle();
-      const isClosedToday = !!closedToday;
+      // On-demand sites (home / mobile) are only "operating" on a declared
+      // production day — otherwise nothing is due and nothing may fail.
+      const isOnDemand = (site as any).operating_mode === "on_demand";
+      const [{ data: closedToday }, { data: prodToday }] = await Promise.all([
+        supabase
+          .from("closed_days")
+          .select("id")
+          .eq("site_id", site.id)
+          .eq("closed_date", todayIso)
+          .maybeSingle(),
+        isOnDemand
+          ? supabase
+              .from("production_days" as any)
+              .select("id")
+              .eq("site_id", site.id)
+              .eq("production_date", todayIso)
+              .maybeSingle()
+          : Promise.resolve({ data: null } as any),
+      ]);
+      const isClosedToday = !!closedToday || (isOnDemand && !prodToday);
 
       const totalItems = (daySheetSections || []).reduce(
         (acc: number, s: { day_sheet_items?: { id: string }[] | null }) =>

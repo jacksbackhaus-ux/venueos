@@ -144,16 +144,27 @@ export function SmartRotaPanel({
   useEffect(() => {
     if (open) {
       void fetchData(false);
+      // Pay rates come from the controlled RPC — users.hourly_rate is
+      // column-level revoked for client roles.
       supabase
         .from("memberships")
-        .select("user_id, users:user_id(hourly_rate)")
+        .select("user_id, sites:site_id(organisation_id)")
         .eq("site_id", siteId)
         .eq("active", true)
-        .then(({ data }) => {
+        .then(async ({ data }) => {
+          const memberIds = new Set((data ?? []).map((m: any) => m.user_id));
+          const orgId = (data ?? [])[0]?.sites?.organisation_id ?? null;
           const map: Record<string, number | null> = {};
-          (data ?? []).forEach((m: any) => {
-            map[m.user_id] = m.users?.hourly_rate ? Number(m.users.hourly_rate) : null;
-          });
+          if (orgId) {
+            const { data: rates } = await supabase.rpc("list_org_user_hourly_rates", {
+              _org_id: orgId,
+            });
+            (rates ?? []).forEach((r: any) => {
+              if (memberIds.has(r.user_id)) {
+                map[r.user_id] = r.hourly_rate != null ? Number(r.hourly_rate) : null;
+              }
+            });
+          }
           setStaffRates(map);
         });
     }
