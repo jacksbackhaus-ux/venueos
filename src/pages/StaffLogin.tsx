@@ -150,6 +150,6 @@ export default function StaffLogin() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }
