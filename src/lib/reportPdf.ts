@@ -143,11 +143,12 @@ export function generateInspectionPackPdf(
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     const rows: string[] = r
       ? [
-          `Local authority: ${r.local_authority || "—"}`,
+          `Local authority: ${r.local_authority_name || "—"}`,
           `Registration date: ${r.registration_date ? format(new Date(r.registration_date), "d MMM yyyy") : "—"}`,
-          `Reference: ${r.reference_number || "—"}`,
+          `Reference: ${r.registration_reference || "—"}`,
           `Last inspection: ${r.last_inspection_date ? format(new Date(r.last_inspection_date), "d MMM yyyy") : "—"}`,
-          `Food hygiene rating: ${r.hygiene_rating === null || r.hygiene_rating === undefined ? "Not yet rated" : `${r.hygiene_rating} / 5`}`,
+          `Food hygiene rating: ${r.fhrs_rating === null || r.fhrs_rating === undefined ? "Not yet rated" : `${r.fhrs_rating} / 5`}`,
+
         ]
       : ["Registration details have not been added in MiseOS."];
     let ry = 92;
