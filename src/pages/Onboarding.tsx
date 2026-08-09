@@ -147,16 +147,31 @@ export default function Onboarding() {
 
   if (isLoading || (!user && !appUser)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <>
+        <SEO
+          title="Set up your MiseOS account"
+          description="Set up your business, site, and team login URL to start your 14-day trial."
+          path="/onboarding"
+          noindex
+        />
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </>
     );
   }
 
   if (step === "welcome") {
     const url = orgSlug ? buildOrgLoginUrl(orgSlug) : null;
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <>
+        <SEO
+          title="Set up your MiseOS account"
+          description="Set up your business, site, and team login URL to start your 14-day trial."
+          path="/onboarding"
+          noindex
+        />
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-lg">
           <Card>
             <CardHeader className="text-center">
@@ -210,7 +225,14 @@ export default function Onboarding() {
 
   if (step === "branding") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <>
+        <SEO
+          title="Set up your MiseOS account"
+          description="Set up your business, site, and team login URL to start your 14-day trial."
+          path="/onboarding"
+          noindex
+        />
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
           <Card>
             <CardHeader>
@@ -238,7 +260,14 @@ export default function Onboarding() {
 
   if (step === "premises") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <>
+        <SEO
+          title="Set up your MiseOS account"
+          description="Set up your business, site, and team login URL to start your 14-day trial."
+          path="/onboarding"
+          noindex
+        />
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <h1 className="font-heading text-2xl font-bold text-foreground text-center mb-2">
             Where do you make food?
@@ -276,7 +305,14 @@ export default function Onboarding() {
   const premises = premisesMeta(premisesType);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <>
+      <SEO
+        title="Set up your MiseOS account"
+        description="Set up your business, site, and team login URL to start your 14-day trial."
+        path="/onboarding"
+        noindex
+      />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <h1 className="font-heading text-2xl font-bold text-foreground text-center mb-6">Set up your MiseOS business</h1>
         <h2 className="sr-only">Business details</h2>
