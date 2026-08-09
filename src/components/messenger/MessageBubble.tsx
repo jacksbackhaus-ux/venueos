@@ -289,7 +289,7 @@ function Attachment({ attachment, onOpenImage }: {
         aria-label={`View ${attachment.name}`}
       >
         {url
-          ? <img src={url} alt={attachment.name} className="w-full h-auto" loading="lazy" />
+          ? <img src={url} alt="" className="w-full h-auto" loading="lazy" />
           : <div className="aspect-video bg-muted flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground" /></div>}
       </button>
     );

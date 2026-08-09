@@ -187,7 +187,7 @@ export function BrandingSection({ embedded, onSaved }: Props) {
             aria-label="Current logo preview"
           >
             {logoUrl ? (
-              <img src={logoUrl} alt="Org logo" className="h-full w-full object-cover" />
+              <img src={logoUrl} alt={businessName ? `${businessName} logo` : "Business logo"} className="h-full w-full object-cover" />
             ) : (
               <ImageIcon className="h-8 w-8 text-muted-foreground" />
             )}
