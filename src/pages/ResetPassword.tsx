@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { KeyRound, Loader2, Eye, EyeOff } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -66,7 +67,14 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <>
+      <SEO
+        title="Reset your MiseOS password"
+        description="Set a new password for your MiseOS account."
+        path="/reset-password"
+        noindex
+      />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center mr-3">
@@ -117,5 +125,7 @@ export default function ResetPassword() {
         </Card>
       </div>
     </div>
+      </div>
+    </>
   );
 }
