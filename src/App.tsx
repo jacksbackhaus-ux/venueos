@@ -216,12 +216,13 @@ function RequireSite({ children }: { children: React.ReactNode }) {
 
 function AuthRedirect() {
   const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
+  const next = safeNextPath();
   if (isLoading) return <FullScreenLoader />;
-  if (staffSession) return <Navigate to="/" replace />;
+  if (staffSession) return <Navigate to={next ?? "/"} replace />;
   if (user && !user.is_anonymous && !appUser) {
     return <OnboardingFallback authUserId={user.id} reason="AuthRedirect:no-appUser" />;
   }
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  if (isAuthenticated) return <Navigate to={next ?? "/"} replace />;
   return <Auth />;
 }
 
