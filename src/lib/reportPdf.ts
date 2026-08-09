@@ -331,7 +331,7 @@ export function generateInspectionPackPdf(
     doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
     doc.text("A one-time check that this domestic kitchen is suitable for food production.", margin, ky + 3);
     doc.setTextColor(0, 0, 0);
-    const answers = (data.kitchenSetup.answers || {}) as Record<string, { checked?: boolean; note?: string }>;
+    const answers = ((data.kitchenSetup as any).items || {}) as Record<string, { checked?: boolean; note?: string }>;
     autoTable(doc, {
       startY: ky + 8,
       head: [["Requirement", "Confirmed", "Note"]],
