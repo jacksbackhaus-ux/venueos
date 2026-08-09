@@ -69,6 +69,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Lock } from "lucide-react";
 import { FullScreenLoader } from "@/components/FullScreenLoader";
 import type { ModuleName } from "@/lib/plans";
+import { safeNextPath } from "@/lib/authNext";
+import OAuthConsent from "@/pages/OAuthConsent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
