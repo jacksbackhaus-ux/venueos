@@ -315,7 +315,7 @@ export default function Landing() {
     <div className="min-h-screen bg-white text-slate-900">
       <SEO
         title="MiseOS — Digital HACCP for UK Food Businesses"
-        description="Digital HACCP, temperature logs, cleaning schedules and inspection-ready exports for UK bakeries, cafés and small restaurants. £4.99/site/month. 14-day free trial."
+        description="Digital HACCP, temperature logs and cleaning schedules for UK bakeries, cafés and small restaurants. 14-day trial."
         path="/"
       />
       <Nav />
