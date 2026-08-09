@@ -126,7 +126,7 @@ export default function AllSitesOverview() {
 
     const { data: sitesData } = await supabase
       .from("sites")
-      .select("id, name, address, active")
+      .select("id, name, address, active, operating_mode")
       .in(
         "id",
         Array.from(accessibleIds).length
