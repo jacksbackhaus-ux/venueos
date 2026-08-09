@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BrandingSection } from "@/components/settings/BrandingSection";
 import { buildOrgLoginUrl } from "@/lib/publicAppUrl";
 import { PREMISES_TYPES, premisesMeta, type PremisesType } from "@/lib/premises";
+import { SEO } from "@/components/SEO";
 
 const PREMISES_ICONS = { Store, Home, Truck, Factory } as const;
 
