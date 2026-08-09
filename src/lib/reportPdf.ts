@@ -363,8 +363,9 @@ export function generateInspectionPackPdf(
         e.name || "—",
         e.location || "—",
         e.transport_temp_checked
-          ? (e.transport_temp_c !== null && e.transport_temp_c !== undefined ? `${e.transport_temp_c}°C` : "Checked")
+          ? (e.transport_temp !== null && e.transport_temp !== undefined ? `${e.transport_temp}°C` : "Checked")
           : "Not checked",
+
         e.notes || "—",
       ]),
       headStyles: { fillColor: BRAND.primary, textColor: 255 },
