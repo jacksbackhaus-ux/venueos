@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, Briefcase, KeyRound, ArrowLeft, ShieldCheck } from "lucide-react";
 import { SEO } from "@/components/SEO";
+import { safeNextPath } from "@/lib/authNext";
 
 type Screen = "choose" | "manager-login" | "manager-signup" | "manager-forgot" | "staff";
 
@@ -346,7 +347,9 @@ export function ManagerSignupCard({
       email: form.email.trim(),
       password: form.password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo:
+          window.location.origin +
+          (safeNextPath() ? `/auth?next=${encodeURIComponent(safeNextPath()!)}` : ""),
         data: {
           display_name: form.businessName.trim(),
           business_name: form.businessName.trim(),

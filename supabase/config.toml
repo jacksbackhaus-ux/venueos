@@ -1,6 +1,8 @@
 project_id = "elcmnvgbmzusogudpenp"
 
 [functions]
+  [functions.mcp]
+    verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.create-checkout]

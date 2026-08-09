@@ -69,6 +69,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Lock } from "lucide-react";
 import { FullScreenLoader } from "@/components/FullScreenLoader";
 import type { ModuleName } from "@/lib/plans";
+import { safeNextPath } from "@/lib/authNext";
+import OAuthConsent from "@/pages/OAuthConsent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -216,12 +218,13 @@ function RequireSite({ children }: { children: React.ReactNode }) {
 
 function AuthRedirect() {
   const { isAuthenticated, user, appUser, isLoading, staffSession } = useAuth();
+  const next = safeNextPath();
   if (isLoading) return <FullScreenLoader />;
-  if (staffSession) return <Navigate to="/" replace />;
+  if (staffSession) return <Navigate to={next ?? "/"} replace />;
   if (user && !user.is_anonymous && !appUser) {
     return <OnboardingFallback authUserId={user.id} reason="AuthRedirect:no-appUser" />;
   }
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  if (isAuthenticated) return <Navigate to={next ?? "/"} replace />;
   return <Auth />;
 }
 
@@ -265,6 +268,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthRedirect />} />
+      <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
       <Route path="/staff-login" element={<StaffLogin />} />
       {/* Alias — internal MiseOS employees only. Same component as /staff-login. */}
       <Route path="/internal-login" element={<StaffLogin />} />
