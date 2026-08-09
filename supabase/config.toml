@@ -29,3 +29,5 @@ project_id = "elcmnvgbmzusogudpenp"
     verify_jwt = true
   [functions.send-compliance-reminders]
     verify_jwt = true
+  [functions.site-transfer-cleanup]
+    verify_jwt = true
