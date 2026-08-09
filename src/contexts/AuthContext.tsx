@@ -10,7 +10,8 @@ interface AppUser {
   display_name: string;
   email: string | null;
   auth_type: 'email' | 'staff_code';
-  staff_code: string | null;
+  /** Never selected client-side — read via list_org_user_staff_codes RPC. */
+  staff_code?: string | null;
   status: 'active' | 'suspended';
 }
 
