@@ -143,11 +143,12 @@ export function generateInspectionPackPdf(
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     const rows: string[] = r
       ? [
-          `Local authority: ${r.local_authority || "—"}`,
+          `Local authority: ${r.local_authority_name || "—"}`,
           `Registration date: ${r.registration_date ? format(new Date(r.registration_date), "d MMM yyyy") : "—"}`,
-          `Reference: ${r.reference_number || "—"}`,
+          `Reference: ${r.registration_reference || "—"}`,
           `Last inspection: ${r.last_inspection_date ? format(new Date(r.last_inspection_date), "d MMM yyyy") : "—"}`,
-          `Food hygiene rating: ${r.hygiene_rating === null || r.hygiene_rating === undefined ? "Not yet rated" : `${r.hygiene_rating} / 5`}`,
+          `Food hygiene rating: ${r.fhrs_rating === null || r.fhrs_rating === undefined ? "Not yet rated" : `${r.fhrs_rating} / 5`}`,
+
         ]
       : ["Registration details have not been added in MiseOS."];
     let ry = 92;
@@ -330,7 +331,7 @@ export function generateInspectionPackPdf(
     doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.muted);
     doc.text("A one-time check that this domestic kitchen is suitable for food production.", margin, ky + 3);
     doc.setTextColor(0, 0, 0);
-    const answers = (data.kitchenSetup.answers || {}) as Record<string, { checked?: boolean; note?: string }>;
+    const answers = ((data.kitchenSetup as any).items || {}) as Record<string, { checked?: boolean; note?: string }>;
     autoTable(doc, {
       startY: ky + 8,
       head: [["Requirement", "Confirmed", "Note"]],
@@ -362,8 +363,9 @@ export function generateInspectionPackPdf(
         e.name || "—",
         e.location || "—",
         e.transport_temp_checked
-          ? (e.transport_temp_c !== null && e.transport_temp_c !== undefined ? `${e.transport_temp_c}°C` : "Checked")
+          ? (e.transport_temp !== null && e.transport_temp !== undefined ? `${e.transport_temp}°C` : "Checked")
           : "Not checked",
+
         e.notes || "—",
       ]),
       headStyles: { fillColor: BRAND.primary, textColor: 255 },
