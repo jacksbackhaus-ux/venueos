@@ -71,6 +71,7 @@ import { FullScreenLoader } from "@/components/FullScreenLoader";
 import type { ModuleName } from "@/lib/plans";
 import { safeNextPath } from "@/lib/authNext";
 import OAuthConsent from "@/pages/OAuthConsent";
+import BakeryHaccpGuide from "@/pages/guides/BakeryHaccpGuide";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -273,6 +274,7 @@ function AppRoutes() {
       {/* Alias — internal MiseOS employees only. Same component as /staff-login. */}
       <Route path="/internal-login" element={<StaffLogin />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/guides/bakery-haccp-compliance" element={<BakeryHaccpGuide />} />
       <Route path="/login/:slug" element={<OrgLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
