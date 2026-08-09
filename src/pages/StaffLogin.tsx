@@ -89,7 +89,14 @@ export default function StaffLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <>
+      <SEO
+        title="MiseOS Staff Login"
+        description="Internal staff sign-in for the MiseOS support console."
+        path={pathname}
+        noindex
+      />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-6">
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center mr-3">
