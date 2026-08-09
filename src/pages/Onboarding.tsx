@@ -220,6 +220,7 @@ export default function Onboarding() {
           </Card>
         </div>
       </div>
+      </>
     );
   }
 
@@ -255,6 +256,7 @@ export default function Onboarding() {
           </Card>
         </div>
       </div>
+      </>
     );
   }
 
@@ -359,5 +361,6 @@ export default function Onboarding() {
         </Card>
       </div>
     </div>
+    </>
   );
 }
