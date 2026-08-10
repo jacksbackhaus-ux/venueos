@@ -72,6 +72,7 @@ import type { ModuleName } from "@/lib/plans";
 import { safeNextPath } from "@/lib/authNext";
 import OAuthConsent from "@/pages/OAuthConsent";
 import BakeryHaccpGuide from "@/pages/guides/BakeryHaccpGuide";
+import SfbbCaterersGuide from "@/pages/guides/SfbbCaterersGuide";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -275,6 +276,7 @@ function AppRoutes() {
       <Route path="/internal-login" element={<StaffLogin />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/guides/bakery-haccp-compliance" element={<BakeryHaccpGuide />} />
+      <Route path="/guides/sfbb-caterers-compliance" element={<SfbbCaterersGuide />} />
       <Route path="/login/:slug" element={<OrgLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
