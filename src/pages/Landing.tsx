@@ -301,6 +301,7 @@ function Footer() {
         </div>
         <div className="flex items-center gap-5 text-sm text-slate-500">
           <a href="/guides/bakery-haccp-compliance" className="hover:text-slate-900">HACCP guide for bakeries</a>
+          <a href="/guides/sfbb-caterers-compliance" className="hover:text-slate-900">SFBB for caterers</a>
           <a href="#pricing" className="hover:text-slate-900">Pricing</a>
           <a href="#faq" className="hover:text-slate-900">FAQ</a>
           <a href={AUTH_URL} className="hover:text-slate-900">Log in</a>

@@ -9,6 +9,7 @@ MiseOS helps independent food businesses log food-safety checks fast, stay inspe
 - [Home](/): Product overview, features and how MiseOS works for UK food businesses.
 - [Pricing](/pricing): Essentials, Professional, Business and Intelligence plans with a 14-day free trial.
 - [HACCP for Bakeries: The 2026 UK Compliance Guide](/guides/bakery-haccp-compliance): UK bakery HACCP guide covering SFBB vs full HACCP, allergen cross-contamination, flour dust, cooling and filling, traceability, records and inspection prep.
+- [Safer Food Better Business for Caterers: 2026 UK Compliance Guide](/guides/sfbb-caterers-compliance): SFBB for caterers guide covering safe methods, daily diary records, opening and closing checks, temperature control, allergen management, off-site catering and inspection prep.
 
 ## Optional
 
