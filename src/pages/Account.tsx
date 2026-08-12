@@ -41,34 +41,46 @@ export default function Account() {
     subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft,
     cycle, paidActive,
   } = useOrgAccess();
-  const [savingCycle, setSavingCycle] = useState(false);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  useEffect(() => {
-    if (!paidActive || !subscription?.stripe_subscription_id) {
+  const hasStripeSub = Boolean(paidActive && subscription?.stripe_subscription_id);
+
+  const fetchSummary = useCallback(async () => {
+    if (!hasStripeSub) {
       setSummary(null);
       setSummaryError(null);
       return;
     }
-    let cancelled = false;
     setSummaryLoading(true);
     setSummaryError(null);
-    void (async () => {
-      const { data, error } = await supabase.functions.invoke("get-haccp-billing-summary", { body: {} });
-      if (cancelled) return;
-      if (error || !data?.ok) {
-        setSummary(null);
-        setSummaryError((data as { error?: string })?.error || error?.message || "Unable to load billing details");
-      } else {
-        setSummary(data as BillingSummary);
-      }
-      setSummaryLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [paidActive, subscription?.stripe_subscription_id]);
+    const { data, error } = await supabase.functions.invoke("get-haccp-billing-summary", { body: {} });
+    if (error || !data?.ok) {
+      setSummary(null);
+      setSummaryError((data as { error?: string })?.error || error?.message || "Unable to load billing details");
+    } else {
+      setSummary(data as BillingSummary);
+    }
+    setSummaryLoading(false);
+  }, [hasStripeSub]);
+
+  useEffect(() => { void fetchSummary(); }, [fetchSummary]);
+
+  // Re-read Stripe's truth whenever the customer comes back to this tab
+  // (e.g. after returning from the Stripe customer portal).
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === "visible") void fetchSummary();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [fetchSummary]);
 
   if (orgRole?.org_role !== "org_owner") {
     return (
@@ -86,42 +98,21 @@ export default function Account() {
 
   const displayCycle = summary?.cycle ?? cycle;
   const monthlyEquivalent = summary ? (summary.cycle === "year" ? summary.total / 12 : summary.total) : 0;
-
-  const switchCycle = async (next: "month" | "year") => {
-    if (!appUser?.organisation_id || next === cycle) return;
-    setSavingCycle(true);
-    const { error } = await supabase
-      .from("subscriptions")
-      .update({ billing_interval: next })
-      .eq("organisation_id", appUser.organisation_id);
-    setSavingCycle(false);
-    if (error) toast.error(error.message);
-    else toast.success(`Switched to ${next === "year" ? "annual" : "monthly"} billing.`);
-  };
-
-  const handleCancel = async () => {
-    if (!appUser?.organisation_id) return;
-    const termEnd = (subscription as any)?.term_end || subscription?.current_period_end;
-    const endLabel = termEnd ? format(new Date(termEnd), "d MMM yyyy") : "the end of your current term";
-    if (!confirm(`Cancel renewal? Your plan stays active until ${endLabel}.`)) return;
-    const { error } = await supabase
-      .from("subscriptions")
-      .update({ cancel_at_period_end: true })
-      .eq("organisation_id", appUser.organisation_id);
-    if (error) toast.error(error.message);
-    else toast.success(`Cancellation scheduled. You'll keep access until ${endLabel}.`);
-  };
+  // Cancellation + renewal state come from Stripe only.
+  const cancelScheduled = summary?.cancel_at_period_end ?? false;
+  const periodEnd = summary?.current_period_end ?? null;
 
   const handleOpenPortal = async () => {
     setPortalLoading(true);
     try {
-      await openCustomerPortal();
+      await openCustomerPortal(`${window.location.origin}/account`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "We couldn't open your billing portal.";
       toast.error(msg);
       setPortalLoading(false);
     }
   };
+
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto pb-24">
