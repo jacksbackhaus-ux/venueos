@@ -1804,7 +1804,11 @@ const Settings = () => {
             <AlertDialogDescription>
               Their PIN login will be revoked immediately and they'll no longer appear in active staff lists or on the kiosk login screen.
               <br /><br />
-              <span className="font-medium text-foreground">Billing impact:</span> your subscription will reduce by £1/month (prorated) on the next sync.
+              <span className="font-medium text-foreground">Billing impact:</span>{" "}
+              {seatDelta(-1)
+                ? `this will reduce your subscription by £${seatPrice.toFixed(2)}/${cycleWord} (from ${seatDelta(-1)}) on your next billing cycle.`
+                : "this will reduce your subscription by £1/month on your next billing cycle."}
+
               <br /><br />
               All historical records they completed — temperature logs, day sheet sign-offs, cleaning, deliveries, incidents — will be fully preserved with their name attached for the full HACCP retention period.
               <br /><br />
