@@ -1701,11 +1701,19 @@ const Settings = () => {
                 Letters, numbers and dashes. Must be unique within your organisation.
               </p>
             </div>
-            <p className="text-[11px] text-muted-foreground border-t pt-2">
-              {activeStaffCount === 0 && trialActive
-                ? "Users are £1/month each after your trial ends."
-                : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
-            </p>
+            <div className="text-[11px] text-muted-foreground border-t pt-2 space-y-1">
+              {activeStaffCount === 0 && trialActive ? (
+                <p>Users are £1/month each after your trial ends — nothing is charged during your free trial.</p>
+              ) : seatDelta(1) ? (
+                <p className="text-foreground">
+                  Adding this user will increase your subscription by £{seatPrice.toFixed(2)}/{cycleWord} (from {seatDelta(1)}), applied on your next invoice.
+                </p>
+              ) : (
+                <p>Each additional user is £1/month. The Owner is included free.</p>
+              )}
+              <p>Users are counted once across your whole account, no matter how many sites they work at.</p>
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddStaff(false)}>Cancel</Button>
