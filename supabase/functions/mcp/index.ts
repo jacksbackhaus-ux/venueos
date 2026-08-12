@@ -3,14 +3,14 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/tools/list-sites.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { ToolError as ToolError2 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { ToolError as ToolError2 } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/helpers.ts
-import { ToolError } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { ToolError } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/supabase.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.108.2";
@@ -98,7 +98,7 @@ var list_sites_default = defineTool({
 });
 
 // src/lib/mcp/tools/list-temperature-units.ts
-import { defineTool as defineTool2, ToolError as ToolError3 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool2, ToolError as ToolError3 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z } from "npm:zod@^3.25.76";
 var list_temperature_units_default = defineTool2({
   name: "list_temperature_units",
@@ -115,7 +115,7 @@ var list_temperature_units_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-temperature-logs.ts
-import { defineTool as defineTool3, ToolError as ToolError4 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool3, ToolError as ToolError4 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z2 } from "npm:zod@^3.25.76";
 var list_temperature_logs_default = defineTool3({
   name: "list_temperature_logs",
@@ -140,7 +140,7 @@ var list_temperature_logs_default = defineTool3({
 });
 
 // src/lib/mcp/tools/log-temperature.ts
-import { defineTool as defineTool4, ToolError as ToolError5 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool4, ToolError as ToolError5 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z3 } from "npm:zod@^3.25.76";
 var log_temperature_default = defineTool4({
   name: "log_temperature",
@@ -184,7 +184,7 @@ var log_temperature_default = defineTool4({
 });
 
 // src/lib/mcp/tools/list-incidents.ts
-import { defineTool as defineTool5, ToolError as ToolError6 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool5, ToolError as ToolError6 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z4 } from "npm:zod@^3.25.76";
 var list_incidents_default = defineTool5({
   name: "list_incidents",
@@ -206,7 +206,7 @@ var list_incidents_default = defineTool5({
 });
 
 // src/lib/mcp/tools/create-incident.ts
-import { defineTool as defineTool6, ToolError as ToolError7 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool6, ToolError as ToolError7 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z5 } from "npm:zod@^3.25.76";
 var create_incident_default = defineTool6({
   name: "create_incident",
@@ -244,7 +244,7 @@ var create_incident_default = defineTool6({
 });
 
 // src/lib/mcp/tools/list-batches.ts
-import { defineTool as defineTool7, ToolError as ToolError8 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { defineTool as defineTool7, ToolError as ToolError8 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z6 } from "npm:zod@^3.25.76";
 var list_batches_default = defineTool7({
   name: "list_batches",
@@ -288,5 +288,5 @@ var mcp_default = defineMcp({
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.1/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.2/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));
