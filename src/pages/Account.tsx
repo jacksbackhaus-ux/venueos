@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
@@ -6,16 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import {
   Loader2, CreditCard, Sparkles, ExternalLink, Building2, Users,
-  AlertCircle, Calendar, ShieldCheck,
+  AlertCircle, Calendar, ShieldCheck, Settings2,
 } from "lucide-react";
 import { openCustomerPortal } from "@/lib/stripe";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { LoginUrlCard } from "@/components/LoginUrlCard";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
+
 
 // Launch pricing — single MiseOS HACCP plan. Used only as a sanity check;
 // the displayed numbers below come from Stripe (single source of truth).
