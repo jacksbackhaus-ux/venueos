@@ -1025,11 +1025,15 @@ const Settings = () => {
           </div>
 
           {/* £1/user helper note */}
-          <p className="text-[11px] text-muted-foreground -mt-1">
-            {activeStaffCount === 0 && trialActive
-              ? "Users are £1/month each after your trial ends."
-              : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
-          </p>
+          <div className="text-[11px] text-muted-foreground -mt-1 space-y-1">
+            <p>
+              {activeStaffCount === 0 && trialActive
+                ? "Users are £1/month each after your trial ends."
+                : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
+            </p>
+            <p>Users are counted once across your whole account, no matter how many sites they work at.</p>
+          </div>
+
 
           {/* Active / Deactivated toggle */}
           <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/30">
