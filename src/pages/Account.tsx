@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
@@ -6,16 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import {
   Loader2, CreditCard, Sparkles, ExternalLink, Building2, Users,
-  AlertCircle, Calendar, ShieldCheck,
+  AlertCircle, Calendar, ShieldCheck, Settings2,
 } from "lucide-react";
 import { openCustomerPortal } from "@/lib/stripe";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { LoginUrlCard } from "@/components/LoginUrlCard";
 import { ClimatePledge } from "@/components/StripeClimateBadge";
+
 
 // Launch pricing — single MiseOS HACCP plan. Used only as a sanity check;
 // the displayed numbers below come from Stripe (single source of truth).
@@ -41,34 +41,46 @@ export default function Account() {
     subscription, loading, hasAccess, compedActive, trialActive, trialDaysLeft,
     cycle, paidActive,
   } = useOrgAccess();
-  const [savingCycle, setSavingCycle] = useState(false);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  useEffect(() => {
-    if (!paidActive || !subscription?.stripe_subscription_id) {
+  const hasStripeSub = Boolean(paidActive && subscription?.stripe_subscription_id);
+
+  const fetchSummary = useCallback(async () => {
+    if (!hasStripeSub) {
       setSummary(null);
       setSummaryError(null);
       return;
     }
-    let cancelled = false;
     setSummaryLoading(true);
     setSummaryError(null);
-    void (async () => {
-      const { data, error } = await supabase.functions.invoke("get-haccp-billing-summary", { body: {} });
-      if (cancelled) return;
-      if (error || !data?.ok) {
-        setSummary(null);
-        setSummaryError((data as { error?: string })?.error || error?.message || "Unable to load billing details");
-      } else {
-        setSummary(data as BillingSummary);
-      }
-      setSummaryLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [paidActive, subscription?.stripe_subscription_id]);
+    const { data, error } = await supabase.functions.invoke("get-haccp-billing-summary", { body: {} });
+    if (error || !data?.ok) {
+      setSummary(null);
+      setSummaryError((data as { error?: string })?.error || error?.message || "Unable to load billing details");
+    } else {
+      setSummary(data as BillingSummary);
+    }
+    setSummaryLoading(false);
+  }, [hasStripeSub]);
+
+  useEffect(() => { void fetchSummary(); }, [fetchSummary]);
+
+  // Re-read Stripe's truth whenever the customer comes back to this tab
+  // (e.g. after returning from the Stripe customer portal).
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === "visible") void fetchSummary();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [fetchSummary]);
 
   if (orgRole?.org_role !== "org_owner") {
     return (
@@ -86,42 +98,21 @@ export default function Account() {
 
   const displayCycle = summary?.cycle ?? cycle;
   const monthlyEquivalent = summary ? (summary.cycle === "year" ? summary.total / 12 : summary.total) : 0;
-
-  const switchCycle = async (next: "month" | "year") => {
-    if (!appUser?.organisation_id || next === cycle) return;
-    setSavingCycle(true);
-    const { error } = await supabase
-      .from("subscriptions")
-      .update({ billing_interval: next })
-      .eq("organisation_id", appUser.organisation_id);
-    setSavingCycle(false);
-    if (error) toast.error(error.message);
-    else toast.success(`Switched to ${next === "year" ? "annual" : "monthly"} billing.`);
-  };
-
-  const handleCancel = async () => {
-    if (!appUser?.organisation_id) return;
-    const termEnd = (subscription as any)?.term_end || subscription?.current_period_end;
-    const endLabel = termEnd ? format(new Date(termEnd), "d MMM yyyy") : "the end of your current term";
-    if (!confirm(`Cancel renewal? Your plan stays active until ${endLabel}.`)) return;
-    const { error } = await supabase
-      .from("subscriptions")
-      .update({ cancel_at_period_end: true })
-      .eq("organisation_id", appUser.organisation_id);
-    if (error) toast.error(error.message);
-    else toast.success(`Cancellation scheduled. You'll keep access until ${endLabel}.`);
-  };
+  // Cancellation + renewal state come from Stripe only.
+  const cancelScheduled = summary?.cancel_at_period_end ?? false;
+  const periodEnd = summary?.current_period_end ?? null;
 
   const handleOpenPortal = async () => {
     setPortalLoading(true);
     try {
-      await openCustomerPortal();
+      await openCustomerPortal(`${window.location.origin}/account`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "We couldn't open your billing portal.";
       toast.error(msg);
       setPortalLoading(false);
     }
   };
+
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto pb-24">
@@ -211,23 +202,26 @@ export default function Account() {
                   Adding a user adds £{USER_MONTHLY.toFixed(2)}/month to your subscription on the next invoice. Owner is included free.
                 </p>
                 <p className="text-[11px] text-muted-foreground">
+                  Users are counted once across your whole account, no matter how many sites they work at.
+                </p>
+                <p className="text-[11px] text-muted-foreground">
                   This reflects what you are currently billed for via Stripe. To change your user count, manage users in Settings.
                 </p>
               </>
             )}
           </div>
 
-          {paidActive && subscription?.current_period_end && (
+          {periodEnd && !cancelScheduled && (
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>Next renewal: <strong>{format(new Date(subscription.current_period_end), "d MMM yyyy")}</strong></span>
+              <span>Next renewal: <strong>{format(new Date(periodEnd), "d MMM yyyy")}</strong> ({displayCycle === "year" ? "annual" : "monthly"})</span>
             </div>
           )}
-          {subscription?.cancel_at_period_end && (
+          {cancelScheduled && (
             <div className="p-3 rounded-md bg-warning/10 border border-warning/30 text-sm">
               <p className="text-warning flex items-center gap-1.5 font-medium"><AlertCircle className="h-4 w-4" />Cancellation scheduled</p>
-              {subscription.current_period_end && (
-                <p className="text-xs mt-1">You'll keep access until {format(new Date(subscription.current_period_end), "d MMM yyyy")}. Data retained for 7 years.</p>
+              {periodEnd && (
+                <p className="text-xs mt-1">You'll keep access until {format(new Date(periodEnd), "d MMM yyyy")}. Data retained for 7 years.</p>
               )}
             </div>
           )}
@@ -245,53 +239,29 @@ export default function Account() {
               </Button>
             )}
             {subscription?.stripe_customer_id && (
-              <Button variant="outline" size="sm" onClick={handleOpenPortal} disabled={portalLoading}>
+              <Button size="sm" onClick={handleOpenPortal} disabled={portalLoading}>
                 {portalLoading
                   ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  : <ExternalLink className="h-3.5 w-3.5 mr-1.5" />}
-                Invoices & payment method
+                  : <Settings2 className="h-3.5 w-3.5 mr-1.5" />}
+                Manage subscription
               </Button>
             )}
           </div>
+          {subscription?.stripe_customer_id && (
+            <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+              <ExternalLink className="h-3 w-3 mt-0.5 shrink-0" />
+              <span>
+                Cancel, switch between monthly and annual, update your payment method, and view or download invoices
+                in your secure Stripe billing portal. You'll come straight back to this page when you're done.
+              </span>
+            </p>
+          )}
         </CardContent>
       </Card>
 
       {/* Login URL */}
       {appUser?.organisation_id && <LoginUrlCard organisationId={appUser.organisation_id} />}
 
-      {/* Billing cycle */}
-      {paidActive && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Billing cycle</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center gap-3">
-              <span className={cycle === "month" ? "font-semibold" : "text-muted-foreground"}>Monthly</span>
-              <Switch
-                checked={cycle === "year"}
-                disabled={savingCycle}
-                onCheckedChange={(v) => switchCycle(v ? "year" : "month")}
-              />
-              <span className={cycle === "year" ? "font-semibold" : "text-muted-foreground"}>
-                Annual <Badge variant="outline" className="ml-1 border-success/40 bg-success/10 text-success text-[10px]">2 months free</Badge>
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Switching takes effect on your next renewal.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Cancel */}
-      {paidActive && !subscription?.cancel_at_period_end && (
-        <Card>
-          <CardHeader><CardTitle className="text-base text-muted-foreground">Cancel subscription</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-2">
-            <p>You'll keep access until the end of your current billing period. Your data is retained for 7 years after cancellation.</p>
-            <Button variant="outline" size="sm" onClick={handleCancel}>Cancel subscription</Button>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardContent className="py-6 space-y-2">

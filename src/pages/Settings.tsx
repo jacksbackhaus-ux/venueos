@@ -296,6 +296,36 @@ const Settings = () => {
 
   const activeStaffCount = staff.filter((s) => s.active && s.id !== appUser?.id).length;
 
+  // Live billed total (owner-only, read from Stripe) so we can show the exact
+  // "from £x to £y" impact before adding or deactivating a user.
+  const [billedTotal, setBilledTotal] = useState<
+    { total: number; user_unit_amount: number; cycle: "month" | "year" } | null
+  >(null);
+  useEffect(() => {
+    if (!isOwner) return;
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase.functions.invoke("get-haccp-billing-summary", { body: {} });
+      if (cancelled || error || !data?.ok) return;
+      setBilledTotal({
+        total: Number(data.total ?? 0),
+        user_unit_amount: Number(data.user_unit_amount ?? 1),
+        cycle: data.cycle === "year" ? "year" : "month",
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [isOwner]);
+
+  const cycleWord = billedTotal?.cycle === "year" ? "year" : "month";
+  const seatPrice = billedTotal?.user_unit_amount ?? 1;
+  const seatDelta = (dir: 1 | -1): string | null => {
+    if (!billedTotal) return null;
+    const next = Math.max(0, billedTotal.total + dir * seatPrice);
+    return `£${billedTotal.total.toFixed(2)} to £${next.toFixed(2)}`;
+  };
+
+
+
 
   // Allergen config
   const [requireApproval, setRequireApproval] = useState(true);
@@ -995,11 +1025,15 @@ const Settings = () => {
           </div>
 
           {/* £1/user helper note */}
-          <p className="text-[11px] text-muted-foreground -mt-1">
-            {activeStaffCount === 0 && trialActive
-              ? "Users are £1/month each after your trial ends."
-              : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
-          </p>
+          <div className="text-[11px] text-muted-foreground -mt-1 space-y-1">
+            <p>
+              {activeStaffCount === 0 && trialActive
+                ? "Users are £1/month each after your trial ends."
+                : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
+            </p>
+            <p>Users are counted once across your whole account, no matter how many sites they work at.</p>
+          </div>
+
 
           {/* Active / Deactivated toggle */}
           <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/30">
@@ -1667,11 +1701,19 @@ const Settings = () => {
                 Letters, numbers and dashes. Must be unique within your organisation.
               </p>
             </div>
-            <p className="text-[11px] text-muted-foreground border-t pt-2">
-              {activeStaffCount === 0 && trialActive
-                ? "Users are £1/month each after your trial ends."
-                : "Each additional user is £1/month regardless of how many sites they access. The Owner is included in your base plan."}
-            </p>
+            <div className="text-[11px] text-muted-foreground border-t pt-2 space-y-1">
+              {activeStaffCount === 0 && trialActive ? (
+                <p>Users are £1/month each after your trial ends — nothing is charged during your free trial.</p>
+              ) : seatDelta(1) ? (
+                <p className="text-foreground">
+                  Adding this user will increase your subscription by £{seatPrice.toFixed(2)}/{cycleWord} (from {seatDelta(1)}), applied on your next invoice.
+                </p>
+              ) : (
+                <p>Each additional user is £1/month. The Owner is included free.</p>
+              )}
+              <p>Users are counted once across your whole account, no matter how many sites they work at.</p>
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddStaff(false)}>Cancel</Button>
@@ -1762,7 +1804,11 @@ const Settings = () => {
             <AlertDialogDescription>
               Their PIN login will be revoked immediately and they'll no longer appear in active staff lists or on the kiosk login screen.
               <br /><br />
-              <span className="font-medium text-foreground">Billing impact:</span> your subscription will reduce by £1/month (prorated) on the next sync.
+              <span className="font-medium text-foreground">Billing impact:</span>{" "}
+              {seatDelta(-1)
+                ? `this will reduce your subscription by £${seatPrice.toFixed(2)}/${cycleWord} (from ${seatDelta(-1)}) on your next billing cycle.`
+                : "this will reduce your subscription by £1/month on your next billing cycle."}
+
               <br /><br />
               All historical records they completed — temperature logs, day sheet sign-offs, cleaning, deliveries, incidents — will be fully preserved with their name attached for the full HACCP retention period.
               <br /><br />
