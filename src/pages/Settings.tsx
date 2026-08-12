@@ -296,6 +296,36 @@ const Settings = () => {
 
   const activeStaffCount = staff.filter((s) => s.active && s.id !== appUser?.id).length;
 
+  // Live billed total (owner-only, read from Stripe) so we can show the exact
+  // "from £x to £y" impact before adding or deactivating a user.
+  const [billedTotal, setBilledTotal] = useState<
+    { total: number; user_unit_amount: number; cycle: "month" | "year" } | null
+  >(null);
+  useEffect(() => {
+    if (!isOwner) return;
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase.functions.invoke("get-haccp-billing-summary", { body: {} });
+      if (cancelled || error || !data?.ok) return;
+      setBilledTotal({
+        total: Number(data.total ?? 0),
+        user_unit_amount: Number(data.user_unit_amount ?? 1),
+        cycle: data.cycle === "year" ? "year" : "month",
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [isOwner]);
+
+  const cycleWord = billedTotal?.cycle === "year" ? "year" : "month";
+  const seatPrice = billedTotal?.user_unit_amount ?? 1;
+  const seatDelta = (dir: 1 | -1): string | null => {
+    if (!billedTotal) return null;
+    const next = Math.max(0, billedTotal.total + dir * seatPrice);
+    return `£${billedTotal.total.toFixed(2)} to £${next.toFixed(2)}`;
+  };
+
+
+
 
   // Allergen config
   const [requireApproval, setRequireApproval] = useState(true);
