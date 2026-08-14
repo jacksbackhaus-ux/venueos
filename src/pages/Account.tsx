@@ -278,6 +278,13 @@ export default function Account() {
               </span>
             </p>
           )}
+          <a
+            href={billingContactHref}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors pt-1"
+          >
+            <Mail className="h-3 w-3" />
+            Contact us about billing
+          </a>
         </CardContent>
       </Card>
 
