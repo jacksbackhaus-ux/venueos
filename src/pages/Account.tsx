@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Loader2, CreditCard, Sparkles, ExternalLink, Building2, Users,
-  AlertCircle, Calendar, ShieldCheck, Settings2,
+  AlertCircle, Calendar, ShieldCheck, Settings2, Mail,
 } from "lucide-react";
 import { openCustomerPortal } from "@/lib/stripe";
 import { format } from "date-fns";
@@ -112,6 +112,28 @@ export default function Account() {
       setPortalLoading(false);
     }
   };
+
+  const billingContactHref = (() => {
+    const orgId = appUser?.organisation_id ?? "unknown";
+    const email = appUser?.email ?? "";
+    const status = subscription?.status ?? "none";
+    const customerId = subscription?.stripe_customer_id ?? "none";
+    const subject = `Billing question — MiseOS HACCP (org ${orgId})`;
+    const body = [
+      "Hi MiseOS support,",
+      "",
+      "I have a billing question about my MiseOS HACCP account.",
+      "",
+      `Organisation ID: ${orgId}`,
+      email ? `Account email: ${email}` : "",
+      `Subscription status: ${status}`,
+      `Stripe customer ID: ${customerId}`,
+      "",
+      "Please describe your question here:",
+      "",
+    ].join("\n");
+    return `mailto:miseos@outlook.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  })();
 
 
   return (
@@ -256,6 +278,13 @@ export default function Account() {
               </span>
             </p>
           )}
+          <a
+            href={billingContactHref}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors pt-1"
+          >
+            <Mail className="h-3 w-3" />
+            Contact us about billing
+          </a>
         </CardContent>
       </Card>
 
