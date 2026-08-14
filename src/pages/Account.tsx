@@ -113,6 +113,28 @@ export default function Account() {
     }
   };
 
+  const billingContactHref = (() => {
+    const orgId = appUser?.organisation_id ?? "unknown";
+    const email = appUser?.email ?? "";
+    const status = subscription?.status ?? "none";
+    const customerId = subscription?.stripe_customer_id ?? "none";
+    const subject = `Billing question — MiseOS HACCP (org ${orgId})`;
+    const body = [
+      "Hi MiseOS support,",
+      "",
+      "I have a billing question about my MiseOS HACCP account.",
+      "",
+      `Organisation ID: ${orgId}`,
+      email ? `Account email: ${email}` : "",
+      `Subscription status: ${status}`,
+      `Stripe customer ID: ${customerId}`,
+      "",
+      "Please describe your question here:",
+      "",
+    ].join("\n");
+    return `mailto:miseos@outlook.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  })();
+
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto pb-24">
