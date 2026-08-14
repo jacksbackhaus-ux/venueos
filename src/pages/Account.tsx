@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Loader2, CreditCard, Sparkles, ExternalLink, Building2, Users,
-  AlertCircle, Calendar, ShieldCheck, Settings2,
+  AlertCircle, Calendar, ShieldCheck, Settings2, Mail,
 } from "lucide-react";
 import { openCustomerPortal } from "@/lib/stripe";
 import { format } from "date-fns";
