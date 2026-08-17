@@ -162,11 +162,17 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 /** Trial expired & no paid plan → /locked. Pricing & locked are exempt. */
 function AccessGuard({ children }: { children: React.ReactNode }) {
   const { staffSession } = useAuth();
+  const { isImpersonating } = useImpersonation();
   const { loading, hasAccess, trialActive, subscription, plan, isLocked } = useOrgAccess();
 
   if (staffSession) return <>{children}</>;
+  // Internal support staff viewing a customer tenant must never be paywalled.
+  if (isImpersonating) return <>{children}</>;
   if (loading) return null;
-  if (!subscription) return <>{children}</>;
+  // No subscription record at all is NOT a free pass. Every organisation gets a
+  // trialing subscription row at signup, so a missing row means something went
+  // wrong — send the owner to pricing rather than silently unlocking the product.
+  if (!subscription) return <Navigate to="/pricing" replace />;
   if (isLocked) return <Navigate to="/locked" replace />;
   if (hasAccess) return <>{children}</>;
 
