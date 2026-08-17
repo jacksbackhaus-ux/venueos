@@ -61,7 +61,7 @@ import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
-import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
+import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
 import { RoleGuard } from "@/components/RoleGuard";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
