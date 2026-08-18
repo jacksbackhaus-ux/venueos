@@ -79,14 +79,40 @@ Deno.serve(async (req) => {
   // site_id is mandatory — never accept rows with no site scope.
   if (!site_id) return bad(400, "missing_site_id");
   if (!UUID_RE.test(site_id)) return bad(400, "invalid_site_id");
+  // Authorisation must match the online write path (has_site_write_access):
+  // an active membership whose site_role is NOT read_only, OR an org owner.
   const { data: m } = await svc
     .from("memberships")
-    .select("site_id")
+    .select("site_id, site_role")
     .eq("user_id", appUserId)
     .eq("site_id", site_id)
     .eq("active", true)
     .maybeSingle();
-  if (!m) return bad(403, "no_site_access");
+
+  const membership = m as { site_id: string; site_role: string | null } | null;
+  if (!membership) {
+    // Org owners without a site membership row still have write access.
+    const { data: siteRow } = await svc
+      .from("sites")
+      .select("organisation_id")
+      .eq("id", site_id)
+      .maybeSingle();
+    const orgId = (siteRow as { organisation_id?: string } | null)?.organisation_id;
+    if (!orgId) return bad(403, "no_site_access");
+    const { data: ownerRow } = await svc
+      .from("org_users")
+      .select("id")
+      .eq("organisation_id", orgId)
+      .eq("user_id", appUserId)
+      .eq("org_role", "org_owner")
+      .eq("active", true)
+      .maybeSingle();
+    if (!ownerRow) return bad(403, "no_site_access");
+  } else if (membership.site_role === "read_only") {
+    // View-only members cannot create or backdate compliance records.
+    return bad(403, "read_only_no_write");
+  }
+
 
   // Look up organisation_id for the site (most tables need it).
   let organisation_id: string | null = null;
