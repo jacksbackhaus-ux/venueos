@@ -5,12 +5,19 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { isServiceRoleCaller, unauthorisedResponse } from "../_shared/serviceRoleGuard.ts";
 
 const APP_URL = "https://mise-os.app";
 const BILLING_URL = `${APP_URL}/settings?tab=billing`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Scheduled job only — reject regular signed-in customer tokens.
+  if (!isServiceRoleCaller(req)) {
+    console.warn("[trial-reminders] rejected unauthorised caller");
+    return unauthorisedResponse(corsHeaders);
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
