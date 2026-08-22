@@ -149,20 +149,22 @@ Deno.serve(async (req) => {
     const targetId = body.target_user_id;
     if (!targetId || !UUID_RE.test(targetId)) return json(400, { error: "invalid_target_user_id" });
 
-    // Caller must be able to manage staff: org owner, or manager/supervisor on a site.
+    // Caller must be able to manage staff: org owner, or owner/supervisor on a site.
     const canManage =
       isOwner ||
       (((memberRows as { site_role: string | null }[] | null) ?? [])).some(
-        (r) => r.site_role === "manager" || r.site_role === "supervisor",
+        (r) => r.site_role === "owner" || r.site_role === "supervisor",
       );
     if (!canManage) return json(403, { error: "not_permitted" });
 
     const { data: targetRow } = await svc
       .from("users")
-      .select("id, display_name, email")
+      .select("id, display_name, email, organisation_id")
       .eq("id", targetId)
       .maybeSingle();
-    const target = targetRow as { id: string; display_name: string | null; email: string | null } | null;
+    const target = targetRow as
+      | { id: string; display_name: string | null; email: string | null; organisation_id: string | null }
+      | null;
     if (!target?.email) return json(400, { error: "no_recipient" });
 
     // Verify the target belongs to one of the caller's organisations.
@@ -170,16 +172,10 @@ Deno.serve(async (req) => {
       .from("org_users")
       .select("organisation_id")
       .eq("user_id", targetId);
-    const { data: tMemberships } = await svc
-      .from("memberships")
-      .select("organisation_id")
-      .eq("user_id", targetId);
     const targetOrgIds = [
+      target.organisation_id,
       ...(((tOrgs as { organisation_id: string }[] | null) ?? []).map((r) => r.organisation_id)),
-      ...(((tMemberships as { organisation_id: string | null }[] | null) ?? [])
-        .map((r) => r.organisation_id)
-        .filter((x): x is string => !!x)),
-    ];
+    ].filter((x): x is string => !!x);
     if (!targetOrgIds.some((id) => orgIds.has(id))) return json(403, { error: "not_same_org" });
 
     recipientEmail = target.email;
