@@ -585,6 +585,10 @@ export default function Landing() {
         <Hero />
         <Features />
         <HowItWorks />
+        <InAction />
+        <TypicalDay />
+        <EveryStage />
+        <Trust />
         <Pricing />
         <FAQ />
         <CTA />
