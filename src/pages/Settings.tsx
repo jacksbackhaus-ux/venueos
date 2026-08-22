@@ -590,9 +590,6 @@ const Settings = () => {
 
     // If the new staff member has an email, send the branded invite email.
     if (staffForm.email) {
-      const orgName: string | null = null; // The send-transactional-email recipient sees "your team" if null.
-      const inviterFirst = (appUser?.display_name || "").trim().split(/\s+/)[0] || null;
-      const firstName = (staffForm.name || "").trim().split(/\s+/)[0] || null;
       supabase.functions
         .invoke("send-app-notification", {
           body: { kind: "staff-invited", target_user_id: newUserId },
@@ -627,7 +624,6 @@ const Settings = () => {
     if (!active) {
       const target = staff.find((s) => s.id === id);
       if (target?.email) {
-        const firstName = (target.name || "").trim().split(/\s+/)[0] || null;
         supabase.functions
           .invoke("send-app-notification", {
             body: { kind: "staff-deactivated", target_user_id: id },

@@ -179,7 +179,6 @@ const Reports = () => {
       toast({ title: "Inspection Pack generated", description: "Your PDF has been downloaded." });
       // Confirmation email — fire-and-forget. Acts as the audit record of when the pack was generated.
       if (user?.email && currentSite) {
-        const firstName = (appUser?.display_name || "").trim().split(/\s+/)[0] || null;
         supabase.functions
           .invoke("send-app-notification", {
             body: {

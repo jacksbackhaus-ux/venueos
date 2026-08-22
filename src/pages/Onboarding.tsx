@@ -101,7 +101,6 @@ export default function Onboarding() {
 
     // Fire-and-forget: send the branded welcome / trial-start email. Never blocks onboarding.
     if (user?.email && orgId) {
-      const first = (form.displayName || "").trim().split(/\s+/)[0] || null;
       supabase.functions
         .invoke("send-app-notification", {
           body: { kind: "welcome-trial-start" },
