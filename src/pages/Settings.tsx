@@ -594,18 +594,8 @@ const Settings = () => {
       const inviterFirst = (appUser?.display_name || "").trim().split(/\s+/)[0] || null;
       const firstName = (staffForm.name || "").trim().split(/\s+/)[0] || null;
       supabase.functions
-        .invoke("send-transactional-email", {
-          body: {
-            templateName: "staff-invited",
-            recipientEmail: staffForm.email,
-            idempotencyKey: `staff-invite:${newUserId}`,
-            templateData: {
-              first_name: firstName,
-              organisation_name: orgName,
-              inviter_name: inviterFirst,
-              accept_url: "https://mise-os.app/auth",
-            },
-          },
+        .invoke("send-app-notification", {
+          body: { kind: "staff-invited", target_user_id: newUserId },
         })
         .catch((e) => console.warn("staff-invited email failed", e));
     }
@@ -639,13 +629,8 @@ const Settings = () => {
       if (target?.email) {
         const firstName = (target.name || "").trim().split(/\s+/)[0] || null;
         supabase.functions
-          .invoke("send-transactional-email", {
-            body: {
-              templateName: "staff-deactivated",
-              recipientEmail: target.email,
-              idempotencyKey: `staff-deactivated:${id}:${new Date().toISOString().slice(0, 10)}`,
-              templateData: { first_name: firstName, organisation_name: null },
-            },
+          .invoke("send-app-notification", {
+            body: { kind: "staff-deactivated", target_user_id: id },
           })
           .catch((e) => console.warn("staff-deactivated email failed", e));
       }
