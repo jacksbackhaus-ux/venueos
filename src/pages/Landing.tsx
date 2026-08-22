@@ -219,6 +219,9 @@ function InAction() {
         </p>
       </div>
       <ScreenshotShowcase />
+      <p className="mt-6 text-center text-xs text-slate-500">
+        Screenshots taken from the live app. Business and staff names shown are examples.
+      </p>
     </Section>
   );
 }

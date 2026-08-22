@@ -1,6 +1,12 @@
 import * as React from "react";
 import { ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import shotDashboard from "@/assets/shot-dashboard.png.asset.json";
+import shotTemperatures from "@/assets/shot-temperatures.png.asset.json";
+import shotCleaning from "@/assets/shot-cleaning.png.asset.json";
+import shotBatches from "@/assets/shot-batches.png.asset.json";
+import shotTraining from "@/assets/shot-training.png.asset.json";
+import shotInspection from "@/assets/shot-inspection-pack.png.asset.json";
 
 /**
  * Screenshot Showcase — real product screenshots only.
@@ -38,36 +44,42 @@ export interface ShowcaseScreen {
 export const SHOWCASE_SCREENS: ShowcaseScreen[] = [
   {
     id: "dashboard",
+    src: shotDashboard.url,
     title: "Dashboard",
     why: "Opens on what needs attention today, so nothing critical is missed before you trade.",
     alt: "MiseOS dashboard showing today's food safety status",
   },
   {
     id: "temperatures",
+    src: shotTemperatures.url,
     title: "Temperature logging",
     why: "Fridge, freezer, hot-holding and probe readings logged in seconds — the records an inspector asks for first.",
     alt: "MiseOS temperature logging screen",
   },
   {
     id: "cleaning",
+    src: shotCleaning.url,
     title: "Cleaning",
     why: "Your cleaning schedule with clear due, done and overdue states, signed off by whoever did the work.",
     alt: "MiseOS cleaning schedule screen",
   },
   {
     id: "batches",
+    src: shotBatches.url,
     title: "Batch & traceability",
     why: "Production batches linked to ingredients and lot numbers, so a recall or complaint can be traced quickly.",
     alt: "MiseOS batch tracking and traceability screen",
   },
   {
     id: "training",
+    src: shotTraining.url,
     title: "Staff training",
     why: "Training, certificates and fitness-to-work records held per person, with renewal dates visible.",
     alt: "MiseOS staff training screen",
   },
   {
     id: "inspection-pack",
+    src: shotInspection.url,
     title: "Inspection Pack",
     why: "Every record your Environmental Health Officer needs, exported as one pack in seconds.",
     alt: "MiseOS Inspection Pack export screen",
