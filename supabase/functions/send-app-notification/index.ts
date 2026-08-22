@@ -63,15 +63,21 @@ Deno.serve(async (req) => {
   // Resolve the caller's app user record.
   const { data: appUserRow } = await svc
     .from("users")
-    .select("id, display_name, email, status")
+    .select("id, display_name, email, status, organisation_id")
     .eq("auth_user_id", authUser.id)
     .maybeSingle();
   const appUser = appUserRow as
-    | { id: string; display_name: string | null; email: string | null; status: string }
+    | {
+        id: string;
+        display_name: string | null;
+        email: string | null;
+        status: string;
+        organisation_id: string | null;
+      }
     | null;
   if (!appUser || appUser.status !== "active") return json(403, { error: "no_user" });
 
-  // Caller's organisations (owner or member) — used to scope every recipient.
+  // Caller's organisations (own org + any org_users rows) — used to scope every recipient.
   const { data: orgRows } = await svc
     .from("org_users")
     .select("organisation_id, org_role")
@@ -79,15 +85,15 @@ Deno.serve(async (req) => {
     .eq("active", true);
   const { data: memberRows } = await svc
     .from("memberships")
-    .select("site_id, organisation_id, site_role")
+    .select("site_id, site_role")
     .eq("user_id", appUser.id)
     .eq("active", true);
-  const orgIds = new Set<string>([
-    ...(((orgRows as { organisation_id: string }[] | null) ?? []).map((r) => r.organisation_id)),
-    ...(((memberRows as { organisation_id: string | null }[] | null) ?? [])
-      .map((r) => r.organisation_id)
-      .filter((x): x is string => !!x)),
-  ]);
+  const orgIds = new Set<string>(
+    [
+      appUser.organisation_id,
+      ...(((orgRows as { organisation_id: string }[] | null) ?? []).map((r) => r.organisation_id)),
+    ].filter((x): x is string => !!x),
+  );
   const isOwner = (((orgRows as { org_role: string }[] | null) ?? [])).some(
     (r) => r.org_role === "org_owner",
   );
