@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Menu, X, Check, ArrowRight, ShieldCheck, FileText, Thermometer,
   SprayCan, ClipboardCheck, BookCheck, Wheat, AlertTriangle, Leaf,
-  Truck, GraduationCap, WifiOff,
+  Truck, GraduationCap, WifiOff, Home, Store, Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -166,9 +166,24 @@ function Features() {
 
 function HowItWorks() {
   const steps = [
-    { n: "1", title: "Set up your site in minutes", desc: "Add your kitchen, fridges, team and daily schedule. No sales call, no spreadsheet import." },
-    { n: "2", title: "Log as you work", desc: "Tap through temperatures, cleaning and checks on your phone or tablet. It works offline, so a bad signal never stops you." },
-    { n: "3", title: "Stay ready for inspections", desc: "Export your Inspection Pack anytime — one PDF or Excel file with every record the EHO needs to see." },
+    {
+      n: "1",
+      title: "Set up your site in minutes",
+      desc: "Pick your premises type — home kitchen, commercial premises, mobile / market stall or production kitchen — then add your staff, fridges and freezers, cleaning schedules and food safety procedures.",
+      highlight: "No sales call. No complicated setup.",
+    },
+    {
+      n: "2",
+      title: "Log as you work",
+      desc: "Log temperatures, tick off cleaning tasks, record production batches, track staff training and report incidents as they happen — not hours later from memory.",
+      highlight: "Works on phone, tablet and desktop — and keeps logging offline when your signal drops.",
+    },
+    {
+      n: "3",
+      title: "Stay ready for inspections",
+      desc: "Generate an Inspection Pack instantly, keep every record stored securely, hold staff training records in one place and maintain your SFBB-style documentation — so you can hand your Environmental Health Officer what they ask for on the spot.",
+      highlight: "Everything an EHO asks for, in one export.",
+    },
   ];
   return (
     <Section id="how">
@@ -177,18 +192,261 @@ function HowItWorks() {
       </div>
       <div className="grid md:grid-cols-3 gap-6">
         {steps.map((s) => (
-          <div key={s.n} className="text-center">
-            <div className="mx-auto h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg text-white mb-4" style={{ backgroundColor: BRAND_SAGE }}>
+          <div key={s.n} className="text-center md:text-left">
+            <div className="mx-auto md:mx-0 h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg text-white mb-4" style={{ backgroundColor: BRAND_SAGE }}>
               {s.n}
             </div>
             <h3 className="font-semibold text-lg text-slate-900 mb-2">{s.title}</h3>
             <p className="text-slate-600">{s.desc}</p>
+            <p className="mt-3 text-sm font-semibold" style={{ color: BRAND_SAGE }}>{s.highlight}</p>
           </div>
         ))}
       </div>
     </Section>
   );
 }
+
+/* ── Lightweight, accurate in-app previews (real markup, not stock imagery) ── */
+
+const PreviewFrame = ({ children }: { children: React.ReactNode }) => (
+  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50">
+      <span className="h-2 w-2 rounded-full bg-slate-300" />
+      <span className="h-2 w-2 rounded-full bg-slate-300" />
+      <span className="h-2 w-2 rounded-full bg-slate-300" />
+    </div>
+    <div className="p-3 space-y-2 text-[11px]">{children}</div>
+  </div>
+);
+
+const Row = ({ label, value, tone = "ok" }: { label: string; value: string; tone?: "ok" | "warn" | "muted" }) => (
+  <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/60 px-2.5 py-2">
+    <span className="text-slate-700">{label}</span>
+    <span
+      className="font-semibold"
+      style={{ color: tone === "ok" ? BRAND_SAGE : tone === "warn" ? "#b45309" : "#64748b" }}
+    >
+      {value}
+    </span>
+  </div>
+);
+
+function InAction() {
+  const cards = [
+    {
+      title: "Dashboard",
+      caption: "See today's food safety status at a glance.",
+      preview: (
+        <PreviewFrame>
+          <div className="rounded-lg px-2.5 py-3" style={{ backgroundColor: `${BRAND_SAGE}14` }}>
+            <p className="font-bold text-slate-900 text-sm">Safe to trade</p>
+            <p className="text-slate-600">All critical checks complete</p>
+          </div>
+          <Row label="Opening checks" value="Done" />
+          <Row label="Temperatures" value="6 of 6" />
+          <Row label="Cleaning" value="1 due" tone="warn" />
+        </PreviewFrame>
+      ),
+    },
+    {
+      title: "Temperature logging",
+      caption: "Record temperatures quickly from any device.",
+      preview: (
+        <PreviewFrame>
+          <Row label="Walk-in fridge" value="3.1 °C" />
+          <Row label="Under-counter fridge" value="4.6 °C" />
+          <Row label="Chest freezer" value="-19 °C" />
+          <Row label="Display chiller" value="9.2 °C — fix logged" tone="warn" />
+        </PreviewFrame>
+      ),
+    },
+    {
+      title: "Cleaning schedule",
+      caption: "Track completed and overdue cleaning tasks.",
+      preview: (
+        <PreviewFrame>
+          <Row label="Prep surfaces" value="Signed off" />
+          <Row label="Mixer & attachments" value="Signed off" />
+          <Row label="Floor drains" value="Overdue" tone="warn" />
+          <Row label="Deep clean — oven" value="Due Friday" tone="muted" />
+        </PreviewFrame>
+      ),
+    },
+    {
+      title: "Batch & traceability",
+      caption: "Keep production records and traceability organised.",
+      preview: (
+        <PreviewFrame>
+          <Row label="SD-0912 Sourdough" value="Sold" />
+          <Row label="CR-0913 Croissants" value="In production" tone="muted" />
+          <Row label="CK-0914 Custard tarts" value="Chilling" tone="muted" />
+          <Row label="Flour lot 88421" value="Traced" />
+        </PreviewFrame>
+      ),
+    },
+    {
+      title: "Staff training",
+      caption: "Track training, certificates and renewals.",
+      preview: (
+        <PreviewFrame>
+          <Row label="Level 2 Food Hygiene" value="4 of 4" />
+          <Row label="Allergen awareness" value="3 of 4" tone="warn" />
+          <Row label="Fitness to work" value="Signed" />
+          <Row label="Renewal due" value="Mar 2027" tone="muted" />
+        </PreviewFrame>
+      ),
+    },
+    {
+      title: "Inspection Pack",
+      caption: "Generate everything your Environmental Health Officer needs in seconds.",
+      preview: (
+        <PreviewFrame>
+          <Row label="Readiness score" value="92 / 100" />
+          <Row label="Temperature records" value="Included" />
+          <Row label="Cleaning & SFBB" value="Included" />
+          <Row label="Export" value="PDF + Excel" tone="muted" />
+        </PreviewFrame>
+      ),
+    },
+  ];
+  return (
+    <Section id="in-action" className="bg-slate-50">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-900">See MiseOS in action</h2>
+        <p className="mt-3 text-slate-600">A quick look at the tools food businesses use every day.</p>
+      </div>
+
+      {/* Mobile: swipeable. Desktop: grid. */}
+      <div className="md:hidden -mx-4 px-4 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {cards.map((c) => (
+          <Card key={c.title} className="p-4 shrink-0 w-[80vw] max-w-[320px] snap-center">
+            {c.preview}
+            <h3 className="mt-4 font-semibold text-slate-900">{c.title}</h3>
+            <p className="text-sm text-slate-600 mt-1">{c.caption}</p>
+          </Card>
+        ))}
+      </div>
+      <p className="md:hidden text-center text-xs text-slate-500 mt-1">Swipe to see more →</p>
+
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
+        {cards.map((c) => (
+          <Card key={c.title} className="p-4 hover:shadow-md transition-shadow">
+            {c.preview}
+            <h3 className="mt-4 font-semibold text-slate-900">{c.title}</h3>
+            <p className="text-sm text-slate-600 mt-1">{c.caption}</p>
+          </Card>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function TypicalDay() {
+  const flow = [
+    { label: "Open MiseOS", desc: "Your day starts with what needs attention." },
+    { label: "Complete opening checks or start a production day", desc: "One tap for on-demand and home kitchens." },
+    { label: "Log temperatures", desc: "Fridges, freezers, hot-holding and probes." },
+    { label: "Record cleaning tasks", desc: "Tick off and sign as you go." },
+    { label: "Log production batches", desc: "Traceable from ingredient to sale." },
+    { label: "Complete end-of-day records", desc: "Closing checks, waste and incidents." },
+    { label: "Stay inspection ready", desc: "Records are filed and exportable instantly." },
+  ];
+  return (
+    <Section id="typical-day">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-900">A typical day with MiseOS</h2>
+        <p className="mt-3 text-slate-600">Around five minutes of logging, spread across the day.</p>
+      </div>
+      <ol className="max-w-2xl mx-auto relative">
+        <span aria-hidden className="absolute left-[15px] top-2 bottom-2 w-px bg-slate-200" />
+        {flow.map((f, i) => (
+          <li key={f.label} className="relative pl-11 pb-6 last:pb-0">
+            <span
+              className="absolute left-0 top-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+              style={{ backgroundColor: i === flow.length - 1 ? BRAND_SAGE : BRAND_LIGHT }}
+            >
+              {i + 1}
+            </span>
+            <p className="font-semibold text-slate-900">{f.label}</p>
+            <p className="text-sm text-slate-600">{f.desc}</p>
+          </li>
+        ))}
+      </ol>
+    </Section>
+  );
+}
+
+function EveryStage() {
+  const cards = [
+    {
+      icon: Home,
+      title: "Home bakers",
+      desc: "Run a compliant home food business with production-day logging and simple food safety records.",
+    },
+    {
+      icon: Store,
+      title: "Independent shops & cafés",
+      desc: "Manage temperatures, cleaning, training and inspections from one place.",
+    },
+    {
+      icon: Building2,
+      title: "Multi-site businesses",
+      desc: "Track compliance across multiple locations while keeping records separate for each site.",
+    },
+  ];
+  return (
+    <Section id="stages" className="bg-slate-50">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Built for businesses at every stage</h2>
+      </div>
+      <div className="grid md:grid-cols-3 gap-4">
+        {cards.map((c) => (
+          <Card key={c.title} className="p-5">
+            <div className="h-10 w-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: `${BRAND_SAGE}1a` }}>
+              <c.icon className="h-5 w-5" style={{ color: BRAND_SAGE }} />
+            </div>
+            <h3 className="font-semibold text-slate-900 mb-1">{c.title}</h3>
+            <p className="text-sm text-slate-600">{c.desc}</p>
+          </Card>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function Trust() {
+  const points = [
+    "Supports SFBB-style food safety management",
+    "Inspection Pack exports",
+    "Temperature records",
+    "Cleaning records",
+    "Staff training records",
+    "Batch traceability",
+    "Multi-site support",
+    "Home kitchen support",
+  ];
+  return (
+    <Section id="trust">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Built around UK food safety requirements</h2>
+      </div>
+      <div className="max-w-3xl mx-auto">
+        <ul className="grid sm:grid-cols-2 gap-3">
+          {points.map((p) => (
+            <li key={p} className="flex items-start gap-2 text-slate-700">
+              <Check className="h-4 w-4 mt-1 shrink-0" style={{ color: BRAND_SAGE }} />
+              <span>{p}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-8 text-xs text-slate-500 text-center leading-relaxed">
+          MiseOS helps food businesses maintain digital food safety records. Businesses remain responsible for meeting all legal food safety requirements.
+        </p>
+      </div>
+    </Section>
+  );
+}
+
 
 function Pricing() {
   return (
@@ -247,6 +505,9 @@ function FAQ() {
     { q: "I'm a home baker. Can I use MiseOS?", a: "Absolutely. Home kitchens and mobile food businesses are first-class premises types in MiseOS. You get a kitchen setup checklist, markets & events log, and simplified supplier records alongside all the standard food safety logs." },
     { q: "Do I need a card to start the trial?", a: "Yes, a card is required to start the trial, but you won't be charged until the 14-day trial ends. Cancel anytime before then and nothing is billed." },
     { q: "Does it work on mobile?", a: "Yes. MiseOS is designed for phones and tablets first. Your team can log temperatures, cleaning and checks while moving around the kitchen, and it works offline when your signal drops." },
+    { q: "Does it work offline?", a: "Yes. Logs you make without signal are saved on your device and sync automatically the moment you're back online." },
+    { q: "Can I move from a home kitchen to a commercial premises?", a: "Yes. Change your premises type in settings and MiseOS updates your checks and schedules. If you're moving to a new site, a 14-day transfer window lets you run both while paying for one." },
+    { q: "Can I upload my existing SFBB pack?", a: "Yes. Upload your completed SFBB PDF as your food safety management system, or complete the safe methods inside the app instead — either counts." },
     { q: "Will my Environmental Health Officer accept digital records?", a: "Yes. UK EHOs accept digital food safety records. MiseOS exports an Inspection Pack in PDF and Excel with all the records they look for, laid out clearly so they can find what they need quickly." },
     { q: "Does it replace Safer Food Better Business (SFBB)?", a: "MiseOS digitises the diary records SFBB asks you to keep — temperatures, cleaning, opening/closing checks, supplier records, incidents, training and more — and lets you export them as an Inspection Pack." },
     { q: "How much do extra users cost?", a: "Each additional active user is £1 per month. The first user is included in the £4.99/site/month price. You can add or deactivate users as your team changes." },
@@ -324,6 +585,10 @@ export default function Landing() {
         <Hero />
         <Features />
         <HowItWorks />
+        <InAction />
+        <TypicalDay />
+        <EveryStage />
+        <Trust />
         <Pricing />
         <FAQ />
         <CTA />
