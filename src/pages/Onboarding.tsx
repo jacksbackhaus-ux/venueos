@@ -101,19 +101,9 @@ export default function Onboarding() {
 
     // Fire-and-forget: send the branded welcome / trial-start email. Never blocks onboarding.
     if (user?.email && orgId) {
-      const first = (form.displayName || "").trim().split(/\s+/)[0] || null;
       supabase.functions
-        .invoke("send-transactional-email", {
-          body: {
-            templateName: "welcome-trial-start",
-            recipientEmail: user.email,
-            idempotencyKey: `welcome:${orgId}`,
-            templateData: {
-              first_name: first,
-              organisation_name: form.orgName.trim(),
-              app_url: "https://mise-os.app",
-            },
-          },
+        .invoke("send-app-notification", {
+          body: { kind: "welcome-trial-start" },
         })
         .catch((e) => console.warn("welcome email failed", e));
     }

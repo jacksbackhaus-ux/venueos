@@ -179,19 +179,12 @@ const Reports = () => {
       toast({ title: "Inspection Pack generated", description: "Your PDF has been downloaded." });
       // Confirmation email — fire-and-forget. Acts as the audit record of when the pack was generated.
       if (user?.email && currentSite) {
-        const firstName = (appUser?.display_name || "").trim().split(/\s+/)[0] || null;
         supabase.functions
-          .invoke("send-transactional-email", {
+          .invoke("send-app-notification", {
             body: {
-              templateName: "inspection-pack-ready",
-              recipientEmail: user.email,
-              idempotencyKey: `inspection-pack:${currentSite.id}:${Date.now()}`,
-              templateData: {
-                first_name: firstName,
-                site_name: currentSite.name,
-                period_label: typeof dateRange === "string" ? dateRange : null,
-                download_url: "https://mise-os.app/reports",
-              },
+              kind: "inspection-pack-ready",
+              site_id: currentSite.id,
+              period_label: typeof dateRange === "string" ? dateRange : null,
             },
           })
           .catch((e) => console.warn("inspection-pack-ready email failed", e));
