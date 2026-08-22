@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Menu, X, Check, ArrowRight, ShieldCheck, FileText, Thermometer,
   SprayCan, ClipboardCheck, BookCheck, Wheat, AlertTriangle, Leaf,
-  Truck, GraduationCap, WifiOff,
+  Truck, GraduationCap, WifiOff, Home, Store, Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
