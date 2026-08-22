@@ -21,6 +21,8 @@ project_id = "elcmnvgbmzusogudpenp"
     verify_jwt = true
   [functions.send-transactional-email]
     verify_jwt = true
+  [functions.send-app-notification]
+    verify_jwt = true
   [functions.stripe-admin-migrate]
     verify_jwt = true
   [functions.suggest-sales-mapping]
