@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import miseosLogo from "@/assets/miseos-logo.png";
 import { SEO } from "@/components/SEO";
+import { ScreenshotShowcase } from "@/components/landing/ScreenshotShowcase";
 
 const AUTH_URL = "/auth";
 const SIGNUP_URL = "/auth?mode=signup";
@@ -206,140 +207,22 @@ function HowItWorks() {
   );
 }
 
-/* ── Lightweight, accurate in-app previews (real markup, not stock imagery) ── */
-
-const PreviewFrame = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-    <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50">
-      <span className="h-2 w-2 rounded-full bg-slate-300" />
-      <span className="h-2 w-2 rounded-full bg-slate-300" />
-      <span className="h-2 w-2 rounded-full bg-slate-300" />
-    </div>
-    <div className="p-3 space-y-2 text-[11px]">{children}</div>
-  </div>
-);
-
-const Row = ({ label, value, tone = "ok" }: { label: string; value: string; tone?: "ok" | "warn" | "muted" }) => (
-  <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/60 px-2.5 py-2">
-    <span className="text-slate-700">{label}</span>
-    <span
-      className="font-semibold"
-      style={{ color: tone === "ok" ? BRAND_SAGE : tone === "warn" ? "#b45309" : "#64748b" }}
-    >
-      {value}
-    </span>
-  </div>
-);
+/* ── Real product screenshots (no mock-ups) ── */
 
 function InAction() {
-  const cards = [
-    {
-      title: "Dashboard",
-      caption: "See today's food safety status at a glance.",
-      preview: (
-        <PreviewFrame>
-          <div className="rounded-lg px-2.5 py-3" style={{ backgroundColor: `${BRAND_SAGE}14` }}>
-            <p className="font-bold text-slate-900 text-sm">Safe to trade</p>
-            <p className="text-slate-600">All critical checks complete</p>
-          </div>
-          <Row label="Opening checks" value="Done" />
-          <Row label="Temperatures" value="6 of 6" />
-          <Row label="Cleaning" value="1 due" tone="warn" />
-        </PreviewFrame>
-      ),
-    },
-    {
-      title: "Temperature logging",
-      caption: "Record temperatures quickly from any device.",
-      preview: (
-        <PreviewFrame>
-          <Row label="Walk-in fridge" value="3.1 °C" />
-          <Row label="Under-counter fridge" value="4.6 °C" />
-          <Row label="Chest freezer" value="-19 °C" />
-          <Row label="Display chiller" value="9.2 °C — fix logged" tone="warn" />
-        </PreviewFrame>
-      ),
-    },
-    {
-      title: "Cleaning schedule",
-      caption: "Track completed and overdue cleaning tasks.",
-      preview: (
-        <PreviewFrame>
-          <Row label="Prep surfaces" value="Signed off" />
-          <Row label="Mixer & attachments" value="Signed off" />
-          <Row label="Floor drains" value="Overdue" tone="warn" />
-          <Row label="Deep clean — oven" value="Due Friday" tone="muted" />
-        </PreviewFrame>
-      ),
-    },
-    {
-      title: "Batch & traceability",
-      caption: "Keep production records and traceability organised.",
-      preview: (
-        <PreviewFrame>
-          <Row label="SD-0912 Sourdough" value="Sold" />
-          <Row label="CR-0913 Croissants" value="In production" tone="muted" />
-          <Row label="CK-0914 Custard tarts" value="Chilling" tone="muted" />
-          <Row label="Flour lot 88421" value="Traced" />
-        </PreviewFrame>
-      ),
-    },
-    {
-      title: "Staff training",
-      caption: "Track training, certificates and renewals.",
-      preview: (
-        <PreviewFrame>
-          <Row label="Level 2 Food Hygiene" value="4 of 4" />
-          <Row label="Allergen awareness" value="3 of 4" tone="warn" />
-          <Row label="Fitness to work" value="Signed" />
-          <Row label="Renewal due" value="Mar 2027" tone="muted" />
-        </PreviewFrame>
-      ),
-    },
-    {
-      title: "Inspection Pack",
-      caption: "Generate everything your Environmental Health Officer needs in seconds.",
-      preview: (
-        <PreviewFrame>
-          <Row label="Readiness score" value="92 / 100" />
-          <Row label="Temperature records" value="Included" />
-          <Row label="Cleaning & SFBB" value="Included" />
-          <Row label="Export" value="PDF + Excel" tone="muted" />
-        </PreviewFrame>
-      ),
-    },
-  ];
   return (
     <Section id="in-action" className="bg-slate-50">
       <div className="text-center mb-10">
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900">See MiseOS in action</h2>
-        <p className="mt-3 text-slate-600">A quick look at the tools food businesses use every day.</p>
+        <p className="mt-3 text-slate-600">
+          Real screens from the app — exactly what you'll use after signing up.
+        </p>
       </div>
-
-      {/* Mobile: swipeable. Desktop: grid. */}
-      <div className="md:hidden -mx-4 px-4 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {cards.map((c) => (
-          <Card key={c.title} className="p-4 shrink-0 w-[80vw] max-w-[320px] snap-center">
-            {c.preview}
-            <h3 className="mt-4 font-semibold text-slate-900">{c.title}</h3>
-            <p className="text-sm text-slate-600 mt-1">{c.caption}</p>
-          </Card>
-        ))}
-      </div>
-      <p className="md:hidden text-center text-xs text-slate-500 mt-1">Swipe to see more →</p>
-
-      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {cards.map((c) => (
-          <Card key={c.title} className="p-4 hover:shadow-md transition-shadow">
-            {c.preview}
-            <h3 className="mt-4 font-semibold text-slate-900">{c.title}</h3>
-            <p className="text-sm text-slate-600 mt-1">{c.caption}</p>
-          </Card>
-        ))}
-      </div>
+      <ScreenshotShowcase />
     </Section>
   );
 }
+
 
 function TypicalDay() {
   const flow = [
