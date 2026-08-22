@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import miseosLogo from "@/assets/miseos-logo.png";
 import { SEO } from "@/components/SEO";
+import { ScreenshotShowcase } from "@/components/landing/ScreenshotShowcase";
 
 const AUTH_URL = "/auth";
 const SIGNUP_URL = "/auth?mode=signup";
