@@ -25,15 +25,22 @@ function generateToken(): string {
     .join('')
 }
 
-// Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
-// gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// Auth note: this is an INTERNAL function. Only service-role callers (other edge
+// functions, cron jobs, the email queue) may invoke it, because it can send mail to
+// any address with caller-supplied template data. Client/user flows must go through
+// send-app-notification, which derives the recipient from the caller's own tenant.
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
+
+  if (!isServiceRoleCaller(req)) {
+    console.warn('[send-transactional-email] rejected non-service-role caller')
+    return unauthorisedResponse(corsHeaders)
+  }
+
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
