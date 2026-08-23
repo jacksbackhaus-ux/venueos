@@ -142,9 +142,13 @@ export function generateInspectionPackPdf(
   function statBlock(y: number, stats: PackStat[]): number {
     let cy = y;
     for (const s of stats) {
-      const labelLines = doc.splitTextToSize(s.label, contentW * 0.45);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      const labelLines = doc.splitTextToSize(s.label, contentW * 0.42);
+      doc.setFont("helvetica", "normal");
       const valueLines = doc.splitTextToSize(s.value, contentW * 0.5);
       const h = Math.max(labelLines.length, valueLines.length) * 4.4 + 2.5;
+
       cy = ensure(cy, h + 2);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
