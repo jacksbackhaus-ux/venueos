@@ -307,7 +307,7 @@ function AppRoutes() {
       <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
       <Route path="/staff-training" element={moduleRoute("staff_training", <StaffTraining />)} />
-      <Route path="/haccp" element={moduleRoute("haccp", <RoleGuard require="supervisorPlus" inline><Haccp /></RoleGuard>)} />
+      <Route path="/haccp" element={<PublicOrApp public={<HaccpHub />}>{moduleRoute("haccp", <RoleGuard require="supervisorPlus" inline><Haccp /></RoleGuard>)}</PublicOrApp>} />
       <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
       <Route path="/sales" element={moduleRoute("cost_margin", <Sales />)} />
       <Route path="/timesheets" element={moduleRoute("timesheets", <Timesheets />)} />
