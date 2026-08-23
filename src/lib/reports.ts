@@ -522,7 +522,34 @@ export async function fetchReportData(
     }
   }
 
+  // === Audit trail: who recorded what during the period ===
+  const authorTally = new Map<string, number>();
+  const tally = (name?: string | null) => {
+    const n = (name || "").trim();
+    if (!n) return;
+    authorTally.set(n, (authorTally.get(n) || 0) + 1);
+  };
+  (tempLogs as any[]).forEach((t) => tally(t.logged_by_name));
+  (cleaningLogs as any[]).forEach((l) => tally(l.completed_by_name));
+  (daySheets as any[]).forEach((d) => tally(d.signed_off_by_name || d.locked_by_name));
+  (incidents as any[]).forEach((i) => tally(i.reported_by_name));
+  (deliveries as any[]).forEach((d) => tally(d.logged_by_name));
+  (pestLogs as any[]).forEach((p) => tally(p.reported_by_name));
+  (maintenanceLogs as any[]).forEach((m) => tally(m.reported_by_name));
+  const recordAuthors = Array.from(authorTally.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
   return {
+    siteAddress: ((siteRes.data as any)?.address ?? null) as string | null,
+    sfbbSystem: (sfbbSystemRes as any)?.data ?? null,
+    sfbbDocuments: ((sfbbDocsRes as any)?.data ?? []) as any[],
+    batches: ((batchesRes as any)?.data ?? []) as any[],
+    productionDaysCount: ((productionDaysRes as any)?.data ?? []).length,
+    tempPassPct,
+    recordAuthors,
+    storageTempLogs: (tempLogs ?? []).filter((t: any) => !!t.unit_id),
+
     range,
     siteName: siteRes.data?.name || "Site",
     orgName: orgRes.data?.name || "Organisation",
