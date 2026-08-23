@@ -270,19 +270,14 @@ const Reports = () => {
         title="Inspection Pack"
         subtitle={`${currentSite.name} · live evidence from your operational records`}
         action={
-          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeKey)}>
-            <SelectTrigger className="w-40 h-9">
-              <Calendar className="h-3.5 w-3.5 mr-1" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7days">Last 7 days</SelectItem>
-              <SelectItem value="4weeks">Last 4 weeks</SelectItem>
-              <SelectItem value="3months">Last 3 months</SelectItem>
-              <SelectItem value="12months">Last 12 months</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1.5 rounded-md border bg-card px-2.5 h-9 text-xs text-muted-foreground">
+            <Calendar className="h-3.5 w-3.5" />
+            <span className="whitespace-nowrap">
+              {format(range.from, "d MMM yyyy")} – {format(range.to, "d MMM yyyy")}
+            </span>
+          </div>
         }
+
       />
 
       {/* Disclaimer */}
