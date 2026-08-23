@@ -18,37 +18,37 @@ const principles: { name: string; body: string }[] = [
   {
     name: "Conduct a hazard analysis",
     body:
-      "identify the biological, chemical, physical and allergenic hazards that could occur at each stage of your food process, from delivery through to service.",
+      "Identify the biological, chemical, physical and allergenic hazards that could occur at each stage of your food process, from delivery through to service.",
   },
   {
     name: "Identify the critical control points",
     body:
-      "decide the specific steps where control is essential to prevent, eliminate or reduce a food safety hazard to a safe level, such as cooking or chilling.",
+      "Decide the specific steps where control is essential to prevent, eliminate or reduce a food safety hazard to a safe level, such as cooking or chilling.",
   },
   {
     name: "Set critical limits",
     body:
-      "define the measurable limit that separates safe from unsafe at each critical control point, for example a core cooking temperature of 75°C or a fridge running at 5°C or below.",
+      "Define the measurable limit that separates safe from unsafe at each critical control point, for example a core cooking temperature of 75°C or a fridge running at 5°C or below.",
   },
   {
     name: "Establish monitoring procedures",
     body:
-      "state how, how often and by whom each critical limit is checked, such as probing cooked food at the end of every batch and recording fridge temperatures twice a day.",
+      "State how, how often and by whom each critical limit is checked, such as probing cooked food at the end of every batch and recording fridge temperatures twice a day.",
   },
   {
     name: "Establish corrective actions",
     body:
-      "decide in advance what happens when a critical limit is not met, for example continuing to cook food that has not reached temperature, or discarding stock from a fridge that failed overnight.",
+      "Decide in advance what happens when a critical limit is not met, for example continuing to cook food that has not reached temperature, or discarding stock from a fridge that failed overnight.",
   },
   {
     name: "Establish verification procedures",
     body:
-      "check that the system itself works, by calibrating probes, reviewing records for gaps, and confirming that staff follow the written procedures in practice.",
+      "Check that the system itself works, by calibrating probes, reviewing records for gaps, and confirming that staff follow the written procedures in practice.",
   },
   {
     name: "Establish record keeping and documentation",
     body:
-      "keep dated records of monitoring, corrective actions, verification and reviews, so a food safety officer can see the system is being followed.",
+      "Keep dated records of monitoring, corrective actions, verification and reviews, so a food safety officer can see the system is being followed.",
   },
 ];
 
