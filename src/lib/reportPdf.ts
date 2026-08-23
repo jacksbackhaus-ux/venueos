@@ -115,7 +115,10 @@ export function generateInspectionPackPdf(
   }
 
   function subTitle(y: number, text: string): number {
-    let cy = ensure(y, 12);
+    // Reserve room for the first rows of the block that follows, so a heading
+    // never sits alone at the foot of a page.
+    let cy = ensure(y, 30);
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.setTextColor(...BRAND.ink);
