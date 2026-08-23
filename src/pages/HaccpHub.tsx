@@ -14,79 +14,79 @@ const PUBLISHED = "2026-08-23";
 const MODIFIED = "2026-08-23";
 const LAST_UPDATED_LABEL = "23 August 2026";
 
-const principles: { name: string; text: string }[] = [
+const principles: { name: string; body: string }[] = [
   {
     name: "Conduct a hazard analysis",
-    text:
-      "Principle 1 — Conduct a hazard analysis: identify the biological, chemical, physical and allergenic hazards that could occur at each stage of your food process, from delivery through to service.",
+    body:
+      "identify the biological, chemical, physical and allergenic hazards that could occur at each stage of your food process, from delivery through to service.",
   },
   {
     name: "Identify the critical control points",
-    text:
-      "Principle 2 — Identify the critical control points: decide the specific steps where control is essential to prevent, eliminate or reduce a food safety hazard to a safe level, such as cooking or chilling.",
+    body:
+      "decide the specific steps where control is essential to prevent, eliminate or reduce a food safety hazard to a safe level, such as cooking or chilling.",
   },
   {
     name: "Set critical limits",
-    text:
-      "Principle 3 — Set critical limits: define the measurable limit that separates safe from unsafe at each critical control point, for example a core cooking temperature of 75°C or a fridge running at 5°C or below.",
+    body:
+      "define the measurable limit that separates safe from unsafe at each critical control point, for example a core cooking temperature of 75°C or a fridge running at 5°C or below.",
   },
   {
     name: "Establish monitoring procedures",
-    text:
-      "Principle 4 — Establish monitoring procedures: state how, how often and by whom each critical limit is checked, such as probing cooked food at the end of every batch and recording fridge temperatures twice a day.",
+    body:
+      "state how, how often and by whom each critical limit is checked, such as probing cooked food at the end of every batch and recording fridge temperatures twice a day.",
   },
   {
     name: "Establish corrective actions",
-    text:
-      "Principle 5 — Establish corrective actions: decide in advance what happens when a critical limit is not met, for example continuing to cook food that has not reached temperature, or discarding stock from a fridge that failed overnight.",
+    body:
+      "decide in advance what happens when a critical limit is not met, for example continuing to cook food that has not reached temperature, or discarding stock from a fridge that failed overnight.",
   },
   {
     name: "Establish verification procedures",
-    text:
-      "Principle 6 — Establish verification procedures: check that the system itself works, by calibrating probes, reviewing records for gaps, and confirming that staff follow the written procedures in practice.",
+    body:
+      "check that the system itself works, by calibrating probes, reviewing records for gaps, and confirming that staff follow the written procedures in practice.",
   },
   {
     name: "Establish record keeping and documentation",
-    text:
-      "Principle 7 — Establish record keeping and documentation: keep dated records of monitoring, corrective actions, verification and reviews, so a food safety officer can see the system is being followed.",
+    body:
+      "keep dated records of monitoring, corrective actions, verification and reviews, so a food safety officer can see the system is being followed.",
   },
 ];
 
-const howToSteps: { name: string; text: string }[] = [
+const howToSteps: { name: string; body: string }[] = [
   {
     name: "Describe your food business and products",
-    text:
-      "Step 1: Write down what your business makes and sells, who eats it, and how it reaches them. A HACCP plan must reflect the real products, equipment and premises, so record shelf life, whether food is served hot or cold, and whether any customers are vulnerable groups such as children or care-home residents.",
+    body:
+      "Write down what your business makes and sells, who eats it, and how it reaches them. A HACCP plan must reflect the real products, equipment and premises, so record shelf life, whether food is served hot or cold, and whether any customers are vulnerable groups such as children or care-home residents.",
   },
   {
     name: "Map every step of your process",
-    text:
-      "Step 2: List each stage food passes through in your business, in order: delivery, storage, preparation, cooking, cooling, hot holding, chilled display, packing, and service or transport. A simple written flow of steps is enough for a small food business, and it becomes the backbone of the whole HACCP plan.",
+    body:
+      "List each stage food passes through in your business, in order: delivery, storage, preparation, cooking, cooling, hot holding, chilled display, packing, and service or transport. A simple written flow of steps is enough for a small food business, and it becomes the backbone of the whole HACCP plan.",
   },
   {
     name: "Identify the hazards at each step",
-    text:
-      "Step 3: Against each step, note what could make food unsafe: bacterial growth, survival of bacteria after cooking, cross-contamination from raw food, allergen contact, chemical contamination from cleaning products, or physical contamination such as glass or metal.",
+    body:
+      "Against each step, note what could make food unsafe: bacterial growth, survival of bacteria after cooking, cross-contamination from raw food, allergen contact, chemical contamination from cleaning products, or physical contamination such as glass or metal.",
   },
   {
     name: "Decide which steps are critical control points",
-    text:
-      "Step 4: Pick out the steps where control is essential because no later step will remove the hazard. In most small UK food businesses these are cooking, chilling and cold storage, hot holding, reheating and allergen separation.",
+    body:
+      "Pick out the steps where control is essential because no later step will remove the hazard. In most small UK food businesses these are cooking, chilling and cold storage, hot holding, reheating and allergen separation.",
   },
   {
     name: "Set a critical limit for each critical control point",
-    text:
-      "Step 5: Give every critical control point a measurable limit that a member of staff can check without judgement, such as cooking to 75°C in the thickest part, chilling from 63°C to 8°C within 90 minutes, holding hot food at 63°C or above, and keeping fridges at 5°C or below.",
+    body:
+      "Give every critical control point a measurable limit that a member of staff can check without judgement, such as cooking to 75°C in the thickest part, chilling from 63°C to 8°C within 90 minutes, holding hot food at 63°C or above, and keeping fridges at 5°C or below.",
   },
   {
     name: "Write the monitoring and corrective action for each limit",
-    text:
-      "Step 6: For each critical limit, record who checks it, how, how often, and what they do when the limit is missed. Written corrective actions matter as much as the checks themselves, because they show a food safety officer that failures are handled rather than ignored.",
+    body:
+      "For each critical limit, record who checks it, how, how often, and what they do when the limit is missed. Written corrective actions matter as much as the checks themselves, because they show a food safety officer that failures are handled rather than ignored.",
   },
   {
     name: "Keep records and review the plan",
-    text:
-      "Step 7: Keep dated records of the checks, failures and corrective actions, and review the plan whenever your menu, equipment, suppliers or premises change, and at least once a year. Record who carried out the review and what was changed.",
+    body:
+      "Keep dated records of the checks, failures and corrective actions, and review the plan whenever your menu, equipment, suppliers or premises change, and at least once a year. Record who carried out the review and what was changed.",
   },
 ];
 
@@ -143,7 +143,7 @@ const jsonLd = {
         "@type": "HowToStep",
         position: i + 1,
         name: s.name,
-        text: s.text,
+        text: `${s.name}. ${s.body}`,
       })),
     },
     {
@@ -254,8 +254,7 @@ export default function HaccpHub() {
             <ol className="mt-5 list-decimal pl-6 space-y-3">
               {principles.map((p) => (
                 <li key={p.name} className="pl-1">
-                  <span className="font-semibold text-slate-900">{p.name}.</span>{" "}
-                  {p.text.replace(/^Principle \d+ — [^:]+: /, "")}
+                  <span className="font-semibold text-slate-900">{p.name}.</span> {p.body}
                 </li>
               ))}
             </ol>
@@ -270,8 +269,7 @@ export default function HaccpHub() {
             <ol className="mt-5 list-decimal pl-6 space-y-4">
               {howToSteps.map((s) => (
                 <li key={s.name} className="pl-1">
-                  <span className="font-semibold text-slate-900">{s.name}.</span>{" "}
-                  {s.text.replace(/^Step \d+: /, "")}
+                  <span className="font-semibold text-slate-900">{s.name}.</span> {s.body}
                 </li>
               ))}
             </ol>
