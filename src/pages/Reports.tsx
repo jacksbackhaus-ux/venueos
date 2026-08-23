@@ -106,10 +106,25 @@ const Reports = () => {
   const aiActive = isActive("ai_insights");
   const canExport = isManager; // Only manager/org_owner can export pack
   const queryClient = useQueryClient();
-  const [dateRange, setDateRange] = useState<DateRangeKey>("4weeks");
+  const [dateRange, setDateRange] = useState<DateRangeKey>("3months");
+  const [customFrom, setCustomFrom] = useState<string>(() => format(new Date(Date.now() - 89 * 864e5), "yyyy-MM-dd"));
+  const [customTo, setCustomTo] = useState<string>(() => format(new Date(), "yyyy-MM-dd"));
+  const [detail, setDetail] = useState<PackDetail>("overview");
+  const [sections, setSections] = useState<PackSections>(() => allSectionsOn());
+  const [showSections, setShowSections] = useState(false);
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+
+  const packOptions: PackOptions = useMemo(() => ({ detail, sections }), [detail, sections]);
+
+  const range = useMemo(() => {
+    if (dateRange === "custom" && customFrom && customTo) {
+      return buildCustomRange(new Date(customFrom), new Date(customTo));
+    }
+    return buildRange(dateRange);
+  }, [dateRange, customFrom, customTo]);
+
 
   const isCostManager = orgRole?.org_role === "org_owner" || orgRole?.org_role === "hq_admin";
   const hasCostAccess =
