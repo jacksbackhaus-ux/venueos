@@ -248,7 +248,11 @@ export async function fetchReportData(
     supabase.from("fitness_to_work" as any).select("*").eq("site_id", siteId).order("reported_date", { ascending: false }).limit(50),
     supabase.from("safe_methods" as any).select("*").eq("site_id", siteId),
     supabase.from("recalls" as any).select("*").eq("site_id", siteId).order("created_at", { ascending: false }).limit(50),
+    supabase.from("sfbb_system" as any).select("*").eq("site_id", siteId).maybeSingle(),
+    supabase.from("sfbb_documents" as any).select("*").eq("site_id", siteId).order("created_at", { ascending: false }),
+    supabase.from("batches" as any).select("*").eq("site_id", siteId).gte("date_produced", fromDate).lte("date_produced", toDate).order("date_produced", { ascending: false }),
   ]);
+
 
 
   const tempLogsRaw = tempRes.data || [];
