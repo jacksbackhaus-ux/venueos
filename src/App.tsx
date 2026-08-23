@@ -245,6 +245,15 @@ function RootRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Shows a public marketing page to visitors and the in-app screen to signed-in users. */
+function PublicOrApp({ public: publicPage, children }: { public: React.ReactNode; children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, staffSession } = useAuth();
+  if (isLoading) return <FullScreenLoader />;
+  if (!isAuthenticated && !staffSession) return <>{publicPage}</>;
+  return <>{children}</>;
+}
+
+
 function AppRoutes() {
   const { isLoading } = useAuth();
   if (isLoading) return <FullScreenLoader />;
