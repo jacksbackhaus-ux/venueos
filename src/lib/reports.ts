@@ -142,11 +142,21 @@ export interface ReportData {
   // SFBB evidence
   reviews: any[];
   processTempLogs: any[];
+  storageTempLogs: any[];
   probeCalibrations: any[];
   fitnessRecords: any[];
   safeMethods: any[];
   recalls: any[];
+  // Inspection-pack extras
+  siteAddress: string | null;
+  sfbbSystem: any | null;
+  sfbbDocuments: any[];
+  batches: any[];
+  productionDaysCount: number;
+  tempPassPct: number;
+  recordAuthors: { name: string; count: number }[];
 }
+
 
 
 export interface CostMarginRecipeRow {
