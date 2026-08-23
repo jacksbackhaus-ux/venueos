@@ -213,8 +213,10 @@ export async function fetchReportData(
     haccpPlansRes, ppmTasksRes, ppmCompletionsRes, wasteLogsRes,
     registrationRes, kitchenSetupRes, siteEventsRes, productionDaysRes,
     reviewsRes, probeCalRes, fitnessRes, safeMethodsRes, recallsRes,
+    sfbbSystemRes, sfbbDocsRes, batchesRes,
   ] = await Promise.all([
-    supabase.from("sites").select("name, premises_type, operating_mode").eq("id", siteId).maybeSingle(),
+    supabase.from("sites").select("name, address, premises_type, operating_mode").eq("id", siteId).maybeSingle(),
+
 
     supabase.from("organisations").select("name").eq("id", orgId).maybeSingle(),
     supabase.from("temp_logs").select("*, temp_units(name)").eq("site_id", siteId).gte("logged_at", fromIso).lte("logged_at", toIso),
