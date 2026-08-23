@@ -529,37 +529,122 @@ const Reports = () => {
             </Card>
           )}
 
-          {/* Export Section — prominent, role-gated */}
+          {/* Export Section — one screen, novice-friendly */}
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-heading flex items-center gap-2">
                 <Download className="h-4 w-4 text-primary" /> Generate Inspection Pack
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                A professional multi-page pack containing all compliance evidence for the selected period —
-                ready to hand to an Environmental Health Officer. Data completeness: <strong>{data.dataCompleteness}%</strong>.
-              </p>
-              <div className="grid sm:grid-cols-2 gap-1.5">
-                {reportSections.map((s) => (
-                  <div key={s.label} className="flex items-center gap-2 text-xs">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
-                    <s.icon className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span>{s.label}</span>
+            <CardContent className="space-y-5">
+              {/* 1 — Timeframe */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  1. Timeframe
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {TIMEFRAMES.map((t) => (
+                    <Button
+                      key={t.key}
+                      size="sm"
+                      variant={dateRange === t.key ? "default" : "outline"}
+                      onClick={() => setDateRange(t.key)}
+                      className="h-8"
+                    >
+                      {t.label}
+                    </Button>
+                  ))}
+                </div>
+                {dateRange === "custom" && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <input
+                      type="date"
+                      value={customFrom}
+                      max={customTo || undefined}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="h-9 rounded-md border bg-background px-2 text-sm"
+                      aria-label="Start date"
+                    />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      min={customFrom || undefined}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="h-9 rounded-md border bg-background px-2 text-sm"
+                      aria-label="End date"
+                    />
                   </div>
-                ))}
+                )}
               </div>
+
+              {/* 2 — Level of detail */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  2. Level of detail
+                </p>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {DETAIL_OPTIONS.map((o) => (
+                    <button
+                      key={o.key}
+                      onClick={() => setDetail(o.key)}
+                      className={`text-left rounded-lg border p-3 transition-colors ${
+                        detail === o.key ? "border-primary bg-background" : "bg-background/60 hover:bg-background"
+                      }`}
+                    >
+                      <span className="text-sm font-semibold flex items-center gap-2">
+                        {detail === o.key && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
+                        {o.label}
+                      </span>
+                      <span className="block text-xs text-muted-foreground mt-1">{o.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3 — Sections (secondary) */}
+              <div>
+                <button
+                  onClick={() => setShowSections((v) => !v)}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1"
+                >
+                  Customise sections
+                  <span className="text-[10px]">
+                    ({PACK_SECTIONS.filter((s) => sections[s.key]).length} of {PACK_SECTIONS.length} included)
+                  </span>
+                  {showSections ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </button>
+                {showSections && (
+                  <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2 mt-3 rounded-lg border bg-background p-3">
+                    {PACK_SECTIONS.map((s) => (
+                      <label key={s.key} className="flex items-center justify-between gap-2 text-sm">
+                        <span>{s.label}</span>
+                        <Switch
+                          checked={sections[s.key]}
+                          onCheckedChange={(v) => setSections((prev) => ({ ...prev, [s.key]: v }))}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 4 — Generate */}
               {canExport ? (
-                <div className="flex gap-2 flex-wrap pt-1">
-                  <Button onClick={handleExport} disabled={exporting || !data} size="lg" className="flex-1 min-w-[160px]">
-                    {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                    Export PDF Pack
-                  </Button>
-                  <Button onClick={handleExcelExport} disabled={exporting || !data} size="lg" variant="outline" className="flex-1 min-w-[160px]">
-                    {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-2" />}
-                    Export Excel
-                  </Button>
+                <div className="space-y-2 pt-1">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button onClick={handleExport} disabled={exporting || !data} size="lg" className="flex-1 min-w-[180px]">
+                      {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                      Generate Inspection Pack (PDF)
+                    </Button>
+                    <Button onClick={handleExcelExport} disabled={exporting || !data} size="lg" variant="outline" className="flex-1 min-w-[150px]">
+                      {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-2" />}
+                      Excel version
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Built around the three areas a Food Standards Agency inspector assesses.
+                  </p>
                 </div>
               ) : (
                 <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border">
@@ -571,6 +656,7 @@ const Reports = () => {
               )}
             </CardContent>
           </Card>
+
 
         </>
       )}
