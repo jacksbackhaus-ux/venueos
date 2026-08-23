@@ -124,6 +124,9 @@ export function generateInspectionPackPdf(
   }
 
   function paragraph(y: number, text: string, size = 9.5, italic = false): number {
+    // Font must be set BEFORE measuring, or wrapping uses the previous font size.
+    doc.setFont("helvetica", italic ? "italic" : "normal");
+    doc.setFontSize(size);
     const lines = doc.splitTextToSize(text, contentW);
     let cy = ensure(y, lines.length * 4.6 + 2);
     doc.setFont("helvetica", italic ? "italic" : "normal");
@@ -133,6 +136,7 @@ export function generateInspectionPackPdf(
     doc.setTextColor(...BRAND.ink);
     return cy + lines.length * 4.6 + 3;
   }
+
 
   /** Statement list — prints clearly in black and white. */
   function statBlock(y: number, stats: PackStat[]): number {
