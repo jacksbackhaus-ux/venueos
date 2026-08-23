@@ -59,6 +59,8 @@ import { StaffLayout } from "./components/staff/StaffLayout";
 import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
+import HaccpHub from "./pages/HaccpHub";
+
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
