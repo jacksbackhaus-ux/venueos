@@ -5,7 +5,14 @@ import {
 } from "date-fns";
 import { loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
 
-export type DateRangeKey = "7days" | "4weeks" | "3months" | "12months";
+export type DateRangeKey =
+  | "7days"
+  | "4weeks"
+  | "1month"
+  | "3months"
+  | "6months"
+  | "12months"
+  | "custom";
 
 export interface ReportRange {
   key: DateRangeKey;
@@ -15,18 +22,45 @@ export interface ReportRange {
   days: number;
 }
 
+const RANGE_DAYS: Record<Exclude<DateRangeKey, "custom">, number> = {
+  "7days": 7,
+  "4weeks": 28,
+  "1month": 30,
+  "3months": 90,
+  "6months": 182,
+  "12months": 365,
+};
+
+export const RANGE_LABELS: Record<DateRangeKey, string> = {
+  "7days": "Last 7 days",
+  "4weeks": "Last 4 weeks",
+  "1month": "Last month",
+  "3months": "Last 3 months",
+  "6months": "Last 6 months",
+  "12months": "Last 12 months",
+  custom: "Custom range",
+};
+
 export function buildRange(key: DateRangeKey): ReportRange {
   const to = endOfDay(new Date());
-  const days = key === "7days" ? 7 : key === "4weeks" ? 28 : key === "3months" ? 90 : 365;
+  const days = RANGE_DAYS[(key === "custom" ? "3months" : key) as Exclude<DateRangeKey, "custom">];
   const from = startOfDay(subDays(to, days - 1));
-  const labels: Record<DateRangeKey, string> = {
-    "7days": "Last 7 days",
-    "4weeks": "Last 4 weeks",
-    "3months": "Last 3 months",
-    "12months": "Last 12 months",
-  };
-  return { key, label: labels[key], from, to, days };
+  return { key, label: RANGE_LABELS[key], from, to, days };
 }
+
+/** Custom, user-picked reporting window. Always per-site, inclusive of both dates. */
+export function buildCustomRange(from: Date, to: Date): ReportRange {
+  const f = startOfDay(from);
+  const t = endOfDay(to);
+  return {
+    key: "custom",
+    label: `${format(f, "d MMM yyyy")} – ${format(t, "d MMM yyyy")}`,
+    from: f,
+    to: t,
+    days: Math.max(1, differenceInDays(t, f) + 1),
+  };
+}
+
 
 export interface PillarDetail {
   label: string;
