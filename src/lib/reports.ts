@@ -5,7 +5,14 @@ import {
 } from "date-fns";
 import { loadCostContextForOrg, type RecipeWithCost } from "@/lib/recipeCost";
 
-export type DateRangeKey = "7days" | "4weeks" | "3months" | "12months";
+export type DateRangeKey =
+  | "7days"
+  | "4weeks"
+  | "1month"
+  | "3months"
+  | "6months"
+  | "12months"
+  | "custom";
 
 export interface ReportRange {
   key: DateRangeKey;
@@ -15,18 +22,45 @@ export interface ReportRange {
   days: number;
 }
 
+const RANGE_DAYS: Record<Exclude<DateRangeKey, "custom">, number> = {
+  "7days": 7,
+  "4weeks": 28,
+  "1month": 30,
+  "3months": 90,
+  "6months": 182,
+  "12months": 365,
+};
+
+export const RANGE_LABELS: Record<DateRangeKey, string> = {
+  "7days": "Last 7 days",
+  "4weeks": "Last 4 weeks",
+  "1month": "Last month",
+  "3months": "Last 3 months",
+  "6months": "Last 6 months",
+  "12months": "Last 12 months",
+  custom: "Custom range",
+};
+
 export function buildRange(key: DateRangeKey): ReportRange {
   const to = endOfDay(new Date());
-  const days = key === "7days" ? 7 : key === "4weeks" ? 28 : key === "3months" ? 90 : 365;
+  const days = RANGE_DAYS[(key === "custom" ? "3months" : key) as Exclude<DateRangeKey, "custom">];
   const from = startOfDay(subDays(to, days - 1));
-  const labels: Record<DateRangeKey, string> = {
-    "7days": "Last 7 days",
-    "4weeks": "Last 4 weeks",
-    "3months": "Last 3 months",
-    "12months": "Last 12 months",
-  };
-  return { key, label: labels[key], from, to, days };
+  return { key, label: RANGE_LABELS[key], from, to, days };
 }
+
+/** Custom, user-picked reporting window. Always per-site, inclusive of both dates. */
+export function buildCustomRange(from: Date, to: Date): ReportRange {
+  const f = startOfDay(from);
+  const t = endOfDay(to);
+  return {
+    key: "custom",
+    label: `${format(f, "d MMM yyyy")} – ${format(t, "d MMM yyyy")}`,
+    from: f,
+    to: t,
+    days: Math.max(1, differenceInDays(t, f) + 1),
+  };
+}
+
 
 export interface PillarDetail {
   label: string;
@@ -108,11 +142,21 @@ export interface ReportData {
   // SFBB evidence
   reviews: any[];
   processTempLogs: any[];
+  storageTempLogs: any[];
   probeCalibrations: any[];
   fitnessRecords: any[];
   safeMethods: any[];
   recalls: any[];
+  // Inspection-pack extras
+  siteAddress: string | null;
+  sfbbSystem: any | null;
+  sfbbDocuments: any[];
+  batches: any[];
+  productionDaysCount: number;
+  tempPassPct: number;
+  recordAuthors: { name: string; count: number }[];
 }
+
 
 
 export interface CostMarginRecipeRow {
@@ -169,8 +213,10 @@ export async function fetchReportData(
     haccpPlansRes, ppmTasksRes, ppmCompletionsRes, wasteLogsRes,
     registrationRes, kitchenSetupRes, siteEventsRes, productionDaysRes,
     reviewsRes, probeCalRes, fitnessRes, safeMethodsRes, recallsRes,
+    sfbbSystemRes, sfbbDocsRes, batchesRes,
   ] = await Promise.all([
-    supabase.from("sites").select("name, premises_type, operating_mode").eq("id", siteId).maybeSingle(),
+    supabase.from("sites").select("name, address, premises_type, operating_mode").eq("id", siteId).maybeSingle(),
+
 
     supabase.from("organisations").select("name").eq("id", orgId).maybeSingle(),
     supabase.from("temp_logs").select("*, temp_units(name)").eq("site_id", siteId).gte("logged_at", fromIso).lte("logged_at", toIso),
@@ -202,7 +248,11 @@ export async function fetchReportData(
     supabase.from("fitness_to_work" as any).select("*").eq("site_id", siteId).order("reported_date", { ascending: false }).limit(50),
     supabase.from("safe_methods" as any).select("*").eq("site_id", siteId),
     supabase.from("recalls" as any).select("*").eq("site_id", siteId).order("created_at", { ascending: false }).limit(50),
+    supabase.from("sfbb_system" as any).select("*").eq("site_id", siteId).maybeSingle(),
+    supabase.from("sfbb_documents" as any).select("*").eq("site_id", siteId).order("created_at", { ascending: false }),
+    supabase.from("batches" as any).select("*").eq("site_id", siteId).gte("date_produced", fromDate).lte("date_produced", toDate).order("date_produced", { ascending: false }),
   ]);
+
 
 
   const tempLogsRaw = tempRes.data || [];
@@ -472,7 +522,34 @@ export async function fetchReportData(
     }
   }
 
+  // === Audit trail: who recorded what during the period ===
+  const authorTally = new Map<string, number>();
+  const tally = (name?: string | null) => {
+    const n = (name || "").trim();
+    if (!n) return;
+    authorTally.set(n, (authorTally.get(n) || 0) + 1);
+  };
+  (tempLogs as any[]).forEach((t) => tally(t.logged_by_name));
+  (cleaningLogs as any[]).forEach((l) => tally(l.completed_by_name));
+  (daySheets as any[]).forEach((d) => tally(d.signed_off_by_name || d.locked_by_name));
+  (incidents as any[]).forEach((i) => tally(i.reported_by_name));
+  (deliveries as any[]).forEach((d) => tally(d.logged_by_name));
+  (pestLogs as any[]).forEach((p) => tally(p.reported_by_name));
+  (maintenanceLogs as any[]).forEach((m) => tally(m.reported_by_name));
+  const recordAuthors = Array.from(authorTally.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
   return {
+    siteAddress: ((siteRes.data as any)?.address ?? null) as string | null,
+    sfbbSystem: (sfbbSystemRes as any)?.data ?? null,
+    sfbbDocuments: ((sfbbDocsRes as any)?.data ?? []) as any[],
+    batches: ((batchesRes as any)?.data ?? []) as any[],
+    productionDaysCount: ((productionDaysRes as any)?.data ?? []).length,
+    tempPassPct,
+    recordAuthors,
+    storageTempLogs: (tempLogs ?? []).filter((t: any) => !!t.unit_id),
+
     range,
     siteName: siteRes.data?.name || "Site",
     orgName: orgRes.data?.name || "Organisation",
