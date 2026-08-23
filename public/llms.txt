@@ -1,16 +1,19 @@
 # MiseOS
 
-> All-in-one hygiene, compliance and batch-tracking SaaS for independent UK bakeries, cafés and small restaurants.
+> Digital HACCP and food safety software for UK food businesses.
 
-MiseOS helps independent food businesses log food-safety checks fast, stay inspection-ready for the UK Food Hygiene Rating Scheme, and replace paper and spreadsheets with one mobile-first platform. Modules cover temperature tracking, cleaning schedules, HACCP, allergens, batch tracking, suppliers, incidents, pest & maintenance, staff training, shift rotas, timesheets, tips, waste, cost & margin and team messaging.
+MiseOS is a mobile-first web app used by independent UK food businesses — bakeries, cafés, small restaurants, home kitchens and mobile food traders — to run and evidence a food safety management system. It replaces paper diaries with digital temperature logs, cleaning schedules, opening and closing checks, allergen records, batch traceability, supplier records, incidents, pest and maintenance logs, staff training records and periodic reviews. Records can be exported as an Inspection Pack (PDF or Excel) structured around the three areas a Food Standards Agency inspector assesses. Businesses can either complete Safer Food, Better Business safe methods inside the app or upload a completed SFBB pack. Pricing is £4.99 per site per month plus £1 per additional active user, with a 14-day free trial. Records are retained for 7 years. Offline logging is supported.
 
-## Pages
+## Key pages
 
-- [Home](/): Product overview, features and how MiseOS works for UK food businesses.
-- [Pricing](/pricing): Essentials, Professional, Business and Intelligence plans with a 14-day free trial.
-- [HACCP for Bakeries: The 2026 UK Compliance Guide](/guides/bakery-haccp-compliance): UK bakery HACCP guide covering SFBB vs full HACCP, allergen cross-contamination, flour dust, cooling and filling, traceability, records and inspection prep.
-- [Safer Food Better Business for Caterers: 2026 UK Compliance Guide](/guides/sfbb-caterers-compliance): SFBB for caterers guide covering safe methods, daily diary records, opening and closing checks, temperature control, allergen management, off-site catering and inspection prep.
+- [Home](/): Product overview, what MiseOS does, how it works, pricing and common questions.
+- [How it works](/#how): The daily workflow — log checks, spot issues, export inspection evidence.
+- [Pricing](/#pricing): £4.99 per site per month plus £1 per additional user, 14-day free trial.
+- [FAQ](/#faq): Answers on trials, offline use, multi-site records, SFBB uploads and digital records at inspection.
+- [What is HACCP? A Complete Guide for UK Food Businesses](/haccp): Reference guide — what HACCP stands for (Hazard Analysis and Critical Control Points), what a critical control point is, the 7 principles of HACCP, how to write a HACCP plan in 7 steps, UK legal requirements, and how HACCP relates to Safer Food, Better Business.
+- [HACCP for Bakeries: UK Compliance Guide](/guides/bakery-haccp-compliance): Bakery-specific HACCP guidance covering allergens, cooling, filling, traceability and inspection prep.
+- [Safer Food Better Business for Caterers: UK Compliance Guide](/guides/sfbb-caterers-compliance): SFBB safe methods, daily diary records, opening and closing checks and inspection prep for caterers.
 
 ## Optional
 
-- [Sign in or sign up](/auth): Account sign-in and trial sign-up for owners.
+- [Sign in or start a trial](/auth): Account sign-in and trial sign-up for owners.
