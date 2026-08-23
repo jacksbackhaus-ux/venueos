@@ -38,6 +38,7 @@ function Nav() {
     { href: "#how", label: "How it works" },
     { href: "#features", label: "What it does" },
     { href: "#pricing", label: "Pricing" },
+    { href: "/haccp", label: "What is HACCP?" },
     { href: "#faq", label: "FAQ" },
   ];
   return (
@@ -396,6 +397,7 @@ function FAQ() {
     { q: "Can I upload my existing SFBB pack?", a: "Yes. Upload your completed SFBB PDF as your food safety management system, or complete the safe methods inside the app instead — either counts." },
     { q: "Will my Environmental Health Officer accept digital records?", a: "Yes. UK EHOs accept digital food safety records. MiseOS exports an Inspection Pack in PDF and Excel with all the records they look for, laid out clearly so they can find what they need quickly." },
     { q: "Does it replace Safer Food Better Business (SFBB)?", a: "MiseOS digitises the diary records SFBB asks you to keep — temperatures, cleaning, opening/closing checks, supplier records, incidents, training and more — and lets you export them as an Inspection Pack." },
+    { q: "What does HACCP stand for?", a: "HACCP stands for Hazard Analysis and Critical Control Points. It is the internationally recognised method for identifying food safety hazards and controlling them at the steps where control matters most. UK food hygiene law requires food businesses to operate procedures based on HACCP principles." },
     { q: "How much do extra users cost?", a: "Each additional active user is £1 per month. The first user is included in the £4.99/site/month price. You can add or deactivate users as your team changes." },
     { q: "Can I use MiseOS for multiple sites?", a: "Yes. Each site is £4.99/month with its own records, fridges, team and Inspection Pack. If you move to a new site, you can run a 14-day transfer window with both sites active while only paying for one." },
     { q: "What happens if I cancel?", a: "You keep full access until the end of your billing period. Your records are retained for 7 years so you can re-export them whenever needed." },
@@ -404,6 +406,10 @@ function FAQ() {
     <Section id="faq">
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Common questions</h2>
+        <p className="mt-3 text-slate-600">
+          New to food safety management? Read the{" "}
+          <a href="/haccp" className="underline hover:text-slate-900">complete guide to HACCP for UK food businesses</a>.
+        </p>
       </div>
       <div className="max-w-3xl mx-auto space-y-3">
         {faqs.map((f, i) => (
@@ -447,6 +453,7 @@ function Footer() {
           <span>© {new Date().getFullYear()} MiseOS · Built for UK food businesses</span>
         </div>
         <div className="flex items-center gap-5 text-sm text-slate-500">
+          <a href="/haccp" className="hover:text-slate-900">What is HACCP?</a>
           <a href="/guides/bakery-haccp-compliance" className="hover:text-slate-900">HACCP guide for bakeries</a>
           <a href="/guides/sfbb-caterers-compliance" className="hover:text-slate-900">SFBB for caterers</a>
           <a href="#pricing" className="hover:text-slate-900">Pricing</a>

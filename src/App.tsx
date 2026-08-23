@@ -59,6 +59,8 @@ import { StaffLayout } from "./components/staff/StaffLayout";
 import SitePicker from "./pages/SitePicker";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
+import HaccpHub from "./pages/HaccpHub";
+
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
@@ -245,6 +247,15 @@ function RootRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Shows a public marketing page to visitors and the in-app screen to signed-in users. */
+function PublicOrApp({ public: publicPage, children }: { public: React.ReactNode; children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, staffSession } = useAuth();
+  if (isLoading) return <FullScreenLoader />;
+  if (!isAuthenticated && !staffSession) return <>{publicPage}</>;
+  return <>{children}</>;
+}
+
+
 function AppRoutes() {
   const { isLoading } = useAuth();
   if (isLoading) return <FullScreenLoader />;
@@ -307,7 +318,7 @@ function AppRoutes() {
       <Route path="/reports" element={moduleRoute("reports", <RoleGuard require="viewReports" inline><Reports /></RoleGuard>)} />
       <Route path="/batches" element={moduleRoute("batch_tracking", <Batches />)} />
       <Route path="/staff-training" element={moduleRoute("staff_training", <StaffTraining />)} />
-      <Route path="/haccp" element={moduleRoute("haccp", <RoleGuard require="supervisorPlus" inline><Haccp /></RoleGuard>)} />
+      <Route path="/haccp" element={<PublicOrApp public={<HaccpHub />}>{moduleRoute("haccp", <RoleGuard require="supervisorPlus" inline><Haccp /></RoleGuard>)}</PublicOrApp>} />
       <Route path="/cost-margin" element={moduleRoute("cost_margin", <CostMargin />)} />
       <Route path="/sales" element={moduleRoute("cost_margin", <Sales />)} />
       <Route path="/timesheets" element={moduleRoute("timesheets", <Timesheets />)} />
