@@ -220,6 +220,7 @@ const Reports = () => {
           businessName: branding.businessName,
           logoDataUrl,
         },
+        packOptions,
       );
       toast({ title: "Inspection Pack generated", description: "Your PDF has been downloaded." });
       // Confirmation email — fire-and-forget. Acts as the audit record of when the pack was generated.
@@ -229,11 +230,12 @@ const Reports = () => {
             body: {
               kind: "inspection-pack-ready",
               site_id: currentSite.id,
-              period_label: typeof dateRange === "string" ? dateRange : null,
+              period_label: range.label,
             },
           })
           .catch((e) => console.warn("inspection-pack-ready email failed", e));
       }
+
     } catch (err: any) {
       toast({ title: "Export failed", description: err.message, variant: "destructive" });
     } finally {
