@@ -191,7 +191,7 @@ const Reports = () => {
     if (!currentSite || !organisationId) return;
     let cancelled = false;
     setLoading(true);
-    fetchReportData(currentSite.id, organisationId, buildRange(dateRange), { includeCostMargin: hasCostAccess })
+    fetchReportData(currentSite.id, organisationId, range, { includeCostMargin: hasCostAccess })
       .then(d => { if (!cancelled) setData(d); })
       .catch(err => {
         console.error(err);
@@ -199,7 +199,8 @@ const Reports = () => {
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [currentSite, organisationId, dateRange, hasCostAccess]);
+  }, [currentSite, organisationId, range, hasCostAccess]);
+
 
   const handleExport = async () => {
     if (!data) return;
