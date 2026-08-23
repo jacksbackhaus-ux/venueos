@@ -7012,6 +7012,15 @@ export type Database = {
         }
         Returns: Json
       }
+      storage_feedback_path_ok: { Args: { _name: string }; Returns: boolean }
+      storage_training_cert_has_record: {
+        Args: { _name: string }
+        Returns: boolean
+      }
+      storage_training_cert_path_ok: {
+        Args: { _name: string }
+        Returns: boolean
+      }
       sync_org_modules: { Args: { _org_id: string }; Returns: undefined }
       validate_staff_code: {
         Args: { _site_id: string; _staff_code: string }
