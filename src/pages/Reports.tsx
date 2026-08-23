@@ -1,18 +1,18 @@
 import { SEO } from "@/components/SEO";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   FileText, Download, ShieldCheck, ClipboardCheck, SprayCan, Thermometer,
   Truck, AlertTriangle, Wheat, Bug, Users, CheckCircle2,
   ArrowRight, Info, Calendar, Loader2, Sparkles, RotateCcw, Lock,
-  FileSpreadsheet,
+  FileSpreadsheet, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useSite } from "@/contexts/SiteContext";
@@ -22,13 +22,42 @@ import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useRole } from "@/hooks/useRole";
 import { useBranding } from "@/contexts/BrandingContext";
 import { toast } from "@/hooks/use-toast";
-import { buildRange, fetchReportData, type DateRangeKey, type ReportData } from "@/lib/reports";
+import {
+  buildCustomRange, buildRange, fetchReportData,
+  type DateRangeKey, type ReportData,
+} from "@/lib/reports";
+import {
+  PACK_SECTIONS, allSectionsOn,
+  type PackDetail, type PackOptions, type PackSections,
+} from "@/lib/inspectionPack";
 import { generateInspectionPackPdf } from "@/lib/reportPdf";
 import { generateInspectionPackExcel } from "@/lib/ReportExcel";
 import { format } from "date-fns";
 import { Calculator } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+const TIMEFRAMES: { key: DateRangeKey; label: string }[] = [
+  { key: "1month", label: "Last month" },
+  { key: "3months", label: "Last 3 months" },
+  { key: "6months", label: "Last 6 months" },
+  { key: "12months", label: "Last 12 months" },
+  { key: "custom", label: "Custom range" },
+];
+
+const DETAIL_OPTIONS: { key: PackDetail; label: string; description: string }[] = [
+  {
+    key: "overview",
+    label: "Overview",
+    description: "A concise summary of your compliance across all areas. Best for a quick, professional snapshot.",
+  },
+  {
+    key: "full",
+    label: "Full records",
+    description: "Everything, including every individual log. Best when an inspector wants to see all evidence.",
+  },
+];
+
 
 async function urlToDataUrl(url: string): Promise<string | undefined> {
   try {
