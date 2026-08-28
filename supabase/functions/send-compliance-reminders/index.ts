@@ -7,6 +7,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { isServiceRoleCaller, unauthorisedResponse } from "../_shared/serviceRoleGuard.ts";
+import { sendAppEmail } from "../_shared/send-app-email.ts";
 
 const APP_URL = "https://mise-os.app";
 
@@ -88,19 +89,16 @@ Deno.serve(async (req) => {
     if (!owner.email) continue;
 
     try {
-      await supabase.functions.invoke("send-transactional-email", {
-        body: {
-          templateName: "compliance-reminder",
-          recipientEmail: owner.email,
-          idempotencyKey: `compliance:${orgId}:${today}`,
-          templateData: {
-            first_name: owner.first_name,
-            site_name: site.name,
-            outstanding_count: outstanding,
-            items,
-            app_url: APP_URL,
-          },
+      await sendAppEmail("compliance-reminder", owner.email, {
+        idempotencyKey: `compliance-reminder:${orgId}:${today}`,
+        templateData: {
+          first_name: owner.first_name,
+          site_name: site.name,
+          outstanding_count: outstanding,
+          items,
+          app_url: APP_URL,
         },
+        metadata: { organisation_id: orgId },
       });
       await supabase.from("subscriptions")
         .update({ last_compliance_reminder_on: today })
