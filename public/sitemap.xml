@@ -55,4 +55,8 @@
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url><loc>https://mise-os.app/guides/records-for-solo-food-businesses</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://mise-os.app/guides/no-cottage-food-law-uk</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://mise-os.app/guides/sfbb-vs-haccp</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://mise-os.app/faq</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

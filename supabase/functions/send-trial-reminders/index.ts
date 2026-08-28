@@ -6,6 +6,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { isServiceRoleCaller, unauthorisedResponse } from "../_shared/serviceRoleGuard.ts";
+import { sendAppEmail } from "../_shared/send-app-email.ts";
 
 const APP_URL = "https://mise-os.app";
 const BILLING_URL = `${APP_URL}/settings?tab=billing`;
@@ -49,17 +50,14 @@ Deno.serve(async (req) => {
     const owner = await resolveOwner(supabase, orgId);
     if (!owner.email) continue;
     try {
-      await supabase.functions.invoke("send-transactional-email", {
-        body: {
-          templateName: "trial-reminder",
-          recipientEmail: owner.email,
-          idempotencyKey: `trial-reminder:${orgId}:${sub.trial_end}`,
-          templateData: {
-            first_name: owner.first_name,
-            trial_end_date: sub.trial_end,
-            billing_url: BILLING_URL,
-          },
+      await sendAppEmail("trial-reminder", owner.email, {
+        idempotencyKey: `trial-reminder:${orgId}:${sub.trial_end}`,
+        templateData: {
+          first_name: owner.first_name,
+          trial_end_date: sub.trial_end,
+          billing_url: BILLING_URL,
         },
+        metadata: { organisation_id: orgId },
       });
       await supabase.from("subscriptions")
         .update({ trial_reminder_sent_at: new Date().toISOString() })

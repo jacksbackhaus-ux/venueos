@@ -39,7 +39,8 @@ function Nav() {
     { href: "#features", label: "What it does" },
     { href: "#pricing", label: "Pricing" },
     { href: "/haccp", label: "What is HACCP?" },
-    { href: "#faq", label: "FAQ" },
+    { href: "/guides", label: "Guides" },
+    { href: "/faq", label: "FAQ" },
   ];
   return (
     <nav className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-slate-200">
@@ -454,10 +455,10 @@ function Footer() {
         </div>
         <div className="flex items-center gap-5 text-sm text-slate-500">
           <a href="/haccp" className="hover:text-slate-900">What is HACCP?</a>
-          <a href="/guides/bakery-haccp-compliance" className="hover:text-slate-900">HACCP guide for bakeries</a>
-          <a href="/guides/sfbb-caterers-compliance" className="hover:text-slate-900">SFBB for caterers</a>
+          <a href="/guides" className="hover:text-slate-900">Guides</a>
+          <a href="/faq" className="hover:text-slate-900">FAQ</a>
           <a href="#pricing" className="hover:text-slate-900">Pricing</a>
-          <a href="#faq" className="hover:text-slate-900">FAQ</a>
+          <a href={AUTH_URL} className="hover:text-slate-900">Log in</a>
           <a href={AUTH_URL} className="hover:text-slate-900">Log in</a>
         </div>
       </div>

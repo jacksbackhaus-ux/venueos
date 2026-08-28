@@ -98,19 +98,15 @@ async function sendBillingEmail(orgId: string, templateName: string, extraData: 
       console.log("[billing-email] no owner email", { orgId, templateName });
       return;
     }
-    const { error } = await supabase.functions.invoke("send-transactional-email", {
-      body: {
-        templateName,
-        recipientEmail: owner.email,
-        idempotencyKey,
-        templateData: {
-          first_name: owner.first_name,
-          organisation_name: owner.organisation_name,
-          ...extraData,
-        },
+    await sendAppEmail(templateName, owner.email, {
+      idempotencyKey,
+      templateData: {
+        first_name: owner.first_name,
+        organisation_name: owner.organisation_name,
+        ...extraData,
       },
+      metadata: { organisation_id: orgId },
     });
-    if (error) console.error("[billing-email] invoke error", { templateName, orgId, error });
   } catch (e) {
     console.error("[billing-email] unexpected", { templateName, orgId, e });
   }

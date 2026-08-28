@@ -6,6 +6,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { sendAppEmail } from '../_shared/send-app-email.ts'
 
 const STAFF_INBOX_BASE = 'https://mise-os.app/staff/feedback'
 
@@ -81,18 +82,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { error: invokeError } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'feedback-internal-notification',
-        templateData,
-        idempotencyKey: `feedback:${fb.id}`,
-      },
+    const result = await sendAppEmail('feedback-internal-notification', '', {
+      templateData,
+      idempotencyKey: `feedback-internal-notification:${fb.id}`,
+      metadata: { feedback_id: fb.id },
     })
-    if (invokeError) {
-      console.error('[send-feedback-notification] invoke error', invokeError)
+    if (!result.sent) {
+      console.log('[send-feedback-notification] recipient suppressed')
     }
   } catch (e) {
-    console.error('[send-feedback-notification] unexpected error', e)
+    console.error('[send-feedback-notification] send error', e)
   }
 
   return new Response(JSON.stringify({ success: true }), {
