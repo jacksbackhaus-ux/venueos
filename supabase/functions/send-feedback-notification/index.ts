@@ -6,6 +6,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { sendAppEmail } from '../_shared/send-app-email.ts'
 
 const STAFF_INBOX_BASE = 'https://mise-os.app/staff/feedback'
 
