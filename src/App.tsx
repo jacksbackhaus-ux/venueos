@@ -75,6 +75,11 @@ import { safeNextPath } from "@/lib/authNext";
 import OAuthConsent from "@/pages/OAuthConsent";
 import BakeryHaccpGuide from "@/pages/guides/BakeryHaccpGuide";
 import SfbbCaterersGuide from "@/pages/guides/SfbbCaterersGuide";
+import GuidesIndex from "@/pages/guides/GuidesIndex";
+import SoloRecordsGuide from "@/pages/guides/SoloRecordsGuide";
+import NoCottageFoodLawGuide from "@/pages/guides/NoCottageFoodLawGuide";
+import SfbbVsHaccpGuide from "@/pages/guides/SfbbVsHaccpGuide";
+import Faq from "@/pages/Faq";
 
 const queryClient = new QueryClient({
   defaultOptions: {
