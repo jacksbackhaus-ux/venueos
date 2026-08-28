@@ -6,6 +6,7 @@
 // addresses or inject arbitrary template content.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { sendAppEmail } from "../_shared/send-app-email.ts";
 
 const APP_URL = "https://mise-os.app";
 
@@ -197,11 +198,20 @@ Deno.serve(async (req) => {
     }
   }
 
-  const { error } = await svc.functions.invoke("send-transactional-email", {
-    body: { templateName, recipientEmail, idempotencyKey, templateData },
-  });
-  if (error) {
-    console.error("[send-app-notification] send failed", { templateName, error: error.message });
+  try {
+    const result = await sendAppEmail(templateName, recipientEmail, {
+      idempotencyKey,
+      templateData,
+    });
+    if (!result.sent) {
+      // Recipient previously bounced, complained or unsubscribed — expected.
+      return json(200, { ok: true, skipped: "recipient_suppressed" });
+    }
+  } catch (e) {
+    console.error("[send-app-notification] send failed", {
+      templateName,
+      error: e instanceof Error ? e.message : String(e),
+    });
     return json(500, { error: "send_failed" });
   }
   return json(200, { ok: true });
