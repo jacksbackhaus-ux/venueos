@@ -21,7 +21,7 @@ async function log(
     recipient_email: string
     template_name: string
     status: 'sent' | 'suppressed' | 'failed'
-    organisation_id?: string | null
+    metadata?: Record<string, unknown> | null
     error_message?: string | null
   },
 ) {
@@ -30,7 +30,7 @@ async function log(
       recipient_email: row.recipient_email,
       template_name: row.template_name,
       status: row.status,
-      organisation_id: row.organisation_id ?? null,
+      metadata: row.metadata ?? null,
       error_message: row.error_message ?? null,
     })
     if (error) {
@@ -45,7 +45,8 @@ async function log(
 }
 
 export interface SendAppEmailOptions extends SendTemplateEmailOptions {
-  organisationId?: string | null
+  /** Optional context stored alongside the audit row (e.g. organisation id). */
+  metadata?: Record<string, unknown> | null
 }
 
 /**
@@ -57,7 +58,7 @@ export async function sendAppEmail(
   to: string,
   options: SendAppEmailOptions = {},
 ): Promise<SendTemplateEmailResult> {
-  const { organisationId, ...sendOptions } = options
+  const { metadata, ...sendOptions } = options
   const recipient = TEMPLATES[templateName]?.to || to
 
   try {
@@ -66,7 +67,7 @@ export async function sendAppEmail(
       recipient_email: recipient,
       template_name: templateName,
       status: result.sent ? 'sent' : 'suppressed',
-      organisation_id: organisationId,
+      metadata: metadata ?? null,
       error_message: result.sent ? null : 'Recipient suppressed',
     })
     return result
@@ -75,7 +76,7 @@ export async function sendAppEmail(
       recipient_email: recipient,
       template_name: templateName,
       status: 'failed',
-      organisation_id: organisationId,
+      metadata: metadata ?? null,
       error_message: e instanceof Error ? e.message : String(e),
     })
     throw e
