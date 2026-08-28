@@ -297,8 +297,14 @@ function AppRoutes() {
       {/* Alias — internal MiseOS employees only. Same component as /staff-login. */}
       <Route path="/internal-login" element={<StaffLogin />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/guides" element={<GuidesIndex />} />
+      <Route path="/guides/records-for-solo-food-businesses" element={<SoloRecordsGuide />} />
+      <Route path="/guides/no-cottage-food-law-uk" element={<NoCottageFoodLawGuide />} />
+      <Route path="/guides/sfbb-vs-haccp" element={<SfbbVsHaccpGuide />} />
+      <Route path="/faq" element={<Faq />} />
       <Route path="/guides/bakery-haccp-compliance" element={<BakeryHaccpGuide />} />
       <Route path="/guides/sfbb-caterers-compliance" element={<SfbbCaterersGuide />} />
+
       <Route path="/login/:slug" element={<OrgLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
