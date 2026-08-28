@@ -23,7 +23,12 @@ export interface TemplateDefinition {
   to?: string
   // Sample data used by the Lovable email dashboard to render previews.
   previewData?: Record<string, any>
+  // Friendly name shown in the Cloud → Emails template preview.
+  displayName?: string
 }
+
+// Canonical name used by the managed send helper and new templates.
+export type TemplateEntry = TemplateDefinition
 
 // Shared sample values — kept consistent across previews so the dashboard
 // reads like a single coherent demo organisation.
