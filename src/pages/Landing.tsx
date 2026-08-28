@@ -39,7 +39,8 @@ function Nav() {
     { href: "#features", label: "What it does" },
     { href: "#pricing", label: "Pricing" },
     { href: "/haccp", label: "What is HACCP?" },
-    { href: "#faq", label: "FAQ" },
+    { href: "/guides", label: "Guides" },
+    { href: "/faq", label: "FAQ" },
   ];
   return (
     <nav className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-slate-200">
