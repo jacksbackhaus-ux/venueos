@@ -55,3 +55,15 @@ export function hasActivePlanFor(sub: SubLike): boolean {
   return !!resolveCurrentPlan(sub) &&
     !!(sub?.base_active || sub?.bundle_active || sub?.compliance_active || sub?.business_active);
 }
+
+/**
+ * Map the stored `subscriptions.billing_interval` ("monthly_term" /
+ * "annual_upfront", written by the Stripe webhook) onto the "month" | "year"
+ * cycle the pricing helpers and checkout expect. Casting the raw column
+ * straight to BillingCycle silently treated annual customers as monthly.
+ */
+export function cycleFromInterval(interval?: string | null): BillingCycle {
+  return interval === "annual_upfront" || interval === "year" || interval === "annual"
+    ? "year"
+    : "month";
+}
