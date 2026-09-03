@@ -70,7 +70,7 @@ export function CloseSiteCard() {
 
   const startClose = async () => {
     if (!organisationId) return;
-    if (!confirm(`Close ${currentSite.name}? It stays editable for 14 days, then becomes read-only. Billing reduces straight away.`)) return;
+    if (!confirm(`Close ${currentSite.name}? It stays editable for 14 days, then becomes read-only and drops off your billing.`)) return;
     setStarting(true);
     const { error } = await supabase.from("site_transfers" as any).insert({
       organisation_id: organisationId,
@@ -83,7 +83,7 @@ export function CloseSiteCard() {
       toast.error(error.message || "Could not start the closing window.");
       return;
     }
-    toast.success("Closing window started — 14 days to finish up.");
+    toast.success("Closing window started — 14 days to finish up. Billing drops when it closes.");
     await refetch();
   };
 

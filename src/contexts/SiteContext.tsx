@@ -117,7 +117,9 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
 
         setIsLoading(true);
         const [sitesRes, membershipsRes] = await Promise.all([
-          supabase.from('sites').select('*').eq('active', true),
+          // Include closed sites (active = false + archived_at set) so they stay
+          // reachable read-only and can be reopened from Settings → Site.
+          supabase.from('sites').select('*').or('active.eq.true,archived_at.not.is.null'),
           supabase.from('memberships').select('*').eq('user_id', appUser.id).eq('active', true),
         ]);
 

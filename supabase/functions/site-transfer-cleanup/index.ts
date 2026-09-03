@@ -74,9 +74,16 @@ Deno.serve(async (req) => {
         console.error('[site-transfer-cleanup] transfer update failed', t.id, upErr.message)
         continue
       }
+      // The app treats `archived_at` (not just `active`) as the "closed"
+      // marker — Settings → Site and the reopen action both read it. Set both
+      // so an auto-archived site still shows up as closed and is reopenable.
       const { error: siteErr } = await supabase
         .from('sites')
-        .update({ active: false })
+        .update({
+          active: false,
+          archived_at: nowIso,
+          archived_reason: t.to_site_id ? 'moved_to_new_site' : 'closed_by_owner',
+        })
         .eq('id', t.from_site_id)
       if (siteErr) {
         console.error('[site-transfer-cleanup] site archive failed', t.from_site_id, siteErr.message)
