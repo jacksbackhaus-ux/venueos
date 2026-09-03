@@ -62,6 +62,7 @@ import { BrandingSection } from "@/components/settings/BrandingSection";
 import { RegistrationCard } from "@/components/settings/RegistrationCard";
 import { KitchenSetupCard } from "@/components/settings/KitchenSetupCard";
 import { CloseSiteCard } from "@/components/settings/CloseSiteCard";
+import { MoveSiteCard } from "@/components/settings/MoveSiteCard";
 
 import { ToggleLeft, MessageSquare, Palette } from "lucide-react";
 import { showMessenger, showModulesSettingsTab, showBrandingSettingsTab } from "@/lib/launchFlags";
@@ -1330,6 +1331,7 @@ const Settings = () => {
           {orgRole?.org_role === "org_owner" && (
             <>
               <Separator />
+              <MoveSiteCard />
               <CloseSiteCard />
             </>
           )}
