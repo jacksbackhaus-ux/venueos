@@ -60,6 +60,9 @@ Deno.serve(async (req) => {
       .lte('expires_at', nowIso)
     if (error) throw error
 
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const functionsBase = `${Deno.env.get('SUPABASE_URL')!}/functions/v1`
+
     let archived = 0
     for (const t of expired ?? []) {
       const { error: upErr } = await supabase
@@ -80,6 +83,21 @@ Deno.serve(async (req) => {
         continue
       }
       archived++
+
+      // Reduce the org's Stripe site quantity to match. Never lets a
+      // billing-sync failure stop other orgs' transfers from processing.
+      try {
+        await fetch(`${functionsBase}/sync-haccp-site-quantity`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ organisation_id: t.organisation_id }),
+        })
+      } catch (syncErr) {
+        console.error('[site-transfer-cleanup] site-quantity sync failed', t.organisation_id, syncErr)
+      }
     }
 
     return new Response(JSON.stringify({ checked: expired?.length ?? 0, archived }), {

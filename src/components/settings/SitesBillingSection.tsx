@@ -14,21 +14,16 @@ import {
 } from "@/components/ui/dialog";
 import { Building2, Plus, ExternalLink, Loader2, CheckCircle2, AlertTriangle, Lock } from "lucide-react";
 import { toast } from "sonner";
-import {
-  PLANS, TIERS, formatGBP, type PlanId, type TierId, type BillingCycle,
-} from "@/lib/plans";
-import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { formatGBP, TIERS, type TierId, type BillingCycle } from "@/lib/plans";
+import { AddSiteCheckoutPanel } from "@/components/settings/AddSiteCheckoutPanel";
 import { openCustomerPortal } from "@/lib/stripe";
-import { LAUNCH_MODE } from "@/lib/launchFlags";
+import {
+  HACCP_LAUNCH, type SubLike, resolveCurrentPlan, additionalSitePriceFor, hasActivePlanFor,
+} from "@/lib/sitePricing";
 import {
   PREMISES_TYPES, defaultOperatingMode, premisesBadge, type PremisesType,
 } from "@/lib/premises";
 import { Store, Home, Truck, Factory } from "lucide-react";
-
-
-const HACCP_LAUNCH = LAUNCH_MODE === "haccp";
-const HACCP_SITE_MONTHLY = 4.99;
-const HACCP_SITE_ANNUAL = 49.90;
 
 type SiteRow = {
   id: string;
@@ -38,44 +33,6 @@ type SiteRow = {
   active: boolean;
   created_at: string;
 };
-
-type SubLike = {
-  base_active: boolean; compliance_active: boolean; business_active: boolean; bundle_active: boolean;
-  ai_active?: boolean;
-  tier?: TierId | null;
-} | null;
-
-/**
- * Plan id used by Stripe checkout when the customer adds a site.
- * - New tier subs → use the tier id directly.
- * - Legacy subs → fall back to base/compliance/business/bundle from flags.
- */
-function resolveCurrentPlan(sub: SubLike): PlanId | null {
-  if (!sub) return null;
-  if (sub.tier && (sub.tier as string) in TIERS) return sub.tier as unknown as PlanId;
-  if (sub.bundle_active) return "bundle";
-  if (sub.base_active) return "base";
-  if (sub.compliance_active) return "compliance";
-  if (sub.business_active) return "business";
-  return null;
-}
-
-/** Per-site cost per period — tier price if set, else legacy module stack. */
-function perSiteCost(sub: SubLike, cycle: BillingCycle): number {
-  if (!sub) return 0;
-  if (sub.tier && (sub.tier as string) in TIERS) {
-    const t = TIERS[sub.tier];
-    return cycle === "year" ? t.yearlyPrice : t.monthlyPrice;
-  }
-  const legacyPrice = (id: "base" | "compliance" | "business" | "bundle") =>
-    cycle === "year" ? PLANS[id].yearlyPrice : PLANS[id].monthlyPrice;
-  if (sub.bundle_active) return legacyPrice("bundle");
-  let total = 0;
-  if (sub.base_active) total += legacyPrice("base");
-  if (sub.compliance_active) total += legacyPrice("compliance");
-  if (sub.business_active) total += legacyPrice("business");
-  return total;
-}
 
 export function SitesBillingSection() {
   const { appUser, orgRole } = useAuth();
@@ -97,8 +54,6 @@ export function SitesBillingSection() {
   const [newSiteName, setNewSiteName] = useState("");
   const [newSiteAddress, setNewSiteAddress] = useState("");
   const [newPremisesType, setNewPremisesType] = useState<PremisesType>("commercial");
-  const [movingFromSiteId, setMovingFromSiteId] = useState<string>("");
-  const [keepBoth, setKeepBoth] = useState<boolean | null>(null);
   const [creating, setCreating] = useState(false);
 
 
@@ -127,16 +82,9 @@ export function SitesBillingSection() {
   const activeSites = sites.filter(s => s.active);
   const siteCount = activeSites.length;
   const slotsAvailable = Math.max(0, siteQuantity - siteCount);
-  // Only ask the "keeping both?" question when there's an existing site to move from.
-  const canAskMoving = activeSites.length >= 1;
 
-  const _rawAdditionalSitePrice = perSiteCost(subscription, cycle);
-  const additionalSitePrice = HACCP_LAUNCH
-    ? (cycle === "year" ? HACCP_SITE_ANNUAL : HACCP_SITE_MONTHLY)
-    : _rawAdditionalSitePrice;
-  const hasActivePlan = HACCP_LAUNCH
-    ? true
-    : !!currentPlan && (subscription?.base_active || subscription?.bundle_active || subscription?.compliance_active || subscription?.business_active);
+  const additionalSitePrice = additionalSitePriceFor(subscription, cycle);
+  const hasActivePlan = hasActivePlanFor(subscription);
 
   // Poll for site_quantity bump after checkout success
   useEffect(() => {
@@ -200,12 +148,8 @@ export function SitesBillingSection() {
       toast.error("You don't have any unused site slots on your subscription.");
       return;
     }
-    if (canAskMoving && keepBoth === null) {
-      toast.error("Let us know whether you're keeping your existing site open.");
-      return;
-    }
     setCreating(true);
-    const { data: created, error } = await supabase
+    const { error } = await supabase
       .from("sites")
       .insert({
         organisation_id: orgId,
@@ -223,38 +167,13 @@ export function SitesBillingSection() {
       toast.error(error.message || "Could not create site.");
       return;
     }
-
-    // "I'm moving" → open a 14-day transfer window; both sites stay editable,
-    // billing stays at one site, the old site auto-archives at day 14.
-    if (canAskMoving && keepBoth === false && created?.id) {
-      const fromId = movingFromSiteId || activeSites[0]?.id;
-      const { error: transferError } = await supabase.from("site_transfers" as any).insert({
-        organisation_id: orgId,
-        from_site_id: fromId,
-        to_site_id: created.id,
-        created_by: appUser.id,
-      } as any);
-      if (transferError) {
-        console.error("Transfer window failed", transferError);
-        toast.error(
-          transferError.message?.includes("one_active_per_org")
-            ? "You already have a move in progress. Finish or cancel it first."
-            : "Site created, but the move window could not be started.",
-        );
-      } else {
-        toast.success("New site created — you have 14 days to move across.");
-      }
-    } else {
-      toast.success("New site created.");
-    }
+    toast.success("New site created.");
 
     setCreating(false);
     setShowCreateDialog(false);
     setNewSiteName("");
     setNewSiteAddress("");
     setNewPremisesType("commercial");
-    setKeepBoth(null);
-    setMovingFromSiteId("");
     clearSuccessParams();
     await loadSites();
   };
@@ -349,6 +268,9 @@ export function SitesBillingSection() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Moving premises instead? Use "Move to a new site" in Settings → Site.
+            </p>
             {!hasActivePlan ? (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
@@ -397,18 +319,13 @@ export function SitesBillingSection() {
                 </div>
 
                 {showCheckout && (HACCP_LAUNCH || currentPlan) ? (
-                  <div className="rounded-lg border overflow-hidden">
-                    <StripeEmbeddedCheckout
-                      plan={HACCP_LAUNCH ? "haccp" : (currentPlan as PlanId)}
-                      cycle={cycle}
-                      siteQuantity={siteQuantity + 1}
-                      addSiteMode
-                      returnUrl={`${window.location.origin}/settings?tab=sites&checkout=success&session_id={CHECKOUT_SESSION_ID}`}
-                    />
-                    <div className="p-2 border-t bg-muted/20 flex justify-end">
-                      <Button variant="ghost" size="sm" onClick={() => setShowCheckout(false)}>Cancel</Button>
-                    </div>
-                  </div>
+                  <AddSiteCheckoutPanel
+                    currentPlan={currentPlan}
+                    cycle={cycle}
+                    siteQuantity={siteQuantity}
+                    returnUrl={`${window.location.origin}/settings?tab=sites&checkout=success&session_id={CHECKOUT_SESSION_ID}`}
+                    onCancel={() => setShowCheckout(false)}
+                  />
                 ) : (
                   <Button onClick={handleAddSite} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-1.5" />
@@ -499,55 +416,6 @@ export function SitesBillingSection() {
                 })}
               </div>
             </div>
-
-            {/* Keeping both, or moving? */}
-            {canAskMoving && (
-              <div className="space-y-2 rounded-lg border p-3">
-                {activeSites.length > 1 && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="moving-from">Which site might you be leaving?</Label>
-                    <select
-                      id="moving-from"
-                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                      value={movingFromSiteId || activeSites[0]?.id || ""}
-                      onChange={(e) => setMovingFromSiteId(e.target.value)}
-                    >
-                      {activeSites.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <p className="text-sm font-medium">
-                  Are you keeping{" "}
-                  {(activeSites.find((s) => s.id === (movingFromSiteId || activeSites[0]?.id))?.name) ?? "your existing site"}{" "}
-                  open?
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant={keepBoth === true ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setKeepBoth(true)}
-                  >
-                    Keeping both
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={keepBoth === false ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setKeepBoth(false)}
-                  >
-                    I'm moving
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {keepBoth === false
-                    ? "Both sites stay active and editable for 14 days, then the old one becomes read-only. You'll be billed for one site."
-                    : "Keeping both means two active sites, billed for two."}
-                </p>
-              </div>
-            )}
 
             <p className="text-xs text-muted-foreground">
               You can change the premises type later in Settings → Site. New site type: {premisesBadge(newPremisesType)}.
