@@ -18,7 +18,7 @@ import { formatGBP, TIERS, type TierId, type BillingCycle } from "@/lib/plans";
 import { AddSiteCheckoutPanel } from "@/components/settings/AddSiteCheckoutPanel";
 import { openCustomerPortal } from "@/lib/stripe";
 import {
-  HACCP_LAUNCH, type SubLike, resolveCurrentPlan, additionalSitePriceFor, hasActivePlanFor,
+  HACCP_LAUNCH, type SubLike, resolveCurrentPlan, additionalSitePriceFor, hasActivePlanFor, cycleFromInterval,
 } from "@/lib/sitePricing";
 import {
   PREMISES_TYPES, defaultOperatingMode, premisesBadge, type PremisesType,
@@ -76,7 +76,7 @@ export function SitesBillingSection() {
 
   useEffect(() => { loadSites(); }, [loadSites]);
 
-  const cycle: BillingCycle = (subscription?.billing_interval as BillingCycle) ?? "month";
+  const cycle: BillingCycle = cycleFromInterval(subscription?.billing_interval);
   const currentPlan = resolveCurrentPlan(subscription);
   const siteQuantity = subscription?.site_quantity ?? 1;
   const activeSites = sites.filter(s => s.active);

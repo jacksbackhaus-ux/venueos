@@ -15,7 +15,7 @@ import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { useSiteTransfer } from "@/hooks/useSiteTransfer";
 import { PREMISES_TYPES, defaultOperatingMode, premisesBadge, type PremisesType } from "@/lib/premises";
-import { resolveCurrentPlan } from "@/lib/sitePricing";
+import { resolveCurrentPlan, cycleFromInterval } from "@/lib/sitePricing";
 import { AddSiteCheckoutPanel } from "@/components/settings/AddSiteCheckoutPanel";
 import type { BillingCycle } from "@/lib/plans";
 
@@ -48,7 +48,7 @@ export function MoveSiteCard() {
   const siteQuantity = subscription?.site_quantity ?? 1;
   const siteCount = activeSites.length;
   const needsSlot = siteCount >= siteQuantity;
-  const cycle: BillingCycle = (subscription?.billing_interval as BillingCycle) ?? "month";
+  const cycle: BillingCycle = cycleFromInterval(subscription?.billing_interval);
   const currentPlan = resolveCurrentPlan(subscription);
 
   const otherActiveTransfer = !!transfer;
@@ -118,6 +118,9 @@ export function MoveSiteCard() {
     setOpen(false);
     resetForm();
     await refetch();
+    // The new site has to appear in the site switcher / SiteContext, which is
+    // loaded once per session — same reload pattern as CloseSiteCard.
+    window.location.reload();
   };
 
   return (
