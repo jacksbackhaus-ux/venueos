@@ -7,7 +7,12 @@
 //   - Idempotent: safe to call any time. If the org is on a legacy plan it no-ops.
 //
 // Auth:
-//   - Caller must be an active org_owner (or internal staff impersonating one).
+//   - Service-role callers (Authorization: Bearer <service role key>) pass
+//     organisation_id in the body — used by internal jobs such as
+//     site-transfer-cleanup after it archives a site.
+//   - Otherwise the caller must be an active org_owner (or internal staff
+//     impersonating one).
+
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { createStripeClient, type StripeEnv } from "../_shared/stripe.ts";
