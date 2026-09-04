@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
 import { useSiteTransfer } from "@/hooks/useSiteTransfer";
-import { syncHaccpSiteQuantity } from "@/lib/billingSync";
+import { syncHaccpSiteQuantity, syncHaccpUserQuantity } from "@/lib/billingSync";
 
 /**
  * Settings → Site → Close this site.
