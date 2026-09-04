@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
 import { useSiteTransfer } from "@/hooks/useSiteTransfer";
-import { syncHaccpSiteQuantity } from "@/lib/billingSync";
+import { syncHaccpSiteQuantity, syncHaccpUserQuantity } from "@/lib/billingSync";
 
 /**
  * Settings → Site → Close this site.
@@ -41,9 +41,13 @@ export function CloseSiteCard() {
       toast.error(error.message || "Could not reopen this site.");
       return;
     }
-    void syncHaccpSiteQuantity();
+    // Site quantity first, then the per-user add-on: an extra billed site
+    // includes one more user, so the add-on quantity drops.
+    await syncHaccpSiteQuantity();
+    await syncHaccpUserQuantity();
     toast.success("Site reopened — it's billable again from your next invoice.");
     window.location.reload();
+
   };
 
   if (isArchivedSite) {
