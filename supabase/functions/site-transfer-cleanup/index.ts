@@ -91,20 +91,25 @@ Deno.serve(async (req) => {
       }
       archived++
 
-      // Reduce the org's Stripe site quantity to match. Never lets a
-      // billing-sync failure stop other orgs' transfers from processing.
-      try {
-        await fetch(`${functionsBase}/sync-haccp-site-quantity`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${serviceKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ organisation_id: t.organisation_id }),
-        })
-      } catch (syncErr) {
-        console.error('[site-transfer-cleanup] site-quantity sync failed', t.organisation_id, syncErr)
+      // Reduce the org's Stripe site quantity to match, then re-sync the
+      // per-user add-on (fewer sites = fewer included users, so the add-on
+      // quantity has to go up). Never lets a billing-sync failure stop other
+      // orgs' transfers from processing.
+      for (const fn of ["sync-haccp-site-quantity", "sync-haccp-user-quantity"]) {
+        try {
+          await fetch(`${functionsBase}/${fn}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${serviceKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ organisation_id: t.organisation_id }),
+          })
+        } catch (syncErr) {
+          console.error(`[site-transfer-cleanup] ${fn} sync failed`, t.organisation_id, syncErr)
+        }
       }
+
     }
 
     return new Response(JSON.stringify({ checked: expired?.length ?? 0, archived }), {
