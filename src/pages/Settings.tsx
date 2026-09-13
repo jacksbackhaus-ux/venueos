@@ -64,9 +64,10 @@ import { KitchenSetupCard } from "@/components/settings/KitchenSetupCard";
 import { CloseSiteCard } from "@/components/settings/CloseSiteCard";
 import { MoveSiteCard } from "@/components/settings/MoveSiteCard";
 
-import { ToggleLeft, MessageSquare, Palette } from "lucide-react";
+import { ToggleLeft, MessageSquare, Palette, Bot } from "lucide-react";
 import { showMessenger, showModulesSettingsTab, showBrandingSettingsTab } from "@/lib/launchFlags";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
+import { ConnectorsSection } from "@/components/settings/ConnectorsSection";
 
 // ─── Temperature Units ───
 type TempUnit = {
@@ -207,6 +208,11 @@ const Settings = () => {
     orgRole?.org_role === 'org_owner' ||
     currentMembership?.site_role === 'owner' ||
     staffSession?.site_role === 'owner';
+
+  // Mirrors is_org_owner_or_hq_admin() in the database, which is what
+  // actually gates writes to mcp_settings — only an org owner or HQ admin
+  // may flip the assistant on/off switch.
+  const canManageConnectors = isOwner || orgRole?.org_role === 'hq_admin';
 
   // Site/business state — populated from currentSite once loaded
   const [bakeryName, setBakeryName] = useState("");
@@ -758,6 +764,7 @@ const Settings = () => {
           {showBrandingSettingsTab && (orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
             <TabsTrigger value="branding" className="text-xs gap-1"><Palette className="h-3 w-3" /> Branding</TabsTrigger>
           )}
+          <TabsTrigger value="connectors" className="text-xs gap-1"><Bot className="h-3 w-3" /> Connectors</TabsTrigger>
           <TabsTrigger value="account" className="text-xs gap-1"><Shield className="h-3 w-3" /> Account</TabsTrigger>
         </TabsList>
 
@@ -1337,6 +1344,10 @@ const Settings = () => {
           )}
         </TabsContent>
 
+        {/* ════════ CONNECTORS ════════ */}
+        <TabsContent value="connectors" className="mt-4 space-y-4">
+          <ConnectorsSection canManage={canManageConnectors} />
+        </TabsContent>
 
         {/* ════════ ACCOUNT ════════ */}
         <TabsContent value="account" className="mt-4 space-y-4">
