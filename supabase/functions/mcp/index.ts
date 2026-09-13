@@ -3,13 +3,13 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.3";
 
 // src/lib/mcp/tools/list-sites.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.3";
 
 // src/lib/mcp/helpers.ts
-import { ToolError } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { ToolError } from "npm:@lovable.dev/mcp-js@0.26.3";
 
 // src/lib/mcp/supabase.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.108.2";
@@ -87,10 +87,20 @@ async function actorRecord(client, authUserId) {
   if (data.status !== "active") throw new ToolError("This MiseOS account is not active.");
   return data;
 }
-async function siteRoleFor(client, actorId, siteId) {
+async function siteRoleFor(client, actorId, siteId, organisationId) {
   const { data, error } = await client.from("memberships").select("site_role").eq("user_id", actorId).eq("site_id", siteId).eq("active", true).maybeSingle();
   if (error) throw new ToolError(error.message);
-  return data?.site_role ?? null;
+  const membershipRole = data?.site_role ?? null;
+  if (membershipRole) return membershipRole;
+  const { data: org, error: orgError } = await client.from("org_users").select("org_role, expires_at").eq("user_id", actorId).eq("organisation_id", organisationId).eq("active", true).maybeSingle();
+  if (orgError) throw new ToolError(orgError.message);
+  if (!org) return null;
+  const expiresAt = org.expires_at;
+  if (expiresAt && new Date(expiresAt) <= /* @__PURE__ */ new Date()) return null;
+  const orgRole = org.org_role;
+  if (orgRole === "org_owner" || orgRole === "hq_admin") return "owner";
+  if (orgRole === "hq_auditor") return "read_only";
+  return null;
 }
 function assertLevel(level, role) {
   if (level === "read") return;
@@ -148,7 +158,7 @@ function guard(opts) {
     const organisationId = siteId ? await siteOrganisationId(client, siteId) : actor.organisation_id;
     await assertEnabled(client, organisationId);
     await assertUnderRateLimit(client, authUserId);
-    const siteRole = siteId ? await siteRoleFor(client, actor.id, siteId) : null;
+    const siteRole = siteId ? await siteRoleFor(client, actor.id, siteId, organisationId) : null;
     const base = {
       organisation_id: organisationId,
       site_id: siteId,
@@ -181,6 +191,76 @@ function ok(res) {
   if (res.error) throw new ToolError(res.error.message);
   return res.data;
 }
+async function siteMeta(client, siteId) {
+  const { data, error } = await client.from("sites").select("id, name, premises_type, operating_mode, timezone, organisation_id, created_at").eq("id", siteId).maybeSingle();
+  if (error) throw new ToolError(error.message);
+  if (!data) throw new ToolError("Site not found, or you do not have access to it.");
+  return {
+    id: data.id,
+    name: data.name,
+    premises_type: data.premises_type ?? "commercial",
+    operating_mode: data.operating_mode ?? "scheduled",
+    timezone: data.timezone || "Europe/London",
+    organisation_id: data.organisation_id,
+    created_on: String(data.created_at ?? "").slice(0, 10)
+  };
+}
+function premisesLabel(type) {
+  switch (type) {
+    case "home":
+      return "Home kitchen (registered domestic premises)";
+    case "mobile":
+      return "Mobile / market trader";
+    case "production":
+      return "Prep or production unit";
+    default:
+      return "Commercial premises";
+  }
+}
+var ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+function isoDate(value, field = "date") {
+  if (!ISO_DATE.test(value)) throw new ToolError(`${field} must be a date in YYYY-MM-DD format.`);
+  return value;
+}
+function siteNow(timezone, at = /* @__PURE__ */ new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(at);
+  const get = (type) => parts.find((p) => p.type === type)?.value ?? "00";
+  const hour = Number(get("hour")) % 24;
+  return {
+    dateISO: `${get("year")}-${get("month")}-${get("day")}`,
+    hour,
+    minutes: hour * 60 + Number(get("minute"))
+  };
+}
+function siteToday(timezone) {
+  return siteNow(timezone).dateISO;
+}
+function addDaysISO(dateISO, days) {
+  const d = /* @__PURE__ */ new Date(`${dateISO}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function daysBetweenISO(fromISO, toISO) {
+  return Math.round(
+    (Date.parse(`${toISO}T12:00:00Z`) - Date.parse(`${fromISO}T12:00:00Z`)) / 864e5
+  );
+}
+function eachDateISO(fromISO, toISO) {
+  const out = [];
+  for (let d = fromISO; d <= toISO; d = addDaysISO(d, 1)) {
+    out.push(d);
+    if (out.length > 1500) break;
+  }
+  return out;
+}
 
 // src/lib/mcp/tools/list-sites.ts
 var list_sites_default = defineTool({
@@ -202,7 +282,7 @@ var list_sites_default = defineTool({
 });
 
 // src/lib/mcp/tools/list-temperature-units.ts
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z } from "npm:zod@^3.25.76";
 var list_temperature_units_default = defineTool2({
   name: "list_temperature_units",
@@ -224,7 +304,7 @@ var list_temperature_units_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-temperature-logs.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z2 } from "npm:zod@^3.25.76";
 var list_temperature_logs_default = defineTool3({
   name: "list_temperature_logs",
@@ -254,7 +334,7 @@ var list_temperature_logs_default = defineTool3({
 });
 
 // src/lib/mcp/tools/log-temperature.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z3 } from "npm:zod@^3.25.76";
 var log_temperature_default = defineTool4({
   name: "log_temperature",
@@ -303,16 +383,479 @@ var log_temperature_default = defineTool4({
   })
 });
 
-// src/lib/mcp/tools/list-incidents.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.2";
+// src/lib/mcp/tools/log-probe-calibration.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z4 } from "npm:zod@^3.25.76";
-var list_incidents_default = defineTool5({
+
+// src/lib/sfbb.ts
+var REVIEW_QUESTIONS = [
+  { key: "repeat_problem", label: "Any problem observed, or the same issue 3+ times in this period?" },
+  { key: "safe_methods_reviewed", label: "Have you reviewed your safe methods?" },
+  { key: "allergen_info", label: "Has allergen information been updated for any menu or ingredient changes?" },
+  { key: "equipment_changes", label: "Have any equipment or processes changed that affect your safe methods?" },
+  { key: "new_suppliers", label: "Have new suppliers been recorded with contact details?" },
+  { key: "cleaning_schedule", label: "Does the cleaning schedule need updating?" },
+  { key: "new_staff_trained", label: "Have new staff been trained in all safe methods?" },
+  { key: "refresher_training", label: "Do any existing staff need refresher training?" },
+  { key: "extra_checks_needed", label: "Are any extra opening or closing checks required?" },
+  { key: "complaints_investigated", label: "Have food complaints been investigated and safe methods reviewed?" },
+  { key: "probe_calibrated", label: "Have probes been calibrated in this period and results recorded?" },
+  { key: "extra_checks_recorded", label: "Have extra checks been completed and recorded?" },
+  { key: "prove_it", label: 'Are "prove it" checks being completed and recorded?' }
+];
+function emptyChecklist() {
+  const c = {};
+  REVIEW_QUESTIONS.forEach((q) => {
+    c[q.key] = { value: null };
+  });
+  return c;
+}
+var SCHEDULED_REVIEW_DAYS = 28;
+var ON_DEMAND_REVIEW_PRODUCTION_DAYS = 20;
+var ON_DEMAND_REVIEW_MAX_DAYS = 92;
+function addDaysISO2(iso, days) {
+  const d = /* @__PURE__ */ new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function daysBetween(a, b) {
+  return Math.round(
+    ((/* @__PURE__ */ new Date(`${b}T12:00:00`)).getTime() - (/* @__PURE__ */ new Date(`${a}T12:00:00`)).getTime()) / 864e5
+  );
+}
+function computeReviewCadence(input) {
+  const today = input.todayISO ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  const periodStart = input.periodStartISO;
+  const elapsed = Math.max(0, daysBetween(periodStart, today));
+  if (input.mode === "on_demand") {
+    const dates = (input.productionDates ?? []).filter((d) => d >= periodStart && d <= today);
+    const covered = new Set(dates).size;
+    const dueByDays = covered >= ON_DEMAND_REVIEW_PRODUCTION_DAYS;
+    const dueByTime = elapsed >= ON_DEMAND_REVIEW_MAX_DAYS;
+    return {
+      due: dueByDays || dueByTime,
+      periodStart,
+      periodEnd: today,
+      productionDaysCovered: covered,
+      progressLabel: `${covered} of ${ON_DEMAND_REVIEW_PRODUCTION_DAYS} production days`,
+      reviewLabel: "periodic review"
+    };
+  }
+  return {
+    due: elapsed >= SCHEDULED_REVIEW_DAYS,
+    periodStart,
+    periodEnd: elapsed >= SCHEDULED_REVIEW_DAYS ? addDaysISO2(periodStart, SCHEDULED_REVIEW_DAYS - 1) : today,
+    productionDaysCovered: 0,
+    progressLabel: `Day ${Math.min(elapsed + 1, SCHEDULED_REVIEW_DAYS)} of ${SCHEDULED_REVIEW_DAYS}`,
+    reviewLabel: "4-weekly review"
+  };
+}
+function probeCalibrationPass(iced, boiling) {
+  return iced >= -1 && iced <= 1 && boiling >= 99 && boiling <= 101;
+}
+function suggestedReturnDate(symptomEndISO) {
+  const d = /* @__PURE__ */ new Date(`${symptomEndISO}T12:00:00`);
+  d.setDate(d.getDate() + 2);
+  return d.toISOString().slice(0, 10);
+}
+
+// src/lib/mcp/tools/log-probe-calibration.ts
+var log_probe_calibration_default = defineTool5({
+  name: "log_probe_calibration",
+  title: "Log a probe calibration check",
+  description: "Record an iced-water and boiling-water probe calibration check. Pass/fail is derived from the readings (iced water -1\xB0C to 1\xB0C, boiling water 99\xB0C to 101\xB0C).",
+  inputSchema: {
+    site_id: z4.string().uuid().describe("Site id from list_sites."),
+    iced_water_reading: z4.number().describe("Probe reading in iced water, in degrees Celsius."),
+    boiling_water_reading: z4.number().describe("Probe reading in boiling water, in degrees Celsius."),
+    probe_name: z4.string().optional().describe("Which probe was checked, e.g. 'Blue probe'."),
+    notes: z4.string().optional().describe("Anything worth recording, e.g. what was done if it failed.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: guard({
+    tool: "log_probe_calibration",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const pass = probeCalibrationPass(input.iced_water_reading, input.boiling_water_reading);
+      const calibration = ok(
+        await client.from("probe_calibrations").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          probe_name: input.probe_name?.trim() || null,
+          iced_water_reading: input.iced_water_reading,
+          boiling_water_reading: input.boiling_water_reading,
+          pass,
+          notes: input.notes?.trim() || null,
+          calibrated_by: actorId,
+          calibrated_by_name: actorName
+        }).select("id, probe_name, iced_water_reading, boiling_water_reading, pass, calibrated_at").single()
+      );
+      return {
+        calibration,
+        pass,
+        guidance: pass ? "Probe is reading accurately." : "Probe failed calibration. Take it out of use or recalibrate it, and record what was done."
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/list-cleaning-tasks.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z5 } from "npm:zod@^3.25.76";
+var list_cleaning_tasks_default = defineTool6({
+  name: "list_cleaning_tasks",
+  title: "List cleaning tasks",
+  description: "List the cleaning schedule for a site, with each task's area, frequency and whether it has been completed on a given date.",
+  inputSchema: {
+    site_id: z5.string().uuid().describe("Site id from list_sites."),
+    date: z5.string().optional().describe("Date to check completion against (YYYY-MM-DD). Defaults to today."),
+    frequency: z5.string().optional().describe("Filter by frequency: daily, weekly or monthly.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "list_cleaning_tasks",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const site = await siteMeta(client, input.site_id);
+      const date = input.date ? isoDate(input.date) : siteToday(site.timezone);
+      let taskQuery = client.from("cleaning_tasks").select("id, task, area, frequency, due_time, assigned_to_name").eq("site_id", input.site_id).eq("active", true).order("sort_order");
+      if (input.frequency) taskQuery = taskQuery.eq("frequency", input.frequency.toLowerCase());
+      const [tasks, logs] = await Promise.all([
+        taskQuery,
+        client.from("cleaning_logs").select("task_id, done, completed_by_name, completed_at").eq("site_id", input.site_id).eq("log_date", date)
+      ]);
+      const logRows = ok(logs) ?? [];
+      const byTask = new Map(logRows.map((l) => [l.task_id, l]));
+      return {
+        date,
+        tasks: (ok(tasks) ?? []).map((t) => {
+          const log = byTask.get(t.id);
+          return {
+            ...t,
+            done: log?.done === true,
+            completed_by: log?.completed_by_name ?? null,
+            completed_at: log?.completed_at ?? null
+          };
+        })
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/complete-cleaning-task.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z6 } from "npm:zod@^3.25.76";
+var complete_cleaning_task_default = defineTool7({
+  name: "complete_cleaning_task",
+  title: "Complete a cleaning task",
+  description: "Mark a cleaning task as completed for a given date. Use list_cleaning_tasks to find the task id. Completing a task for a past date is recorded as a retrospective entry.",
+  inputSchema: {
+    site_id: z6.string().uuid().describe("Site id from list_sites."),
+    task_id: z6.string().uuid().describe("Cleaning task id from list_cleaning_tasks."),
+    date: z6.string().optional().describe("Date the cleaning was done (YYYY-MM-DD). Defaults to today."),
+    note: z6.string().optional().describe("Anything worth recording about the clean.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "complete_cleaning_task",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const date = input.date ? isoDate(input.date) : today;
+      if (date > today) throw new Error("Cleaning cannot be recorded for a future date.");
+      const task = ok(
+        await client.from("cleaning_tasks").select("id, task, area, frequency").eq("id", input.task_id).eq("site_id", input.site_id).maybeSingle()
+      );
+      if (!task) throw new Error("Cleaning task not found for this site.");
+      const isRetrospective = date < today;
+      const completedAt = isRetrospective ? `${date}T12:00:00.000Z` : (/* @__PURE__ */ new Date()).toISOString();
+      const existing = ok(
+        await client.from("cleaning_logs").select("id").eq("site_id", input.site_id).eq("task_id", input.task_id).eq("log_date", date).maybeSingle()
+      );
+      const payload = {
+        done: true,
+        completed_at: completedAt,
+        completed_by_user_id: actorId,
+        completed_by_name: actorName,
+        is_retrospective: isRetrospective,
+        note: input.note?.trim() || null
+      };
+      const log = existing ? ok(
+        await client.from("cleaning_logs").update(payload).eq("id", existing.id).select("id, log_date, done, completed_at, is_retrospective").single()
+      ) : ok(
+        await client.from("cleaning_logs").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          task_id: input.task_id,
+          log_date: date,
+          ...payload
+        }).select("id, log_date, done, completed_at, is_retrospective").single()
+      );
+      return { task, log, retrospective: isRetrospective };
+    }
+  })
+});
+
+// src/lib/mcp/tools/get-day-sheet.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z7 } from "npm:zod@^3.25.76";
+var get_day_sheet_default = defineTool8({
+  name: "get_day_sheet",
+  title: "Get the day sheet",
+  description: "Get the opening and closing checks for a site on a given date, with each item's id and whether it is done. Use the item ids with complete_day_sheet_items.",
+  inputSchema: {
+    site_id: z7.string().uuid().describe("Site id from list_sites."),
+    date: z7.string().optional().describe("Date (YYYY-MM-DD). Defaults to today.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "get_day_sheet",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const site = await siteMeta(client, input.site_id);
+      const date = input.date ? isoDate(input.date) : siteToday(site.timezone);
+      const [sections, sheet] = await Promise.all([
+        client.from("day_sheet_sections").select("id, title, default_time, sort_order, day_sheet_items(id, label, active, sort_order)").eq("site_id", input.site_id).eq("active", true).order("sort_order"),
+        client.from("day_sheets").select(
+          "id, sheet_date, locked, signed_off, signed_off_by, signed_off_at, manager_note, problem_notes, day_sheet_entries(item_id, done, completed_by_name, completed_at)"
+        ).eq("site_id", input.site_id).eq("sheet_date", date).maybeSingle()
+      ]);
+      const sheetRow = ok(sheet);
+      const entries = sheetRow?.day_sheet_entries ?? [];
+      const byItem = new Map(entries.map((e) => [e.item_id, e]));
+      const sectionRows = ok(sections) ?? [];
+      const items = sectionRows.map((s) => ({
+        section_id: s.id,
+        section: s.title,
+        default_time: s.default_time,
+        items: (s.day_sheet_items ?? []).filter((i) => i.active).sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0)).map((i) => {
+          const entry = byItem.get(i.id);
+          return {
+            item_id: i.id,
+            label: i.label,
+            done: entry?.done === true,
+            completed_by: entry?.completed_by_name ?? null,
+            completed_at: entry?.completed_at ?? null
+          };
+        })
+      }));
+      const all = items.flatMap((s) => s.items);
+      return {
+        date,
+        day_sheet: sheetRow ? {
+          id: sheetRow.id,
+          locked: sheetRow.locked,
+          signed_off: sheetRow.signed_off,
+          signed_off_by: sheetRow.signed_off_by,
+          signed_off_at: sheetRow.signed_off_at,
+          manager_note: sheetRow.manager_note,
+          problem_notes: sheetRow.problem_notes
+        } : null,
+        completed: all.filter((i) => i.done).length,
+        total: all.length,
+        sections: items
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/complete-day-sheet-items.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z8 } from "npm:zod@^3.25.76";
+var complete_day_sheet_items_default = defineTool9({
+  name: "complete_day_sheet_items",
+  title: "Complete day sheet items",
+  description: "Tick off one or more opening or closing checks on a site's day sheet for a date. Use get_day_sheet to find the item ids. Creates the day sheet if it does not exist yet.",
+  inputSchema: {
+    site_id: z8.string().uuid().describe("Site id from list_sites."),
+    item_ids: z8.array(z8.string().uuid()).min(1).describe("Day sheet item ids from get_day_sheet."),
+    date: z8.string().optional().describe("Date (YYYY-MM-DD). Defaults to today."),
+    note: z8.string().optional().describe("Note to record against every item completed in this call.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "complete_day_sheet_items",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const date = input.date ? isoDate(input.date) : today;
+      if (date > today) throw new Error("Day sheet items cannot be completed for a future date.");
+      const isRetrospective = date < today;
+      const sections = ok(
+        await client.from("day_sheet_sections").select("id, title, day_sheet_items(id, label, active)").eq("site_id", input.site_id).eq("active", true)
+      );
+      const valid = /* @__PURE__ */ new Map();
+      for (const s of sections ?? []) {
+        for (const i of (s.day_sheet_items ?? []).filter((i2) => i2.active)) {
+          valid.set(i.id, `${s.title} \u2014 ${i.label}`);
+        }
+      }
+      const unknown = input.item_ids.filter((id) => !valid.has(id));
+      if (unknown.length > 0) {
+        throw new Error(`These items do not belong to this site's day sheet: ${unknown.join(", ")}`);
+      }
+      let sheet = ok(
+        await client.from("day_sheets").select("id, locked, signed_off").eq("site_id", input.site_id).eq("sheet_date", date).maybeSingle()
+      );
+      if (sheet?.locked || sheet?.signed_off) {
+        throw new Error(
+          "This day sheet has been signed off and locked. A manager must reopen it in MiseOS before it can change."
+        );
+      }
+      if (!sheet) {
+        sheet = ok(
+          await client.from("day_sheets").insert({
+            site_id: input.site_id,
+            organisation_id: organisationId,
+            sheet_date: date,
+            is_retrospective: isRetrospective
+          }).select("id, locked, signed_off").single()
+        );
+      }
+      const completedAt = isRetrospective ? `${date}T12:00:00.000Z` : (/* @__PURE__ */ new Date()).toISOString();
+      const existing = ok(
+        await client.from("day_sheet_entries").select("id, item_id").eq("day_sheet_id", sheet.id).in("item_id", input.item_ids)
+      );
+      const existingByItem = new Map((existing ?? []).map((e) => [e.item_id, e.id]));
+      const payload = {
+        done: true,
+        completed_at: completedAt,
+        completed_by_user_id: actorId,
+        completed_by_name: actorName,
+        is_retrospective: isRetrospective,
+        note: input.note?.trim() || null
+      };
+      const completed = [];
+      for (const itemId of input.item_ids) {
+        const entryId = existingByItem.get(itemId);
+        if (entryId) {
+          ok(await client.from("day_sheet_entries").update(payload).eq("id", entryId).select("id").single());
+        } else {
+          ok(
+            await client.from("day_sheet_entries").insert({ day_sheet_id: sheet.id, item_id: itemId, ...payload }).select("id").single()
+          );
+        }
+        completed.push({ item_id: itemId, label: valid.get(itemId) });
+      }
+      return { date, day_sheet_id: sheet.id, retrospective: isRetrospective, completed };
+    }
+  })
+});
+
+// src/lib/mcp/tools/start-production-day.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z9 } from "npm:zod@^3.25.76";
+var start_production_day_default = defineTool10({
+  name: "start_production_day",
+  title: "Start a production day",
+  description: "Declare a production day for an on-demand site (home kitchen, market trader, bake-to-order unit). Compliance for these sites is measured across declared production days only, so nothing is due until a production day is started.",
+  inputSchema: {
+    site_id: z9.string().uuid().describe("Site id from list_sites. Must be an on-demand site."),
+    date: z9.string().optional().describe("Production date (YYYY-MM-DD). Defaults to today.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "start_production_day",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, organisationId }) => {
+      const site = await siteMeta(client, input.site_id);
+      if (site.operating_mode !== "on_demand") {
+        throw new Error(
+          `${site.name} trades on a daily schedule, so it does not use production days. Production days apply to home, mobile and bake-to-order sites.`
+        );
+      }
+      const today = siteToday(site.timezone);
+      const date = input.date ? isoDate(input.date) : today;
+      if (date > today) throw new Error("A production day cannot be started for a future date.");
+      const existing = ok(
+        await client.from("production_days").select("id, production_date, started_at, completed_at").eq("site_id", input.site_id).eq("production_date", date).maybeSingle()
+      );
+      if (existing) {
+        return {
+          production_day: existing,
+          already_started: true,
+          message: `A production day for ${date} already exists.`
+        };
+      }
+      const productionDay = ok(
+        await client.from("production_days").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          production_date: date,
+          started_by: actorId,
+          // Honest audit trail: recorded now, but for a past production date.
+          is_retrospective: date < today
+        }).select("id, production_date, started_at, completed_at, is_retrospective").single()
+      );
+      return { production_day: productionDay, already_started: false };
+    }
+  })
+});
+
+// src/lib/mcp/tools/finish-production-day.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z10 } from "npm:zod@^3.25.76";
+var finish_production_day_default = defineTool11({
+  name: "finish_production_day",
+  title: "Finish a production day",
+  description: "Close off the production day for an on-demand site, optionally with notes about how it went.",
+  inputSchema: {
+    site_id: z10.string().uuid().describe("Site id from list_sites. Must be an on-demand site."),
+    date: z10.string().optional().describe("Production date to close (YYYY-MM-DD). Defaults to today."),
+    notes: z10.string().optional().describe("Notes about the production day.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "finish_production_day",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId }) => {
+      const site = await siteMeta(client, input.site_id);
+      if (site.operating_mode !== "on_demand") {
+        throw new Error(
+          `${site.name} trades on a daily schedule, so it does not use production days.`
+        );
+      }
+      const date = input.date ? isoDate(input.date) : siteToday(site.timezone);
+      const existing = ok(
+        await client.from("production_days").select("id, completed_at").eq("site_id", input.site_id).eq("production_date", date).maybeSingle()
+      );
+      if (!existing) {
+        throw new Error(`No production day has been started for ${date}, so there is nothing to close.`);
+      }
+      const productionDay = ok(
+        await client.from("production_days").update({
+          completed_at: (/* @__PURE__ */ new Date()).toISOString(),
+          completed_by: actorId,
+          notes: input.notes?.trim() || null
+        }).eq("id", existing.id).select("id, production_date, started_at, completed_at, notes").single()
+      );
+      return {
+        production_day: productionDay,
+        reclosed: !!existing.completed_at
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/list-incidents.ts
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z11 } from "npm:zod@^3.25.76";
+var list_incidents_default = defineTool12({
   name: "list_incidents",
   title: "List incidents",
   description: "List food safety incidents and non-conformances for a site, newest first.",
   inputSchema: {
-    site_id: z4.string().uuid().describe("Site id from list_sites."),
-    status: z4.string().optional().describe("Filter by status, e.g. open or closed.")
+    site_id: z11.string().uuid().describe("Site id from list_sites."),
+    status: z11.string().optional().describe("Filter by status, e.g. open or closed.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: guard({
@@ -331,20 +874,20 @@ var list_incidents_default = defineTool5({
 });
 
 // src/lib/mcp/tools/create-incident.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z5 } from "npm:zod@^3.25.76";
-var create_incident_default = defineTool6({
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z12 } from "npm:zod@^3.25.76";
+var create_incident_default = defineTool13({
   name: "create_incident",
   title: "Report an incident",
   description: "Report a food safety incident or non-conformance for a site. Creates an open incident record.",
   inputSchema: {
-    site_id: z5.string().uuid().describe("Site id from list_sites."),
-    title: z5.string().describe("Short summary of what happened."),
-    description: z5.string().describe("What happened, in detail."),
-    immediate_action: z5.string().describe("What was done straight away to make things safe."),
-    type: z5.string().optional().describe("Incident type, e.g. temperature, pest, allergen, equipment, other."),
-    root_cause: z5.string().optional().describe("Root cause, if already known."),
-    prevention: z5.string().optional().describe("How a repeat will be prevented.")
+    site_id: z12.string().uuid().describe("Site id from list_sites."),
+    title: z12.string().describe("Short summary of what happened."),
+    description: z12.string().describe("What happened, in detail."),
+    immediate_action: z12.string().describe("What was done straight away to make things safe."),
+    type: z12.string().optional().describe("Incident type, e.g. temperature, pest, allergen, equipment, other."),
+    root_cause: z12.string().optional().describe("Root cause, if already known."),
+    prevention: z12.string().optional().describe("How a repeat will be prevented.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: guard({
@@ -372,16 +915,56 @@ var create_incident_default = defineTool6({
   })
 });
 
+// src/lib/mcp/tools/update-incident.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z13 } from "npm:zod@^3.25.76";
+var update_incident_default = defineTool14({
+  name: "update_incident",
+  title: "Update an incident",
+  description: "Update the root cause, prevention, verification or status of an existing incident. Managers and owners only. Ask the user before closing an incident.",
+  inputSchema: {
+    site_id: z13.string().uuid().describe("Site id from list_sites."),
+    incident_id: z13.string().uuid().describe("Incident id from list_incidents."),
+    root_cause: z13.string().optional().describe("Why it happened."),
+    prevention: z13.string().optional().describe("How a repeat will be prevented."),
+    status: z13.string().optional().describe("New status, e.g. open, in_progress, closed.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: guard({
+    tool: "update_incident",
+    level: "manage",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorName }) => {
+      const patch = {};
+      if (input.root_cause !== void 0) patch.root_cause = input.root_cause;
+      if (input.prevention !== void 0) patch.prevention = input.prevention;
+      if (input.status !== void 0) {
+        patch.status = input.status;
+        if (input.status === "closed") {
+          patch.verified_by_name = actorName;
+          patch.verified_at = (/* @__PURE__ */ new Date()).toISOString();
+        }
+      }
+      if (Object.keys(patch).length === 0) throw new Error("Nothing to update.");
+      const incident = ok(
+        await client.from("incidents").update(patch).eq("id", input.incident_id).eq("site_id", input.site_id).select("id, title, status, root_cause, prevention, verified_at").maybeSingle()
+      );
+      if (!incident) throw new Error("Incident not found for this site.");
+      return { incident };
+    }
+  })
+});
+
 // src/lib/mcp/tools/list-batches.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z6 } from "npm:zod@^3.25.76";
-var list_batches_default = defineTool7({
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z14 } from "npm:zod@^3.25.76";
+var list_batches_default = defineTool15({
   name: "list_batches",
   title: "List production batches",
   description: "List recent production batches for a site, newest first, with batch code, product, quantity and use-by date.",
   inputSchema: {
-    site_id: z6.string().uuid().describe("Site id from list_sites."),
-    days: z6.number().int().optional().describe("How many days back to look. Defaults to 14, max 180.")
+    site_id: z14.string().uuid().describe("Site id from list_sites."),
+    days: z14.number().int().optional().describe("How many days back to look. Defaults to 14, max 180.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: guard({
@@ -401,28 +984,1734 @@ var list_batches_default = defineTool7({
   })
 });
 
+// src/lib/mcp/tools/create-batch.ts
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z15 } from "npm:zod@^3.25.76";
+function buildBatchCode(siteName, dateISO, sequence) {
+  const prefix = siteName.substring(0, 4).toUpperCase().replace(/\s/g, "");
+  return `${prefix}-${dateISO.replace(/-/g, "")}-${String(sequence).padStart(3, "0")}`;
+}
+var create_batch_default = defineTool16({
+  name: "create_batch",
+  title: "Create a production batch",
+  description: "Record a batch of product produced at a site, for traceability. A batch code is generated automatically.",
+  inputSchema: {
+    site_id: z15.string().uuid().describe("Site id from list_sites."),
+    product_name: z15.string().describe("What was produced, e.g. 'Lemon drizzle cake'."),
+    quantity: z15.number().optional().describe("How much was produced."),
+    unit: z15.string().optional().describe("Unit for the quantity, e.g. units, kg, litres, trays."),
+    date_produced: z15.string().optional().describe("Production date (YYYY-MM-DD). Defaults to today."),
+    use_by_date: z15.string().optional().describe("Use-by date (YYYY-MM-DD)."),
+    notes: z15.string().optional().describe("Anything worth recording about the batch.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: guard({
+    tool: "create_batch",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, organisationId }) => {
+      const productName = input.product_name.trim();
+      if (!productName) throw new Error("A product name is required.");
+      if (input.quantity != null && input.quantity < 0) throw new Error("Quantity cannot be negative.");
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const produced = input.date_produced ? isoDate(input.date_produced, "date_produced") : today;
+      const useBy = input.use_by_date ? isoDate(input.use_by_date, "use_by_date") : null;
+      if (useBy && useBy < produced) {
+        throw new Error("The use-by date cannot be before the production date.");
+      }
+      const { count } = await client.from("batches").select("id", { count: "exact", head: true }).eq("site_id", input.site_id);
+      const priorForProduct = ok(
+        await client.from("batches").select("recipe_number").eq("site_id", input.site_id).eq("product_name", productName).not("recipe_number", "is", null).order("recipe_number", { ascending: false }).limit(1)
+      );
+      const recipeNumber = (priorForProduct?.[0]?.recipe_number ?? 0) + 1;
+      const batch = ok(
+        await client.from("batches").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          batch_code: buildBatchCode(site.name, today, (count ?? 0) + 1),
+          product_name: productName,
+          recipe_ref: productName,
+          recipe_number: recipeNumber,
+          quantity_produced: input.quantity ?? null,
+          quantity_unit: input.unit?.trim() || "units",
+          date_produced: produced,
+          use_by_date: useBy,
+          notes: input.notes?.trim() || null,
+          created_by_user_id: actorId
+        }).select(
+          "id, batch_code, product_name, recipe_number, quantity_produced, quantity_unit, status, date_produced, use_by_date, notes"
+        ).single()
+      );
+      return { batch };
+    }
+  })
+});
+
+// src/lib/mcp/tools/update-batch.ts
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z16 } from "npm:zod@^3.25.76";
+var update_batch_default = defineTool17({
+  name: "update_batch",
+  title: "Update a batch",
+  description: "Correct the product, quantity, notes or production date on an existing batch. Use extend_batch_use_by to change a use-by date, dispose_batch to write a batch off, and mark_batch_used once it has been sold or used.",
+  inputSchema: {
+    site_id: z16.string().uuid().describe("Site id from list_sites."),
+    batch_id: z16.string().uuid().describe("Batch id from list_batches."),
+    product_name: z16.string().optional().describe("Corrected product name."),
+    quantity: z16.number().optional().describe("Corrected quantity produced."),
+    unit: z16.string().optional().describe("Corrected unit, e.g. units, kg, trays."),
+    date_produced: z16.string().optional().describe("Corrected production date (YYYY-MM-DD)."),
+    notes: z16.string().optional().describe("Notes for the batch.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "update_batch",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const current = ok(
+        await client.from("batches").select("id, product_name, status, use_by_date, date_produced").eq("id", input.batch_id).eq("site_id", input.site_id).maybeSingle()
+      );
+      if (!current) throw new Error("Batch not found for this site.");
+      if (current.status === "disposed" || current.status === "used") {
+        throw new Error(
+          `This batch is already marked as ${current.status}. Closed batches are kept as they were recorded.`
+        );
+      }
+      const patch = {};
+      if (input.product_name !== void 0) {
+        const name = input.product_name.trim();
+        if (!name) throw new Error("Product name cannot be blank.");
+        patch.product_name = name;
+        patch.recipe_ref = name;
+      }
+      if (input.quantity !== void 0) {
+        if (input.quantity < 0) throw new Error("Quantity cannot be negative.");
+        patch.quantity_produced = input.quantity;
+      }
+      if (input.unit !== void 0) patch.quantity_unit = input.unit.trim() || "units";
+      if (input.notes !== void 0) patch.notes = input.notes.trim() || null;
+      if (input.date_produced !== void 0) {
+        const produced = isoDate(input.date_produced, "date_produced");
+        if (current.use_by_date && produced > current.use_by_date) {
+          throw new Error("The production date cannot be after the batch's use-by date.");
+        }
+        patch.date_produced = produced;
+      }
+      if (Object.keys(patch).length === 0) throw new Error("Nothing to update.");
+      const batch = ok(
+        await client.from("batches").update(patch).eq("id", input.batch_id).eq("site_id", input.site_id).select(
+          "id, batch_code, product_name, quantity_produced, quantity_unit, status, date_produced, use_by_date, notes"
+        ).single()
+      );
+      return { batch, amended_fields: Object.keys(patch) };
+    }
+  })
+});
+
+// src/lib/mcp/tools/mark-batch-used.ts
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z17 } from "npm:zod@^3.25.76";
+var mark_batch_used_default = defineTool18({
+  name: "mark_batch_used",
+  title: "Mark a batch as used",
+  description: "Close a batch off as sold or used. The batch record stays on file for traceability.",
+  inputSchema: {
+    site_id: z17.string().uuid().describe("Site id from list_sites."),
+    batch_id: z17.string().uuid().describe("Batch id from list_batches."),
+    notes: z17.string().optional().describe("Anything worth recording, e.g. where it went.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "mark_batch_used",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const current = ok(
+        await client.from("batches").select("id, product_name, status").eq("id", input.batch_id).eq("site_id", input.site_id).maybeSingle()
+      );
+      if (!current) throw new Error("Batch not found for this site.");
+      if (current.status === "disposed") {
+        throw new Error("This batch was disposed of, so it cannot be marked as used.");
+      }
+      if (current.status === "used") {
+        return { batch: current, already_used: true };
+      }
+      const batch = ok(
+        await client.from("batches").update({ status: "used", completed_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", input.batch_id).eq("site_id", input.site_id).select("id, batch_code, product_name, status, completed_at").single()
+      );
+      ok(
+        await client.from("batch_actions").insert({
+          batch_id: input.batch_id,
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          action_type: "used",
+          notes: input.notes?.trim() || null,
+          performed_by_user_id: actorId,
+          performed_by_name: actorName
+        }).select("id").single()
+      );
+      return { batch, already_used: false };
+    }
+  })
+});
+
+// src/lib/mcp/tools/dispose-batch.ts
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z18 } from "npm:zod@^3.25.76";
+var dispose_batch_default = defineTool19({
+  name: "dispose_batch",
+  title: "Dispose of a batch",
+  description: "Write a batch off as disposed. A reason is required and is kept on the permanent HACCP record. Ask the user to confirm before disposing of a batch.",
+  inputSchema: {
+    site_id: z18.string().uuid().describe("Site id from list_sites."),
+    batch_id: z18.string().uuid().describe("Batch id from list_batches."),
+    reason: z18.string().describe("Why the batch was disposed of, e.g. 'past use-by', 'temperature breach'."),
+    notes: z18.string().optional().describe("Any further detail, e.g. how much was thrown away.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "dispose_batch",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const reason = input.reason.trim();
+      if (!reason) throw new Error("A reason is required to dispose of a batch.");
+      const current = ok(
+        await client.from("batches").select("id, product_name, status").eq("id", input.batch_id).eq("site_id", input.site_id).maybeSingle()
+      );
+      if (!current) throw new Error("Batch not found for this site.");
+      if (current.status === "disposed") return { batch: current, already_disposed: true };
+      const batch = ok(
+        await client.from("batches").update({ status: "disposed", completed_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", input.batch_id).eq("site_id", input.site_id).select("id, batch_code, product_name, status, completed_at").single()
+      );
+      ok(
+        await client.from("batch_actions").insert({
+          batch_id: input.batch_id,
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          action_type: "disposed",
+          reason,
+          notes: input.notes?.trim() || null,
+          performed_by_user_id: actorId,
+          performed_by_name: actorName
+        }).select("id").single()
+      );
+      return { batch, already_disposed: false, reason };
+    }
+  })
+});
+
+// src/lib/mcp/tools/extend-batch-use-by.ts
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z19 } from "npm:zod@^3.25.76";
+var extend_batch_use_by_default = defineTool20({
+  name: "extend_batch_use_by",
+  title: "Extend a batch use-by date",
+  description: "Push a batch's use-by date back. A reason is required: the old date, the new date and the justification are all kept on the permanent HACCP record. Ask the user to confirm, and never extend a use-by date without a food safety justification from them.",
+  inputSchema: {
+    site_id: z19.string().uuid().describe("Site id from list_sites."),
+    batch_id: z19.string().uuid().describe("Batch id from list_batches."),
+    new_use_by_date: z19.string().describe("The new use-by date (YYYY-MM-DD). Must be later than the current one."),
+    reason: z19.string().describe("The food safety justification for extending the use-by date."),
+    notes: z19.string().optional().describe("Any further detail.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: guard({
+    tool: "extend_batch_use_by",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const reason = input.reason.trim();
+      if (!reason) throw new Error("A reason is required to extend a use-by date.");
+      const newUseBy = isoDate(input.new_use_by_date, "new_use_by_date");
+      const current = ok(
+        await client.from("batches").select("id, product_name, status, use_by_date").eq("id", input.batch_id).eq("site_id", input.site_id).maybeSingle()
+      );
+      if (!current) throw new Error("Batch not found for this site.");
+      if (current.status === "disposed" || current.status === "used") {
+        throw new Error(`This batch is already marked as ${current.status}, so its use-by cannot change.`);
+      }
+      if (current.use_by_date && newUseBy <= current.use_by_date) {
+        throw new Error(
+          `The new use-by date must be after the current one (${current.use_by_date}). Use update_batch to correct a date entered in error.`
+        );
+      }
+      const batch = ok(
+        await client.from("batches").update({ use_by_date: newUseBy }).eq("id", input.batch_id).eq("site_id", input.site_id).select("id, batch_code, product_name, status, use_by_date").single()
+      );
+      ok(
+        await client.from("batch_actions").insert({
+          batch_id: input.batch_id,
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          action_type: "extended",
+          reason,
+          notes: input.notes?.trim() || null,
+          previous_use_by: current.use_by_date,
+          new_use_by: newUseBy,
+          performed_by_user_id: actorId,
+          performed_by_name: actorName
+        }).select("id").single()
+      );
+      return { batch, previous_use_by: current.use_by_date, new_use_by: newUseBy, reason };
+    }
+  })
+});
+
+// src/lib/mcp/tools/list-suppliers.ts
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z20 } from "npm:zod@^3.25.76";
+var list_suppliers_default = defineTool21({
+  name: "list_suppliers",
+  title: "List suppliers",
+  description: "List the approved supplier list for a site, with contact details and approval status. Use the ids with record_delivery.",
+  inputSchema: {
+    site_id: z20.string().uuid().describe("Site id from list_sites."),
+    include_inactive: z20.boolean().optional().describe("Include suppliers no longer in use.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "list_suppliers",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      let query = client.from("suppliers").select("id, name, category, approved, active, contact_name, contact_email, contact_phone, notes").eq("site_id", input.site_id).order("name");
+      if (!input.include_inactive) query = query.eq("active", true);
+      const suppliers = ok(await query);
+      return { suppliers: suppliers ?? [] };
+    }
+  })
+});
+
+// src/lib/mcp/tools/upsert-supplier.ts
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z21 } from "npm:zod@^3.25.76";
+var upsert_supplier_default = defineTool22({
+  name: "upsert_supplier",
+  title: "Add or update a supplier",
+  description: "Add a supplier to a site's approved list, or update one that already exists. Managers and owners only. Pass supplier_id to update; omit it to add a new supplier.",
+  inputSchema: {
+    site_id: z21.string().uuid().describe("Site id from list_sites."),
+    supplier_id: z21.string().uuid().optional().describe("Supplier id from list_suppliers. Omit to add a new supplier."),
+    name: z21.string().optional().describe("Supplier name. Required when adding."),
+    category: z21.string().optional().describe("What they supply, e.g. Dairy, Dry goods, Butcher."),
+    approved: z21.boolean().optional().describe("Whether this supplier is approved for use."),
+    active: z21.boolean().optional().describe("Set false to retire a supplier without deleting their history."),
+    contact_name: z21.string().optional().describe("Contact name."),
+    contact_email: z21.string().optional().describe("Contact email."),
+    contact_phone: z21.string().optional().describe("Contact phone number."),
+    notes: z21.string().optional().describe("Anything worth recording about this supplier.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "upsert_supplier",
+    level: "manage",
+    site: (i) => i.site_id,
+    run: async ({ client, input, organisationId }) => {
+      const text = (v) => v === void 0 ? void 0 : v.trim() || null;
+      const patch = {};
+      if (input.name !== void 0) {
+        const name = input.name.trim();
+        if (!name) throw new Error("Supplier name cannot be blank.");
+        patch.name = name;
+      }
+      if (input.category !== void 0) patch.category = input.category.trim() || "General";
+      if (input.approved !== void 0) patch.approved = input.approved;
+      if (input.active !== void 0) patch.active = input.active;
+      if (input.contact_name !== void 0) patch.contact_name = text(input.contact_name);
+      if (input.contact_email !== void 0) patch.contact_email = text(input.contact_email);
+      if (input.contact_phone !== void 0) patch.contact_phone = text(input.contact_phone);
+      if (input.notes !== void 0) patch.notes = text(input.notes);
+      const columns = "id, name, category, approved, active, contact_name, contact_email, contact_phone, notes";
+      if (input.supplier_id) {
+        if (Object.keys(patch).length === 0) throw new Error("Nothing to update.");
+        const supplier2 = ok(
+          await client.from("suppliers").update(patch).eq("id", input.supplier_id).eq("site_id", input.site_id).select(columns).maybeSingle()
+        );
+        if (!supplier2) throw new Error("Supplier not found for this site.");
+        return { supplier: supplier2, created: false };
+      }
+      if (!patch.name) throw new Error("A supplier name is required to add a new supplier.");
+      const supplier = ok(
+        await client.from("suppliers").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          category: "General",
+          approved: input.approved ?? true,
+          active: input.active ?? true,
+          ...patch
+        }).select(columns).single()
+      );
+      return { supplier, created: true };
+    }
+  })
+});
+
+// src/lib/mcp/tools/record-delivery.ts
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z22 } from "npm:zod@^3.25.76";
+var CHILLED_LIMIT_C = 5;
+var record_delivery_default = defineTool23({
+  name: "record_delivery",
+  title: "Record a delivery",
+  description: "Record a delivery from a supplier, with its temperature check and the condition it arrived in. Whether the delivery is accepted is derived from the temperature, the packaging and the use-by check.",
+  inputSchema: {
+    site_id: z22.string().uuid().describe("Site id from list_sites."),
+    supplier_id: z22.string().uuid().describe("Supplier id from list_suppliers."),
+    items: z22.string().describe("What was delivered."),
+    temperature: z22.number().optional().describe("Temperature of chilled or frozen goods on arrival, in degrees Celsius."),
+    packaging: z22.string().optional().describe("Condition of the packaging: good or damaged. Defaults to good."),
+    use_by_ok: z22.boolean().optional().describe("Whether the use-by or best-before dates were acceptable. Defaults to true."),
+    date: z22.string().optional().describe("Delivery date (YYYY-MM-DD). Defaults to today."),
+    note: z22.string().optional().describe("Anything worth recording, e.g. what was rejected and why.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: guard({
+    tool: "record_delivery",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const items = input.items.trim();
+      if (!items) throw new Error("Describe what was delivered.");
+      const supplier = ok(
+        await client.from("suppliers").select("id, name, approved").eq("id", input.supplier_id).eq("site_id", input.site_id).maybeSingle()
+      );
+      if (!supplier) throw new Error("Supplier not found for this site. Use list_suppliers, or add them first.");
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const date = input.date ? isoDate(input.date) : today;
+      if (date > today) throw new Error("A delivery cannot be recorded for a future date.");
+      const packaging = (input.packaging ?? "good").trim().toLowerCase();
+      const useByOk = input.use_by_ok ?? true;
+      const tempPass = input.temperature == null ? null : input.temperature <= CHILLED_LIMIT_C;
+      const accepted = tempPass !== false && packaging !== "damaged" && useByOk;
+      const loggedAt = date < today ? `${date}T12:00:00.000Z` : (/* @__PURE__ */ new Date()).toISOString();
+      const delivery = ok(
+        await client.from("delivery_logs").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          supplier_id: input.supplier_id,
+          items,
+          temp: input.temperature ?? null,
+          temp_pass: tempPass,
+          packaging,
+          use_by_ok: useByOk,
+          accepted,
+          note: input.note?.trim() || null,
+          logged_at: loggedAt,
+          logged_by_user_id: actorId,
+          logged_by_name: actorName
+        }).select("id, items, temp, temp_pass, packaging, use_by_ok, accepted, note, logged_at").single()
+      );
+      return {
+        delivery,
+        supplier: { id: supplier.id, name: supplier.name, approved: supplier.approved },
+        accepted,
+        guidance: accepted ? void 0 : "This delivery was not accepted. Record what happened to the goods, and report an incident if any reached food production."
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/complete-periodic-review.ts
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z23 } from "npm:zod@^3.25.76";
+var complete_periodic_review_default = defineTool24({
+  name: "complete_periodic_review",
+  title: "Complete the periodic review",
+  description: "Work through the Safer Food Better Business periodic review (the 4-weekly review on scheduled sites; measured in production days on on-demand sites). Managers and owners only. Call it with no answers first to get the questions and the current period, then call it again with the answers to record the review.",
+  inputSchema: {
+    site_id: z23.string().uuid().describe("Site id from list_sites."),
+    answers: z23.record(z23.enum(["yes", "no"])).optional().describe('Answers keyed by question key, e.g. { "safe_methods_reviewed": "yes" }.'),
+    problems_observed: z23.boolean().optional().describe("Whether any food safety problem was observed during the period."),
+    problems_detail: z23.string().optional().describe("What the problems were."),
+    action_taken: z23.string().optional().describe("What was changed or done as a result."),
+    complete: z23.boolean().optional().describe("Set true to sign the review off. Every question must be answered first. Defaults to false.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "complete_periodic_review",
+    level: "manage",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const site = await siteMeta(client, input.site_id);
+      const todayISO = siteToday(site.timezone);
+      const questions = REVIEW_QUESTIONS.map((q) => ({ key: q.key, question: q.label }));
+      const reviewRows = ok(
+        await client.from("reviews").select("id, status, period_start, period_end, checklist, problems_observed, problems_detail, action_taken").eq("site_id", input.site_id).order("period_end", { ascending: false }).limit(30)
+      ) ?? [];
+      const lastComplete = reviewRows.find((r) => r.status === "complete") ?? null;
+      let openReview = reviewRows.find((r) => r.status !== "complete") ?? null;
+      const productionDates = site.operating_mode === "on_demand" ? (ok(
+        await client.from("production_days").select("production_date").eq("site_id", input.site_id)
+      ) ?? []).map((p) => p.production_date) : [];
+      const periodStart = openReview?.period_start ?? (lastComplete ? addDaysISO(lastComplete.period_end, 1) : todayISO);
+      const cadence = computeReviewCadence({
+        mode: site.operating_mode,
+        periodStartISO: periodStart,
+        productionDates,
+        todayISO
+      });
+      const hasAnswers = !!input.answers && Object.keys(input.answers).length > 0;
+      const wantsWrite = hasAnswers || input.complete === true || input.problems_observed !== void 0 || input.problems_detail !== void 0 || input.action_taken !== void 0;
+      if (!wantsWrite) {
+        return {
+          review_label: cadence.reviewLabel,
+          due: cadence.due,
+          period: { start: cadence.periodStart, end: cadence.periodEnd, progress: cadence.progressLabel },
+          in_progress_review: openReview ? { id: openReview.id, checklist: openReview.checklist } : null,
+          last_completed: lastComplete ? { id: lastComplete.id, period_end: lastComplete.period_end } : null,
+          questions,
+          next_step: "Ask the user each question, then call this tool again with the answers and complete: true."
+        };
+      }
+      const unknownKeys = Object.keys(input.answers ?? {}).filter(
+        (k) => !REVIEW_QUESTIONS.some((q) => q.key === k)
+      );
+      if (unknownKeys.length > 0) {
+        throw new Error(`Unknown review question key(s): ${unknownKeys.join(", ")}`);
+      }
+      if (!openReview) {
+        openReview = ok(
+          await client.from("reviews").insert({
+            site_id: input.site_id,
+            organisation_id: organisationId,
+            period_start: cadence.periodStart,
+            period_end: cadence.periodEnd,
+            production_days_covered: site.operating_mode === "on_demand" ? cadence.productionDaysCovered : null,
+            status: "in_progress",
+            checklist: emptyChecklist()
+          }).select("id, status, period_start, period_end, checklist").single()
+        );
+      }
+      const checklist = {
+        ...emptyChecklist(),
+        ...openReview.checklist ?? {}
+      };
+      for (const [key, value] of Object.entries(input.answers ?? {})) {
+        checklist[key] = { value };
+      }
+      const unanswered = REVIEW_QUESTIONS.filter((q) => !checklist[q.key]?.value).map((q) => q.key);
+      if (input.complete === true && unanswered.length > 0) {
+        throw new Error(
+          `The review cannot be signed off until every question is answered. Still unanswered: ${unanswered.join(", ")}`
+        );
+      }
+      const patch = {
+        checklist,
+        period_end: todayISO,
+        production_days_covered: site.operating_mode === "on_demand" ? cadence.productionDaysCovered : null
+      };
+      if (input.problems_observed !== void 0) patch.problems_observed = input.problems_observed;
+      if (input.problems_detail !== void 0) patch.problems_detail = input.problems_detail.trim() || null;
+      if (input.action_taken !== void 0) patch.action_taken = input.action_taken.trim() || null;
+      if (input.complete === true) {
+        patch.status = "complete";
+        patch.completed_at = (/* @__PURE__ */ new Date()).toISOString();
+        patch.completed_by = actorId;
+        patch.completed_by_name = actorName;
+      }
+      const review = ok(
+        await client.from("reviews").update(patch).eq("id", openReview.id).eq("site_id", input.site_id).select(
+          "id, status, period_start, period_end, production_days_covered, problems_observed, problems_detail, action_taken, completed_at, completed_by_name"
+        ).single()
+      );
+      return {
+        review,
+        review_label: cadence.reviewLabel,
+        completed: input.complete === true,
+        unanswered,
+        questions: unanswered.length > 0 ? questions.filter((q) => unanswered.includes(q.key)) : []
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/list-staff.ts
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z24 } from "npm:zod@^3.25.76";
+function roleLabel(siteRole) {
+  switch (siteRole) {
+    case "owner":
+    case "supervisor":
+      return "Manager";
+    case "staff":
+      return "Staff";
+    case "read_only":
+      return "Read-only";
+    default:
+      return siteRole;
+  }
+}
+var list_staff_default = defineTool25({
+  name: "list_staff",
+  title: "List staff at a site",
+  description: "List the people with access to a site and their role. Managers and owners only. Use the user ids with add_training_record and record_fitness_to_work.",
+  inputSchema: { site_id: z24.string().uuid().describe("Site id from list_sites.") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "list_staff",
+    level: "manage",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const memberships = ok(
+        await client.from("memberships").select("site_role, users(id, display_name, email, status)").eq("site_id", input.site_id).eq("active", true)
+      ) ?? [];
+      const staff = memberships.map((m) => {
+        const user = m.users;
+        if (!user) return null;
+        return {
+          user_id: user.id,
+          name: user.display_name,
+          email: user.email ?? null,
+          role: roleLabel(m.site_role),
+          site_role: m.site_role,
+          active: user.status === "active"
+        };
+      }).filter((s) => s !== null).sort((a, b) => a.name.localeCompare(b.name));
+      return { staff };
+    }
+  })
+});
+
+// src/lib/mcp/tools/add-training-record.ts
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z25 } from "npm:zod@^3.25.76";
+var TRAINING_TYPES = [
+  "induction",
+  "food_safety",
+  "allergens",
+  "haccp",
+  "fire_safety",
+  "manual_handling",
+  "other"
+];
+var add_training_record_default = defineTool26({
+  name: "add_training_record",
+  title: "Add a training record",
+  description: "Record training a member of staff has completed. Managers and owners only. Certificate files cannot be uploaded over chat \u2014 pass a certificate reference (a number or where the certificate is filed) and it is stored with the record.",
+  inputSchema: {
+    site_id: z25.string().uuid().describe("Site id from list_sites."),
+    user_id: z25.string().uuid().describe("The staff member's user id from list_staff."),
+    training_name: z25.string().describe("What the training was, e.g. 'Level 2 Food Safety'."),
+    training_type: z25.enum(TRAINING_TYPES).optional().describe("Category of training. Defaults to other."),
+    completed_date: z25.string().optional().describe("Date the training was completed (YYYY-MM-DD). Defaults to today."),
+    expiry_date: z25.string().optional().describe("Date the training expires (YYYY-MM-DD), if it does."),
+    certificate_reference: z25.string().optional().describe("Certificate number or where the certificate is kept."),
+    notes: z25.string().optional().describe("Anything else worth recording.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: guard({
+    tool: "add_training_record",
+    level: "manage",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, organisationId }) => {
+      const name = input.training_name.trim();
+      if (!name) throw new Error("A training name is required.");
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const completed = input.completed_date ? isoDate(input.completed_date, "completed_date") : today;
+      if (completed > today) throw new Error("Training cannot be recorded as completed in the future.");
+      const expiry = input.expiry_date ? isoDate(input.expiry_date, "expiry_date") : null;
+      if (expiry && expiry < completed) {
+        throw new Error("The expiry date cannot be before the completion date.");
+      }
+      const membership = ok(
+        await client.from("memberships").select("id, users(display_name)").eq("site_id", input.site_id).eq("user_id", input.user_id).eq("active", true).maybeSingle()
+      );
+      if (!membership) throw new Error("That person does not have access to this site. Use list_staff.");
+      const catalog = ok(
+        await client.from("training_requirements").select("id, training_name, training_type").eq("site_id", input.site_id).eq("is_active", true).is("deleted_at", null)
+      );
+      const matched = (catalog ?? []).find(
+        (c) => c.training_name.trim().toLowerCase() === name.toLowerCase()
+      );
+      const noteParts = [
+        input.certificate_reference?.trim() ? `Certificate reference: ${input.certificate_reference.trim()}` : null,
+        input.notes?.trim() || null
+      ].filter(Boolean);
+      const record = ok(
+        await client.from("training_records").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          user_id: input.user_id,
+          training_name: name,
+          training_type: input.training_type ?? matched?.training_type ?? "other",
+          training_catalog_id: matched?.id ?? null,
+          completed_date: completed,
+          expiry_date: expiry,
+          notes: noteParts.length > 0 ? noteParts.join(" \xB7 ") : null,
+          created_by: actorId
+        }).select("id, training_name, training_type, completed_date, expiry_date, notes").single()
+      );
+      return {
+        record,
+        staff_name: membership.users?.display_name ?? null,
+        matched_catalog_entry: matched?.training_name ?? null
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/record-fitness-to-work.ts
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z26 } from "npm:zod@^3.25.76";
+var record_fitness_to_work_default = defineTool27({
+  name: "record_fitness_to_work",
+  title: "Record fitness to work",
+  description: "Record that a member of staff has been excluded from food handling because of illness, or clear someone to return to work. Managers and owners only. Pass record_id with cleared_to_return to clear an existing exclusion; otherwise a new exclusion is recorded.",
+  inputSchema: {
+    site_id: z26.string().uuid().describe("Site id from list_sites."),
+    record_id: z26.string().uuid().optional().describe("Existing fitness-to-work record to clear. Omit to record a new exclusion."),
+    staff_name: z26.string().optional().describe("Who is affected. Required when recording a new exclusion."),
+    user_id: z26.string().uuid().optional().describe("The staff member's user id from list_staff, if they have an account."),
+    symptoms: z26.string().optional().describe("Symptoms reported, e.g. vomiting, diarrhoea."),
+    excluded_from: z26.string().optional().describe("First date excluded from food handling (YYYY-MM-DD). Defaults to today."),
+    cleared_to_return: z26.string().optional().describe("Date cleared to return to food handling (YYYY-MM-DD). Setting this clears the exclusion."),
+    notes: z26.string().optional().describe("Anything else worth recording.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: guard({
+    tool: "record_fitness_to_work",
+    level: "manage",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const cleared = input.cleared_to_return ? isoDate(input.cleared_to_return, "cleared_to_return") : null;
+      const columns = "id, staff_name, user_id, reported_date, symptoms, excluded_from, cleared_to_return, status, notes, recorded_by_name";
+      if (input.record_id) {
+        if (!cleared) {
+          throw new Error("Pass cleared_to_return to clear an existing fitness-to-work record.");
+        }
+        const existing = ok(
+          await client.from("fitness_to_work").select("id, staff_name, excluded_from").eq("id", input.record_id).eq("site_id", input.site_id).maybeSingle()
+        );
+        if (!existing) throw new Error("Fitness-to-work record not found for this site.");
+        if (existing.excluded_from && cleared < existing.excluded_from) {
+          throw new Error("The return date cannot be before the exclusion started.");
+        }
+        const patch = { status: "cleared", cleared_to_return: cleared };
+        if (input.notes !== void 0) patch.notes = input.notes.trim() || null;
+        const record2 = ok(
+          await client.from("fitness_to_work").update(patch).eq("id", input.record_id).eq("site_id", input.site_id).select(columns).single()
+        );
+        return { record: record2, cleared: true };
+      }
+      const staffName = input.staff_name?.trim();
+      if (!staffName) throw new Error("staff_name is required when recording a new exclusion.");
+      const excludedFrom = input.excluded_from ? isoDate(input.excluded_from, "excluded_from") : today;
+      if (cleared && cleared < excludedFrom) {
+        throw new Error("The return date cannot be before the exclusion started.");
+      }
+      const record = ok(
+        await client.from("fitness_to_work").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          staff_name: staffName,
+          user_id: input.user_id ?? null,
+          symptoms: input.symptoms?.trim() || null,
+          reported_date: today,
+          excluded_from: excludedFrom,
+          cleared_to_return: cleared,
+          status: cleared ? "cleared" : "excluded",
+          notes: input.notes?.trim() || null,
+          recorded_by: actorId,
+          recorded_by_name: actorName
+        }).select(columns).single()
+      );
+      return {
+        record,
+        cleared: !!cleared,
+        // SFBB rule: 48 hours symptom-free before returning to food handling.
+        suggested_return_date: cleared ? null : suggestedReturnDate(excludedFrom),
+        guidance: cleared ? void 0 : "Under Safer Food Better Business, anyone with vomiting or diarrhoea must stay away from food handling until they have been symptom-free for 48 hours."
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/list-outstanding-actions.ts
+import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z27 } from "npm:zod@^3.25.76";
+
+// src/lib/opsTime.ts
+function classifySection(section) {
+  const title = (section.title ?? "").toLowerCase();
+  if (/open|morning|am\b|pre[- ]?service|start/.test(title)) return "opening";
+  if (/clos|night|pm\b|end of day|shutdown|lockup/.test(title)) return "closing";
+  const t = (section.default_time ?? "").slice(0, 5);
+  if (t) {
+    const [hh] = t.split(":").map(Number);
+    if (!Number.isNaN(hh)) {
+      if (hh < 11) return "opening";
+      if (hh >= 16) return "closing";
+    }
+  }
+  return "midday";
+}
+
+// src/lib/mcp/compliance.ts
+var PROBE_CALIBRATION_DAYS = 31;
+var TRAINING_EXPIRY_WARNING_DAYS = 30;
+function currentTrainingRecords(rows) {
+  const latest = /* @__PURE__ */ new Map();
+  for (const row of rows) {
+    const key = `${row.user_id ?? ""}::${(row.training_name ?? "").trim().toLowerCase()}`;
+    const held = latest.get(key);
+    const rank = (r) => `${r.completed_date ?? ""}|${r.expiry_date ?? ""}`;
+    if (!held || rank(row) > rank(held)) latest.set(key, row);
+  }
+  return [...latest.values()];
+}
+async function loadDayBasis(client, site, fromISO, toISO) {
+  const onDemand = site.operating_mode === "on_demand";
+  const [closedRows, productionRows] = await Promise.all([
+    client.from("closed_days").select("closed_date").eq("site_id", site.id).gte("closed_date", fromISO).lte("closed_date", toISO),
+    onDemand ? client.from("production_days").select("production_date").eq("site_id", site.id).gte("production_date", fromISO).lte("production_date", toISO) : Promise.resolve({ data: [], error: null })
+  ]);
+  const closedDates = new Set(
+    (ok(closedRows) ?? []).map((r) => r.closed_date)
+  );
+  const productionDates = new Set(
+    (ok(productionRows) ?? []).map(
+      (r) => r.production_date
+    )
+  );
+  const allDates = eachDateISO(fromISO, toISO);
+  const countedDates = onDemand ? allDates.filter((d) => productionDates.has(d) && !closedDates.has(d)) : allDates.filter((d) => !closedDates.has(d));
+  const note = onDemand ? `${countedDates.length} production day${countedDates.length === 1 ? "" : "s"} declared in this period. Days with no declared production carry no checks and are excluded from every figure here.` : `${closedDates.size} closed day${closedDates.size === 1 ? "" : "s"} in this period are excluded from every figure here.`;
+  return {
+    closedDates,
+    productionDates,
+    countedDates,
+    label: onDemand ? "production days" : "open days",
+    note
+  };
+}
+async function previousWorkingDay(client, site, dateISO) {
+  if (dateISO <= site.created_on) return null;
+  if (site.operating_mode === "on_demand") {
+    const rows = ok(
+      await client.from("production_days").select("production_date").eq("site_id", site.id).lt("production_date", dateISO).order("production_date", { ascending: false }).limit(1)
+    );
+    return rows?.[0]?.production_date ?? null;
+  }
+  const yesterday = addDaysISO(dateISO, -1);
+  if (yesterday < site.created_on) return null;
+  const closed = ok(
+    await client.from("closed_days").select("id").eq("site_id", site.id).eq("closed_date", yesterday).maybeSingle()
+  );
+  return closed ? null : yesterday;
+}
+async function outstandingActions(client, site, dateISO) {
+  const empty = (reason) => ({
+    site_id: site.id,
+    site_name: site.name,
+    date: dateISO,
+    nothing_due_reason: reason,
+    operating_mode: site.operating_mode,
+    actions: [],
+    counts: { critical: 0, important: 0, operational: 0 }
+  });
+  const basis = await loadDayBasis(client, site, dateISO, dateISO);
+  if (basis.closedDates.has(dateISO)) {
+    return empty("The site was closed on this date, so nothing was due.");
+  }
+  if (site.operating_mode === "on_demand" && !basis.productionDates.has(dateISO)) {
+    return empty(
+      "No production day is declared for this date. On-demand sites are only measured on declared production days, so nothing is due or overdue."
+    );
+  }
+  const now = siteNow(site.timezone);
+  const viewingToday = dateISO === now.dateISO;
+  const backWindow = addDaysISO(dateISO, -14);
+  const prevWorkingDay = await previousWorkingDay(client, site, dateISO);
+  const [
+    breaches,
+    units,
+    tempLogsToday,
+    cleaningTasks,
+    cleaningLogsPrev,
+    cleaningLogsToday,
+    sections,
+    daySheet,
+    incidents,
+    expiredBatches,
+    training,
+    probes,
+    reviews,
+    reviewProductionDays,
+    closedWindow
+  ] = await Promise.all([
+    client.from("temp_logs").select("id, value, unit_id, food_item, logged_at").eq("site_id", site.id).eq("pass", false).is("corrective_action", null).gte("logged_at", `${backWindow}T00:00:00`).lte("logged_at", `${dateISO}T23:59:59`).order("logged_at", { ascending: false }).limit(25),
+    client.from("temp_units").select("id, name").eq("site_id", site.id).eq("active", true),
+    client.from("temp_logs").select("unit_id, log_type").eq("site_id", site.id).gte("logged_at", `${dateISO}T00:00:00`).lte("logged_at", `${dateISO}T23:59:59`),
+    client.from("cleaning_tasks").select("id, task, area, due_time").eq("site_id", site.id).eq("active", true).eq("frequency", "daily"),
+    prevWorkingDay ? client.from("cleaning_logs").select("task_id, done").eq("site_id", site.id).eq("log_date", prevWorkingDay) : Promise.resolve({ data: [], error: null }),
+    client.from("cleaning_logs").select("task_id, done").eq("site_id", site.id).eq("log_date", dateISO),
+    client.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, label, active)").eq("site_id", site.id).eq("active", true),
+    client.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", site.id).eq("sheet_date", dateISO).maybeSingle(),
+    client.from("incidents").select("id, title, type, reported_at").eq("site_id", site.id).eq("status", "open").order("reported_at", { ascending: false }).limit(25),
+    client.from("batches").select("id, product_name, use_by_date").eq("site_id", site.id).neq("status", "disposed").neq("status", "used").not("use_by_date", "is", null).lt("use_by_date", dateISO).limit(25),
+    client.from("training_records").select("id, training_name, expiry_date, completed_date, user_id").eq("site_id", site.id).not("expiry_date", "is", null),
+    client.from("probe_calibrations").select("calibrated_at").eq("site_id", site.id).order("calibrated_at", { ascending: false }).limit(1),
+    client.from("reviews").select("id, status, period_start, period_end").eq("site_id", site.id).order("period_end", { ascending: false }).limit(10),
+    site.operating_mode === "on_demand" ? client.from("production_days").select("production_date").eq("site_id", site.id) : Promise.resolve({ data: [], error: null }),
+    client.from("closed_days").select("closed_date").eq("site_id", site.id).gte("closed_date", backWindow).lte("closed_date", dateISO)
+  ]);
+  const actions = [];
+  const unitRows = ok(units) ?? [];
+  const unitName = new Map(unitRows.map((u) => [u.id, u.name]));
+  const closedBack = new Set(
+    (ok(closedWindow) ?? []).map(
+      (c) => c.closed_date
+    )
+  );
+  const productionAll = new Set(
+    (ok(reviewProductionDays) ?? []).map(
+      (p) => p.production_date
+    )
+  );
+  const countedBackDay = (d) => {
+    if (closedBack.has(d)) return false;
+    if (site.operating_mode === "on_demand") return productionAll.has(d);
+    return true;
+  };
+  for (const b of ok(breaches) ?? []) {
+    const logDate = String(b.logged_at ?? "").slice(0, 10);
+    if (!countedBackDay(logDate)) continue;
+    const label = unitName.get(b.unit_id) ?? b.food_item ?? "Reading";
+    actions.push({
+      severity: "critical",
+      area: "Temperatures",
+      title: `${label} failed at ${b.value}\xB0C with no corrective action recorded`,
+      detail: `Logged ${logDate}. Record what was done to make the food safe.`
+    });
+  }
+  const logsToday = ok(tempLogsToday) ?? [];
+  const amDone = new Set(logsToday.filter((l) => l.log_type === "AM Check").map((l) => l.unit_id));
+  const pmDone = new Set(logsToday.filter((l) => l.log_type === "PM Check").map((l) => l.unit_id));
+  const amOverdue = !viewingToday || now.hour >= 11;
+  const pmOverdue = !viewingToday || now.hour >= 18;
+  for (const u of unitRows) {
+    if (amOverdue && !amDone.has(u.id)) {
+      actions.push({ severity: "important", area: "Temperatures", title: `${u.name} \u2014 AM check not logged` });
+    }
+    if (pmOverdue && !pmDone.has(u.id)) {
+      actions.push({ severity: "important", area: "Temperatures", title: `${u.name} \u2014 PM check not logged` });
+    }
+  }
+  const dailyTasks = ok(cleaningTasks) ?? [];
+  const prevDone = new Set(
+    (ok(cleaningLogsPrev) ?? []).filter((l) => l.done).map((l) => l.task_id)
+  );
+  const chasePreviousDay = !!prevWorkingDay && daysBetweenISO(prevWorkingDay, dateISO) <= 14;
+  if (prevWorkingDay && chasePreviousDay) {
+    for (const t of dailyTasks) {
+      if (!prevDone.has(t.id)) {
+        actions.push({
+          severity: "important",
+          area: "Cleaning",
+          title: `Not completed on ${prevWorkingDay} \u2014 ${t.task}`,
+          detail: t.area
+        });
+      }
+    }
+  }
+  const todayDone = new Set(
+    (ok(cleaningLogsToday) ?? []).filter((l) => l.done).map((l) => l.task_id)
+  );
+  for (const t of dailyTasks) {
+    if (todayDone.has(t.id)) continue;
+    if (viewingToday && t.due_time) {
+      const [hh, mm] = String(t.due_time).slice(0, 5).split(":").map(Number);
+      if (!Number.isNaN(hh) && now.minutes < hh * 60 + (Number.isNaN(mm) ? 0 : mm)) continue;
+    }
+    actions.push({
+      severity: "operational",
+      area: "Cleaning",
+      title: viewingToday ? `Due today \u2014 ${t.task}` : `Not completed on ${dateISO} \u2014 ${t.task}`,
+      detail: t.area
+    });
+  }
+  const sectionRows = ok(sections) ?? [];
+  const sheet = ok(daySheet);
+  const doneItems = new Set(
+    (sheet?.day_sheet_entries ?? []).filter((e) => e.done).map((e) => e.item_id)
+  );
+  const opsWindow = !viewingToday ? "closing" : now.hour < 11 ? "opening" : now.hour < 16 ? "midday" : "closing";
+  for (const section of sectionRows) {
+    const cls = classifySection(section);
+    const dueNow = cls === "opening" || cls === "midday" && (opsWindow === "midday" || opsWindow === "closing") || cls === "closing" && opsWindow === "closing";
+    if (!dueNow) continue;
+    for (const item of (section.day_sheet_items ?? []).filter((i) => i.active)) {
+      if (!doneItems.has(item.id)) {
+        actions.push({
+          severity: "important",
+          area: "Day sheet",
+          title: `${section.title} \u2014 ${item.label}`
+        });
+      }
+    }
+  }
+  for (const inc of ok(incidents) ?? []) {
+    actions.push({
+      severity: "important",
+      area: "Incidents",
+      title: `Open incident: ${inc.title}`,
+      detail: `${inc.type ?? "incident"} \xB7 reported ${String(inc.reported_at ?? "").slice(0, 10)}`
+    });
+  }
+  for (const b of ok(expiredBatches) ?? []) {
+    actions.push({
+      severity: "important",
+      area: "Batches",
+      title: `${b.product_name} is past its use-by (${b.use_by_date})`,
+      detail: "Dispose of it and record the reason, or extend the use-by with a justification."
+    });
+  }
+  const currentTraining = currentTrainingRecords(
+    ok(training) ?? []
+  );
+  for (const t of currentTraining) {
+    const expiry = String(t.expiry_date);
+    const days = daysBetweenISO(dateISO, expiry);
+    if (days > TRAINING_EXPIRY_WARNING_DAYS) continue;
+    actions.push({
+      severity: days < 0 ? "important" : "operational",
+      area: "Training",
+      title: days < 0 ? `${t.training_name} expired ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} ago` : `${t.training_name} expires in ${days} day${days === 1 ? "" : "s"}`
+    });
+  }
+  const lastProbe = ok(probes)?.[0] ?? null;
+  const probeAgeDays = lastProbe ? daysBetweenISO(String(lastProbe.calibrated_at).slice(0, 10), dateISO) : null;
+  if (probeAgeDays === null || probeAgeDays > PROBE_CALIBRATION_DAYS) {
+    actions.push({
+      severity: "operational",
+      area: "Probe calibration",
+      title: probeAgeDays === null ? "No probe calibration check has ever been recorded" : `Probe last calibrated ${probeAgeDays} days ago`,
+      detail: "An iced-water and boiling-water check is expected monthly."
+    });
+  }
+  const reviewRows = ok(reviews) ?? [];
+  const lastComplete = reviewRows.find((r) => r.status === "complete") ?? null;
+  const openReview = reviewRows.find((r) => r.status !== "complete") ?? null;
+  const periodStart = openReview?.period_start ?? (lastComplete ? addDaysISO(lastComplete.period_end, 1) : null);
+  if (periodStart) {
+    const cadence = computeReviewCadence({
+      mode: site.operating_mode,
+      periodStartISO: periodStart,
+      productionDates: [...productionAll],
+      todayISO: dateISO
+    });
+    if (cadence.due) {
+      actions.push({
+        severity: "important",
+        area: "Compliance",
+        title: `The ${cadence.reviewLabel} is due`,
+        detail: `Period from ${cadence.periodStart} \xB7 ${cadence.progressLabel}`
+      });
+    }
+  }
+  const counts = {
+    critical: actions.filter((a) => a.severity === "critical").length,
+    important: actions.filter((a) => a.severity === "important").length,
+    operational: actions.filter((a) => a.severity === "operational").length
+  };
+  const order = { critical: 0, important: 1, operational: 2 };
+  actions.sort((a, b) => order[a.severity] - order[b.severity]);
+  return {
+    site_id: site.id,
+    site_name: site.name,
+    date: dateISO,
+    operating_mode: site.operating_mode,
+    actions,
+    counts
+  };
+}
+var pct = (done, total) => total === 0 ? null : Math.round(done / total * 100);
+function weekStartISO(dateISO) {
+  const d = /* @__PURE__ */ new Date(`${dateISO}T12:00:00Z`);
+  const shift = (d.getUTCDay() + 6) % 7;
+  return addDaysISO(dateISO, -shift);
+}
+function monthStartISO(dateISO) {
+  return `${dateISO.slice(0, 7)}-01`;
+}
+function cleaningCompletion(tasks, logs, countedDates, allDates) {
+  const counted = new Set(countedDates);
+  const doneByTask = /* @__PURE__ */ new Map();
+  for (const l of logs) {
+    if (!l.done) continue;
+    if (!doneByTask.has(l.task_id)) doneByTask.set(l.task_id, /* @__PURE__ */ new Set());
+    doneByTask.get(l.task_id).add(l.log_date);
+  }
+  let expected = 0;
+  let done = 0;
+  let exempt = 0;
+  for (const task of tasks) {
+    const freq = (task.frequency ?? "daily").toLowerCase();
+    const buckets = /* @__PURE__ */ new Map();
+    for (const d of allDates) {
+      const key = freq === "weekly" ? weekStartISO(d) : freq === "monthly" ? monthStartISO(d) : d;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(d);
+    }
+    const logged = doneByTask.get(task.id) ?? /* @__PURE__ */ new Set();
+    for (const days of buckets.values()) {
+      if (!days.some((d) => counted.has(d))) {
+        exempt += 1;
+        continue;
+      }
+      expected += 1;
+      if (days.some((d) => logged.has(d))) done += 1;
+    }
+  }
+  return { expected, done, exempt, pct: pct(done, expected) };
+}
+async function complianceSummary(client, site, requestedFrom, toISO) {
+  const fromISO = requestedFrom < site.created_on ? site.created_on : requestedFrom;
+  const basis = await loadDayBasis(client, site, fromISO, toISO);
+  const allDates = eachDateISO(fromISO, toISO);
+  const counted = new Set(basis.countedDates);
+  const todayISO = siteNow(site.timezone).dateISO;
+  const [
+    tempLogs,
+    cleaningTasks,
+    cleaningLogs,
+    daySheets,
+    incidents,
+    batches,
+    expiredBatches,
+    deliveries,
+    suppliers,
+    training,
+    probes,
+    reviews,
+    reviewProductionDays,
+    fitness
+  ] = await Promise.all([
+    client.from("temp_logs").select("id, unit_id, pass, corrective_action, logged_at").eq("site_id", site.id).gte("logged_at", `${fromISO}T00:00:00`).lte("logged_at", `${toISO}T23:59:59`),
+    client.from("cleaning_tasks").select("id, frequency").eq("site_id", site.id).eq("active", true),
+    client.from("cleaning_logs").select("task_id, log_date, done").eq("site_id", site.id).gte("log_date", fromISO).lte("log_date", toISO),
+    client.from("day_sheets").select("id, sheet_date, signed_off, locked").eq("site_id", site.id).gte("sheet_date", fromISO).lte("sheet_date", toISO),
+    client.from("incidents").select("id, status").eq("site_id", site.id).gte("reported_at", `${fromISO}T00:00:00`).lte("reported_at", `${toISO}T23:59:59`),
+    client.from("batches").select("id").eq("site_id", site.id).gte("date_produced", fromISO).lte("date_produced", toISO),
+    client.from("batches").select("id").eq("site_id", site.id).neq("status", "disposed").neq("status", "used").not("use_by_date", "is", null).lt("use_by_date", todayISO),
+    client.from("delivery_logs").select("id, accepted").eq("site_id", site.id).gte("logged_at", `${fromISO}T00:00:00`).lte("logged_at", `${toISO}T23:59:59`),
+    client.from("suppliers").select("id, approved").eq("site_id", site.id).eq("active", true),
+    client.from("training_records").select("id, user_id, training_name, expiry_date, completed_date").eq("site_id", site.id),
+    client.from("probe_calibrations").select("id, pass, calibrated_at").eq("site_id", site.id).order("calibrated_at", { ascending: false }).limit(50),
+    client.from("reviews").select("id, status, period_start, period_end, completed_at").eq("site_id", site.id).order("period_end", { ascending: false }).limit(30),
+    site.operating_mode === "on_demand" ? client.from("production_days").select("production_date").eq("site_id", site.id) : Promise.resolve({ data: [], error: null }),
+    client.from("fitness_to_work").select("id, status, reported_date").eq("site_id", site.id)
+  ]);
+  const temps = (ok(tempLogs) ?? []).filter(
+    (t) => counted.has(String(t.logged_at ?? "").slice(0, 10))
+  );
+  const failures = temps.filter((t) => t.pass === false);
+  const cleaning = cleaningCompletion(
+    ok(cleaningTasks) ?? [],
+    ok(cleaningLogs) ?? [],
+    basis.countedDates,
+    allDates
+  );
+  const sheets = (ok(daySheets) ?? []).filter(
+    (d) => counted.has(String(d.sheet_date))
+  );
+  const incidentRows = ok(incidents) ?? [];
+  const deliveryRows = ok(deliveries) ?? [];
+  const supplierRows = ok(suppliers) ?? [];
+  const allTraining = ok(training) ?? [];
+  const trainingRows = currentTrainingRecords(allTraining);
+  const probeRows = ok(probes) ?? [];
+  const reviewRows = ok(reviews) ?? [];
+  const fitnessRows = ok(fitness) ?? [];
+  const warnBy = addDaysISO(todayISO, TRAINING_EXPIRY_WARNING_DAYS);
+  const lastProbe = probeRows[0]?.calibrated_at ?? null;
+  const probeAge = lastProbe ? daysBetweenISO(String(lastProbe).slice(0, 10), todayISO) : null;
+  const lastComplete = reviewRows.find((r) => r.status === "complete") ?? null;
+  const openReview = reviewRows.find((r) => r.status !== "complete") ?? null;
+  const periodStart = openReview?.period_start ?? (lastComplete ? addDaysISO(lastComplete.period_end, 1) : null);
+  const cadence = computeReviewCadence({
+    mode: site.operating_mode,
+    periodStartISO: periodStart ?? todayISO,
+    productionDates: (ok(reviewProductionDays) ?? []).map(
+      (p) => p.production_date
+    ),
+    todayISO
+  });
+  return {
+    site: {
+      id: site.id,
+      name: site.name,
+      premises_type: site.premises_type,
+      operating_mode: site.operating_mode
+    },
+    period: { from: fromISO, to: toISO, days: allDates.length },
+    day_basis: { label: basis.label, counted_days: basis.countedDates.length, note: basis.note },
+    temperatures: {
+      readings: temps.length,
+      failures: failures.length,
+      unresolved_failures: failures.filter((t) => !t.corrective_action).length,
+      pass_rate_pct: pct(temps.length - failures.length, temps.length),
+      storage_readings: temps.filter((t) => !!t.unit_id).length,
+      process_checks: temps.filter((t) => !t.unit_id).length
+    },
+    cleaning: {
+      completion_pct: cleaning.pct,
+      done: cleaning.done,
+      expected: cleaning.expected,
+      exempt: cleaning.exempt
+    },
+    day_sheets: {
+      created: sheets.length,
+      expected: basis.countedDates.length,
+      completion_pct: pct(sheets.length, basis.countedDates.length),
+      signed_off: sheets.filter((d) => d.signed_off === true).length
+    },
+    incidents: {
+      total: incidentRows.length,
+      open: incidentRows.filter((i) => i.status !== "closed" && i.status !== "verified").length
+    },
+    batches: {
+      produced: (ok(batches) ?? []).length,
+      past_use_by_unresolved: (ok(expiredBatches) ?? []).length
+    },
+    deliveries: {
+      total: deliveryRows.length,
+      accepted: deliveryRows.filter((d) => d.accepted).length,
+      rejected: deliveryRows.filter((d) => d.accepted === false).length
+    },
+    suppliers: {
+      total: supplierRows.length,
+      approved: supplierRows.filter((s) => s.approved).length
+    },
+    training: {
+      records: allTraining.length,
+      expired: trainingRows.filter((t) => t.expiry_date && t.expiry_date < todayISO).length,
+      expiring_soon: trainingRows.filter(
+        (t) => t.expiry_date && t.expiry_date >= todayISO && t.expiry_date <= warnBy
+      ).length
+    },
+    probe_calibration: {
+      checks: probeRows.length,
+      passed: probeRows.filter((p) => p.pass).length,
+      last_checked: lastProbe ? String(lastProbe) : null,
+      due: probeAge === null || probeAge > PROBE_CALIBRATION_DAYS
+    },
+    reviews: {
+      completed_in_period: reviewRows.filter(
+        (r) => r.status === "complete" && String(r.period_end ?? "") >= fromISO && String(r.period_end ?? "") <= toISO
+      ).length,
+      due_now: periodStart ? cadence.due : false,
+      review_label: cadence.reviewLabel,
+      progress: cadence.progressLabel
+    },
+    fitness_to_work: {
+      records: fitnessRows.length,
+      currently_excluded: fitnessRows.filter((f) => f.status === "excluded").length
+    }
+  };
+}
+
+// src/lib/mcp/tools/list-outstanding-actions.ts
+var list_outstanding_actions_default = defineTool28({
+  name: "list_outstanding_actions",
+  title: "What is outstanding or overdue",
+  description: "Summarise what still needs doing at a site: unresolved temperature failures, missed checks, outstanding cleaning and day-sheet items, open incidents, stock past its use-by, training expiry and whether the periodic review is due. Closed days and, on on-demand sites, days with no declared production day are neutral and never produce an overdue item.",
+  inputSchema: {
+    site_id: z27.string().uuid().describe("Site id from list_sites."),
+    date: z27.string().optional().describe("Date to assess (YYYY-MM-DD). Defaults to today.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "list_outstanding_actions",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const site = await siteMeta(client, input.site_id);
+      const date = input.date ? isoDate(input.date) : siteToday(site.timezone);
+      return outstandingActions(client, site, date);
+    }
+  })
+});
+
+// src/lib/mcp/tools/get-compliance-summary.ts
+import { defineTool as defineTool29 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z28 } from "npm:zod@^3.25.76";
+var MAX_DAYS = 400;
+var get_compliance_summary_default = defineTool29({
+  name: "get_compliance_summary",
+  title: "Get a compliance summary",
+  description: "Compliance status for a site over a period: temperature pass rate, cleaning and day-sheet completion, incidents, deliveries, training, probe calibration and review status. Closed days and non-production days are excluded from every figure.",
+  inputSchema: {
+    site_id: z28.string().uuid().describe("Site id from list_sites."),
+    days: z28.number().int().optional().describe("How many days back to cover. Defaults to 28, max 400. Ignored when from/to are given."),
+    from: z28.string().optional().describe("Start date (YYYY-MM-DD)."),
+    to: z28.string().optional().describe("End date (YYYY-MM-DD).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "get_compliance_summary",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const to = input.to ? isoDate(input.to, "to") : today;
+      const from = input.from ? isoDate(input.from, "from") : addDaysISO(to, -(Math.min(Math.max(input.days ?? 28, 1), MAX_DAYS) - 1));
+      if (from > to) throw new Error("`from` must be on or before `to`.");
+      return complianceSummary(client, site, from, to);
+    }
+  })
+});
+
+// src/lib/mcp/tools/summarise-incidents.ts
+import { defineTool as defineTool30 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z29 } from "npm:zod@^3.25.76";
+var MAX_DAYS2 = 730;
+var summarise_incidents_default = defineTool30({
+  name: "summarise_incidents",
+  title: "Summarise incidents",
+  description: "Summarise food safety incidents and non-conformances at a site over a period, grouped by type and status, with the ones still open listed out.",
+  inputSchema: {
+    site_id: z29.string().uuid().describe("Site id from list_sites."),
+    days: z29.number().int().optional().describe("How many days back to cover. Defaults to 90, max 730. Ignored when from/to are given."),
+    from: z29.string().optional().describe("Start date (YYYY-MM-DD)."),
+    to: z29.string().optional().describe("End date (YYYY-MM-DD).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "summarise_incidents",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const to = input.to ? isoDate(input.to, "to") : today;
+      const from = input.from ? isoDate(input.from, "from") : addDaysISO(to, -(Math.min(Math.max(input.days ?? 90, 1), MAX_DAYS2) - 1));
+      if (from > to) throw new Error("`from` must be on or before `to`.");
+      const incidents = ok(
+        await client.from("incidents").select(
+          "id, title, type, status, description, immediate_action, root_cause, prevention, reported_at, reported_by_name, verified_at"
+        ).eq("site_id", input.site_id).gte("reported_at", `${from}T00:00:00`).lte("reported_at", `${to}T23:59:59`).order("reported_at", { ascending: false }).limit(500)
+      ) ?? [];
+      const tally = (key) => {
+        const counts = {};
+        for (const i of incidents) {
+          const value = String(i[key] ?? "unspecified");
+          counts[value] = (counts[value] ?? 0) + 1;
+        }
+        return counts;
+      };
+      const isOpen = (i) => i.status !== "closed" && i.status !== "verified";
+      const open = incidents.filter(isOpen);
+      return {
+        period: { from, to },
+        total: incidents.length,
+        open: open.length,
+        resolved: incidents.length - open.length,
+        by_type: tally("type"),
+        by_status: tally("status"),
+        without_root_cause: incidents.filter((i) => !i.root_cause).length,
+        still_open: open.map((i) => ({
+          id: i.id,
+          title: i.title,
+          type: i.type,
+          status: i.status,
+          reported_at: i.reported_at,
+          reported_by: i.reported_by_name,
+          immediate_action: i.immediate_action,
+          root_cause: i.root_cause,
+          prevention: i.prevention
+        }))
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/list-recent-records.ts
+import { defineTool as defineTool31 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z30 } from "npm:zod@^3.25.76";
+var RECORD_TYPES = [
+  "temperatures",
+  "cleaning",
+  "day_sheets",
+  "batches",
+  "deliveries",
+  "incidents",
+  "probe_calibrations",
+  "production_days",
+  "training",
+  "fitness_to_work"
+];
+var MAX_DAYS3 = 365;
+var PER_TYPE_LIMIT = 200;
+var list_recent_records_default = defineTool31({
+  name: "list_recent_records",
+  title: "List recent records",
+  description: "Pull the raw records behind a site's compliance for a date range \u2014 temperatures, cleaning, day sheets, batches, deliveries, incidents, probe calibrations, production days, training and fitness to work. Ask for only the types you need.",
+  inputSchema: {
+    site_id: z30.string().uuid().describe("Site id from list_sites."),
+    types: z30.array(z30.enum(RECORD_TYPES)).optional().describe("Which record types to return. Defaults to temperatures, cleaning and batches."),
+    days: z30.number().int().optional().describe("How many days back to cover. Defaults to 7, max 365. Ignored when from/to are given."),
+    from: z30.string().optional().describe("Start date (YYYY-MM-DD)."),
+    to: z30.string().optional().describe("End date (YYYY-MM-DD).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "list_recent_records",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const to = input.to ? isoDate(input.to, "to") : today;
+      const from = input.from ? isoDate(input.from, "from") : addDaysISO(to, -(Math.min(Math.max(input.days ?? 7, 1), MAX_DAYS3) - 1));
+      if (from > to) throw new Error("`from` must be on or before `to`.");
+      const types = input.types?.length ? input.types : ["temperatures", "cleaning", "batches"];
+      const fromTs = `${from}T00:00:00`;
+      const toTs = `${to}T23:59:59`;
+      const siteId = input.site_id;
+      const queries = {
+        temperatures: async () => ok(
+          await client.from("temp_logs").select("id, unit_id, log_type, value, pass, food_item, corrective_action, logged_at, logged_by_name").eq("site_id", siteId).gte("logged_at", fromTs).lte("logged_at", toTs).order("logged_at", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        cleaning: async () => ok(
+          await client.from("cleaning_logs").select("id, task_id, log_date, done, note, completed_by_name, completed_at, is_retrospective").eq("site_id", siteId).gte("log_date", from).lte("log_date", to).order("log_date", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        day_sheets: async () => ok(
+          await client.from("day_sheets").select("id, sheet_date, locked, signed_off, signed_off_by, signed_off_at, manager_note, problem_notes").eq("site_id", siteId).gte("sheet_date", from).lte("sheet_date", to).order("sheet_date", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        batches: async () => ok(
+          await client.from("batches").select("id, batch_code, product_name, quantity_produced, quantity_unit, status, date_produced, use_by_date, notes").eq("site_id", siteId).gte("date_produced", from).lte("date_produced", to).order("date_produced", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        deliveries: async () => ok(
+          await client.from("delivery_logs").select("id, supplier_id, items, temp, temp_pass, packaging, use_by_ok, accepted, note, logged_at, logged_by_name, suppliers(name)").eq("site_id", siteId).gte("logged_at", fromTs).lte("logged_at", toTs).order("logged_at", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        incidents: async () => ok(
+          await client.from("incidents").select("id, title, type, status, description, immediate_action, root_cause, prevention, reported_at, reported_by_name").eq("site_id", siteId).gte("reported_at", fromTs).lte("reported_at", toTs).order("reported_at", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        probe_calibrations: async () => ok(
+          await client.from("probe_calibrations").select("id, probe_name, iced_water_reading, boiling_water_reading, pass, notes, calibrated_at, calibrated_by_name").eq("site_id", siteId).gte("calibrated_at", fromTs).lte("calibrated_at", toTs).order("calibrated_at", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        production_days: async () => ok(
+          await client.from("production_days").select("id, production_date, started_at, completed_at, notes, is_retrospective").eq("site_id", siteId).gte("production_date", from).lte("production_date", to).order("production_date", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        training: async () => ok(
+          await client.from("training_records").select("id, user_id, training_name, training_type, completed_date, expiry_date, notes").eq("site_id", siteId).gte("completed_date", from).lte("completed_date", to).order("completed_date", { ascending: false }).limit(PER_TYPE_LIMIT)
+        ),
+        fitness_to_work: async () => ok(
+          await client.from("fitness_to_work").select("id, staff_name, reported_date, symptoms, excluded_from, cleared_to_return, status, notes, recorded_by_name").eq("site_id", siteId).gte("reported_date", from).lte("reported_date", to).order("reported_date", { ascending: false }).limit(PER_TYPE_LIMIT)
+        )
+      };
+      const results = await Promise.all(types.map((t) => queries[t]()));
+      const records = {};
+      types.forEach((t, i) => {
+        records[t] = results[i] ?? [];
+      });
+      return {
+        period: { from, to },
+        note: `Each record type is capped at ${PER_TYPE_LIMIT} rows, newest first. Narrow the date range for a complete set.`,
+        records
+      };
+    }
+  })
+});
+
+// src/lib/mcp/tools/generate-inspection-pack.ts
+import { defineTool as defineTool32 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { z as z31 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/inspection.ts
+var none = (n, text, empty) => n === 0 ? empty : text;
+async function buildInspectionPack(client, site, requestedFrom, toISO) {
+  const fromISO = requestedFrom < site.created_on ? site.created_on : requestedFrom;
+  const [summary, basis] = await Promise.all([
+    complianceSummary(client, site, fromISO, toISO),
+    loadDayBasis(client, site, fromISO, toISO)
+  ]);
+  const [org, siteRow, pest, maintenance, recipes, recalls, safeMethods, sfbbSystem, sfbbDocs, haccp, authorSources] = await Promise.all([
+    client.from("organisations").select("name").eq("id", site.organisation_id).maybeSingle(),
+    client.from("sites").select("address").eq("id", site.id).maybeSingle(),
+    client.from("pest_logs").select("id, resolved").eq("site_id", site.id).gte("reported_at", `${fromISO}T00:00:00`).lte("reported_at", `${toISO}T23:59:59`),
+    client.from("maintenance_logs").select("id, status").eq("site_id", site.id).gte("reported_at", `${fromISO}T00:00:00`).lte("reported_at", `${toISO}T23:59:59`),
+    client.from("recipes").select("id, approved, label_type").eq("site_id", site.id).eq("active", true),
+    client.from("recalls").select("id").eq("site_id", site.id),
+    client.from("safe_methods").select("method_key, status").eq("site_id", site.id),
+    client.from("sfbb_system").select("route, first_completed_at, last_reviewed_at").eq("site_id", site.id).maybeSingle(),
+    client.from("sfbb_documents").select("id").eq("site_id", site.id),
+    client.from("haccp_plans").select("id, status").eq("site_id", site.id),
+    loadRecordAuthors(client, site, fromISO, toISO)
+  ]);
+  const pestRows = ok(pest) ?? [];
+  const maintRows = ok(maintenance) ?? [];
+  const recipeRows = ok(recipes) ?? [];
+  const recallCount = (ok(recalls) ?? []).length;
+  const methodRows = ok(safeMethods) ?? [];
+  const system = ok(sfbbSystem);
+  const docCount = (ok(sfbbDocs) ?? []).length;
+  const haccpPublished = (ok(haccp) ?? []).filter(
+    (h) => h.status === "published"
+  ).length;
+  const t = summary.temperatures;
+  const hygienic_food_handling = [
+    {
+      label: "Storage temperature records (fridge / freezer)",
+      value: none(t.storage_readings, `${t.storage_readings} readings logged`, "No records found for this period")
+    },
+    {
+      label: "Process checks (cooking, reheating, hot-holding, cooling, delivery)",
+      value: none(t.process_checks, `${t.process_checks} checks logged`, "No records found for this period")
+    },
+    {
+      label: "Temperature pass rate",
+      value: t.readings === 0 ? "No records found for this period" : `${t.pass_rate_pct}% pass \u2014 ${t.failures} recorded failure${t.failures === 1 ? "" : "s"}, ${t.unresolved_failures} still without a corrective action`
+    },
+    {
+      label: "Probe calibration",
+      value: summary.probe_calibration.checks === 0 ? "No records found" : `${summary.probe_calibration.passed} of ${summary.probe_calibration.checks} checks passed \xB7 last checked ${String(summary.probe_calibration.last_checked).slice(0, 10)}`
+    },
+    {
+      label: "Allergen information",
+      value: recipeRows.length === 0 ? "No recipes recorded" : `${recipeRows.filter((r) => r.approved).length} of ${recipeRows.length} recipes approved \xB7 ${recipeRows.filter((r) => (r.label_type ?? "").toUpperCase() === "PPDS").length} PPDS item(s)`
+    },
+    {
+      label: "Batch & traceability",
+      value: summary.batches.produced === 0 ? "No batches recorded for this period" : `${summary.batches.produced} batch(es) produced \xB7 ${recallCount} withdrawal/recall record(s) on file`
+    },
+    {
+      label: "Deliveries",
+      value: summary.deliveries.total === 0 ? "No deliveries recorded for this period" : `${summary.deliveries.total} recorded \xB7 ${summary.deliveries.rejected} rejected on arrival`
+    }
+  ];
+  const premises_and_cleanliness = [
+    {
+      label: "Cleaning completion",
+      value: summary.cleaning.expected === 0 ? "No cleaning schedule configured" : `${summary.cleaning.completion_pct}% (${summary.cleaning.done} of ${summary.cleaning.expected} scheduled occurrences${summary.cleaning.exempt > 0 ? `, ${summary.cleaning.exempt} exempt` : ""})`
+    },
+    {
+      label: "Pest control",
+      value: none(
+        pestRows.length,
+        `${pestRows.length} entries \xB7 ${pestRows.filter((p) => !p.resolved).length} open`,
+        "No sightings or issues recorded"
+      )
+    },
+    {
+      label: "Maintenance",
+      value: none(
+        maintRows.length,
+        `${maintRows.length} issues \xB7 ${maintRows.filter((m) => m.status !== "resolved" && m.status !== "closed").length} open`,
+        "No maintenance issues recorded"
+      )
+    }
+  ];
+  const confidence_in_management = [
+    { label: "Food safety management system", value: fsmsSummary(system, docCount, methodRows, haccpPublished) },
+    {
+      label: "Opening and closing checks",
+      value: summary.day_sheets.expected === 0 ? "No days to report on in this period" : `${summary.day_sheets.completion_pct}% of ${summary.day_basis.label} have a day sheet (${summary.day_sheets.created} of ${summary.day_sheets.expected}) \xB7 ${summary.day_sheets.signed_off} signed off`
+    },
+    {
+      label: "Staff training up to date",
+      value: summary.training.records === 0 ? "No training records found" : `${summary.training.records} record(s) \xB7 ${summary.training.expired} expired \xB7 ${summary.training.expiring_soon} expiring within 30 days`
+    },
+    {
+      label: summary.reviews.review_label === "periodic review" ? "Periodic reviews completed" : "4-weekly reviews completed",
+      value: summary.reviews.completed_in_period === 0 ? "No completed reviews fall in this period" : `${summary.reviews.completed_in_period} completed review(s) on file`
+    },
+    {
+      label: "Incidents & corrective actions",
+      value: summary.incidents.total === 0 ? "No incidents recorded for this period" : `${summary.incidents.total - summary.incidents.open} resolved \xB7 ${summary.incidents.open} open`
+    },
+    {
+      label: "Fitness to work records",
+      value: none(
+        summary.fitness_to_work.records,
+        `${summary.fitness_to_work.records} record(s) \xB7 ${summary.fitness_to_work.currently_excluded} currently excluded`,
+        "No exclusions recorded"
+      )
+    },
+    {
+      label: "Approved suppliers",
+      value: none(
+        summary.suppliers.total,
+        `${summary.suppliers.approved} of ${summary.suppliers.total} approved`,
+        "No suppliers recorded"
+      )
+    },
+    { label: `Records completed across ${basis.label}`, value: basis.note }
+  ];
+  return {
+    site: {
+      id: site.id,
+      name: site.name,
+      address: ok(siteRow)?.address ?? null,
+      premises: premisesLabel(site.premises_type)
+    },
+    organisation: ok(org)?.name ?? "Organisation",
+    period: { from: fromISO, to: toISO, label: `${fromISO} to ${toISO}` },
+    day_basis: summary.day_basis,
+    food_safety_management_system: fsmsStatement(system, docCount, methodRows, haccpPublished),
+    hygienic_food_handling,
+    premises_and_cleanliness,
+    confidence_in_management,
+    record_authors: authorSources,
+    summary,
+    download: {
+      note: "This is the full pack content. To download it as a branded PDF or Excel workbook, open Reports in MiseOS, pick the same timeframe and export the Inspection Pack.",
+      url_path: "/reports"
+    }
+  };
+}
+async function loadRecordAuthors(client, site, fromISO, toISO) {
+  const [temps, cleaning, incidents, deliveries] = await Promise.all([
+    client.from("temp_logs").select("logged_by_name").eq("site_id", site.id).gte("logged_at", `${fromISO}T00:00:00`).lte("logged_at", `${toISO}T23:59:59`),
+    client.from("cleaning_logs").select("completed_by_name").eq("site_id", site.id).gte("log_date", fromISO).lte("log_date", toISO),
+    client.from("incidents").select("reported_by_name").eq("site_id", site.id).gte("reported_at", `${fromISO}T00:00:00`).lte("reported_at", `${toISO}T23:59:59`),
+    client.from("delivery_logs").select("logged_by_name").eq("site_id", site.id).gte("logged_at", `${fromISO}T00:00:00`).lte("logged_at", `${toISO}T23:59:59`)
+  ]);
+  const tally = /* @__PURE__ */ new Map();
+  const add = (name) => {
+    const n = typeof name === "string" ? name.trim() : "";
+    if (!n) return;
+    tally.set(n, (tally.get(n) ?? 0) + 1);
+  };
+  for (const r of ok(temps) ?? []) add(r.logged_by_name);
+  for (const r of ok(cleaning) ?? []) add(r.completed_by_name);
+  for (const r of ok(incidents) ?? []) add(r.reported_by_name);
+  for (const r of ok(deliveries) ?? []) add(r.logged_by_name);
+  return [...tally.entries()].map(([name, records]) => ({ name, records })).sort((a, b) => b.records - a.records);
+}
+function fsmsSummary(system, docCount, methods, haccpPublished) {
+  const dates = [
+    system?.first_completed_at ? `first completed ${String(system.first_completed_at).slice(0, 10)}` : null,
+    system?.last_reviewed_at ? `last reviewed ${String(system.last_reviewed_at).slice(0, 10)}` : null
+  ].filter(Boolean).join(" \xB7 ");
+  if ((system?.route === "uploaded" || system?.route === "both") && docCount > 0) {
+    return `Safer Food Better Business \u2014 completed pack uploaded${dates ? ` (${dates})` : ""}`;
+  }
+  const documented = methods.filter((m) => m.status === "documented").length;
+  const relevant = methods.filter((m) => m.status !== "not_relevant").length;
+  if (relevant > 0) {
+    return `Safer Food Better Business \u2014 ${documented} of ${relevant} safe methods documented${dates ? ` (${dates})` : ""}`;
+  }
+  if (haccpPublished > 0) return `HACCP-based plan \u2014 ${haccpPublished} published`;
+  return "Not yet completed in MiseOS";
+}
+function fsmsStatement(system, docCount, methods, haccpPublished) {
+  const documented = methods.filter((m) => m.status === "documented").length;
+  const relevant = methods.filter((m) => m.status !== "not_relevant").length;
+  if ((system?.route === "uploaded" || system?.route === "both") && docCount > 0) {
+    return `This business operates a documented food safety management system based on Safer Food Better Business. The completed SFBB pack is held on file (${docCount} document${docCount === 1 ? "" : "s"} uploaded to MiseOS) and the daily records that support it are maintained in MiseOS.`;
+  }
+  if (relevant > 0) {
+    return `This business operates a documented food safety management system based on Safer Food Better Business, with ${documented} of ${relevant} relevant safe methods written up and daily records maintained in MiseOS.`;
+  }
+  if (haccpPublished > 0) {
+    return `This business operates a documented HACCP-based food safety management system (${haccpPublished} published plan${haccpPublished === 1 ? "" : "s"}), with daily records maintained in MiseOS.`;
+  }
+  return "This business maintains its daily food safety records in MiseOS. A written food safety management system (Safer Food Better Business or HACCP) has not yet been completed in the app.";
+}
+
+// src/lib/mcp/tools/generate-inspection-pack.ts
+var TIMEFRAME_DAYS = {
+  "1month": 30,
+  "3months": 90,
+  "6months": 182,
+  "12months": 365
+};
+var generate_inspection_pack_default = defineTool32({
+  name: "generate_inspection_pack",
+  title: "Generate an Inspection Pack",
+  description: "Build the Inspection Pack for a site over a timeframe, laid out around the three areas a Food Standards Agency inspector scores: hygienic food handling, premises and cleanliness, and confidence in management. Managers and owners only. Closed days and non-production days are excluded from every figure.",
+  inputSchema: {
+    site_id: z31.string().uuid().describe("Site id from list_sites."),
+    timeframe: z31.enum(["1month", "3months", "6months", "12months"]).optional().describe("How far back the pack covers. Defaults to 3 months. Ignored when from/to are given."),
+    from: z31.string().optional().describe("Custom start date (YYYY-MM-DD)."),
+    to: z31.string().optional().describe("Custom end date (YYYY-MM-DD).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: guard({
+    tool: "generate_inspection_pack",
+    level: "manage",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const site = await siteMeta(client, input.site_id);
+      const today = siteToday(site.timezone);
+      const to = input.to ? isoDate(input.to, "to") : today;
+      const from = input.from ? isoDate(input.from, "from") : addDaysISO(to, -(TIMEFRAME_DAYS[input.timeframe ?? "3months"] - 1));
+      if (from > to) throw new Error("`from` must be on or before `to`.");
+      return buildInspectionPack(client, site, from, to);
+    }
+  })
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "elcmnvgbmzusogudpenp";
 var mcp_default = defineMcp({
   name: "miseos",
   title: "MiseOS",
-  version: "0.1.0",
-  instructions: "Food safety and HACCP tools for MiseOS. Start with `list_sites` to get a site id, then read or record temperature checks, incidents and production batches for that site. All tools act as the signed-in MiseOS user and respect their site access.",
+  version: "0.2.0",
+  instructions: [
+    "Food safety and HACCP tools for MiseOS, a UK food safety app.",
+    "Start with `list_sites` to get a site id, then read or record checks for that site.",
+    "All tools act as the signed-in MiseOS user and respect their site access: staff can record daily checks, managers and owners can also record compliance and generate the Inspection Pack, and read-only accounts cannot write at all.",
+    "Compliance is measured differently by site. On a `scheduled` site every calendar day counts unless it is a declared closed day. On an `on_demand` site (home kitchens, market traders, bake-to-order units) only declared PRODUCTION DAYS count \u2014 use `start_production_day` before recording that day's work, and never tell the user something is overdue on a day with no production day.",
+    "Nothing is ever deleted. Disposing of a batch, extending a use-by date and closing an incident all stay on the permanent record, so confirm with the user before doing any of them."
+  ].join(" "),
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
   tools: [
+    // Sites and temperatures
     list_sites_default,
     list_temperature_units_default,
     list_temperature_logs_default,
     log_temperature_default,
+    log_probe_calibration_default,
+    // Daily records
+    list_cleaning_tasks_default,
+    complete_cleaning_task_default,
+    get_day_sheet_default,
+    complete_day_sheet_items_default,
+    start_production_day_default,
+    finish_production_day_default,
+    // Incidents
     list_incidents_default,
     create_incident_default,
-    list_batches_default
+    update_incident_default,
+    // Batches and traceability
+    list_batches_default,
+    create_batch_default,
+    update_batch_default,
+    mark_batch_used_default,
+    dispose_batch_default,
+    extend_batch_use_by_default,
+    // Suppliers and deliveries
+    list_suppliers_default,
+    upsert_supplier_default,
+    record_delivery_default,
+    // Compliance
+    complete_periodic_review_default,
+    list_staff_default,
+    add_training_record_default,
+    record_fitness_to_work_default,
+    // Reporting
+    list_outstanding_actions_default,
+    get_compliance_summary_default,
+    summarise_incidents_default,
+    list_recent_records_default,
+    generate_inspection_pack_default
   ]
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.2/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.3/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));
