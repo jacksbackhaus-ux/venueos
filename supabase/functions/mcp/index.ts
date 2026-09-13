@@ -7,7 +7,6 @@ import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/tools/list-sites.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { ToolError as ToolError2 } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/helpers.ts
 import { ToolError } from "npm:@lovable.dev/mcp-js@0.26.2";
@@ -81,6 +80,107 @@ function json(value) {
     content: [{ type: "text", text: JSON.stringify(value, null, 2) }]
   };
 }
+async function actorRecord(client, authUserId) {
+  const { data, error } = await client.from("users").select("id, display_name, email, organisation_id, status").eq("auth_user_id", authUserId).maybeSingle();
+  if (error) throw new ToolError(error.message);
+  if (!data) throw new ToolError("No MiseOS account found for this login.");
+  if (data.status !== "active") throw new ToolError("This MiseOS account is not active.");
+  return data;
+}
+async function siteRoleFor(client, actorId, siteId) {
+  const { data, error } = await client.from("memberships").select("site_role").eq("user_id", actorId).eq("site_id", siteId).eq("active", true).maybeSingle();
+  if (error) throw new ToolError(error.message);
+  return data?.site_role ?? null;
+}
+function assertLevel(level, role) {
+  if (level === "read") return;
+  if (!role) throw new ToolError("You do not have access to this site.");
+  if (role === "read_only") {
+    throw new ToolError("Read-only accounts cannot record or change records.");
+  }
+  if (level === "manage" && !["supervisor", "owner"].includes(role)) {
+    throw new ToolError("Only supervisors and owners can do this.");
+  }
+}
+async function assertEnabled(client, organisationId) {
+  const { data, error } = await client.from("mcp_settings").select("enabled").eq("organisation_id", organisationId).maybeSingle();
+  if (error) throw new ToolError(error.message);
+  if (data && data.enabled === false) {
+    throw new ToolError(
+      "AI assistant access is switched off for this organisation. An owner can turn it back on in Settings \u203A Connected apps."
+    );
+  }
+}
+var RATE_LIMIT_PER_MINUTE = 60;
+async function assertUnderRateLimit(client, authUserId) {
+  const since = new Date(Date.now() - 6e4).toISOString();
+  const { count, error } = await client.from("mcp_activity_log").select("id", { count: "exact", head: true }).eq("actor_auth_user_id", authUserId).gte("created_at", since);
+  if (error) return;
+  if ((count ?? 0) >= RATE_LIMIT_PER_MINUTE) {
+    throw new ToolError("Too many assistant requests in the last minute. Please slow down.");
+  }
+}
+function redact(input) {
+  if (!input || typeof input !== "object") return input ?? {};
+  const out = {};
+  for (const [key, value] of Object.entries(input)) {
+    out[key] = typeof value === "string" && value.length > 240 ? `${value.slice(0, 240)}\u2026` : value;
+  }
+  return out;
+}
+async function logActivity(client, row) {
+  try {
+    await client.from("mcp_activity_log").insert({
+      ...row,
+      arguments: redact(row.arguments),
+      error_message: row.error_message ?? null
+    });
+  } catch {
+  }
+}
+function guard(opts) {
+  return async (input, ctx) => {
+    const client = requireClient(ctx);
+    const authUserId = ctx.getUserId();
+    if (!authUserId) throw new ToolError("Could not identify the signed-in MiseOS user.");
+    const actor = await actorRecord(client, authUserId);
+    const siteId = opts.site?.(input) ?? null;
+    const organisationId = siteId ? await siteOrganisationId(client, siteId) : actor.organisation_id;
+    await assertEnabled(client, organisationId);
+    await assertUnderRateLimit(client, authUserId);
+    const siteRole = siteId ? await siteRoleFor(client, actor.id, siteId) : null;
+    const base = {
+      organisation_id: organisationId,
+      site_id: siteId,
+      actor_auth_user_id: authUserId,
+      actor_email: actor.email ?? ctx.getUserEmail() ?? null,
+      client_name: ctx.getClientId() ?? null,
+      tool_name: opts.tool,
+      arguments: input
+    };
+    try {
+      assertLevel(opts.level, siteRole);
+      const result = await opts.run({
+        input,
+        client,
+        actorId: actor.id,
+        actorName: actor.display_name ?? actor.email ?? "MiseOS user",
+        organisationId,
+        siteRole
+      });
+      await logActivity(client, { ...base, outcome: "success" });
+      return json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await logActivity(client, { ...base, outcome: "error", error_message: message });
+      throw err instanceof ToolError ? err : new ToolError(message);
+    }
+  };
+}
+function ok(res) {
+  if (res.error) throw new ToolError(res.error.message);
+  return res.data;
+}
 
 // src/lib/mcp/tools/list-sites.ts
 var list_sites_default = defineTool({
@@ -89,16 +189,20 @@ var list_sites_default = defineTool({
   description: "List the MiseOS sites (premises) the signed-in user can access, with premises type and operating mode.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_input, ctx) => {
-    const client = requireClient(ctx);
-    const { data, error } = await client.from("sites").select("id, name, site_code, premises_type, operating_mode, timezone, active").eq("active", true).order("name");
-    if (error) throw new ToolError2(error.message);
-    return json({ sites: data ?? [] });
-  }
+  handler: guard({
+    tool: "list_sites",
+    level: "read",
+    run: async ({ client }) => {
+      const sites = ok(
+        await client.from("sites").select("id, name, site_code, premises_type, operating_mode, timezone, active").eq("active", true).order("name")
+      );
+      return { sites: sites ?? [] };
+    }
+  })
 });
 
 // src/lib/mcp/tools/list-temperature-units.ts
-import { defineTool as defineTool2, ToolError as ToolError3 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z } from "npm:zod@^3.25.76";
 var list_temperature_units_default = defineTool2({
   name: "list_temperature_units",
@@ -106,16 +210,21 @@ var list_temperature_units_default = defineTool2({
   description: "List the fridges, freezers and other monitored units for a site, with their pass/fail temperature range.",
   inputSchema: { site_id: z.string().uuid().describe("Site id from list_sites.") },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ site_id }, ctx) => {
-    const client = requireClient(ctx);
-    const { data, error } = await client.from("temp_units").select("id, name, type, min_temp, max_temp, active").eq("site_id", site_id).eq("active", true).order("sort_order");
-    if (error) throw new ToolError3(error.message);
-    return json({ units: data ?? [] });
-  }
+  handler: guard({
+    tool: "list_temperature_units",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const units = ok(
+        await client.from("temp_units").select("id, name, type, min_temp, max_temp, active").eq("site_id", input.site_id).eq("active", true).order("sort_order")
+      );
+      return { units: units ?? [] };
+    }
+  })
 });
 
 // src/lib/mcp/tools/list-temperature-logs.ts
-import { defineTool as defineTool3, ToolError as ToolError4 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z2 } from "npm:zod@^3.25.76";
 var list_temperature_logs_default = defineTool3({
   name: "list_temperature_logs",
@@ -127,20 +236,25 @@ var list_temperature_logs_default = defineTool3({
     only_failures: z2.boolean().optional().describe("Return only readings that failed.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ site_id, days, only_failures }, ctx) => {
-    const client = requireClient(ctx);
-    const window = Math.min(Math.max(days ?? 7, 1), 90);
-    const since = new Date(Date.now() - window * 864e5).toISOString();
-    let query = client.from("temp_logs").select("id, unit_id, log_type, value, pass, food_item, corrective_action, logged_at, logged_by_name").eq("site_id", site_id).gte("logged_at", since).order("logged_at", { ascending: false }).limit(200);
-    if (only_failures) query = query.eq("pass", false);
-    const { data, error } = await query;
-    if (error) throw new ToolError4(error.message);
-    return json({ days: window, logs: data ?? [] });
-  }
+  handler: guard({
+    tool: "list_temperature_logs",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const window = Math.min(Math.max(input.days ?? 7, 1), 90);
+      const since = new Date(Date.now() - window * 864e5).toISOString();
+      let query = client.from("temp_logs").select(
+        "id, unit_id, log_type, value, pass, food_item, corrective_action, logged_at, logged_by_name"
+      ).eq("site_id", input.site_id).gte("logged_at", since).order("logged_at", { ascending: false }).limit(200);
+      if (input.only_failures) query = query.eq("pass", false);
+      const logs = ok(await query);
+      return { days: window, logs: logs ?? [] };
+    }
+  })
 });
 
 // src/lib/mcp/tools/log-temperature.ts
-import { defineTool as defineTool4, ToolError as ToolError5 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z3 } from "npm:zod@^3.25.76";
 var log_temperature_default = defineTool4({
   name: "log_temperature",
@@ -152,39 +266,45 @@ var log_temperature_default = defineTool4({
     unit_id: z3.string().uuid().optional().describe("Monitored unit id from list_temperature_units."),
     log_type: z3.string().optional().describe("Reading type, e.g. unit, cooking, reheating, hot_holding, cooling, delivery."),
     food_item: z3.string().optional().describe("Food item the reading relates to, for process checks."),
-    corrective_action: z3.string().optional().describe("Action taken if the reading failed."),
-    logged_by_name: z3.string().optional().describe("Who took the reading. Defaults to the signed-in user.")
+    corrective_action: z3.string().optional().describe("Action taken if the reading failed.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async (input, ctx) => {
-    const client = requireClient(ctx);
-    const organisation_id = await siteOrganisationId(client, input.site_id);
-    let pass = true;
-    if (input.unit_id) {
-      const { data: unit, error: unitError } = await client.from("temp_units").select("min_temp, max_temp").eq("id", input.unit_id).eq("site_id", input.site_id).maybeSingle();
-      if (unitError) throw new ToolError5(unitError.message);
-      if (!unit) throw new ToolError5("Unit not found for this site.");
-      pass = input.value >= Number(unit.min_temp) && input.value <= Number(unit.max_temp);
+  handler: guard({
+    tool: "log_temperature",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      let pass = true;
+      if (input.unit_id) {
+        const unit = ok(
+          await client.from("temp_units").select("min_temp, max_temp").eq("id", input.unit_id).eq("site_id", input.site_id).maybeSingle()
+        );
+        if (!unit) throw new Error("Unit not found for this site.");
+        const min = unit.min_temp;
+        const max = unit.max_temp;
+        pass = (min === null || input.value >= min) && (max === null || input.value <= max);
+      }
+      const log = ok(
+        await client.from("temp_logs").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          unit_id: input.unit_id ?? null,
+          value: input.value,
+          pass,
+          log_type: input.log_type ?? (input.unit_id ? "unit" : "cooking"),
+          food_item: input.food_item ?? null,
+          corrective_action: input.corrective_action ?? null,
+          logged_by_user_id: actorId,
+          logged_by_name: actorName
+        }).select("id, value, pass, log_type, logged_at").single()
+      );
+      return { log, pass };
     }
-    const { data, error } = await client.from("temp_logs").insert({
-      site_id: input.site_id,
-      organisation_id,
-      unit_id: input.unit_id ?? null,
-      log_type: input.log_type ?? (input.unit_id ? "unit" : "process"),
-      value: input.value,
-      pass,
-      food_item: input.food_item ?? null,
-      corrective_action: input.corrective_action ?? null,
-      logged_by_name: input.logged_by_name ?? ctx.getUserEmail() ?? "MCP",
-      logged_by_user_id: ctx.getUserId() ?? null
-    }).select("id, value, pass, log_type, logged_at").single();
-    if (error) throw new ToolError5(error.message);
-    return json({ reading: data });
-  }
+  })
 });
 
 // src/lib/mcp/tools/list-incidents.ts
-import { defineTool as defineTool5, ToolError as ToolError6 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z4 } from "npm:zod@^3.25.76";
 var list_incidents_default = defineTool5({
   name: "list_incidents",
@@ -195,18 +315,23 @@ var list_incidents_default = defineTool5({
     status: z4.string().optional().describe("Filter by status, e.g. open or closed.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ site_id, status }, ctx) => {
-    const client = requireClient(ctx);
-    let query = client.from("incidents").select("id, title, type, status, description, immediate_action, root_cause, prevention, reported_at, reported_by_name").eq("site_id", site_id).order("reported_at", { ascending: false }).limit(100);
-    if (status) query = query.eq("status", status);
-    const { data, error } = await query;
-    if (error) throw new ToolError6(error.message);
-    return json({ incidents: data ?? [] });
-  }
+  handler: guard({
+    tool: "list_incidents",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      let query = client.from("incidents").select(
+        "id, title, type, status, description, immediate_action, root_cause, prevention, reported_at, reported_by_name"
+      ).eq("site_id", input.site_id).order("reported_at", { ascending: false }).limit(100);
+      if (input.status) query = query.eq("status", input.status);
+      const incidents = ok(await query);
+      return { incidents: incidents ?? [] };
+    }
+  })
 });
 
 // src/lib/mcp/tools/create-incident.ts
-import { defineTool as defineTool6, ToolError as ToolError7 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z5 } from "npm:zod@^3.25.76";
 var create_incident_default = defineTool6({
   name: "create_incident",
@@ -222,29 +347,33 @@ var create_incident_default = defineTool6({
     prevention: z5.string().optional().describe("How a repeat will be prevented.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async (input, ctx) => {
-    const client = requireClient(ctx);
-    const organisation_id = await siteOrganisationId(client, input.site_id);
-    const { data, error } = await client.from("incidents").insert({
-      site_id: input.site_id,
-      organisation_id,
-      title: input.title,
-      description: input.description,
-      immediate_action: input.immediate_action,
-      type: input.type ?? "other",
-      root_cause: input.root_cause ?? null,
-      prevention: input.prevention ?? null,
-      status: "open",
-      reported_by_name: ctx.getUserEmail() ?? "MCP",
-      reported_by_user_id: ctx.getUserId() ?? null
-    }).select("id, title, type, status, reported_at").single();
-    if (error) throw new ToolError7(error.message);
-    return json({ incident: data });
-  }
+  handler: guard({
+    tool: "create_incident",
+    level: "write",
+    site: (i) => i.site_id,
+    run: async ({ client, input, actorId, actorName, organisationId }) => {
+      const incident = ok(
+        await client.from("incidents").insert({
+          site_id: input.site_id,
+          organisation_id: organisationId,
+          title: input.title,
+          description: input.description,
+          immediate_action: input.immediate_action,
+          type: input.type ?? "other",
+          root_cause: input.root_cause ?? null,
+          prevention: input.prevention ?? null,
+          status: "open",
+          reported_by_name: actorName,
+          reported_by_user_id: actorId
+        }).select("id, title, type, status, reported_at").single()
+      );
+      return { incident };
+    }
+  })
 });
 
 // src/lib/mcp/tools/list-batches.ts
-import { defineTool as defineTool7, ToolError as ToolError8 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z6 } from "npm:zod@^3.25.76";
 var list_batches_default = defineTool7({
   name: "list_batches",
@@ -255,14 +384,21 @@ var list_batches_default = defineTool7({
     days: z6.number().int().optional().describe("How many days back to look. Defaults to 14, max 180.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ site_id, days }, ctx) => {
-    const client = requireClient(ctx);
-    const window = Math.min(Math.max(days ?? 14, 1), 180);
-    const since = new Date(Date.now() - window * 864e5).toISOString();
-    const { data, error } = await client.from("batches").select("id, batch_code, product_name, quantity_produced, quantity_unit, status, date_produced, use_by_date, created_at").eq("site_id", site_id).gte("created_at", since).order("created_at", { ascending: false }).limit(100);
-    if (error) throw new ToolError8(error.message);
-    return json({ days: window, batches: data ?? [] });
-  }
+  handler: guard({
+    tool: "list_batches",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      const window = Math.min(Math.max(input.days ?? 14, 1), 180);
+      const since = new Date(Date.now() - window * 864e5).toISOString();
+      const batches = ok(
+        await client.from("batches").select(
+          "id, batch_code, product_name, quantity_produced, quantity_unit, status, date_produced, use_by_date, created_at"
+        ).eq("site_id", input.site_id).gte("created_at", since).order("created_at", { ascending: false }).limit(100)
+      );
+      return { days: window, batches: batches ?? [] };
+    }
+  })
 });
 
 // src/lib/mcp/index.ts
