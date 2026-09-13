@@ -1,6 +1,6 @@
-import { defineTool, ToolError } from "@lovable.dev/mcp-js";
+import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { json, requireClient } from "../helpers";
+import { guard, ok } from "../helpers";
 
 export default defineTool({
   name: "list_incidents",
@@ -11,17 +11,22 @@ export default defineTool({
     status: z.string().optional().describe("Filter by status, e.g. open or closed."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ site_id, status }, ctx) => {
-    const client = requireClient(ctx);
-    let query = client
-      .from("incidents")
-      .select("id, title, type, status, description, immediate_action, root_cause, prevention, reported_at, reported_by_name")
-      .eq("site_id", site_id)
-      .order("reported_at", { ascending: false })
-      .limit(100);
-    if (status) query = query.eq("status", status);
-    const { data, error } = await query;
-    if (error) throw new ToolError(error.message);
-    return json({ incidents: data ?? [] });
-  },
+  handler: guard<{ site_id: string; status?: string }>({
+    tool: "list_incidents",
+    level: "read",
+    site: (i) => i.site_id,
+    run: async ({ client, input }) => {
+      let query = client
+        .from("incidents")
+        .select(
+          "id, title, type, status, description, immediate_action, root_cause, prevention, reported_at, reported_by_name",
+        )
+        .eq("site_id", input.site_id)
+        .order("reported_at", { ascending: false })
+        .limit(100);
+      if (input.status) query = query.eq("status", input.status);
+      const incidents = ok(await query);
+      return { incidents: incidents ?? [] };
+    },
+  }),
 });

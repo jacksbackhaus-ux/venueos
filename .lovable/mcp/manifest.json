@@ -129,10 +129,6 @@
             "corrective_action": {
               "type": "string",
               "description": "Action taken if the reading failed."
-            },
-            "logged_by_name": {
-              "type": "string",
-              "description": "Who took the reading. Defaults to the signed-in user."
             }
           },
           "required": [

@@ -2262,6 +2262,92 @@ export type Database = {
           },
         ]
       }
+      mcp_activity_log: {
+        Row: {
+          actor_auth_user_id: string
+          actor_email: string | null
+          arguments: Json | null
+          client_name: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          organisation_id: string
+          outcome: string
+          site_id: string | null
+          tool_name: string
+        }
+        Insert: {
+          actor_auth_user_id: string
+          actor_email?: string | null
+          arguments?: Json | null
+          client_name?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organisation_id: string
+          outcome: string
+          site_id?: string | null
+          tool_name: string
+        }
+        Update: {
+          actor_auth_user_id?: string
+          actor_email?: string | null
+          arguments?: Json | null
+          client_name?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organisation_id?: string
+          outcome?: string
+          site_id?: string | null
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_activity_log_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_activity_log_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_settings: {
+        Row: {
+          enabled: boolean
+          organisation_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          organisation_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          organisation_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_settings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memberships: {
         Row: {
           active: boolean
