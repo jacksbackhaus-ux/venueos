@@ -58,6 +58,8 @@ import { Separator } from "@/components/ui/separator";
 import { ModuleManagementSection } from "@/components/ModuleManagementSection";
 import { MessengerSettingsSection } from "@/components/messenger/MessengerSettingsSection";
 import { SitesBillingSection } from "@/components/settings/SitesBillingSection";
+import { ConnectedAppsSection } from "@/components/settings/ConnectedAppsSection";
+import { Plug } from "lucide-react";
 import { BrandingSection } from "@/components/settings/BrandingSection";
 import { RegistrationCard } from "@/components/settings/RegistrationCard";
 import { KitchenSetupCard } from "@/components/settings/KitchenSetupCard";
@@ -758,14 +760,20 @@ const Settings = () => {
           {showBrandingSettingsTab && (orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
             <TabsTrigger value="branding" className="text-xs gap-1"><Palette className="h-3 w-3" /> Branding</TabsTrigger>
           )}
+          <TabsTrigger value="connected" className="text-xs gap-1"><Plug className="h-3 w-3" /> Connected Apps</TabsTrigger>
           <TabsTrigger value="account" className="text-xs gap-1"><Shield className="h-3 w-3" /> Account</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="connected" className="mt-4 space-y-4">
+          <ConnectedAppsSection organisationId={organisationId ?? null} canManage={canManageStaff} />
+        </TabsContent>
 
         {showBrandingSettingsTab && (orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner') && (
           <TabsContent value="branding" className="mt-4 space-y-4">
             <BrandingSection />
           </TabsContent>
         )}
+
 
         <TabsContent value="sites" className="mt-4 space-y-4">
           <SitesBillingSection />
