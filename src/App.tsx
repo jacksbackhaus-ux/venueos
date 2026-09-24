@@ -80,6 +80,8 @@ import SoloRecordsGuide from "@/pages/guides/SoloRecordsGuide";
 import NoCottageFoodLawGuide from "@/pages/guides/NoCottageFoodLawGuide";
 import SfbbVsHaccpGuide from "@/pages/guides/SfbbVsHaccpGuide";
 import Faq from "@/pages/Faq";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -302,6 +304,8 @@ function AppRoutes() {
       <Route path="/guides/no-cottage-food-law-uk" element={<NoCottageFoodLawGuide />} />
       <Route path="/guides/sfbb-vs-haccp" element={<SfbbVsHaccpGuide />} />
       <Route path="/faq" element={<Faq />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="/guides/bakery-haccp-compliance" element={<BakeryHaccpGuide />} />
       <Route path="/guides/sfbb-caterers-compliance" element={<SfbbCaterersGuide />} />
 
