@@ -6678,6 +6678,8 @@ export type Database = {
       }
       users: {
         Row: {
+          anonymised_at: string | null
+          anonymised_by: string | null
           auth_type: Database["public"]["Enums"]["auth_type"]
           auth_user_id: string | null
           created_at: string
@@ -6693,6 +6695,8 @@ export type Database = {
           status: Database["public"]["Enums"]["user_status"]
         }
         Insert: {
+          anonymised_at?: string | null
+          anonymised_by?: string | null
           auth_type?: Database["public"]["Enums"]["auth_type"]
           auth_user_id?: string | null
           created_at?: string
@@ -6708,6 +6712,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["user_status"]
         }
         Update: {
+          anonymised_at?: string | null
+          anonymised_by?: string | null
           auth_type?: Database["public"]["Enums"]["auth_type"]
           auth_user_id?: string | null
           created_at?: string
@@ -6881,6 +6887,10 @@ export type Database = {
         Returns: boolean
       }
       end_internal_impersonation: { Args: never; Returns: Json }
+      gdpr_anonymise_user: {
+        Args: { _actor: string; _self: boolean; _target: string }
+        Returns: Json
+      }
       generate_site_code: { Args: never; Returns: string }
       generate_staff_code: { Args: { _org_id: string }; Returns: string }
       generate_unique_org_slug: {
