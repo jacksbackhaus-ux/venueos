@@ -158,7 +158,7 @@ export default function OrgLogin() {
         )}
 
         <p className="text-center text-[11px] text-muted-foreground mt-6">
-          Powered by MiseOS · <Link to="/auth" className="underline hover:text-foreground">Standard sign-in</Link>
+          Powered by MiseOS · <Link to="/auth" className="underline hover:text-foreground">Standard sign-in</Link> · <Link to="/privacy" className="underline hover:text-foreground">Privacy</Link>
         </p>
       </div>
     </div>

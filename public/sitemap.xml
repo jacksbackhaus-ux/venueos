@@ -59,4 +59,6 @@
   <url><loc>https://mise-os.app/guides/no-cottage-food-law-uk</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://mise-os.app/guides/sfbb-vs-haccp</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://mise-os.app/faq</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://mise-os.app/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://mise-os.app/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
 </urlset>

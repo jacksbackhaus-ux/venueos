@@ -143,9 +143,20 @@ function BackLink({ onBack }: { onBack: () => void }) {
 
 function TrustLine() {
   return (
-    <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground mt-4">
-      <ShieldCheck className="h-3 w-3" />
-      Safe, secure, and built for real kitchens
+    <>
+      <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground mt-4">
+        <ShieldCheck className="h-3 w-3" />
+        Safe, secure, and built for real kitchens
+      </p>
+      <PrivacyLink />
+    </>
+  );
+}
+
+function PrivacyLink() {
+  return (
+    <p className="text-center text-[11px] text-muted-foreground mt-2">
+      <a href="/privacy" className="hover:text-foreground underline-offset-2 hover:underline">Privacy</a>
     </p>
   );
 }
@@ -413,6 +424,12 @@ export function ManagerSignupCard({
               Start free trial
             </Button>
           </form>
+          <p className="text-[11px] text-center text-muted-foreground">
+            By creating an account you agree to our{" "}
+            <a href="/terms" className="underline hover:text-foreground">Terms</a>{" "}
+            and confirm you've read our{" "}
+            <a href="/privacy" className="underline hover:text-foreground">Privacy Notice</a>.
+          </p>
 
           <p className="text-xs text-center text-muted-foreground pt-1">
             Already have an account?{" "}
@@ -600,6 +617,7 @@ export function StaffCard({ onBack, orgSlug, orgName }: { onBack: () => void; or
           </form>
         </CardContent>
       </Card>
+      <PrivacyLink />
     </div>
   );
 }

@@ -147,6 +147,9 @@ export default function StaffLogin() {
                 <ArrowLeft className="h-3 w-3 mr-1" /> Back to customer login
               </Link>
             </div>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">
+              <Link to="/privacy" className="hover:text-foreground hover:underline">Privacy</Link>
+            </p>
           </CardContent>
         </Card>
       </div>
