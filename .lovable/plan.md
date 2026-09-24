@@ -29,7 +29,13 @@ Only content and links. Nothing in the database, sign-in, page guards, billing, 
    - Stripe fraud-prevention cookies
    - Google Fonts (sends the visitor's IP address to Google)
 
-   No analytics tags were found in the app code. Lovable hosting can't be checked from the code. The "no banner needed" sentence only goes in if the audit backs it up, and Google Fonts may rule it out. I'll report what I find either way.
+   Each item in the table is labelled **essential** or **preference**. The sidebar state, messenger notice and premises setting count as preferences, which PECR exempts since 5 February 2026.
+
+   Google Fonts sets no cookies. It's described as sending visitors' IP addresses to Google, and it doesn't count against the "no banner needed" line.
+
+   No analytics tags were found in the app code. Lovable hosting can't be checked from the code.
+
+   The "no banner needed" line stays if every item is essential or a preference. I'll tell you about anything that doesn't fit either.
 5. **Links:**
    - Privacy and Terms links in the landing page footer and in the guides/FAQ footer.
    - One consent line under the sign-up button, with no checkbox and no change to how sign-up works.
@@ -90,14 +96,24 @@ Only content and links. Nothing in the database, sign-in, page guards, billing, 
 
 - **Export button:** the existing "Export My Personal Data" button in Settings calls a new export function. The function checks your sign-in on the server, returns one JSON file straight to your browser and doesn't save it anywhere. It writes one audit entry. In Staff ID sessions the button is hidden and shows "Ask your manager to export your data".
 - **Manager tools in Settings → Users:** "Export data" on each staff member. "Anonymise" appears in the Deactivated view only.
+  - The anonymise function checks on the server that the person being anonymised is not a business owner. It refuses if they are, even when they're deactivated, so a manager can't orphan the business. The button is also hidden for owners, but the server check is what actually protects it.
 - **Anonymise:**
   - A new function does all the database changes in one go.
   - It counts linked records before and after, and undoes everything if any count changes.
   - Only after that succeeds does it run the usual seat billing sync and delete the sign-in account.
   - The confirmation dialog asks you to type DELETE, and asks for your password when you're anonymising yourself.
+  - The dialog lists the screens that look names up live: training records, rota history, timesheets, holidays, availability and messenger member lists. It says those screens will show "Former staff member" from then on, while food safety logs keep the name recorded at the time.
+  - It also suggests exporting the person's data first if the business still needs it with their name, for payroll for example.
   - Business owners are blocked and told to cancel their subscription and contact support.
   - Both actions are blocked during support access and in Staff ID sessions.
 - **Screens checked with an empty email or Staff ID:** rota, timesheets, messenger, reports, inspection pack, Staff ID login and the AI connector's staff list. The helper text under the privacy buttons gets updated to match.
+
+## Follow-up: "Report illness" form picks a staff member
+
+- In the Report illness form, the "Who is unwell?" text box becomes a list of this site's active staff. Choosing someone saves both their user ID and their name.
+- A "Someone not on the list" option keeps today's type-a-name behaviour.
+- Nothing else changes: not the table, the other fields, the Mark cleared button or any existing records.
+- **The AI connector's fitness-to-work action:** it accepts an optional user ID and saves it if the assistant passes one. Otherwise it saves nothing, so it's only filled in sometimes. I'm leaving it unchanged, as you asked.
 
 ## Final "nothing else touched" check
 
