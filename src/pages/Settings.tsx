@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { syncHaccpUserQuantity } from "@/lib/billingSync";
+import { AnonymiseDialog, GdprSelfSection, exportPersonalData } from "@/components/settings/GdprTools";
 import { motion } from "framer-motion";
 import {
   Settings as SettingsIcon,
@@ -112,6 +113,8 @@ type StaffMember = {
   role: "owner" | "manager" | "supervisor" | "staff" | "readonly";
   active: boolean;
   pin?: string;
+  anonymisedAt?: string | null;
+  isOrgOwner?: boolean;
 };
 
 const defaultStaff: StaffMember[] = [];
@@ -200,6 +203,10 @@ const Settings = () => {
   const [staffSiteRows, setStaffSiteRows] = useState<SiteAccessRow[]>([]);
   const [staffView, setStaffView] = useState<"active" | "deactivated">("active");
   const [confirmDeactivate, setConfirmDeactivate] = useState<StaffMember | null>(null);
+  const [anonymiseTarget, setAnonymiseTarget] = useState<StaffMember | null>(null);
+  // GDPR staff tools: org owners and site owners signed in with email only.
+  const canUseGdprStaffTools =
+    !staffSession && (orgRole?.org_role === 'org_owner' || currentMembership?.site_role === 'owner');
   const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
   const [editStaffForm, setEditStaffForm] = useState({ name: "", staffId: "", pin: "", role: "staff" as StaffMember["role"] });
   const [savingStaffEdit, setSavingStaffEdit] = useState(false);
@@ -226,13 +233,14 @@ const Settings = () => {
     setBakeryName(currentSite.name || "");
     setBakeryAddress(currentSite.address || "");
 
-    const [unitsRes, cleaningRes, sectionsRes, usersRes, membershipsRes, staffCodesRes] = await Promise.all([
+    const [unitsRes, cleaningRes, sectionsRes, usersRes, membershipsRes, staffCodesRes, ownersRes] = await Promise.all([
       supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
-      supabase.from('users').select('id, display_name, email, status, auth_type').eq('organisation_id', currentSite.organisation_id),
+      supabase.from('users').select('id, display_name, email, status, auth_type, anonymised_at').eq('organisation_id', currentSite.organisation_id),
       supabase.from('memberships').select('user_id, site_role, active').eq('site_id', currentSite.id),
       supabase.rpc('list_org_user_staff_codes', { _org_id: currentSite.organisation_id }),
+      supabase.from('org_users').select('user_id').eq('organisation_id', currentSite.organisation_id).eq('org_role', 'org_owner'),
     ]);
     const staffCodeMap = new Map<string, string>();
     (staffCodesRes.data as any[] | null)?.forEach((r) => {
@@ -272,6 +280,7 @@ const Settings = () => {
           default: return 'staff';
         }
       };
+      const ownerIds = new Set(((ownersRes.data as any[]) || []).map((o) => o.user_id));
       setStaff(usersRes.data.map((u: any) => ({
         id: u.id,
         name: u.display_name,
@@ -279,6 +288,8 @@ const Settings = () => {
         role: mapSiteRoleToStaffRole(memMap.get(u.id)),
         active: u.status === 'active',
         pin: staffCodeMap.get(u.id) || undefined,
+        anonymisedAt: u.anonymised_at ?? null,
+        isOrgOwner: ownerIds.has(u.id),
       })));
     }
     setLoading(false);
@@ -1067,10 +1078,13 @@ const Settings = () => {
                         {s.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{s.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{s.email || "No email"}</p>
+                        <p className="text-sm font-medium truncate">
+                          {s.anonymisedAt ? `Former staff member · Anonymised ${new Date(s.anonymisedAt).toLocaleDateString("en-GB")}` : s.name}
+                        </p>
+                        {!s.anonymisedAt && <p className="text-xs text-muted-foreground truncate">{s.email || "No email"}</p>}
                       </div>
                     </div>
+                    {s.anonymisedAt ? null : (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Badge className={`text-[10px] border-0 ${roleBadgeColor[s.role]}`}>{roleLabel[s.role]}</Badge>
                       {s.pin && s.active && (
@@ -1082,6 +1096,15 @@ const Settings = () => {
                         <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground">
                           Deactivated
                         </Badge>
+                      )}
+                      {canUseGdprStaffTools && (
+                        <Button
+                          variant="ghost" size="sm" className="h-8 px-2"
+                          title="Export data"
+                          onClick={() => exportPersonalData(s.id, "staff-data")}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
                       )}
                       {s.active ? (
                         <>
@@ -1107,6 +1130,7 @@ const Settings = () => {
                           </Button>
                         </>
                       ) : (
+                        <>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1117,11 +1141,30 @@ const Settings = () => {
                           <RotateCcw className="h-3.5 w-3.5" />
                           <span className="text-xs">Reactivate</span>
                         </Button>
+                        {canUseGdprStaffTools && !s.isOrgOwner && (
+                          <Button
+                            variant="ghost" size="sm"
+                            className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+                            onClick={() => setAnonymiseTarget(s)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span className="text-xs">Anonymise</span>
+                          </Button>
+                        )}
+                        </>
                       )}
                     </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
+          <AnonymiseDialog
+            open={!!anonymiseTarget}
+            onOpenChange={(o) => !o && setAnonymiseTarget(null)}
+            targetUserId={anonymiseTarget?.id}
+            targetName={anonymiseTarget?.name}
+            onDone={() => { setAnonymiseTarget(null); loadAll(); }}
+          />
           </div>
 
           {!canManageStaff && (
@@ -1414,18 +1457,7 @@ const Settings = () => {
 
           <Separator />
 
-          <div className="space-y-3">
-            <h3 className="font-heading font-semibold text-sm">Data & Privacy (GDPR)</h3>
-            <Button variant="outline" size="sm" className="w-full justify-start gap-2">
-              <Download className="h-3 w-3" /> Export My Personal Data
-            </Button>
-            <Button variant="outline" size="sm" className="w-full justify-start gap-2 text-breach hover:text-breach">
-              <Trash2 className="h-3 w-3" /> Delete / Anonymise Account
-            </Button>
-            <p className="text-[10px] text-muted-foreground">
-              Deleting your account anonymises your identity but preserves audit trail records for compliance.
-            </p>
-          </div>
+          <GdprSelfSection isOrgOwner={orgRole?.org_role === 'org_owner'} />
 
           <Separator />
 

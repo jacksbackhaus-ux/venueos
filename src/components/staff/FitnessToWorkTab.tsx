@@ -4,6 +4,10 @@
  */
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useSite } from "@/contexts/SiteContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HeartPulse, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +25,24 @@ export function FitnessToWorkTab({ readOnly }: { readOnly?: boolean }) {
   const { records, isLoading, report, clear } = useFitnessToWork();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [personId, setPersonId] = useState<string>("");
+  const OTHER = "__other__";
+  const { currentSite } = useSite();
+  const { data: siteStaff = [] } = useQuery({
+    queryKey: ["ftw-site-staff", currentSite?.id],
+    enabled: !!currentSite?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("memberships")
+        .select("user_id, users!inner(id, display_name, status)")
+        .eq("site_id", currentSite!.id)
+        .eq("active", true)
+        .eq("users.status", "active");
+      const seen = new Map<string, string>();
+      ((data as any[]) ?? []).forEach((m) => { if (m.users) seen.set(m.users.id, m.users.display_name); });
+      return [...seen.entries()].map(([id, display_name]) => ({ id, display_name })).sort((a, b) => a.display_name.localeCompare(b.display_name));
+    },
+  });
   const [symptoms, setSymptoms] = useState("");
   const [symptomEnd, setSymptomEnd] = useState("");
   const [notes, setNotes] = useState("");
@@ -33,13 +55,14 @@ export function FitnessToWorkTab({ readOnly }: { readOnly?: boolean }) {
     try {
       await report.mutateAsync({
         staff_name: name,
+        user_id: personId && personId !== OTHER ? personId : null,
         symptoms,
         cleared_to_return: suggested,
         notes,
       });
       toast.success("Illness recorded.");
       setOpen(false);
-      setName(""); setSymptoms(""); setSymptomEnd(""); setNotes("");
+      setName(""); setPersonId(""); setSymptoms(""); setSymptomEnd(""); setNotes("");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save the record.");
     }
@@ -123,7 +146,23 @@ export function FitnessToWorkTab({ readOnly }: { readOnly?: boolean }) {
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Who is unwell?</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+              <Select
+                value={personId}
+                onValueChange={(v) => {
+                  setPersonId(v);
+                  if (v === OTHER) setName("");
+                  else setName(siteStaff.find((p) => p.id === v)?.display_name ?? "");
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Choose a staff member" /></SelectTrigger>
+                <SelectContent>
+                  {siteStaff.map((p) => <SelectItem key={p.id} value={p.id}>{p.display_name}</SelectItem>)}
+                  <SelectItem value={OTHER}>Someone not on the list</SelectItem>
+                </SelectContent>
+              </Select>
+              {personId === OTHER && (
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Symptoms</Label>

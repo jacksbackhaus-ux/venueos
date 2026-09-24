@@ -96,6 +96,8 @@ export function GuideFooter() {
           <Link to="/faq" className="hover:text-slate-900">FAQ</Link>
           <a href="/haccp" className="hover:text-slate-900">What is HACCP?</a>
           <a href="/landing#pricing" className="hover:text-slate-900">Pricing</a>
+          <Link to="/privacy" className="hover:text-slate-900">Privacy</Link>
+          <Link to="/terms" className="hover:text-slate-900">Terms</Link>
           <a href="/auth" className="hover:text-slate-900">Log in</a>
         </div>
       </div>

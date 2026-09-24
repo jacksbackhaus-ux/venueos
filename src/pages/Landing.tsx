@@ -458,6 +458,8 @@ function Footer() {
           <a href="/guides" className="hover:text-slate-900">Guides</a>
           <a href="/faq" className="hover:text-slate-900">FAQ</a>
           <a href="#pricing" className="hover:text-slate-900">Pricing</a>
+          <a href="/privacy" className="hover:text-slate-900">Privacy</a>
+          <a href="/terms" className="hover:text-slate-900">Terms</a>
           <a href={AUTH_URL} className="hover:text-slate-900">Log in</a>
           <a href={AUTH_URL} className="hover:text-slate-900">Log in</a>
         </div>

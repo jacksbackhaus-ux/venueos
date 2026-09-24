@@ -62,7 +62,7 @@ export default function HelpOffline() {
             sent to MiseOS. Nothing about other staff, customers or financials is cached locally beyond what’s needed to keep the screens working.
           </p>
           <p>
-            All data is encrypted in transit and at rest on our servers. See our privacy notice for full details.
+            All data is encrypted in transit and at rest on our servers. See our <a href="/privacy" className="underline">privacy notice</a> for full details.
           </p>
         </CardContent>
       </Card>
