@@ -105,7 +105,7 @@ export default function Pricing() {
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${trialEligible ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
             <Sparkles className="h-3.5 w-3.5" />
             {trialEligible
-              ? "14-day free trial — card required, no charge until trial ends"
+              ? "14-day free trial — no charge until your trial ends"
               : "Your free trial has ended. Subscribe to continue."}
           </div>
 
@@ -235,7 +235,7 @@ export default function Pricing() {
                 : (paidActive
                     ? "Cancel anytime."
                     : trialEligible
-                      ? "Card required. No charge for 14 days — cancel anytime during your trial."
+                      ? "No charge for 14 days — cancel anytime during your trial."
                       : "Your free trial has already been used. Subscribe to continue — cancel anytime.")}
             </p>
 
