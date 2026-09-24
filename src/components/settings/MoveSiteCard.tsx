@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,8 @@ import type { BillingCycle } from "@/lib/plans";
 export function MoveSiteCard() {
   const { appUser, orgRole } = useAuth();
   const { organisationId, sites } = useSite();
-  const { subscription } = useOrgAccess();
+  const { subscription, refresh: refreshSubscription } = useOrgAccess();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { transfer, refetch } = useSiteTransfer();
 
   const isOwner = orgRole?.org_role === "org_owner";
@@ -41,6 +43,38 @@ export function MoveSiteCard() {
   const [newPremisesType, setNewPremisesType] = useState<PremisesType>("commercial");
   const [fromSiteId, setFromSiteId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Returning from Stripe after buying a slot for a move: reopen the form and
+  // poll until the new site slot shows up, then clear the URL params.
+  const moveCheckout = searchParams.get("move_checkout") === "success";
+  useEffect(() => {
+    if (!moveCheckout || !organisationId) return;
+    setOpen(true);
+    const startQty = subscription?.site_quantity ?? 1;
+    const startedAt = Date.now();
+    const clear = () => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("move_checkout");
+      next.delete("session_id");
+      setSearchParams(next, { replace: true });
+    };
+    const interval = setInterval(async () => {
+      await refreshSubscription();
+      const { data } = await supabase
+        .from("subscriptions").select("site_quantity").eq("organisation_id", organisationId).maybeSingle();
+      if (data && (data.site_quantity ?? 0) > startQty) {
+        clearInterval(interval);
+        toast.success("Payment successful — you can now start the move.");
+        clear();
+      } else if (Date.now() - startedAt > 20_000) {
+        clearInterval(interval);
+        toast.message("Payment received — it may take a minute to show. Refresh if the button stays disabled.");
+        clear();
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moveCheckout, organisationId]);
 
   if (!isOwner) return null;
 
@@ -233,7 +267,7 @@ export function MoveSiteCard() {
                     currentPlan={currentPlan}
                     cycle={cycle}
                     siteQuantity={siteQuantity}
-                    returnUrl={`${window.location.origin}/settings?tab=site&checkout=success&session_id={CHECKOUT_SESSION_ID}`}
+                    returnUrl={`${window.location.origin}/settings?tab=site&move_checkout=success&session_id={CHECKOUT_SESSION_ID}`}
                     onCancel={() => setShowCheckout(false)}
                   />
                 ) : (
