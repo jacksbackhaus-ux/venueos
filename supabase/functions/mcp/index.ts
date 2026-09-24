@@ -3,13 +3,13 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/tools/list-sites.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/helpers.ts
-import { ToolError } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { ToolError } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/supabase.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.108.2";
@@ -282,7 +282,7 @@ var list_sites_default = defineTool({
 });
 
 // src/lib/mcp/tools/list-temperature-units.ts
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z } from "npm:zod@^3.25.76";
 var list_temperature_units_default = defineTool2({
   name: "list_temperature_units",
@@ -304,7 +304,7 @@ var list_temperature_units_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-temperature-logs.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z2 } from "npm:zod@^3.25.76";
 var list_temperature_logs_default = defineTool3({
   name: "list_temperature_logs",
@@ -334,7 +334,7 @@ var list_temperature_logs_default = defineTool3({
 });
 
 // src/lib/mcp/tools/log-temperature.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z3 } from "npm:zod@^3.25.76";
 var log_temperature_default = defineTool4({
   name: "log_temperature",
@@ -384,7 +384,7 @@ var log_temperature_default = defineTool4({
 });
 
 // src/lib/mcp/tools/log-probe-calibration.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z4 } from "npm:zod@^3.25.76";
 
 // src/lib/sfbb.ts
@@ -501,7 +501,7 @@ var log_probe_calibration_default = defineTool5({
 });
 
 // src/lib/mcp/tools/list-cleaning-tasks.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z5 } from "npm:zod@^3.25.76";
 var list_cleaning_tasks_default = defineTool6({
   name: "list_cleaning_tasks",
@@ -545,7 +545,7 @@ var list_cleaning_tasks_default = defineTool6({
 });
 
 // src/lib/mcp/tools/complete-cleaning-task.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z6 } from "npm:zod@^3.25.76";
 var complete_cleaning_task_default = defineTool7({
   name: "complete_cleaning_task",
@@ -601,7 +601,7 @@ var complete_cleaning_task_default = defineTool7({
 });
 
 // src/lib/mcp/tools/get-day-sheet.ts
-import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z7 } from "npm:zod@^3.25.76";
 var get_day_sheet_default = defineTool8({
   name: "get_day_sheet",
@@ -665,7 +665,7 @@ var get_day_sheet_default = defineTool8({
 });
 
 // src/lib/mcp/tools/complete-day-sheet-items.ts
-import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z8 } from "npm:zod@^3.25.76";
 var complete_day_sheet_items_default = defineTool9({
   name: "complete_day_sheet_items",
@@ -750,7 +750,7 @@ var complete_day_sheet_items_default = defineTool9({
 });
 
 // src/lib/mcp/tools/start-production-day.ts
-import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z9 } from "npm:zod@^3.25.76";
 var start_production_day_default = defineTool10({
   name: "start_production_day",
@@ -801,7 +801,7 @@ var start_production_day_default = defineTool10({
 });
 
 // src/lib/mcp/tools/finish-production-day.ts
-import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z10 } from "npm:zod@^3.25.76";
 var finish_production_day_default = defineTool11({
   name: "finish_production_day",
@@ -847,7 +847,7 @@ var finish_production_day_default = defineTool11({
 });
 
 // src/lib/mcp/tools/list-incidents.ts
-import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z11 } from "npm:zod@^3.25.76";
 var list_incidents_default = defineTool12({
   name: "list_incidents",
@@ -874,7 +874,7 @@ var list_incidents_default = defineTool12({
 });
 
 // src/lib/mcp/tools/create-incident.ts
-import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z12 } from "npm:zod@^3.25.76";
 var create_incident_default = defineTool13({
   name: "create_incident",
@@ -916,7 +916,7 @@ var create_incident_default = defineTool13({
 });
 
 // src/lib/mcp/tools/update-incident.ts
-import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z13 } from "npm:zod@^3.25.76";
 var update_incident_default = defineTool14({
   name: "update_incident",
@@ -956,7 +956,7 @@ var update_incident_default = defineTool14({
 });
 
 // src/lib/mcp/tools/list-batches.ts
-import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z14 } from "npm:zod@^3.25.76";
 var list_batches_default = defineTool15({
   name: "list_batches",
@@ -985,7 +985,7 @@ var list_batches_default = defineTool15({
 });
 
 // src/lib/mcp/tools/create-batch.ts
-import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z15 } from "npm:zod@^3.25.76";
 function buildBatchCode(siteName, dateISO, sequence) {
   const prefix = siteName.substring(0, 4).toUpperCase().replace(/\s/g, "");
@@ -1049,7 +1049,7 @@ var create_batch_default = defineTool16({
 });
 
 // src/lib/mcp/tools/update-batch.ts
-import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z16 } from "npm:zod@^3.25.76";
 var update_batch_default = defineTool17({
   name: "update_batch",
@@ -1111,7 +1111,7 @@ var update_batch_default = defineTool17({
 });
 
 // src/lib/mcp/tools/mark-batch-used.ts
-import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z17 } from "npm:zod@^3.25.76";
 var mark_batch_used_default = defineTool18({
   name: "mark_batch_used",
@@ -1158,7 +1158,7 @@ var mark_batch_used_default = defineTool18({
 });
 
 // src/lib/mcp/tools/dispose-batch.ts
-import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z18 } from "npm:zod@^3.25.76";
 var dispose_batch_default = defineTool19({
   name: "dispose_batch",
@@ -1204,7 +1204,7 @@ var dispose_batch_default = defineTool19({
 });
 
 // src/lib/mcp/tools/extend-batch-use-by.ts
-import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z19 } from "npm:zod@^3.25.76";
 var extend_batch_use_by_default = defineTool20({
   name: "extend_batch_use_by",
@@ -1261,7 +1261,7 @@ var extend_batch_use_by_default = defineTool20({
 });
 
 // src/lib/mcp/tools/list-suppliers.ts
-import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z20 } from "npm:zod@^3.25.76";
 var list_suppliers_default = defineTool21({
   name: "list_suppliers",
@@ -1286,7 +1286,7 @@ var list_suppliers_default = defineTool21({
 });
 
 // src/lib/mcp/tools/upsert-supplier.ts
-import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z21 } from "npm:zod@^3.25.76";
 var upsert_supplier_default = defineTool22({
   name: "upsert_supplier",
@@ -1350,7 +1350,7 @@ var upsert_supplier_default = defineTool22({
 });
 
 // src/lib/mcp/tools/record-delivery.ts
-import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z22 } from "npm:zod@^3.25.76";
 var CHILLED_LIMIT_C = 5;
 var record_delivery_default = defineTool23({
@@ -1416,7 +1416,7 @@ var record_delivery_default = defineTool23({
 });
 
 // src/lib/mcp/tools/complete-periodic-review.ts
-import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z23 } from "npm:zod@^3.25.76";
 var complete_periodic_review_default = defineTool24({
   name: "complete_periodic_review",
@@ -1530,7 +1530,7 @@ var complete_periodic_review_default = defineTool24({
 });
 
 // src/lib/mcp/tools/list-staff.ts
-import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z24 } from "npm:zod@^3.25.76";
 function roleLabel(siteRole) {
   switch (siteRole) {
@@ -1577,7 +1577,7 @@ var list_staff_default = defineTool25({
 });
 
 // src/lib/mcp/tools/add-training-record.ts
-import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z25 } from "npm:zod@^3.25.76";
 var TRAINING_TYPES = [
   "induction",
@@ -1656,7 +1656,7 @@ var add_training_record_default = defineTool26({
 });
 
 // src/lib/mcp/tools/record-fitness-to-work.ts
-import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z26 } from "npm:zod@^3.25.76";
 var record_fitness_to_work_default = defineTool27({
   name: "record_fitness_to_work",
@@ -1734,7 +1734,7 @@ var record_fitness_to_work_default = defineTool27({
 });
 
 // src/lib/mcp/tools/list-outstanding-actions.ts
-import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z27 } from "npm:zod@^3.25.76";
 
 // src/lib/opsTime.ts
@@ -2241,7 +2241,7 @@ var list_outstanding_actions_default = defineTool28({
 });
 
 // src/lib/mcp/tools/get-compliance-summary.ts
-import { defineTool as defineTool29 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool29 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z28 } from "npm:zod@^3.25.76";
 var MAX_DAYS = 400;
 var get_compliance_summary_default = defineTool29({
@@ -2271,7 +2271,7 @@ var get_compliance_summary_default = defineTool29({
 });
 
 // src/lib/mcp/tools/summarise-incidents.ts
-import { defineTool as defineTool30 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool30 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z29 } from "npm:zod@^3.25.76";
 var MAX_DAYS2 = 730;
 var summarise_incidents_default = defineTool30({
@@ -2335,7 +2335,7 @@ var summarise_incidents_default = defineTool30({
 });
 
 // src/lib/mcp/tools/list-recent-records.ts
-import { defineTool as defineTool31 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool31 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z30 } from "npm:zod@^3.25.76";
 var RECORD_TYPES = [
   "temperatures",
@@ -2424,7 +2424,7 @@ var list_recent_records_default = defineTool31({
 });
 
 // src/lib/mcp/tools/generate-inspection-pack.ts
-import { defineTool as defineTool32 } from "npm:@lovable.dev/mcp-js@0.26.3";
+import { defineTool as defineTool32 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z31 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/inspection.ts
@@ -2713,5 +2713,5 @@ var mcp_default = defineMcp({
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.3/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.2/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));
