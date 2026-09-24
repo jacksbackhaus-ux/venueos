@@ -30,7 +30,7 @@ import type { BillingCycle } from "@/lib/plans";
 export function MoveSiteCard() {
   const { appUser, orgRole } = useAuth();
   const { organisationId, sites } = useSite();
-  const { subscription, refreshSubscription } = useOrgAccess();
+  const { subscription, refresh: refreshSubscription } = useOrgAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const { transfer, refetch } = useSiteTransfer();
 
