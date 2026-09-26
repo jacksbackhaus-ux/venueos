@@ -97,7 +97,7 @@ export function LotLookupTab() {
       {lotsQ.isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : (lotsQ.data ?? []).length === 0 ? (
-        <EmptyState icon={PackageSearch} title="No lot details yet" description="When logging a delivery, use “Add lot details” to record lot codes. They'll show here." />
+        <EmptyState icon={<PackageSearch className="h-6 w-6" />} title="No lot details yet" description="When logging a delivery, use “Add lot details” to record lot codes. They'll show here." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
