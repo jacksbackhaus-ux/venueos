@@ -95,7 +95,7 @@ export default function SoloRecordsGuide() {
             <div className="mt-4 space-y-4 text-slate-700 leading-relaxed">
               <p>
                 Every UK food business needs food safety procedures based on HACCP principles, written
-                down and kept up to date [VERIFY: exact regulation reference and wording]. What that
+                down and kept up to date (Article 5 of retained Regulation (EC) No 852/2004). What that
                 looks like is deliberately flexible: a solo baker making sponges to order is not
                 expected to produce the same folder as a 40-cover restaurant with three chillers and
                 eight staff.
@@ -126,7 +126,7 @@ export default function SoloRecordsGuide() {
               </p>
               <p>
                 Alongside the safe methods sits a diary: a short daily record plus periodic reviews
-                [VERIFY: current SFBB diary and review intervals]. For most home bakers, stalls and
+               . For most home bakers, stalls and
                 small cafés, a completed SFBB pack plus that diary is what an inspector expects to
                 see, and it satisfies the requirement for a HACCP-based system.
               </p>
@@ -187,8 +187,7 @@ export default function SoloRecordsGuide() {
               evidence that you're managing your kitchen properly.
             </p>
             <p className="mt-4 text-slate-700 leading-relaxed">
-              Keep your records long enough to cover a full inspection cycle [VERIFY: retention period
-              expected by local authorities], and store them somewhere you can find a specific day
+              Keep your records long enough to cover a full inspection cycle, and store them somewhere you can find a specific day
               quickly. That's usually the moment paper starts to hurt.
             </p>
           </section>
