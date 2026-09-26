@@ -79,6 +79,14 @@ export function MoveSiteCard() {
       return;
     }
 
+    // Give the owner their owner role on the new site (ignore if it already exists).
+    if (created?.id) {
+      const { error: memErr } = await supabase.from("memberships").insert({
+        site_id: created.id, user_id: appUser.id, site_role: "owner", active: true,
+      } as any);
+      if (memErr && memErr.code !== "23505") console.error("Owner membership failed", memErr);
+    }
+
     const { error: transferError } = await supabase.from("site_transfers" as any).insert({
       organisation_id: organisationId,
       from_site_id: leavingId,

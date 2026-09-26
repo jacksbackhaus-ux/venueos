@@ -37,7 +37,7 @@ import { PremisesPrompts } from "@/components/dashboard/PremisesPrompts";
  */
 const Dashboard = () => {
   const { currentSite, currentMembership, premisesType, isOnDemand, labels, isArchived } = useSite();
-  const { staffSession, appUser } = useAuth();
+  const { staffSession, appUser, orgRole } = useAuth();
   const queryClient = useQueryClient();
   const siteId = currentSite?.id;
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -48,7 +48,9 @@ const Dashboard = () => {
     ? "Today"
     : viewedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
-  const role = currentMembership?.site_role || staffSession?.site_role;
+  // Business owner counts as owner on every site (matches the rest of the app).
+  const role = currentMembership?.site_role || staffSession?.site_role
+    || (!staffSession && orgRole?.org_role === "org_owner" ? "owner" : undefined);
   const canCloseDay = role === "owner" || role === "supervisor";
   const currentUserId = appUser?.id ?? staffSession?.user_id ?? null;
   const displayName = appUser?.display_name ?? (staffSession as any)?.display_name ?? undefined;
