@@ -67,14 +67,14 @@ export async function buildInspectionPack(
         .gte("reported_at", `${fromISO}T00:00:00`)
         .lte("reported_at", `${toISO}T23:59:59`),
       client.from("recipes").select("id, approved, label_type").eq("site_id", site.id).eq("active", true),
-      client.from("recalls").select("id").eq("site_id", site.id),
+      client.from("recalls").select("id").is("deleted_at", null).eq("site_id", site.id),
       client.from("safe_methods").select("method_key, status").eq("site_id", site.id),
       client
         .from("sfbb_system")
         .select("route, first_completed_at, last_reviewed_at")
         .eq("site_id", site.id)
         .maybeSingle(),
-      client.from("sfbb_documents").select("id").eq("site_id", site.id),
+      client.from("sfbb_documents").select("id").is("deleted_at", null).eq("site_id", site.id),
       client.from("haccp_plans").select("id, status").eq("site_id", site.id),
       loadRecordAuthors(client, site, fromISO, toISO),
     ]);

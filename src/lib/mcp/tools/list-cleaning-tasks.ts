@@ -23,7 +23,7 @@ export default defineTool({
 
       let taskQuery = client
         .from("cleaning_tasks")
-        .select("id, task, area, frequency, due_time, assigned_to_name")
+        .select("id, task, area, frequency, due_time, assigned_to_name").is("deleted_at", null)
         .eq("site_id", input.site_id)
         .eq("active", true)
         .order("sort_order");

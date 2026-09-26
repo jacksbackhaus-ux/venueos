@@ -296,7 +296,7 @@ var list_temperature_units_default = defineTool2({
     site: (i) => i.site_id,
     run: async ({ client, input }) => {
       const units = ok(
-        await client.from("temp_units").select("id, name, type, min_temp, max_temp, active").eq("site_id", input.site_id).eq("active", true).order("sort_order")
+        await client.from("temp_units").select("id, name, type, min_temp, max_temp, active").is("deleted_at", null).eq("site_id", input.site_id).eq("active", true).order("sort_order")
       );
       return { units: units ?? [] };
     }
@@ -357,7 +357,7 @@ var log_temperature_default = defineTool4({
       let pass = true;
       if (input.unit_id) {
         const unit = ok(
-          await client.from("temp_units").select("min_temp, max_temp").eq("id", input.unit_id).eq("site_id", input.site_id).maybeSingle()
+          await client.from("temp_units").select("min_temp, max_temp").is("deleted_at", null).eq("id", input.unit_id).eq("site_id", input.site_id).maybeSingle()
         );
         if (!unit) throw new Error("Unit not found for this site.");
         const min = unit.min_temp;
@@ -520,7 +520,7 @@ var list_cleaning_tasks_default = defineTool6({
     run: async ({ client, input }) => {
       const site = await siteMeta(client, input.site_id);
       const date = input.date ? isoDate(input.date) : siteToday(site.timezone);
-      let taskQuery = client.from("cleaning_tasks").select("id, task, area, frequency, due_time, assigned_to_name").eq("site_id", input.site_id).eq("active", true).order("sort_order");
+      let taskQuery = client.from("cleaning_tasks").select("id, task, area, frequency, due_time, assigned_to_name").is("deleted_at", null).eq("site_id", input.site_id).eq("active", true).order("sort_order");
       if (input.frequency) taskQuery = taskQuery.eq("frequency", input.frequency.toLowerCase());
       const [tasks, logs] = await Promise.all([
         taskQuery,
@@ -568,7 +568,7 @@ var complete_cleaning_task_default = defineTool7({
       const date = input.date ? isoDate(input.date) : today;
       if (date > today) throw new Error("Cleaning cannot be recorded for a future date.");
       const task = ok(
-        await client.from("cleaning_tasks").select("id, task, area, frequency").eq("id", input.task_id).eq("site_id", input.site_id).maybeSingle()
+        await client.from("cleaning_tasks").select("id, task, area, frequency").is("deleted_at", null).eq("id", input.task_id).eq("site_id", input.site_id).maybeSingle()
       );
       if (!task) throw new Error("Cleaning task not found for this site.");
       const isRetrospective = date < today;
@@ -1687,7 +1687,7 @@ var record_fitness_to_work_default = defineTool27({
           throw new Error("Pass cleared_to_return to clear an existing fitness-to-work record.");
         }
         const existing = ok(
-          await client.from("fitness_to_work").select("id, staff_name, excluded_from").eq("id", input.record_id).eq("site_id", input.site_id).maybeSingle()
+          await client.from("fitness_to_work").select("id, staff_name, excluded_from").is("deleted_at", null).eq("id", input.record_id).eq("site_id", input.site_id).maybeSingle()
         );
         if (!existing) throw new Error("Fitness-to-work record not found for this site.");
         if (existing.excluded_from && cleared < existing.excluded_from) {
@@ -1847,17 +1847,17 @@ async function outstandingActions(client, site, dateISO) {
     closedWindow
   ] = await Promise.all([
     client.from("temp_logs").select("id, value, unit_id, food_item, logged_at").eq("site_id", site.id).eq("pass", false).is("corrective_action", null).gte("logged_at", `${backWindow}T00:00:00`).lte("logged_at", `${dateISO}T23:59:59`).order("logged_at", { ascending: false }).limit(25),
-    client.from("temp_units").select("id, name").eq("site_id", site.id).eq("active", true),
+    client.from("temp_units").select("id, name").is("deleted_at", null).eq("site_id", site.id).eq("active", true),
     client.from("temp_logs").select("unit_id, log_type").eq("site_id", site.id).gte("logged_at", `${dateISO}T00:00:00`).lte("logged_at", `${dateISO}T23:59:59`),
-    client.from("cleaning_tasks").select("id, task, area, due_time").eq("site_id", site.id).eq("active", true).eq("frequency", "daily"),
+    client.from("cleaning_tasks").select("id, task, area, due_time").is("deleted_at", null).eq("site_id", site.id).eq("active", true).eq("frequency", "daily"),
     prevWorkingDay ? client.from("cleaning_logs").select("task_id, done").eq("site_id", site.id).eq("log_date", prevWorkingDay) : Promise.resolve({ data: [], error: null }),
     client.from("cleaning_logs").select("task_id, done").eq("site_id", site.id).eq("log_date", dateISO),
     client.from("day_sheet_sections").select("id, title, default_time, day_sheet_items(id, label, active)").eq("site_id", site.id).eq("active", true),
     client.from("day_sheets").select("id, day_sheet_entries(item_id, done)").eq("site_id", site.id).eq("sheet_date", dateISO).maybeSingle(),
     client.from("incidents").select("id, title, type, reported_at").eq("site_id", site.id).eq("status", "open").order("reported_at", { ascending: false }).limit(25),
     client.from("batches").select("id, product_name, use_by_date").eq("site_id", site.id).neq("status", "disposed").neq("status", "used").not("use_by_date", "is", null).lt("use_by_date", dateISO).limit(25),
-    client.from("training_records").select("id, training_name, expiry_date, completed_date, user_id").eq("site_id", site.id).not("expiry_date", "is", null),
-    client.from("probe_calibrations").select("calibrated_at").eq("site_id", site.id).order("calibrated_at", { ascending: false }).limit(1),
+    client.from("training_records").select("id, training_name, expiry_date, completed_date, user_id").is("deleted_at", null).eq("site_id", site.id).not("expiry_date", "is", null),
+    client.from("probe_calibrations").select("calibrated_at").is("deleted_at", null).eq("site_id", site.id).order("calibrated_at", { ascending: false }).limit(1),
     client.from("reviews").select("id, status, period_start, period_end").eq("site_id", site.id).order("period_end", { ascending: false }).limit(10),
     site.operating_mode === "on_demand" ? client.from("production_days").select("production_date").eq("site_id", site.id) : Promise.resolve({ data: [], error: null }),
     client.from("closed_days").select("closed_date").eq("site_id", site.id).gte("closed_date", backWindow).lte("closed_date", dateISO)
@@ -2095,7 +2095,7 @@ async function complianceSummary(client, site, requestedFrom, toISO) {
     fitness
   ] = await Promise.all([
     client.from("temp_logs").select("id, unit_id, pass, corrective_action, logged_at").eq("site_id", site.id).gte("logged_at", `${fromISO}T00:00:00`).lte("logged_at", `${toISO}T23:59:59`),
-    client.from("cleaning_tasks").select("id, frequency").eq("site_id", site.id).eq("active", true),
+    client.from("cleaning_tasks").select("id, frequency").is("deleted_at", null).eq("site_id", site.id).eq("active", true),
     client.from("cleaning_logs").select("task_id, log_date, done").eq("site_id", site.id).gte("log_date", fromISO).lte("log_date", toISO),
     client.from("day_sheets").select("id, sheet_date, signed_off, locked").eq("site_id", site.id).gte("sheet_date", fromISO).lte("sheet_date", toISO),
     client.from("incidents").select("id, status").eq("site_id", site.id).gte("reported_at", `${fromISO}T00:00:00`).lte("reported_at", `${toISO}T23:59:59`),
@@ -2103,11 +2103,11 @@ async function complianceSummary(client, site, requestedFrom, toISO) {
     client.from("batches").select("id").eq("site_id", site.id).neq("status", "disposed").neq("status", "used").not("use_by_date", "is", null).lt("use_by_date", todayISO),
     client.from("delivery_logs").select("id, accepted").eq("site_id", site.id).gte("logged_at", `${fromISO}T00:00:00`).lte("logged_at", `${toISO}T23:59:59`),
     client.from("suppliers").select("id, approved").eq("site_id", site.id).eq("active", true),
-    client.from("training_records").select("id, user_id, training_name, expiry_date, completed_date").eq("site_id", site.id),
-    client.from("probe_calibrations").select("id, pass, calibrated_at").eq("site_id", site.id).order("calibrated_at", { ascending: false }).limit(50),
+    client.from("training_records").select("id, user_id, training_name, expiry_date, completed_date").is("deleted_at", null).eq("site_id", site.id),
+    client.from("probe_calibrations").select("id, pass, calibrated_at").is("deleted_at", null).eq("site_id", site.id).order("calibrated_at", { ascending: false }).limit(50),
     client.from("reviews").select("id, status, period_start, period_end, completed_at").eq("site_id", site.id).order("period_end", { ascending: false }).limit(30),
     site.operating_mode === "on_demand" ? client.from("production_days").select("production_date").eq("site_id", site.id) : Promise.resolve({ data: [], error: null }),
-    client.from("fitness_to_work").select("id, status, reported_date").eq("site_id", site.id)
+    client.from("fitness_to_work").select("id, status, reported_date").is("deleted_at", null).eq("site_id", site.id)
   ]);
   const temps = (ok(tempLogs) ?? []).filter(
     (t) => counted.has(String(t.logged_at ?? "").slice(0, 10))
@@ -2397,16 +2397,16 @@ var list_recent_records_default = defineTool31({
           await client.from("incidents").select("id, title, type, status, description, immediate_action, root_cause, prevention, reported_at, reported_by_name").eq("site_id", siteId).gte("reported_at", fromTs).lte("reported_at", toTs).order("reported_at", { ascending: false }).limit(PER_TYPE_LIMIT)
         ),
         probe_calibrations: async () => ok(
-          await client.from("probe_calibrations").select("id, probe_name, iced_water_reading, boiling_water_reading, pass, notes, calibrated_at, calibrated_by_name").eq("site_id", siteId).gte("calibrated_at", fromTs).lte("calibrated_at", toTs).order("calibrated_at", { ascending: false }).limit(PER_TYPE_LIMIT)
+          await client.from("probe_calibrations").select("id, probe_name, iced_water_reading, boiling_water_reading, pass, notes, calibrated_at, calibrated_by_name").is("deleted_at", null).eq("site_id", siteId).gte("calibrated_at", fromTs).lte("calibrated_at", toTs).order("calibrated_at", { ascending: false }).limit(PER_TYPE_LIMIT)
         ),
         production_days: async () => ok(
           await client.from("production_days").select("id, production_date, started_at, completed_at, notes, is_retrospective").eq("site_id", siteId).gte("production_date", from).lte("production_date", to).order("production_date", { ascending: false }).limit(PER_TYPE_LIMIT)
         ),
         training: async () => ok(
-          await client.from("training_records").select("id, user_id, training_name, training_type, completed_date, expiry_date, notes").eq("site_id", siteId).gte("completed_date", from).lte("completed_date", to).order("completed_date", { ascending: false }).limit(PER_TYPE_LIMIT)
+          await client.from("training_records").select("id, user_id, training_name, training_type, completed_date, expiry_date, notes").is("deleted_at", null).eq("site_id", siteId).gte("completed_date", from).lte("completed_date", to).order("completed_date", { ascending: false }).limit(PER_TYPE_LIMIT)
         ),
         fitness_to_work: async () => ok(
-          await client.from("fitness_to_work").select("id, staff_name, reported_date, symptoms, excluded_from, cleared_to_return, status, notes, recorded_by_name").eq("site_id", siteId).gte("reported_date", from).lte("reported_date", to).order("reported_date", { ascending: false }).limit(PER_TYPE_LIMIT)
+          await client.from("fitness_to_work").select("id, staff_name, reported_date, symptoms, excluded_from, cleared_to_return, status, notes, recorded_by_name").is("deleted_at", null).eq("site_id", siteId).gte("reported_date", from).lte("reported_date", to).order("reported_date", { ascending: false }).limit(PER_TYPE_LIMIT)
         )
       };
       const results = await Promise.all(types.map((t) => queries[t]()));
@@ -2441,10 +2441,10 @@ async function buildInspectionPack(client, site, requestedFrom, toISO) {
     client.from("pest_logs").select("id, resolved").eq("site_id", site.id).gte("reported_at", `${fromISO}T00:00:00`).lte("reported_at", `${toISO}T23:59:59`),
     client.from("maintenance_logs").select("id, status").eq("site_id", site.id).gte("reported_at", `${fromISO}T00:00:00`).lte("reported_at", `${toISO}T23:59:59`),
     client.from("recipes").select("id, approved, label_type").eq("site_id", site.id).eq("active", true),
-    client.from("recalls").select("id").eq("site_id", site.id),
+    client.from("recalls").select("id").is("deleted_at", null).eq("site_id", site.id),
     client.from("safe_methods").select("method_key, status").eq("site_id", site.id),
     client.from("sfbb_system").select("route, first_completed_at, last_reviewed_at").eq("site_id", site.id).maybeSingle(),
-    client.from("sfbb_documents").select("id").eq("site_id", site.id),
+    client.from("sfbb_documents").select("id").is("deleted_at", null).eq("site_id", site.id),
     client.from("haccp_plans").select("id, status").eq("site_id", site.id),
     loadRecordAuthors(client, site, fromISO, toISO)
   ]);

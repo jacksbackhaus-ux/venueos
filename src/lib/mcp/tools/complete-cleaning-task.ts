@@ -27,7 +27,7 @@ export default defineTool({
       const task = ok(
         await client
           .from("cleaning_tasks")
-          .select("id, task, area, frequency")
+          .select("id, task, area, frequency").is("deleted_at", null)
           .eq("id", input.task_id)
           .eq("site_id", input.site_id)
           .maybeSingle(),
