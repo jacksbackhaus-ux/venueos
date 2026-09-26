@@ -120,9 +120,11 @@ type RotaTaskRow = { id: string; rota_assignment_id: string; task_type: TaskKind
 // ---------- Page ----------
 const Shifts = () => {
   const { currentSite, currentMembership, organisationId } = useSite();
-  const { staffSession } = useAuth();
+  const { staffSession, orgRole } = useAuth();
   const siteId = currentSite?.id || staffSession?.site_id;
-  const role = currentMembership?.site_role || staffSession?.site_role || "staff";
+  // Business owner counts as owner on every site (matches the rest of the app).
+  const role = currentMembership?.site_role || staffSession?.site_role
+    || (!staffSession && orgRole?.org_role === "org_owner" ? "owner" : "staff");
   const canEdit = role === "owner" || role === "supervisor";
 
   const qc = useQueryClient();

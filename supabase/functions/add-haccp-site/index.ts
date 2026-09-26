@@ -237,6 +237,16 @@ Deno.serve(async (req) => {
     operating_mode: PREMISES[premisesType],
   }).select("id").maybeSingle();
 
+  // Give the owner their owner role on the new site.
+  const newSiteId = (created as { id?: string } | null)?.id;
+  if (newSiteId) {
+    const { error: memErr } = await admin.from("memberships").upsert(
+      { site_id: newSiteId, user_id: appUserId, site_role: "owner", active: true },
+      { onConflict: "site_id,user_id", ignoreDuplicates: true },
+    );
+    if (memErr) console.error("add-haccp-site: owner membership failed", memErr);
+  }
+
   await admin.from("billing_events").insert({
     organisation_id: orgId, event_type: "add_site_completed",
     payload: {

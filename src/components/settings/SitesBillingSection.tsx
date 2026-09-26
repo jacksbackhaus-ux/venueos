@@ -149,7 +149,7 @@ export function SitesBillingSection() {
       return;
     }
     setCreating(true);
-    const { error } = await supabase
+    const { data: createdSite, error } = await supabase
       .from("sites")
       .insert({
         organisation_id: orgId,
@@ -166,6 +166,13 @@ export function SitesBillingSection() {
       console.error("Create site failed", error);
       toast.error(error.message || "Could not create site.");
       return;
+    }
+    // Give the owner their owner role on the new site (ignore if it already exists).
+    if ((createdSite as { id?: string } | null)?.id) {
+      const { error: memErr } = await supabase.from("memberships").insert({
+        site_id: (createdSite as { id: string }).id, user_id: appUser.id, site_role: "owner", active: true,
+      } as any);
+      if (memErr && memErr.code !== "23505") console.error("Owner membership failed", memErr);
     }
     toast.success("New site created.");
 
