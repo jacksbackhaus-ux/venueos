@@ -16,8 +16,9 @@ import { showCommercialModules } from "@/lib/launchFlags";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecallsTab } from "@/components/batches/RecallsTab";
+import { LotLookupTab, BatchLotsUsed } from "@/components/batches/LotLookupTab";
 
-type BatchView = 'batches' | 'events' | 'recalls';
+type BatchView = 'batches' | 'events' | 'recalls' | 'lots';
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
 import { useOrgAccess } from "@/hooks/useOrgAccess";
@@ -349,9 +350,20 @@ export default function Batches() {
         <TabsTrigger value="batches">Batches</TabsTrigger>
         {showEvents && <TabsTrigger value="events">Markets &amp; events</TabsTrigger>}
         <TabsTrigger value="recalls">Withdrawals</TabsTrigger>
+        <TabsTrigger value="lots">Lot lookup</TabsTrigger>
       </TabsList>
     </Tabs>
   );
+
+  if (view === 'lots') {
+    return (
+      <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto pb-16">
+        {moduleHeader}
+        {viewSwitcher}
+        <LotLookupTab />
+      </div>
+    );
+  }
 
   if (view === 'recalls') {
     return (
@@ -1266,6 +1278,8 @@ function BatchDetail({
         </div>
 
         {/* Action timeline */}
+        <BatchLotsUsed batchId={batch.id} />
+
         {actions.length > 0 && (
           <div className="space-y-1.5 pt-3 border-t">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Timeline</h4>
