@@ -15,7 +15,7 @@ import {
 import { Building2, Plus, ExternalLink, Loader2, CheckCircle2, AlertTriangle, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { formatGBP, TIERS, type TierId, type BillingCycle } from "@/lib/plans";
-import { AddSiteCheckoutPanel } from "@/components/settings/AddSiteCheckoutPanel";
+import { AddSiteConfirmPanel } from "@/components/settings/AddSiteConfirmPanel";
 import { openCustomerPortal } from "@/lib/stripe";
 import {
   HACCP_LAUNCH, type SubLike, resolveCurrentPlan, additionalSitePriceFor, hasActivePlanFor, cycleFromInterval,
@@ -318,13 +318,16 @@ export function SitesBillingSection() {
                   </p>
                 </div>
 
-                {showCheckout && (HACCP_LAUNCH || currentPlan) ? (
-                  <AddSiteCheckoutPanel
-                    currentPlan={currentPlan}
-                    cycle={cycle}
-                    siteQuantity={siteQuantity}
-                    returnUrl={`${window.location.origin}/settings?tab=sites&checkout=success&session_id={CHECKOUT_SESSION_ID}`}
+                {showCheckout ? (
+                  <AddSiteConfirmPanel
                     onCancel={() => setShowCheckout(false)}
+                    onDone={async () => {
+                      setShowCheckout(false);
+                      toast.success("Payment taken and new site added.");
+                      await refreshSubscription();
+                      // Site switcher is loaded once per session.
+                      setTimeout(() => window.location.reload(), 800);
+                    }}
                   />
                 ) : (
                   <Button onClick={handleAddSite} className="w-full sm:w-auto">

@@ -52,8 +52,13 @@ export function SiteTransferBanner() {
           className="h-6 shrink-0 px-2 text-xs"
           disabled={cancel.isPending}
           onClick={() =>
+            confirm(`Cancel the move? ${toSite?.name ?? "The new site"} will be closed (its records are kept) and you'll stay at ${fromSite?.name ?? "your current site"}.`) &&
             cancel.mutate(undefined, {
-              onSuccess: () => toast.success("Move cancelled — both sites stay open."),
+              onSuccess: () => {
+                toast.success(`Move cancelled — ${toSite?.name ?? "the new site"} has been closed. Its records are kept.`);
+                // Site switcher is loaded once per session.
+                setTimeout(() => window.location.reload(), 800);
+              },
               onError: (e: any) => toast.error(e.message ?? "Could not cancel the move"),
             })
           }
