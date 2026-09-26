@@ -642,6 +642,21 @@ function CreateBatchDialog({
   const [notes, setNotes] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Optional: delivered ingredient lots used in this batch (traceability).
+  const [lotOptions, setLotOptions] = useState<{ id: string; item_name: string; lot_code: string | null; use_by_date: string | null; ingredient_id: string | null }[]>([]);
+  const [pickedLots, setPickedLots] = useState<string[]>([]);
+  useEffect(() => {
+    if (!open || !siteId) return;
+    const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
+    (supabase.from as any)('delivery_items')
+      .select('id, item_name, lot_code, use_by_date, ingredient_id')
+      .eq('site_id', siteId)
+      .is('deleted_at', null)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(100)
+      .then(({ data }: any) => setLotOptions(data ?? []));
+  }, [open, siteId]);
 
   useEffect(() => {
     if (!open) return;
@@ -708,7 +723,7 @@ function CreateBatchDialog({
     const batchCode = `${prefix}-${date}-${seq}`;
 
     const recipeNumberVal = recipeNumber ? Math.max(0, Math.floor(Number(recipeNumber))) : null;
-    const { error } = await supabase.from('batches').insert({
+    const { data: savedBatch, error } = await supabase.from('batches').insert({
       site_id: siteId,
       organisation_id: organisationId,
       batch_code: batchCode,
@@ -723,7 +738,19 @@ function CreateBatchDialog({
       date_produced: dateProduced || null,
       use_by_date: useBy || null,
       created_by_user_id: appUserId,
-    } as any);
+    } as any).select('id').single();
+    if (!error && savedBatch && pickedLots.length > 0) {
+      const rows = pickedLots.map(id => {
+        const l = lotOptions.find(o => o.id === id);
+        return {
+          batch_id: (savedBatch as any).id, site_id: siteId, organisation_id: organisationId,
+          delivery_item_id: id, ingredient_id: l?.ingredient_id ?? null, lot_code: l?.lot_code ?? null,
+          created_by_user_id: appUserId,
+        };
+      });
+      const { error: lotErr } = await (supabase.from as any)('batch_ingredient_lots').insert(rows);
+      if (lotErr) toast.warning('Batch logged, but the ingredient lots could not be linked.');
+    }
     if (!error) {
       // Bump last_used_at
       await (supabase.from as any)('batch_products').update({ last_used_at: new Date().toISOString() }).eq('id', pickedProduct.id);
@@ -735,7 +762,7 @@ function CreateBatchDialog({
     if (andAnother) {
       setStep('pick');
       setPickedProduct(null);
-      setQty(''); setNotes(''); setTrayCount(''); setRecipeNumber('');
+      setQty(''); setNotes(''); setTrayCount(''); setRecipeNumber(''); setPickedLots([]);
     } else {
       onOpenChange(false);
     }
@@ -920,7 +947,7 @@ function CreateBatchDialog({
             </div>
 
             <button onClick={() => setMoreOpen(v => !v)} className="text-xs text-primary hover:underline">
-              {moreOpen ? '− Fewer options' : '+ More (tray count, notes, recipe #)'}
+              {moreOpen ? '− Fewer options' : '+ More (tray count, notes, recipe #, ingredient lots)'}
             </button>
 
             {moreOpen && (
@@ -942,6 +969,20 @@ function CreateBatchDialog({
                   <Textarea placeholder="Optional notes…" value={notes}
                     onChange={e => setNotes(e.target.value)} rows={2} />
                 </div>
+                {lotOptions.length > 0 && (
+                  <div>
+                    <Label className="text-xs">Ingredient lots used (optional)</Label>
+                    <div className="max-h-36 overflow-y-auto rounded-md border p-2 space-y-1">
+                      {lotOptions.map(l => (
+                        <label key={l.id} className="flex items-center gap-2 text-xs">
+                          <input type="checkbox" checked={pickedLots.includes(l.id)}
+                            onChange={e => setPickedLots(e.target.checked ? [...pickedLots, l.id] : pickedLots.filter(x => x !== l.id))} />
+                          <span>{l.item_name}{l.lot_code ? ` · lot ${l.lot_code}` : ''}{l.use_by_date ? ` · use by ${l.use_by_date}` : ''}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

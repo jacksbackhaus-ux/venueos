@@ -57,7 +57,7 @@ export default defineTool({
         const existing = ok(
           await client
             .from("fitness_to_work")
-            .select("id, staff_name, excluded_from")
+            .select("id, staff_name, excluded_from").is("deleted_at", null)
             .eq("id", input.record_id)
             .eq("site_id", input.site_id)
             .maybeSingle(),

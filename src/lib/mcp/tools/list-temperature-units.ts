@@ -17,7 +17,7 @@ export default defineTool({
       const units = ok(
         await client
           .from("temp_units")
-          .select("id, name, type, min_temp, max_temp, active")
+          .select("id, name, type, min_temp, max_temp, active").is("deleted_at", null)
           .eq("site_id", input.site_id)
           .eq("active", true)
           .order("sort_order"),

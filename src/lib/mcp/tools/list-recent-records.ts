@@ -133,7 +133,7 @@ export default defineTool({
           ok(
             await client
               .from("probe_calibrations")
-              .select("id, probe_name, iced_water_reading, boiling_water_reading, pass, notes, calibrated_at, calibrated_by_name")
+              .select("id, probe_name, iced_water_reading, boiling_water_reading, pass, notes, calibrated_at, calibrated_by_name").is("deleted_at", null)
               .eq("site_id", siteId)
               .gte("calibrated_at", fromTs)
               .lte("calibrated_at", toTs)
@@ -155,7 +155,7 @@ export default defineTool({
           ok(
             await client
               .from("training_records")
-              .select("id, user_id, training_name, training_type, completed_date, expiry_date, notes")
+              .select("id, user_id, training_name, training_type, completed_date, expiry_date, notes").is("deleted_at", null)
               .eq("site_id", siteId)
               .gte("completed_date", from)
               .lte("completed_date", to)
@@ -166,7 +166,7 @@ export default defineTool({
           ok(
             await client
               .from("fitness_to_work")
-              .select("id, staff_name, reported_date, symptoms, excluded_from, cleared_to_return, status, notes, recorded_by_name")
+              .select("id, staff_name, reported_date, symptoms, excluded_from, cleared_to_return, status, notes, recorded_by_name").is("deleted_at", null)
               .eq("site_id", siteId)
               .gte("reported_date", from)
               .lte("reported_date", to)

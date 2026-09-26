@@ -236,7 +236,7 @@ export async function outstandingActions(
       .lte("logged_at", `${dateISO}T23:59:59`)
       .order("logged_at", { ascending: false })
       .limit(25),
-    client.from("temp_units").select("id, name").eq("site_id", site.id).eq("active", true),
+    client.from("temp_units").select("id, name").is("deleted_at", null).eq("site_id", site.id).eq("active", true),
     client
       .from("temp_logs")
       .select("unit_id, log_type")
@@ -245,7 +245,7 @@ export async function outstandingActions(
       .lte("logged_at", `${dateISO}T23:59:59`),
     client
       .from("cleaning_tasks")
-      .select("id, task, area, due_time")
+      .select("id, task, area, due_time").is("deleted_at", null)
       .eq("site_id", site.id)
       .eq("active", true)
       .eq("frequency", "daily"),
@@ -286,12 +286,12 @@ export async function outstandingActions(
       .limit(25),
     client
       .from("training_records")
-      .select("id, training_name, expiry_date, completed_date, user_id")
+      .select("id, training_name, expiry_date, completed_date, user_id").is("deleted_at", null)
       .eq("site_id", site.id)
       .not("expiry_date", "is", null),
     client
       .from("probe_calibrations")
-      .select("calibrated_at")
+      .select("calibrated_at").is("deleted_at", null)
       .eq("site_id", site.id)
       .order("calibrated_at", { ascending: false })
       .limit(1),
@@ -669,7 +669,7 @@ export async function complianceSummary(
       .eq("site_id", site.id)
       .gte("logged_at", `${fromISO}T00:00:00`)
       .lte("logged_at", `${toISO}T23:59:59`),
-    client.from("cleaning_tasks").select("id, frequency").eq("site_id", site.id).eq("active", true),
+    client.from("cleaning_tasks").select("id, frequency").is("deleted_at", null).eq("site_id", site.id).eq("active", true),
     client
       .from("cleaning_logs")
       .select("task_id, log_date, done")
@@ -711,11 +711,11 @@ export async function complianceSummary(
     client.from("suppliers").select("id, approved").eq("site_id", site.id).eq("active", true),
     client
       .from("training_records")
-      .select("id, user_id, training_name, expiry_date, completed_date")
+      .select("id, user_id, training_name, expiry_date, completed_date").is("deleted_at", null)
       .eq("site_id", site.id),
     client
       .from("probe_calibrations")
-      .select("id, pass, calibrated_at")
+      .select("id, pass, calibrated_at").is("deleted_at", null)
       .eq("site_id", site.id)
       .order("calibrated_at", { ascending: false })
       .limit(50),
@@ -728,7 +728,7 @@ export async function complianceSummary(
     site.operating_mode === "on_demand"
       ? client.from("production_days").select("production_date").eq("site_id", site.id)
       : Promise.resolve({ data: [] as { production_date: string }[], error: null }),
-    client.from("fitness_to_work").select("id, status, reported_date").eq("site_id", site.id),
+    client.from("fitness_to_work").select("id, status, reported_date").is("deleted_at", null).eq("site_id", site.id),
   ]);
 
   // Readings logged on a day that does not count are excluded outright.

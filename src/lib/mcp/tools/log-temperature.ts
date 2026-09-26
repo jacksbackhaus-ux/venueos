@@ -36,7 +36,7 @@ export default defineTool({
         const unit = ok(
           await client
             .from("temp_units")
-            .select("min_temp, max_temp")
+            .select("min_temp, max_temp").is("deleted_at", null)
             .eq("id", input.unit_id)
             .eq("site_id", input.site_id)
             .maybeSingle(),
