@@ -82,8 +82,7 @@ export default function SfbbVsHaccpGuide() {
             </div>
             <p className="mt-5 text-slate-700 leading-relaxed">
               So "do I need SFBB or HACCP?" is best answered: you need a HACCP-based system, and SFBB
-              is the easiest acceptable form of it for most small food businesses
-              [VERIFY: FSA wording on SFBB satisfying HACCP requirements].
+              is the easiest acceptable form of it for most small food businesses.
             </p>
           </section>
 

@@ -74,7 +74,7 @@ export default function NoCottageFoodLawGuide() {
                 UK food law doesn't work by product list or income cap. Instead, if you carry out a food
                 business activity with some degree of organisation and continuity, you're a food
                 business — and the same core duties apply to you as to any café
-                [VERIFY: exact definition and regulation reference]. There's no threshold you stay
+                (retained Regulation (EC) No 178/2002 and 852/2004). There's no threshold you stay
                 under to opt out, and no separate category for home bakers.
               </p>
               <p>
@@ -93,7 +93,7 @@ export default function NoCottageFoodLawGuide() {
               {[
                 {
                   t: "Register with your local council",
-                  b: "Registration is free, can't be refused, and should be done at least 28 days before you start trading [VERIFY: current registration lead time]. You register with the council for the area your kitchen is in, even if you sell elsewhere.",
+                  b: "Registration is free, can't be refused, and should be done at least 28 days before you start trading. You register with the council for the area your kitchen is in, even if you sell elsewhere.",
                 },
                 {
                   t: "Put a HACCP-based food safety system in place",
@@ -105,7 +105,7 @@ export default function NoCottageFoodLawGuide() {
                 },
                 {
                   t: "Get allergen information right",
-                  b: "You must be able to tell a customer about the 14 named allergens in what you sell. Prepacked-for-direct-sale items need a full ingredient list with allergens emphasised (often called Natasha's Law) [VERIFY: current PPDS labelling scope].",
+                  b: "You must be able to tell a customer about the 14 named allergens in what you sell. Prepacked-for-direct-sale items need a full ingredient list with allergens emphasised (often called Natasha's Law), in force since October 2021.",
                 },
                 {
                   t: "Train yourself to a sensible standard",
@@ -113,7 +113,7 @@ export default function NoCottageFoodLawGuide() {
                 },
                 {
                   t: "Expect an inspection and a hygiene rating",
-                  b: "A council officer may visit your home kitchen. In England ratings are published under the Food Hygiene Rating Scheme; Wales and Northern Ireland require display [VERIFY: current display rules per nation]. Home businesses can and do score 5.",
+                  b: "A council officer may visit your home kitchen. In England ratings are published under the Food Hygiene Rating Scheme; Wales and Northern Ireland require display. Home businesses can and do score 5.",
                 },
               ].map((s, i) => (
                 <li key={s.t} className="flex gap-4">
@@ -148,7 +148,7 @@ export default function NoCottageFoodLawGuide() {
                 <strong className="text-slate-900">Selling further afield changes things.</strong> Posting
                 nationally, supplying shops or trading at events can bring extra considerations, from
                 distance-selling information to a street trading consent or a separate stall
-                registration [VERIFY: which activities require additional local permissions].
+                registration, depending on your council.
               </p>
               <p>
                 <strong className="text-slate-900">Insurance isn't food law, but get it.</strong> Public

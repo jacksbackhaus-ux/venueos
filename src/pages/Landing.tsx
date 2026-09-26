@@ -461,7 +461,6 @@ function Footer() {
           <a href="/privacy" className="hover:text-slate-900">Privacy</a>
           <a href="/terms" className="hover:text-slate-900">Terms</a>
           <a href={AUTH_URL} className="hover:text-slate-900">Log in</a>
-          <a href={AUTH_URL} className="hover:text-slate-900">Log in</a>
         </div>
       </div>
     </footer>
