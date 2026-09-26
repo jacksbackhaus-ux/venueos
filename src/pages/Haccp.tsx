@@ -454,6 +454,7 @@ function PlanBuilder({
         .from("haccp_steps")
         .select("*")
         .eq("plan_id", plan.id)
+        .is("deleted_at", null)
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return (data ?? []) as HaccpStep[];
@@ -471,7 +472,7 @@ function PlanBuilder({
 
   const deleteStepM = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("haccp_steps").delete().eq("id", id);
+      const { error } = await supabase.from("haccp_steps").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -794,6 +795,7 @@ function PublishedPlanView({
         .from("haccp_steps")
         .select("*")
         .eq("plan_id", plan.id)
+        .is("deleted_at", null)
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return (data ?? []) as HaccpStep[];

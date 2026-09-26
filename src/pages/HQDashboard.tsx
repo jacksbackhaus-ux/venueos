@@ -199,6 +199,7 @@ export default function AllSitesOverview() {
           .from("training_records")
           .select("id, training_name, expiry_date")
           .eq("site_id", site.id)
+          .is("deleted_at", null)
           .not("expiry_date", "is", null)
           .gte("expiry_date", todayIso)
           .lte("expiry_date", in30DaysIso),

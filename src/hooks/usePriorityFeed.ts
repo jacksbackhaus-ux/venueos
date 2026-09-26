@@ -95,7 +95,7 @@ export function usePriorityFeed(
         supabase.from("cleaning_tasks").select("id, task").eq("site_id", siteId!).eq("active", true).eq("frequency", "daily"),
         supabase.from("cleaning_logs").select("task_id, done").eq("site_id", siteId!).eq("log_date", yesterdayISO),
         supabase.from("incidents").select("id, title, type, reported_at").eq("site_id", siteId!).eq("status", "open").order("reported_at", { ascending: false }).limit(5),
-        supabase.from("training_records").select("id, training_name, expiry_date, user_id").eq("site_id", siteId!).not("expiry_date", "is", null).lte("expiry_date", in7daysISO).gte("expiry_date", dateISO),
+        supabase.from("training_records").select("id, training_name, expiry_date, user_id").eq("site_id", siteId!).is("deleted_at", null).not("expiry_date", "is", null).lte("expiry_date", in7daysISO).gte("expiry_date", dateISO),
         currentUserId
           ? supabase.from("rota_assignments").select("id, start_time, end_time, position").eq("site_id", siteId!).eq("shift_date", dateISO).eq("user_id", currentUserId).is("cancelled_at", null)
           : Promise.resolve({ data: [] as any[] }),
