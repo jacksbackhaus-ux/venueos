@@ -35,8 +35,9 @@ function json(status: number, body: Record<string, unknown>) {
 }
 
 const HACCP_SITE_KEYS = new Set(["miseos_haccp_site_monthly", "miseos_haccp_site_annual"]);
+// Site type → default operating mode (mirrors src/lib/premises.ts).
 const PREMISES: Record<string, string> = {
-  commercial: "scheduled", home: "", mobile: "", manufacturing: "",
+  commercial: "scheduled", home: "on_demand", mobile: "on_demand", production: "scheduled",
 };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -157,11 +158,9 @@ Deno.serve(async (req) => {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const address = typeof body.address === "string" ? body.address.trim().slice(0, 300) : "";
   const premisesType = typeof body.premises_type === "string" ? body.premises_type : "commercial";
-  const operatingMode = typeof body.operating_mode === "string" ? body.operating_mode : null;
   if (!requestId) return json(400, { error: "Invalid request." });
   if (!name || name.length > 120) return json(400, { error: "Please enter a site name (up to 120 characters)." });
   if (!(premisesType in PREMISES)) return json(400, { error: "Invalid site type." });
-  if (operatingMode && !/^[a-z_]{1,40}$/.test(operatingMode)) return json(400, { error: "Invalid operating mode." });
   const nowSec = Math.floor(Date.now() / 1000);
   if (!Number.isFinite(prorationDate) || prorationDate > nowSec + 60 || nowSec - prorationDate > 30 * 60) {
     return json(409, { error: "That price quote has expired. Please review the new amount and confirm again.", code: "quote_expired" });
@@ -232,7 +231,7 @@ Deno.serve(async (req) => {
     address: address || null,
     owner_user_id: appUserId,
     premises_type: premisesType,
-    ...(operatingMode ? { operating_mode: operatingMode } : {}),
+    operating_mode: PREMISES[premisesType],
   }).select("id").maybeSingle();
 
   await admin.from("billing_events").insert({

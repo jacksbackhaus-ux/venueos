@@ -27,6 +27,8 @@ project_id = "elcmnvgbmzusogudpenp"
     verify_jwt = true
   [functions.sync-haccp-site-quantity]
     verify_jwt = true
+  [functions.add-haccp-site]
+    verify_jwt = false
   [functions.send-trial-reminders]
     verify_jwt = true
   [functions.send-compliance-reminders]
