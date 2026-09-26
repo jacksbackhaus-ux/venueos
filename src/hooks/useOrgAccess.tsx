@@ -134,8 +134,11 @@ export function useOrgAccess() {
     !!subscription.trial_end && new Date(subscription.trial_end).getTime() > now;
   const trialExpired = subscription?.status === "trialing" &&
     !!subscription.trial_end && new Date(subscription.trial_end).getTime() <= now;
-  const paidActive = ["active"].includes(subscription?.status || "") &&
+  // past_due = a renewal payment failed and Stripe is retrying. Keep access
+  // (matches the backend aiTierGuard) and show a persistent card-update banner.
+  const paidActive = ["active", "past_due"].includes(subscription?.status || "") &&
     (!subscription?.current_period_end || new Date(subscription.current_period_end).getTime() > now);
+  const isPastDue = subscription?.status === "past_due";
   const canceledWithGrace =
     subscription?.status === "canceled" &&
     !!subscription.current_period_end &&
@@ -169,6 +172,7 @@ export function useOrgAccess() {
     trialExpired,
     trialDaysLeft,
     paidActive,
+    isPastDue,
     canceledWithGrace,
     isLocked,
     refresh,
