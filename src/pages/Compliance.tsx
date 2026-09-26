@@ -109,6 +109,9 @@ export default function Compliance() {
                 <p className="text-[11px] text-muted-foreground mt-2">
                   Estimated rating: {data.ratingEstimate}/5 · Data completeness {data.dataCompleteness}%
                 </p>
+                <p className="text-[10px] text-muted-foreground/80 mt-1">
+                  Estimates are indicative only — real-world hygiene ratings can vary based on things the app doesn't track.
+                </p>
               </div>
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {data.pillars.map((p) => (
