@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Pricing from "./pages/Pricing";
 import LockedAccount from "./pages/LockedAccount";
+import PaymentFailed from "./pages/PaymentFailed";
 import Dashboard from "./pages/Dashboard";
 import Shifts from "./pages/Shifts";
 
@@ -172,7 +173,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function AccessGuard({ children }: { children: React.ReactNode }) {
   const { staffSession } = useAuth();
   const { isImpersonating } = useImpersonation();
-  const { loading, hasAccess, trialActive, subscription, plan, isLocked } = useOrgAccess();
+  const { loading, hasAccess, trialActive, subscription, plan, isLocked, isPastDue, compedActive } = useOrgAccess();
 
   if (staffSession) return <>{children}</>;
   // Internal support staff viewing a customer tenant must never be paywalled.
@@ -182,6 +183,8 @@ function AccessGuard({ children }: { children: React.ReactNode }) {
   // trialing subscription row at signup, so a missing row means something went
   // wrong — send the owner to pricing rather than silently unlocking the product.
   if (!subscription) return <Navigate to="/pricing" replace />;
+  // Failed renewal payment → dedicated update-card screen (not "trial ended").
+  if (isPastDue && !compedActive) return <Navigate to="/payment-failed" replace />;
   if (isLocked) return <Navigate to="/locked" replace />;
   if (hasAccess) return <>{children}</>;
 
@@ -314,6 +317,7 @@ function AppRoutes() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/pricing" element={<AuthGuard><Pricing /></AuthGuard>} />
       <Route path="/locked" element={<AuthGuard><LockedAccount /></AuthGuard>} />
+      <Route path="/payment-failed" element={<AuthGuard><PaymentFailed /></AuthGuard>} />
       <Route path="/select-site" element={<AuthGuard><AccessGuard><SitePicker /></AccessGuard></AuthGuard>} />
 
       <Route path="/" element={<RootRoute>{siteRoute(<Dashboard />)}</RootRoute>} />
