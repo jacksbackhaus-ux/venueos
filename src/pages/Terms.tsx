@@ -57,9 +57,9 @@ export default function Terms() {
             <li><strong>Data subject requests:</strong> we'll help you respond to people exercising their rights, including through the export and anonymise tools in Settings.</li>
             <li><strong>Security, breaches and DPIAs:</strong> we'll help you meet your obligations on security, breach notification, data protection impact assessments and prior consultation.</li>
             <li><strong>Breach notification:</strong> we'll tell you without undue delay after becoming aware of a personal data breach affecting your data.</li>
-            <li><strong>End of contract:</strong> at the end of the service, we'll delete or return your personal data at your choice, unless the law requires us to keep it. [PLACEHOLDER – reconcile with the "records retained for 7 years" statement on the Account page]</li>
+            <li><strong>End of contract:</strong> you can export your data at any time, including after the service ends. We keep your records for 7 years after the service ends, so you can re-export them and meet your own record-keeping duties, and to cover the limitation period for legal claims. After that we delete them. You can ask us to delete them sooner, unless the law requires us to keep them.</li>
             <li><strong>Information and audits:</strong> we'll make available the information needed to show we meet these obligations and allow for reasonable audits.</li>
-            <li><strong>International transfers:</strong> we'll only transfer personal data outside the UK with appropriate safeguards. [PLACEHOLDER – confirm safeguards]</li>
+            <li><strong>International transfers:</strong> we'll only transfer personal data outside the UK where UK adequacy regulations apply, or with the UK International Data Transfer Agreement or the UK Addendum to the EU Standard Contractual Clauses in place. The providers involved are listed in our <a className="underline" href="/privacy">Privacy Notice</a>.</li>
           </ol>
         </Section>
       </LegalPage>

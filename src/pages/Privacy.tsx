@@ -103,14 +103,22 @@ export default function Privacy() {
               ["Google Fonts", "Loading the typeface on our pages"],
             ]}
           />
-          <p>Hosting region and international transfer safeguards: [PLACEHOLDER – confirm hosting region and the safeguards (e.g. UK IDTA / Addendum to EU SCCs) used for each provider outside the UK].</p>
+          <p><strong>Where data is stored:</strong> the MiseOS database, sign-in and file storage are hosted in London, United Kingdom.</p>
+          <p><strong>Transfers outside the UK:</strong> some providers above may process personal data outside the UK, mainly in the United States:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Stripe — payment and subscription details, when you pay.</li>
+            <li>Google (Gemini) and Anthropic, through the Lovable AI service — the business information sent when someone uses an AI feature.</li>
+            <li>Google Fonts — visitors' IP addresses, when a page loads the typeface.</li>
+          </ul>
+          <p>Where we transfer personal data outside the UK, we rely on UK adequacy regulations (including the UK Extension to the EU-US Data Privacy Framework, where the recipient is certified) or, where those don't apply, the UK International Data Transfer Agreement or the UK Addendum to the EU Standard Contractual Clauses.</p>
+          <p>If a business connects its own AI assistant (such as Claude or ChatGPT) to MiseOS, data that assistant reads is sent to the assistant's provider at the business's direction, under the business's own agreement with that provider.</p>
           <p>We don't sell personal data.</p>
         </Section>
 
         <Section title="How long we keep data">
           <ul className="list-disc pl-5 space-y-1">
             <li>After a subscription is cancelled, records are retained for 7 years so the business can re-export them.</li>
-            <li>Billing records: [PLACEHOLDER – confirm period].</li>
+            <li>Billing records: 7 years.</li>
             <li>Email delivery logs and website technical data: [PLACEHOLDER – confirm period].</li>
           </ul>
         </Section>
