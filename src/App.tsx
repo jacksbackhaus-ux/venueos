@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Pricing from "./pages/Pricing";
 import LockedAccount from "./pages/LockedAccount";
+import PaymentFailed from "./pages/PaymentFailed";
 import Dashboard from "./pages/Dashboard";
 import Shifts from "./pages/Shifts";
 
@@ -314,6 +315,7 @@ function AppRoutes() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/pricing" element={<AuthGuard><Pricing /></AuthGuard>} />
       <Route path="/locked" element={<AuthGuard><LockedAccount /></AuthGuard>} />
+      <Route path="/payment-failed" element={<AuthGuard><PaymentFailed /></AuthGuard>} />
       <Route path="/select-site" element={<AuthGuard><AccessGuard><SitePicker /></AccessGuard></AuthGuard>} />
 
       <Route path="/" element={<RootRoute>{siteRoute(<Dashboard />)}</RootRoute>} />
