@@ -32,6 +32,9 @@ const Suppliers = () => {
   const [newPackaging, setNewPackaging] = useState<"good" | "damaged" | "n/a">("good");
   const [newUseByOk, setNewUseByOk] = useState(true);
   const [newNote, setNewNote] = useState("");
+  // Optional structured lot details for traceability — blank rows are ignored.
+  const [lotsOpen, setLotsOpen] = useState(false);
+  const [newLots, setNewLots] = useState<{ item_name: string; lot_code: string; use_by_date: string }[]>([]);
 
   // Supplier add/edit dialog
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
@@ -89,15 +92,27 @@ const Suppliers = () => {
       const temp = parseFloat(newTemp);
       const tempPass = isNaN(temp) ? null : temp <= 5;
       const accepted = (tempPass !== false) && newPackaging !== "damaged" && newUseByOk;
-      const { error } = await supabase.from("delivery_logs").insert({
+      const { data: saved, error } = await supabase.from("delivery_logs").insert({
         site_id: siteId!, organisation_id: organisationId!, supplier_id: newSupplier,
         items: newItems, temp: isNaN(temp) ? null : temp, temp_pass: tempPass,
         packaging: newPackaging, use_by_ok: newUseByOk, accepted, note: newNote || null,
         logged_by_user_id: appUser?.id || null, logged_by_name: userName,
-      });
+      }).select("id").single();
       if (error) throw error;
+      const lotRows = newLots
+        .filter((l) => l.item_name.trim())
+        .map((l) => ({
+          delivery_log_id: saved.id, site_id: siteId!, organisation_id: organisationId!,
+          item_name: l.item_name.trim(), lot_code: l.lot_code.trim() || null,
+          use_by_date: l.use_by_date || null, created_by_user_id: appUser?.id || null,
+        }));
+      if (lotRows.length > 0) {
+        const { error: lotErr } = await (supabase.from as any)("delivery_items").insert(lotRows);
+        if (lotErr) toast.warning("Delivery saved, but the lot details could not be saved.");
+      }
     },
     onSuccess: () => {
+      setNewLots([]); setLotsOpen(false);
       queryClient.invalidateQueries({ queryKey: ["delivery_logs", siteId] });
       setShowNewDelivery(false);
       setNewSupplier(""); setNewItems(""); setNewTemp(""); setNewPackaging("good"); setNewUseByOk(true); setNewNote("");
@@ -242,6 +257,23 @@ const Suppliers = () => {
             <div><Label className="text-sm">Packaging</Label><Select value={newPackaging} onValueChange={(v: any) => setNewPackaging(v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="good">Good</SelectItem><SelectItem value="damaged">Damaged</SelectItem><SelectItem value="n/a">N/A</SelectItem></SelectContent></Select></div>
             <div><Label className="text-sm">Use-by dates OK?</Label><Select value={newUseByOk ? "yes" : "no"} onValueChange={(v) => setNewUseByOk(v === "yes")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem></SelectContent></Select></div>
             <div><Label className="text-sm">Notes</Label><Textarea placeholder="Optional..." value={newNote} onChange={(e) => setNewNote(e.target.value)} className="text-sm" /></div>
+            <div className="space-y-2">
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => { setLotsOpen((v) => !v); if (newLots.length === 0) setNewLots([{ item_name: "", lot_code: "", use_by_date: "" }]); }}>
+                {lotsOpen ? "− Hide lot details" : "+ Add lot details (optional, helps with recalls)"}
+              </button>
+              {lotsOpen && (
+                <div className="space-y-2">
+                  {newLots.map((l, i) => (
+                    <div key={i} className="grid grid-cols-3 gap-2">
+                      <Input placeholder="Item" value={l.item_name} maxLength={120} onChange={(e) => setNewLots(newLots.map((x, j) => j === i ? { ...x, item_name: e.target.value } : x))} />
+                      <Input placeholder="Lot / batch code" value={l.lot_code} maxLength={80} onChange={(e) => setNewLots(newLots.map((x, j) => j === i ? { ...x, lot_code: e.target.value } : x))} />
+                      <Input type="date" aria-label="Use-by date" value={l.use_by_date} onChange={(e) => setNewLots(newLots.map((x, j) => j === i ? { ...x, use_by_date: e.target.value } : x))} />
+                    </div>
+                  ))}
+                  <button type="button" className="text-xs text-primary hover:underline" onClick={() => setNewLots([...newLots, { item_name: "", lot_code: "", use_by_date: "" }])}>+ Another item</button>
+                </div>
+              )}
+            </div>
             <Button className="w-full" disabled={!newSupplier || !newItems} onClick={() => insertDelivery.mutate()}>Save Delivery</Button>
           </div>
         </DialogContent>
