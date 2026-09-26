@@ -37,7 +37,14 @@ export default function Terms() {
           <p>MiseOS helps you keep clear, consistent records. Your business stays legally responsible for food safety and for what those records say.</p>
         </Section>
         <Section title="8. Liability">
-          <p>Nothing limits liability that can't be limited by law. Otherwise, we aren't liable for indirect or consequential loss, or loss of profit, and our total liability in any 12 months is limited to the fees you paid in that period. [PLACEHOLDER – confirm liability cap with a solicitor]</p>
+          <p>Nothing in these terms limits our liability where the law doesn't allow it to be limited.</p>
+          <p>Otherwise, we aren't liable for indirect or consequential loss, or loss of profit. And if you make a claim under these terms, our total liability to you is limited to the total subscription fees you paid us in the 12 months before the event the claim is about.</p>
+          <p>That cap doesn't apply to:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>death or personal injury caused by our negligence — the law doesn't allow this to be limited or excluded at all;</li>
+            <li>our gross negligence; and</li>
+            <li>breach of confidentiality — for example, mishandling your business's data.</li>
+          </ul>
         </Section>
         <Section title="9. Ending the agreement">
           <p>You can cancel at any time from Account &amp; Billing. We may suspend or end access if you seriously breach these terms or don't pay.</p>
