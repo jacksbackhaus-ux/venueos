@@ -97,7 +97,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-background">
       <SEO
         title="Pricing — MiseOS HACCP"
-        description="Digital HACCP and food safety for UK small food businesses. £4.99 per site + £1 per extra user. 14-day free trial, no card required."
+        description="Digital HACCP and food safety for UK small food businesses. £4.99 per site + £1 per extra user. 14-day free trial. Card required, no charge for 14 days."
         path="/pricing"
       />
       <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-8">
