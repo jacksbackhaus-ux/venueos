@@ -10,5 +10,5 @@ export const LEGAL = {
   registeredAddress: "Stable Block, Hursley Park Road, Hursley, SO21 2JN",
   contactEmail: "miseos@outlook.com",
   icoRegistrationNumber: "",
-  lastUpdated: "24 September 2026",
+  lastUpdated: "26 September 2026",
 } as const;

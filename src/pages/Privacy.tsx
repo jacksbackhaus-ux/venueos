@@ -35,6 +35,7 @@ export default function Privacy() {
             <li>Settings you choose, such as notification preferences and connected AI apps</li>
           </ul>
           <h3 className="font-semibold text-slate-900">Staff (entered by the business)</h3>
+          <p>The business is the controller of this staff data, including health data in illness records. It is responsible for having a lawful basis to record it, for telling its staff that it is kept in MiseOS (for example, in its own staff privacy notice), and for handling staff requests about their data. We help the business with those requests as its processor.</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Name, optional email address and Staff ID</li>
             <li>Roles and which sites they work at</li>
