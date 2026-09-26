@@ -5,5 +5,7 @@
 - [x] Pass 2: delivery lot details + batch-to-lot linking (optional fields)
 - [x] Lot lookup tab + "Ingredient lots used" on batch detail
 - [x] Company details, 7-year retention, hosting region, transfer wording on /terms and /privacy
-- [ ] Illness record 3-year anonymisation — waiting on user sign-off of field list, then build (no schedule until go-ahead)
-- [ ] Legal placeholders left: liability cap (user decision), illness retention line (after anonymisation goes live), email/website log retention (needs user)
+- [x] Illness record 3-year anonymisation built with service-only dry run and execution functions; no schedule and no live run pending explicit go-ahead
+- [ ] Legal placeholders left: email/website log retention (needs user); subprocessor transfer certifications/locations (needs confirmation)
+- [x] Indicative-score disclaimer added to every PDF page and every Excel worksheet
+- [x] Customer responsibility for checking record and export accuracy added to Terms

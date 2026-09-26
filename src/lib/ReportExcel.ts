@@ -33,6 +33,8 @@ function sheet(rows: any[][], widths: number[]): XLSX.WorkSheet {
 
 const NONE = [["No records found for this period."]];
 const body = (rows: any[][], head: string[]) => (rows.length ? [head, ...rows] : [head, ...NONE]);
+const ESTIMATE_DISCLAIMER =
+  "Estimates are indicative only — real-world hygiene ratings can vary based on things the app doesn't track.";
 
 export function generateInspectionPackExcel(
   data: ReportData,
@@ -47,8 +49,10 @@ export function generateInspectionPackExcel(
   const r: any = data.registration || {};
 
   const wb = XLSX.utils.book_new();
-  const add = (name: string, ws: XLSX.WorkSheet) =>
+  const add = (name: string, ws: XLSX.WorkSheet) => {
+    XLSX.utils.sheet_add_aoa(ws, [[], [ESTIMATE_DISCLAIMER]], { origin: -1 });
     XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+  };
 
   // ── Summary (cover + readiness) ────────────────────────────────────────────
   const summaryRows: any[][] = [
