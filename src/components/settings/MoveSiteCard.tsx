@@ -1,90 +1,43 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { Loader2, MoveRight, AlertTriangle, Store, Home, Truck, Factory } from "lucide-react";
+import { Loader2, MoveRight, Store, Home, Truck, Factory } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSite } from "@/contexts/SiteContext";
-import { useOrgAccess } from "@/hooks/useOrgAccess";
 import { useSiteTransfer } from "@/hooks/useSiteTransfer";
 import { PREMISES_TYPES, defaultOperatingMode, premisesBadge, type PremisesType } from "@/lib/premises";
-import { resolveCurrentPlan, cycleFromInterval } from "@/lib/sitePricing";
-import { AddSiteCheckoutPanel } from "@/components/settings/AddSiteCheckoutPanel";
-import type { BillingCycle } from "@/lib/plans";
 
 /**
  * Settings → Site → Move to a new site.
  * Dedicated flow for "I'm moving premises": set up the new site, then open a
  * 14-day transfer window on the old one. Both sites stay editable for 14
- * days, billing stays at the current site count, and the old site
- * auto-archives (and drops off billing) at day 14.
+ * days, the old site is not billed during the overlap (no slot purchase
+ * needed — see billableSiteCount), and the old site auto-archives at day 14.
  */
 export function MoveSiteCard() {
   const { appUser, orgRole } = useAuth();
   const { organisationId, sites } = useSite();
-  const { subscription, refresh: refreshSubscription } = useOrgAccess();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { transfer, refetch } = useSiteTransfer();
 
   const isOwner = orgRole?.org_role === "org_owner";
 
   const [open, setOpen] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
   const [newSiteName, setNewSiteName] = useState("");
   const [newSiteAddress, setNewSiteAddress] = useState("");
   const [newPremisesType, setNewPremisesType] = useState<PremisesType>("commercial");
   const [fromSiteId, setFromSiteId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Returning from Stripe after buying a slot for a move: reopen the form and
-  // poll until the new site slot shows up, then clear the URL params.
-  const moveCheckout = searchParams.get("move_checkout") === "success";
-  useEffect(() => {
-    if (!moveCheckout || !organisationId) return;
-    setOpen(true);
-    const startQty = subscription?.site_quantity ?? 1;
-    const startedAt = Date.now();
-    const clear = () => {
-      const next = new URLSearchParams(searchParams);
-      next.delete("move_checkout");
-      next.delete("session_id");
-      setSearchParams(next, { replace: true });
-    };
-    const interval = setInterval(async () => {
-      await refreshSubscription();
-      const { data } = await supabase
-        .from("subscriptions").select("site_quantity").eq("organisation_id", organisationId).maybeSingle();
-      if (data && (data.site_quantity ?? 0) > startQty) {
-        clearInterval(interval);
-        toast.success("Payment successful — you can now start the move.");
-        clear();
-      } else if (Date.now() - startedAt > 20_000) {
-        clearInterval(interval);
-        toast.message("Payment received — it may take a minute to show. Refresh if the button stays disabled.");
-        clear();
-      }
-    }, 2000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moveCheckout, organisationId]);
-
   if (!isOwner) return null;
 
   const activeSites = sites.filter((s) => s.active);
-  const siteQuantity = subscription?.site_quantity ?? 1;
-  const siteCount = activeSites.length;
-  const needsSlot = siteCount >= siteQuantity;
-  const cycle: BillingCycle = cycleFromInterval(subscription?.billing_interval);
-  const currentPlan = resolveCurrentPlan(subscription);
-
   const otherActiveTransfer = !!transfer;
 
   const resetForm = () => {
@@ -92,17 +45,12 @@ export function MoveSiteCard() {
     setNewSiteAddress("");
     setNewPremisesType("commercial");
     setFromSiteId("");
-    setShowCheckout(false);
   };
 
   const handleSubmit = async () => {
     if (!organisationId || !appUser) return;
     if (!newSiteName.trim()) {
       toast.error("Please enter a name for the new site.");
-      return;
-    }
-    if (needsSlot) {
-      toast.error("You don't have a free site slot — buy one below first.");
       return;
     }
     const leavingId = activeSites.length > 1 ? (fromSiteId || activeSites[0]?.id) : activeSites[0]?.id;
@@ -187,7 +135,7 @@ export function MoveSiteCard() {
           <DialogHeader>
             <DialogTitle>Move to a new site</DialogTitle>
             <DialogDescription>
-              Set up your new site. You'll get 14 days where both sites stay editable before the old one closes.
+              Set up your new site. You'll get 14 days where both sites stay editable before the old one closes. You're billed for one site during the move — no extra charge.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -253,35 +201,11 @@ export function MoveSiteCard() {
               New site type: {premisesBadge(newPremisesType)}. You can change this later in Settings → Site.
             </p>
 
-            {needsSlot && (
-              <div className="space-y-2">
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    You don't have a free site slot. Buy one to continue — it'll be prorated against your current
-                    billing cycle.
-                  </AlertDescription>
-                </Alert>
-                {showCheckout ? (
-                  <AddSiteCheckoutPanel
-                    currentPlan={currentPlan}
-                    cycle={cycle}
-                    siteQuantity={siteQuantity}
-                    returnUrl={`${window.location.origin}/settings?tab=site&move_checkout=success&session_id={CHECKOUT_SESSION_ID}`}
-                    onCancel={() => setShowCheckout(false)}
-                  />
-                ) : (
-                  <Button variant="outline" size="sm" onClick={() => setShowCheckout(true)}>
-                    Buy a site slot
-                  </Button>
-                )}
-              </div>
-            )}
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={submitting || needsSlot}>
+            <Button onClick={handleSubmit} disabled={submitting}>
               {submitting && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
               Start the move
             </Button>
