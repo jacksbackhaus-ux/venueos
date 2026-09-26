@@ -1745,6 +1745,7 @@ export type Database = {
       }
       fitness_to_work: {
         Row: {
+          anonymised_at: string | null
           cleared_to_return: string | null
           created_at: string
           deleted_at: string | null
@@ -1763,6 +1764,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          anonymised_at?: string | null
           cleared_to_return?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -1781,6 +1783,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          anonymised_at?: string | null
           cleared_to_return?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -7095,6 +7098,10 @@ export type Database = {
         Returns: undefined
       }
       active_impersonation_org: { Args: never; Returns: string }
+      anonymise_expired_fitness_to_work: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       assert_internal_staff: { Args: never; Returns: undefined }
       assert_super_admin: { Args: never; Returns: undefined }
       can_access_realtime_topic: { Args: { _topic: string }; Returns: boolean }
@@ -7222,6 +7229,18 @@ export type Database = {
       }
       messenger_mark_read: { Args: { _channel_id: string }; Returns: undefined }
       org_has_active_access: { Args: { _org_id: string }; Returns: boolean }
+      preview_fitness_to_work_anonymisation: {
+        Args: { _as_of?: string }
+        Returns: {
+          created_at: string
+          id: string
+          organisation_id: string
+          reported_date: string
+          site_id: string
+          staff_name: string
+          status: string
+        }[]
+      }
       resync_org_modules: { Args: { _org_id: string }; Returns: Json }
       seed_messenger_channels_for_site: {
         Args: { _site_id: string }

@@ -35,6 +35,7 @@ export default function Terms() {
         </Section>
         <Section title="7. Your food safety responsibilities">
           <p>MiseOS helps you keep clear, consistent records. Your business stays legally responsible for food safety and for what those records say.</p>
+          <p>MiseOS is a logging and record-keeping system. You are responsible for checking that your historical records and exports are accurate, and for correcting anything you find to be missing, incomplete or incorrect. We aren't responsible for records that are missing, incomplete or incorrect because of what you or your team did or didn't log.</p>
         </Section>
         <Section title="8. Liability">
           <p>Nothing in these terms limits our liability where the law doesn't allow it to be limited.</p>

@@ -784,6 +784,15 @@ export function generateInspectionPackPdf(
   const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...BRAND.muted);
+    doc.text(
+      "Estimates are indicative only — real-world hygiene ratings can vary based on things the app doesn't track.",
+      margin,
+      ph - 12,
+    );
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...BRAND.muted);
     doc.text(
