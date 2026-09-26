@@ -212,6 +212,7 @@ export function useProbeCalibrations() {
         .from("probe_calibrations" as never)
         .select("*")
         .eq("site_id", siteId!)
+        .is("deleted_at", null)
         .order("calibrated_at", { ascending: false })
         .limit(24);
       if (error) throw error;
@@ -278,6 +279,7 @@ export function useFitnessToWork() {
         .from("fitness_to_work" as never)
         .select("*")
         .eq("site_id", siteId!)
+        .is("deleted_at", null)
         .order("reported_date", { ascending: false })
         .limit(60);
       if (error) throw error;
@@ -486,6 +488,7 @@ export function useSfbbDocuments() {
         .from("sfbb_documents" as never)
         .select("*")
         .eq("site_id", siteId!)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as SfbbDocumentRow[];
@@ -531,8 +534,11 @@ export function useSfbbDocuments() {
 
   const remove = useMutation({
     mutationFn: async (doc: SfbbDocumentRow) => {
-      await supabase.storage.from(SFBB_BUCKET).remove([doc.storage_path]);
-      const { error } = await supabase.from("sfbb_documents" as never).delete().eq("id", doc.id);
+      // Soft-delete: keep the row and file for audit; hide it from lists.
+      const { error } = await supabase
+        .from("sfbb_documents" as never)
+        .update({ deleted_at: new Date().toISOString() } as never)
+        .eq("id", doc.id);
       if (error) throw error;
     },
     onSuccess: invalidate,
@@ -576,6 +582,7 @@ export function useRecalls() {
         .from("recalls" as never)
         .select("*")
         .eq("site_id", siteId!)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;

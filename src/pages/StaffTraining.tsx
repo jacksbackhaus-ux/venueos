@@ -204,6 +204,7 @@ export default function StaffTraining() {
         .from("training_records")
         .select("*")
         .eq("site_id", siteId!)
+        .is("deleted_at", null)
         .order("completed_date", { ascending: false });
       if (error) throw error;
       return (data ?? []) as any as TrainingRecord[];
@@ -356,7 +357,7 @@ export default function StaffTraining() {
   // ---------- Mutations ----------
   const deleteRecordM = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("training_records").delete().eq("id", id);
+      const { error } = await supabase.from("training_records").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
