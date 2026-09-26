@@ -288,7 +288,8 @@ const Reports = () => {
         <Info className="h-4 w-4 text-warning" />
         <AlertDescription className="text-xs text-muted-foreground">
           This report is based on operational records captured in MiseOS. The inspection readiness score
-          is an estimate based on available data and does not guarantee a specific food hygiene rating.
+          and the estimated FHRS rating are estimates based on available data and do not guarantee a
+          specific food hygiene rating — real-world outcomes can vary based on things the app doesn't track.
         </AlertDescription>
       </Alert>
 

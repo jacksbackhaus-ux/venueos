@@ -45,6 +45,7 @@ export default function Terms() {
             <li>our gross negligence; and</li>
             <li>breach of confidentiality — for example, mishandling your business's data.</li>
           </ul>
+          <p>Separately, any estimated or predicted food hygiene score shown in MiseOS is indicative only. Actual inspection outcomes can vary based on factors the app doesn't track, and we can't guarantee any particular rating.</p>
         </Section>
         <Section title="9. Ending the agreement">
           <p>You can cancel at any time from Account &amp; Billing. We may suspend or end access if you seriously breach these terms or don't pay.</p>
