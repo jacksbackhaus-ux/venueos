@@ -23,6 +23,7 @@ import type { ModuleName } from "@/lib/plans";
 import { showMessenger, showMultiSiteHQ, LAUNCH_MODE } from "@/lib/launchFlags";
 import { siteRoleLabel } from "@/lib/siteRoleLabel";
 import { SiteTransferBanner } from "@/components/SiteTransferBanner";
+import { PastDueBanner } from "@/components/PastDueBanner";
 
 
 const HACCP = LAUNCH_MODE === "haccp";
@@ -575,6 +576,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Move / closing window banner (dismissible, both sites) */}
           <SiteTransferBanner />
+
+          {/* Failed renewal payment — persistent, not dismissible */}
+          <PastDueBanner />
 
           {/* Main content */}
 
