@@ -24,7 +24,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: "Do I need to register my food business with the council?",
-        a: "Yes. Registration is free, cannot be refused, and should be done at least 28 days before you start trading [VERIFY: current registration lead time]. You register with the council covering the address where you prepare food, even if you sell somewhere else.",
+        a: "Yes. Register with your local council at least 28 days before you start trading. Registration is free and can't be refused. You register with the council covering the address where you prepare food, even if you sell somewhere else. If you take over an existing food business, you must register as the new owner — registration doesn't transfer. If you trade in more than one council area, register with each. You can register via the Food Standards Agency website.",
       },
       {
         q: "Can I legally sell food made in my home kitchen in the UK?",
@@ -53,7 +53,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "How often do I have to fill in the diary?",
-        a: "On the days you trade or produce. A short daily entry plus periodic reviews is the expected pattern [VERIFY: current SFBB diary and review intervals]. If you only bake two days a week, records for those days are what matters — closed days should not look like missed checks.",
+        a: "Every day you trade: opening and closing checks, plus anything that went wrong and what you did about it. Every 4 weeks, complete the 4-weekly review to spot recurring problems. Review your whole SFBB pack whenever something significant changes (a new menu, new equipment or processes, new staff, a complaint), and it's good practice to review it at least once a year. If you only bake two days a week, records for those days are what matters — closed days should not look like missed checks.",
       },
     ],
   },
@@ -70,7 +70,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "How long should I keep my records?",
-        a: "Long enough to cover a full inspection cycle and to trace a product if there is a problem [VERIFY: retention period expected by local authorities]. Many small businesses keep at least the last 12 months.",
+        a: "UK law doesn't set one fixed retention period for most day-to-day food safety records, though some sector-specific rules may. Records must be available whenever an officer inspects, and they'll be checked if there's ever a problem with food you've sold. Keep them at least until your next inspection and for as long as the food could still be in circulation, and check with your local council if you're unsure. MiseOS keeps your records for 7 years.",
       },
       {
         q: "How is the food hygiene rating decided?",
