@@ -22,7 +22,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { createStripeClient, type StripeEnv } from "../_shared/stripe.ts";
-import { decideSiteQuantity } from "../_shared/siteQuantity.ts";
+import { decideSiteQuantity, billableSiteCount } from "../_shared/siteQuantity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,10 +111,17 @@ Deno.serve(async (req) => {
   const env = ((subRow as { environment?: StripeEnv } | null)?.environment ?? "sandbox") as StripeEnv;
   if (!stripeSubId) return json(200, { ok: true, skipped: "no_stripe_subscription" });
 
-  const { count: activeSites } = await admin.from("sites")
-    .select("id", { count: "exact", head: true })
+  const { data: activeSiteRows } = await admin.from("sites")
+    .select("id")
     .eq("organisation_id", orgId).eq("active", true);
-  const activeSiteCount = activeSites ?? 0;
+  const { data: activeTransfer } = await admin.from("site_transfers")
+    .select("from_site_id, to_site_id")
+    .eq("organisation_id", orgId).eq("status", "active").maybeSingle();
+  // During a move the old site is not billed (free 14-day overlap).
+  const activeSiteCount = billableSiteCount(
+    ((activeSiteRows ?? []) as { id: string }[]).map((r) => r.id),
+    (activeTransfer as { from_site_id: string; to_site_id: string | null } | null) ?? null,
+  );
 
   try {
     const stripe = createStripeClient(env);

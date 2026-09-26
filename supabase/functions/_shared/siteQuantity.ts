@@ -27,3 +27,47 @@ export function decideSiteQuantity(
     changed: currentStripeQuantity !== targetQuantity,
   };
 }
+
+/**
+ * Number of sites the org should be billed for right now.
+ *
+ * During an active MOVE (a transfer with a new site), the site being moved
+ * away from is not billed — the 14-day overlap is free. A plain CLOSE
+ * window (no new site) keeps billing the closing site until it archives.
+ */
+export function billableSiteCount(
+  activeSiteIds: string[],
+  activeTransfer: { from_site_id: string; to_site_id: string | null } | null,
+): number {
+  const isMove = !!activeTransfer && !!activeTransfer.to_site_id;
+  if (!isMove) return activeSiteIds.length;
+  return activeSiteIds.filter((id) => id !== activeTransfer!.from_site_id).length;
+}
+
+export interface AddSiteOutcomeInput {
+  /** Subscription.pending_update from Stripe after the update call. */
+  pendingUpdate: unknown;
+  /** Site line-item quantity on the returned subscription. */
+  siteItemQuantity: number | null;
+  /** Quantity we asked for. */
+  expectedQuantity: number;
+  /** Status of the invoice Stripe raised for the change (null if none). */
+  invoiceStatus: string | null;
+  /** Amount still due on that invoice, in minor units. */
+  invoiceAmountDue: number | null;
+}
+
+/**
+ * Decide whether an "add a site" subscription update was actually paid and
+ * applied. Only "paid" means the site may be created. Anything uncertain is
+ * treated as not paid — we would rather refuse a site than give one away or
+ * create one Stripe hasn't billed for.
+ */
+export function decideAddSiteOutcome(i: AddSiteOutcomeInput): "paid" | "payment_failed" | "needs_review" {
+  if (i.pendingUpdate) return "payment_failed";
+  if (i.siteItemQuantity !== i.expectedQuantity) return "needs_review";
+  if (i.invoiceStatus === null) return "needs_review";
+  if (i.invoiceStatus === "paid") return "paid";
+  if (i.invoiceAmountDue === 0 && i.invoiceStatus !== "void" && i.invoiceStatus !== "uncollectible") return "paid";
+  return "needs_review";
+}
