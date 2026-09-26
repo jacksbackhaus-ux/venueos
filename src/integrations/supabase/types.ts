@@ -802,6 +802,7 @@ export type Database = {
           area: string
           assigned_to_name: string | null
           created_at: string
+          deleted_at: string | null
           due_time: string | null
           frequency: string
           id: string
@@ -815,6 +816,7 @@ export type Database = {
           area: string
           assigned_to_name?: string | null
           created_at?: string
+          deleted_at?: string | null
           due_time?: string | null
           frequency?: string
           id?: string
@@ -828,6 +830,7 @@ export type Database = {
           area?: string
           assigned_to_name?: string | null
           created_at?: string
+          deleted_at?: string | null
           due_time?: string | null
           frequency?: string
           id?: string
@@ -1552,6 +1555,7 @@ export type Database = {
         Row: {
           cleared_to_return: string | null
           created_at: string
+          deleted_at: string | null
           excluded_from: string | null
           id: string
           notes: string | null
@@ -1569,6 +1573,7 @@ export type Database = {
         Insert: {
           cleared_to_return?: string | null
           created_at?: string
+          deleted_at?: string | null
           excluded_from?: string | null
           id?: string
           notes?: string | null
@@ -1586,6 +1591,7 @@ export type Database = {
         Update: {
           cleared_to_return?: string | null
           created_at?: string
+          deleted_at?: string | null
           excluded_from?: string | null
           id?: string
           notes?: string | null
@@ -1672,6 +1678,7 @@ export type Database = {
           corrective_action: string | null
           created_at: string
           critical_limit: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           monitoring_procedure: string | null
@@ -1686,6 +1693,7 @@ export type Database = {
           corrective_action?: string | null
           created_at?: string
           critical_limit?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           monitoring_procedure?: string | null
@@ -1700,6 +1708,7 @@ export type Database = {
           corrective_action?: string | null
           created_at?: string
           critical_limit?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           monitoring_procedure?: string | null
@@ -3465,6 +3474,7 @@ export type Database = {
           calibrated_by: string | null
           calibrated_by_name: string | null
           created_at: string
+          deleted_at: string | null
           iced_water_reading: number
           id: string
           notes: string | null
@@ -3479,6 +3489,7 @@ export type Database = {
           calibrated_by?: string | null
           calibrated_by_name?: string | null
           created_at?: string
+          deleted_at?: string | null
           iced_water_reading: number
           id?: string
           notes?: string | null
@@ -3493,6 +3504,7 @@ export type Database = {
           calibrated_by?: string | null
           calibrated_by_name?: string | null
           created_at?: string
+          deleted_at?: string | null
           iced_water_reading?: number
           id?: string
           notes?: string | null
@@ -3666,6 +3678,7 @@ export type Database = {
           affected_batch_ids: Json
           created_at: string
           customers_informed: boolean
+          deleted_at: string | null
           id: string
           item_ref: string
           item_type: string
@@ -3682,6 +3695,7 @@ export type Database = {
           affected_batch_ids?: Json
           created_at?: string
           customers_informed?: boolean
+          deleted_at?: string | null
           id?: string
           item_ref: string
           item_type: string
@@ -3698,6 +3712,7 @@ export type Database = {
           affected_batch_ids?: Json
           created_at?: string
           customers_informed?: boolean
+          deleted_at?: string | null
           id?: string
           item_ref?: string
           item_type?: string
@@ -4520,6 +4535,7 @@ export type Database = {
         Row: {
           created_at: string
           date_completed: string | null
+          deleted_at: string | null
           file_size: number | null
           id: string
           mime_type: string | null
@@ -4536,6 +4552,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date_completed?: string | null
+          deleted_at?: string | null
           file_size?: number | null
           id?: string
           mime_type?: string | null
@@ -4552,6 +4569,7 @@ export type Database = {
         Update: {
           created_at?: string
           date_completed?: string | null
+          deleted_at?: string | null
           file_size?: number | null
           id?: string
           mime_type?: string | null
@@ -6258,6 +6276,7 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          deleted_at: string | null
           id: string
           max_temp: number
           min_temp: number
@@ -6270,6 +6289,7 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          deleted_at?: string | null
           id?: string
           max_temp?: number
           min_temp?: number
@@ -6282,6 +6302,7 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          deleted_at?: string | null
           id?: string
           max_temp?: number
           min_temp?: number
@@ -6558,6 +6579,7 @@ export type Database = {
           completed_date: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           expiry_date: string | null
           id: string
           notes: string | null
@@ -6573,6 +6595,7 @@ export type Database = {
           completed_date: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           expiry_date?: string | null
           id?: string
           notes?: string | null
@@ -6588,6 +6611,7 @@ export type Database = {
           completed_date?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           expiry_date?: string | null
           id?: string
           notes?: string | null
