@@ -55,7 +55,7 @@ export function GuideBreadcrumb({ label }: { label?: string }) {
 
 export function GuideCta({
   heading = "See how MiseOS keeps this simple",
-  body = "MiseOS turns your daily checks into a tidy, searchable record you can hand to an inspector. £4.99 per site per month, 14-day free trial, no card needed to look around.",
+  body = "MiseOS turns your daily checks into a tidy, searchable record you can hand to an inspector. £4.99 per site per month, 14-day free trial. Card required, no charge for 14 days.",
 }: {
   heading?: string;
   body?: string;
