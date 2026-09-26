@@ -21,7 +21,7 @@ import { toast } from "sonner";
  *   £4.99 per site / month (includes 1 user)
  *   + £1 per additional user / month
  *   Annual: 2 months free (× 10 months)
- *   14-day free trial, no card required, cancel anytime.
+ *   14-day free trial. Card required at signup, no charge for 14 days. Cancel anytime.
  */
 
 const SITE_MONTHLY = 4.99;
