@@ -173,7 +173,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function AccessGuard({ children }: { children: React.ReactNode }) {
   const { staffSession } = useAuth();
   const { isImpersonating } = useImpersonation();
-  const { loading, hasAccess, trialActive, subscription, plan, isLocked } = useOrgAccess();
+  const { loading, hasAccess, trialActive, subscription, plan, isLocked, isPastDue, compedActive } = useOrgAccess();
 
   if (staffSession) return <>{children}</>;
   // Internal support staff viewing a customer tenant must never be paywalled.
@@ -183,6 +183,8 @@ function AccessGuard({ children }: { children: React.ReactNode }) {
   // trialing subscription row at signup, so a missing row means something went
   // wrong — send the owner to pricing rather than silently unlocking the product.
   if (!subscription) return <Navigate to="/pricing" replace />;
+  // Failed renewal payment → dedicated update-card screen (not "trial ended").
+  if (isPastDue && !compedActive) return <Navigate to="/payment-failed" replace />;
   if (isLocked) return <Navigate to="/locked" replace />;
   if (hasAccess) return <>{children}</>;
 
