@@ -56,9 +56,12 @@ Deno.serve(async (req) => {
   const caller = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: authHeader } }, auth: { persistSession: false },
   });
-  const { data: claimsData, error: claimsErr } = await caller.auth.getClaims();
-  if (claimsErr || !claimsData?.claims) return json(401, { error: "Please sign in again." });
-  const authUid = claimsData.claims.sub as string;
+  let authUid: string | null = null;
+  try {
+    const { data: claimsData, error: claimsErr } = await caller.auth.getClaims();
+    if (!claimsErr && claimsData?.claims?.sub) authUid = claimsData.claims.sub as string;
+  } catch { /* malformed token */ }
+  if (!authUid) return json(401, { error: "Please sign in again." });
 
   const { data: appUser } = await admin.from("users")
     .select("id, organisation_id").eq("auth_user_id", authUid).eq("status", "active").maybeSingle();
