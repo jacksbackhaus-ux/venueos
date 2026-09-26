@@ -280,6 +280,104 @@ export type Database = {
           },
         ]
       }
+      batch_ingredient_lots: {
+        Row: {
+          batch_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          delivery_item_id: string | null
+          id: string
+          ingredient_id: string | null
+          lot_code: string | null
+          organisation_id: string
+          quantity_used: number | null
+          site_id: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          delivery_item_id?: string | null
+          id?: string
+          ingredient_id?: string | null
+          lot_code?: string | null
+          organisation_id: string
+          quantity_used?: number | null
+          site_id: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          delivery_item_id?: string | null
+          id?: string
+          ingredient_id?: string | null
+          lot_code?: string | null
+          organisation_id?: string
+          quantity_used?: number | null
+          site_id?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_ingredient_lots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_ingredient_lots_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_ingredient_lots_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_ingredient_lots_delivery_item_id_fkey"
+            columns: ["delivery_item_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_ingredient_lots_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_ingredient_lots_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_ingredient_lots_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_products: {
         Row: {
           active: boolean
@@ -1165,6 +1263,100 @@ export type Database = {
           },
           {
             foreignKeyName: "day_sheets_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_items: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          delivery_log_id: string
+          id: string
+          ingredient_id: string | null
+          item_name: string
+          lot_code: string | null
+          organisation_id: string
+          quantity: number | null
+          site_id: string
+          unit: string | null
+          updated_at: string
+          use_by_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          delivery_log_id: string
+          id?: string
+          ingredient_id?: string | null
+          item_name: string
+          lot_code?: string | null
+          organisation_id: string
+          quantity?: number | null
+          site_id: string
+          unit?: string | null
+          updated_at?: string
+          use_by_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          delivery_log_id?: string
+          id?: string
+          ingredient_id?: string | null
+          item_name?: string
+          lot_code?: string | null
+          organisation_id?: string
+          quantity?: number | null
+          site_id?: string
+          unit?: string | null
+          updated_at?: string
+          use_by_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_items_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_items_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_items_delivery_log_id_fkey"
+            columns: ["delivery_log_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_items_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_items_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_items_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
