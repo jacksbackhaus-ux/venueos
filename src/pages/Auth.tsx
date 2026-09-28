@@ -387,6 +387,17 @@ export function ManagerSignupCard({
               We've sent a confirmation link to <strong className="text-foreground">{form.email}</strong>.
               Click it to activate your account, then log in.
             </p>
+            <p className="text-sm text-muted-foreground">
+              Didn't get an email? You may already have an account — try{" "}
+              <button type="button" onClick={onLogin} className="text-primary hover:underline font-medium">
+                logging in
+              </button>
+              , or{" "}
+              <Link to="/reset-password" className="text-primary hover:underline font-medium">
+                reset your password
+              </Link>
+              .
+            </p>
             <Button onClick={onLogin} className="w-full rounded-lg">Back to log in</Button>
           </CardContent>
         </Card>
