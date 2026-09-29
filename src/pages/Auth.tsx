@@ -50,6 +50,7 @@ export default function Auth() {
           <ManagerSignupCard
             onBack={() => setScreen("choose")}
             onLogin={() => setScreen("manager-login")}
+            onForgot={() => setScreen("manager-forgot")}
           />
         )}
         {screen === "manager-forgot" && (
@@ -334,8 +335,8 @@ export function ManagerLoginCard({
 /* ──────────────────────────────────────────────────────────── Manager: signup */
 
 export function ManagerSignupCard({
-  onBack, onLogin,
-}: { onBack: () => void; onLogin: () => void }) {
+  onBack, onLogin, onForgot,
+}: { onBack: () => void; onLogin: () => void; onForgot: () => void }) {
   const [form, setForm] = useState({ businessName: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [verifySent, setVerifySent] = useState(false);
@@ -393,9 +394,9 @@ export function ManagerSignupCard({
                 logging in
               </button>
               , or{" "}
-              <Link to="/reset-password" className="text-primary hover:underline font-medium">
+              <button type="button" onClick={onForgot} className="text-primary hover:underline font-medium">
                 reset your password
-              </Link>
+              </button>
               .
             </p>
             <Button onClick={onLogin} className="w-full rounded-lg">Back to log in</Button>
