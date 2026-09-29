@@ -56,7 +56,7 @@ export default function Privacy() {
         <Section title="Health information (fitness to work)">
           <p>Food businesses must keep anyone with vomiting or diarrhoea away from food until they have been symptom-free for 48 hours. MiseOS lets a business record this: the person's name, symptoms, the date they were excluded and the date they were cleared to return.</p>
           <p>This is health data, which the law treats as special category data. The business is the controller and is responsible for having a lawful basis and condition for recording it — typically its legal duties as an employer and food business operator.</p>
-          <p>Only the business's managers and owners can see these records. Three years after the date reported, MiseOS anonymises the record by removing the person's account link, replacing their name with “Former staff member”, and clearing symptoms and notes. The site, business, dates, status, recorder and creation time are kept for compliance reporting.</p>
+          <p>Only the business's managers and owners can see these records. Our policy is to keep these records for three years after the date reported. After that, records are anonymised by removing the person's account link, replacing their name with “Former staff member”, and clearing symptoms and notes. The site, business, dates, status, recorder and creation time are kept for compliance reporting.</p>
         </Section>
 
         <Section title="Why we use data (lawful bases)">
