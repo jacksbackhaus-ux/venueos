@@ -144,6 +144,7 @@ export default function OrgLogin() {
           <ManagerSignupCard
             onBack={() => setScreen("choose")}
             onLogin={() => setScreen("manager-login")}
+            onForgot={() => setScreen("manager-forgot")}
           />
         )}
         {screen === "manager-forgot" && (
