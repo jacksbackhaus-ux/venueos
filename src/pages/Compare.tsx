@@ -12,9 +12,29 @@ import {
 
 const PATH = "/compare";
 const URL = `https://mise-os.app${PATH}`;
-const TITLE = "MiseOS vs Other UK Food Safety Apps: An Honest Comparison";
+const TITLE = "MiseOS vs Other UK Food Safety Apps: 2026 Comparison";
 const DESCRIPTION =
-  "A factual, sourced comparison of UK food safety apps for small food businesses — MiseOS, SFBB+, HACCPapp, FoodDocs, Navitas Safety, Leafe and the free FSA SFBB pack. Prices checked 30 September 2026.";
+  "Sourced UK food safety app comparison: MiseOS, SFBB+, HACCPapp, FoodDocs, Navitas, Leafe and the free FSA SFBB pack. Prices, audience and differences.";
+
+// Plain-language Q&A shown on the page. Answers must stay factual and match COMPARISON.
+const FAQS: { q: string; a: string }[] = [
+  {
+    q: "What's the cheapest food safety app for a UK home baker?",
+    a: "Of the paid apps on this page, MiseOS (£4.99 per site per month) and SFBB+ (£4.99 per month) have the lowest listed prices as of the date checked. The FSA's own Safer Food, Better Business pack is free if you're happy to keep paper records.",
+  },
+  {
+    q: "Do I need an app to comply with UK food hygiene law?",
+    a: "No. The law requires a documented food safety management system based on HACCP principles, and the free paper SFBB pack meets that for many small caterers. An app is an optional way to keep the same records digitally.",
+  },
+  {
+    q: "Which of these apps include batch and lot traceability?",
+    a: "MiseOS includes batch and lot traceability in its £4.99 per site price. For the other apps, check each provider's current plan details using the sources linked below.",
+  },
+  {
+    q: "Which options are aimed at multi-site or larger businesses?",
+    a: "FoodDocs, Navitas Safety and Leafe's higher tiers are aimed at restaurants, hotels, pub groups and multi-site operators. Navitas Safety does not publish a price.",
+  },
+];
 
 // Date competitor prices and facts were last verified against the sources below.
 const LAST_CHECKED = "30 September 2026";
@@ -136,13 +156,27 @@ export default function Compare() {
       { "@type": "ListItem", position: 2, name: "Compare", item: URL },
     ],
   };
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "UK food safety apps and tools compared",
+    itemListOrder: "https://schema.org/ItemListUnordered",
+    numberOfItems: COMPARISON.length,
+    itemListElement: COMPARISON.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: c.name,
+      description: `${c.price}. ${c.audience}.`,
+    })),
+  };
 
   return (
     <div className="min-h-screen bg-white">
-      <SEO title={TITLE} description={DESCRIPTION} path={PATH} />
+      <SEO title={TITLE} description={DESCRIPTION} path={PATH} type="article" />
       <Helmet>
         <script type="application/ld+json">{JSON.stringify(articleLd)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbLd)}</script>
+        <script type="application/ld+json">{JSON.stringify(itemListLd)}</script>
       </Helmet>
       <GuideHeader />
 
@@ -222,6 +256,18 @@ export default function Compare() {
               features is for you to judge — the sources above are there so you can compare
               directly.
             </p>
+          </section>
+
+          <section className="mt-12">
+            <h2 className="font-heading text-2xl font-bold text-slate-900">Common questions</h2>
+            <div className="mt-4 space-y-6">
+              {FAQS.map((f) => (
+                <div key={f.q}>
+                  <h3 className="font-heading text-lg font-bold text-slate-900">{f.q}</h3>
+                  <p className="mt-2 text-slate-700 leading-relaxed">{f.a}</p>
+                </div>
+              ))}
+            </div>
           </section>
 
           <section className="mt-12">
