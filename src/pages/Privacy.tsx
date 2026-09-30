@@ -123,7 +123,7 @@ export default function Privacy() {
           <ul className="list-disc pl-5 space-y-1">
             <li>After a subscription is cancelled, records are retained for 7 years so the business can re-export them.</li>
             <li>Billing records: 7 years.</li>
-            <li>Email delivery logs and website technical data: [PLACEHOLDER – confirm period].</li>
+            <li>Email delivery logs: 90 days. Website technical/server logs: 12 months.</li>
           </ul>
         </Section>
 
