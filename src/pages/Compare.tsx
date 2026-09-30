@@ -117,7 +117,7 @@ const COMPARISON: Competitor[] = [
     difference:
       "Three tiers ranging from a solo-account food safety basics plan to a full operations platform (HACCP plan, shift/payroll management, training) at the top tier",
     context:
-      "Leafe is a Bristol-founded app whose clients include Sofitel Hotels & Resorts and Star Pubs & Bars. It's priced in three tiers per venue, billed annually: Basic (solo account — opening/closing routines, temperature and delivery records) from £28/month, Standard (up to 5 team members, inventory and allergen tracking) at £68/month, and Pro (unlimited team, bespoke HACCP plan, shift and payroll management, staff training) at £119/month, all plus VAT. Even its entry-level solo tier costs several times more per month than MiseOS.",
+      "Leafe is a Bristol-founded app whose clients include Sofitel Hotels & Resorts and Star Pubs & Bars. It's priced in three tiers per venue, billed annually: Basic (solo account — opening/closing routines, temperature and delivery records) from £28/month, Standard (up to 5 team members, inventory and allergen tracking) at £68/month, and Pro (unlimited team, bespoke HACCP plan, shift and payroll management, staff training) at £119/month, all plus VAT.",
     sources: [{ label: "Leafe pricing page", url: "https://www.leafeapp.com/pricing" }],
   },
   {
