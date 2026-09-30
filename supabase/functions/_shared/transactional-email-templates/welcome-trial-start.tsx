@@ -38,7 +38,7 @@ export function WelcomeTrialStartEmail({ first_name, organisation_name, app_url 
             <Text style={stepStyle}>3. Start logging temperatures, cleaning and your day sheet.</Text>
           </>
         }
-        secondary="Cancel anytime during the trial. After 14 days your subscription starts automatically at £4.99 per site / month + £1 per extra user."
+        secondary="No surprises: a card is needed to start the trial, and it will be charged automatically on day 14 unless you cancel. You'll pay £4.99 per site / month + £1 per extra user."
       />
     </Html>
   )

@@ -38,7 +38,7 @@ export default function Terms() {
           <p>Don't use MiseOS unlawfully, try to access other businesses' data, disrupt or probe the service without permission, or upload harmful content.</p>
         </Section>
         <Section title="5. Trial and subscription">
-          <p>New businesses get a free trial. After that, access continues on a paid subscription at the prices shown on our <a className="underline" href="/landing#pricing">pricing page</a>. Subscriptions renew automatically until cancelled; after cancelling, you keep access until the end of the period you've paid for.</p>
+          <p>New businesses get a free trial. A card is required to start the trial, but you won't be charged until the 14-day trial ends. Your first charge happens automatically when the trial ends, unless you cancel before then. After that, access continues on a paid subscription at the prices shown on our <a className="underline" href="/landing#pricing">pricing page</a>. Subscriptions renew automatically until cancelled; after cancelling, you keep access until the end of the period you've paid for.</p>
         </Section>
         <Section title="6. Changes to these terms and our prices">
           <p><strong>Changes to the terms.</strong> We may update these terms from time to time. If a change is material, we'll give you at least 30 days' notice by email and/or in the app before it takes effect. If you keep using MiseOS after the change takes effect, you accept the updated terms. If you don't agree, you can cancel before the change takes effect.</p>
