@@ -261,6 +261,20 @@ serve(async (req) => {
 
     const isHaccp = plan === "haccp";
     const trialEligible = isHaccp && !addSiteMode && !trialUsed;
+
+    // Attribution for Stripe metadata — best-effort, never blocks checkout.
+    let utmSource = "";
+    try {
+      const { data: attr } = await service.from("organisations")
+        .select("signup_source, heard_about_us").eq("id", organisationId).maybeSingle();
+      utmSource = String((attr as any)?.signup_source ?? "").slice(0, 200);
+      var heardAbout = String((attr as any)?.heard_about_us ?? "").slice(0, 100);
+    } catch { /* ignore */ }
+    const attrMeta: Record<string, string> = {
+      ...(utmSource && { utm_source: utmSource }),
+      // deno-lint-ignore no-explicit-any
+      ...((globalThis as any), heardAbout! ? { heard_about_us: heardAbout! } : {}),
+    };
     const sessionParams = {
       mode: "subscription" as const,
       ui_mode: "embedded_page" as const,
