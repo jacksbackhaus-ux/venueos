@@ -14,7 +14,7 @@ const PATH = "/compare";
 const URL = `https://mise-os.app${PATH}`;
 const TITLE = "MiseOS vs Other UK Food Safety Apps: An Honest Comparison";
 const DESCRIPTION =
-  "A factual, sourced comparison of UK food safety apps for small food businesses — MiseOS, SFBB+, HACCPapp, FoodDocs, Navitas Safety and the free FSA SFBB pack. Prices checked 30 September 2026.";
+  "A factual, sourced comparison of UK food safety apps for small food businesses — MiseOS, SFBB+, HACCPapp, FoodDocs, Navitas Safety, Leafe and the free FSA SFBB pack. Prices checked 30 September 2026.";
 
 // Date competitor prices and facts were last verified against the sources below.
 const LAST_CHECKED = "30 September 2026";
