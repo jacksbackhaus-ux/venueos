@@ -11,9 +11,9 @@ import {
 
 const PATH = "/guides/no-cottage-food-law-uk";
 const URL = `https://mise-os.app${PATH}`;
-const TITLE = "There's No 'Cottage Food Law' in the UK — What Applies Instead";
+const TITLE = "UK Cottage Food Law: Selling Food From Home Legally (2026)";
 const DESCRIPTION =
-  "Cottage food laws are a US concept. Here's what UK home food businesses actually need: council registration, SFBB records, allergen info and a hygiene rating.";
+  "The UK has no cottage food law. Selling baked goods from home? Here are the 4 steps that apply instead: register with your council, keep SFBB records, label allergens, get rated.";
 
 export default function NoCottageFoodLawGuide() {
   const articleLd = {
