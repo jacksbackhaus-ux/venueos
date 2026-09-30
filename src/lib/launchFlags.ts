@@ -16,6 +16,14 @@ export type LaunchMode = "haccp" | "full";
 /** Current launch mode. "haccp" = focused HACCP launch. "full" = pre-pivot. */
 export const LAUNCH_MODE: LaunchMode = "haccp";
 
+/**
+ * Signup attribution (UTM/referrer capture + "How did you hear about us?").
+ * OFF until the owner confirms the PECR position with a solicitor. When false:
+ * nothing is captured or stored, the onboarding question is hidden, and the
+ * Privacy Notice omits the related wording.
+ */
+export const attributionTrackingEnabled = false;
+
 const HACCP = LAUNCH_MODE === "haccp";
 
 /** Customer-facing AI features (morning briefing, margin watchdog, smart rota, …) */

@@ -2,6 +2,7 @@
 import { SEO } from "@/components/SEO";
 import { LegalPage, Section, Table, WhoWeAre } from "@/components/legal/LegalShell";
 import { LEGAL } from "@/config/legal";
+import { attributionTrackingEnabled } from "@/lib/launchFlags";
 
 export default function Privacy() {
   const mail = <a className="underline" href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a>;
@@ -33,7 +34,7 @@ export default function Privacy() {
             <li>Business name, site names and addresses, premises type and council registration details</li>
             <li>Subscription and billing history. Card details are handled by Stripe and never reach MiseOS.</li>
             <li>Settings you choose, such as notification preferences and connected AI apps</li>
-            <li>When you sign up, we may record how you found us (such as the website or search engine you came from, and your answer to "How did you hear about us?") against your business account, to help us understand which marketing works.</li>
+            {attributionTrackingEnabled && <li>When you sign up, we may record how you found us (such as the website or search engine you came from, and your answer to "How did you hear about us?") against your business account, to help us understand which marketing works.</li>}
           </ul>
           <h3 className="font-semibold text-slate-900">Staff (entered by the business)</h3>
           <p>The business is the controller of this staff data, including health data in illness records. It is responsible for having a lawful basis to record it, for telling its staff that it is kept in MiseOS (for example, in its own staff privacy notice), and for handling staff requests about their data. We help the business with those requests as its processor.</p>
@@ -69,7 +70,7 @@ export default function Privacy() {
               ["Send service emails (sign-in links, trial reminders, billing notices)", "Contract; legitimate interests"],
               ["Keep the service secure and prevent misuse", "Legitimate interests"],
               ["Process staff and food safety data for a business", "The business's own basis — we act on its instructions"],
-              ["Record how you found us when you sign up", "Legitimate interests"],
+              ...(attributionTrackingEnabled ? [["Record how you found us when you sign up", "Legitimate interests"]] : []),
               ["Answer questions and support requests", "Legitimate interests"],
             ]}
           />
@@ -155,15 +156,17 @@ export default function Privacy() {
               ["Offline page cache", "Lets screens open without signal", "Until the app updates", "Essential"],
               ["Push notification subscription", "Delivers notifications you turned on", "Until you turn them off", "Essential"],
               ["Stripe checkout cookies", "Fraud prevention during payment (set by Stripe)", "Set by Stripe", "Essential"],
-              ["How you found us (browser storage, not a cookie)", "Remembers the website, search engine or campaign link that brought you to MiseOS, so it can be saved against your business when you sign up", "Up to 7 days, or until saved at sign-up", "Statistics"],
+              ...(attributionTrackingEnabled ? [["How you found us (browser storage, not a cookie)", "Remembers the website, search engine or campaign link that brought you to MiseOS, so it can be saved against your business when you sign up", "Up to 7 days, or until saved at sign-up", "Statistics"]] : []),
               ["Sidebar open/closed", "Remembers your layout", "Until cleared", "Preference"],
               ["Messenger notice seen", "Stops the same notice reappearing", "Until cleared", "Preference"],
               ["Dismissed prompts", "Stops setup prompts reappearing", "Until cleared", "Preference"],
             ]}
           />
           <p>Our pages load a typeface from Google Fonts. This sets no cookies, but your browser sends your IP address to Google when it downloads the font.</p>
-          <p><strong>How you found us:</strong> when you visit our public pages (not the app itself), we note the campaign tags in the web address and the website that sent you, in your browser's own storage. It isn't a cookie and isn't shared with anyone else. It is deleted after 7 days, or as soon as it has been saved at sign-up. If your browser has "Do Not Track" or "Global Privacy Control" turned on, we don't record this at all. You can also clear it at any time by clearing your browser's site data.</p>
-          <p>Apart from this, we only use storage that is strictly necessary or that remembers your appearance and functionality preferences.</p>
+          {attributionTrackingEnabled && (
+            <p><strong>How you found us:</strong> when you visit our public pages (not the app itself), we note the campaign tags in the web address and the website that sent you, in your browser's own storage. It isn't a cookie and isn't shared with anyone else. It is deleted after 7 days, or as soon as it has been saved at sign-up. If your browser has "Do Not Track" or "Global Privacy Control" turned on, we don't record this at all. You can also clear it at any time by clearing your browser's site data.</p>
+          )}
+          <p>{attributionTrackingEnabled ? "Apart from this, we" : "We"} only use storage that is strictly necessary or that remembers your appearance and functionality preferences.</p>
         </Section>
 
         <Section title="Changes">
