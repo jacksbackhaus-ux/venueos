@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { captureAttribution, isPublicMarketingPath } from "@/lib/attribution";
+import { attributionTrackingEnabled } from "@/lib/launchFlags";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -271,7 +272,7 @@ function AppRoutes() {
   const { isLoading } = useAuth();
   const attrLocation = useLocation();
   useEffect(() => {
-    if (isPublicMarketingPath(attrLocation.pathname)) captureAttribution();
+    if (attributionTrackingEnabled && isPublicMarketingPath(attrLocation.pathname)) captureAttribution();
   }, [attrLocation.pathname]);
   if (isLoading) return <FullScreenLoader />;
 
