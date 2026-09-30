@@ -54,7 +54,7 @@ const COMPARISON: Competitor[] = [
         label: "Culinary Key: best food safety apps for UK businesses 2026",
         url: "https://www.culinarykey.co.uk/resources/the-best-food-safety-apps-for-uk-businesses-in-2026",
       },
-      { label: "SFBB+ App Store listing", url: "https://apps.apple.com/gb/app/sfbb-plus/id6478834528" },
+      { label: "SFBB+ App Store listing", url: "https://apps.apple.com/gb/app/sfbb/id1405688537" },
     ],
   },
   {
