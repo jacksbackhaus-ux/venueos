@@ -3390,21 +3390,42 @@ export type Database = {
       }
       organisations: {
         Row: {
+          attribution_recorded_at: string | null
           created_at: string
+          heard_about_us: string | null
           id: string
+          landing_page: string | null
           name: string
+          signup_campaign: string | null
+          signup_medium: string | null
+          signup_referrer: string | null
+          signup_source: string | null
           slug: string
         }
         Insert: {
+          attribution_recorded_at?: string | null
           created_at?: string
+          heard_about_us?: string | null
           id?: string
+          landing_page?: string | null
           name: string
+          signup_campaign?: string | null
+          signup_medium?: string | null
+          signup_referrer?: string | null
+          signup_source?: string | null
           slug: string
         }
         Update: {
+          attribution_recorded_at?: string | null
           created_at?: string
+          heard_about_us?: string | null
           id?: string
+          landing_page?: string | null
           name?: string
+          signup_campaign?: string | null
+          signup_medium?: string | null
+          signup_referrer?: string | null
+          signup_source?: string | null
           slug?: string
         }
         Relationships: []
@@ -7241,6 +7262,18 @@ export type Database = {
           status: string
         }[]
       }
+      record_signup_attribution: {
+        Args: {
+          _campaign: string
+          _heard_about_us: string
+          _landing_page: string
+          _medium: string
+          _org_id: string
+          _referrer: string
+          _source: string
+        }
+        Returns: undefined
+      }
       resync_org_modules: { Args: { _org_id: string }; Returns: Json }
       seed_messenger_channels_for_site: {
         Args: { _site_id: string }
@@ -7303,6 +7336,18 @@ export type Database = {
           organisation_name: string
           reason: string
           staff_user_id: string
+        }[]
+      }
+      staff_list_org_attribution: {
+        Args: never
+        Returns: {
+          heard_about_us: string
+          landing_page: string
+          organisation_id: string
+          signup_campaign: string
+          signup_medium: string
+          signup_referrer: string
+          signup_source: string
         }[]
       }
       staff_update_subscription: {
