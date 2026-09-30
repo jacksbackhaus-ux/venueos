@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import {
   Menu, X, Check, ArrowRight, ShieldCheck, FileText, Thermometer,
@@ -467,6 +468,36 @@ function Footer() {
   );
 }
 
+const landingLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      name: "MiseOS",
+      operatingSystem: "Web",
+      applicationCategory: "BusinessApplication",
+      url: "https://mise-os.app/",
+      description: "Digital HACCP and food safety SaaS for UK small food businesses.",
+      offers: {
+        "@type": "Offer",
+        price: "4.99",
+        priceCurrency: "GBP",
+        description: "£4.99 per site per month after a 14-day free trial; £1 per extra user per month.",
+      },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: [
+        { "@type": "Question", name: "Do I need a card to start the trial?", acceptedAnswer: { "@type": "Answer", text: "Yes, a card is required to start the trial, but you won't be charged until the 14-day trial ends. Cancel anytime before then and nothing is billed." } },
+        { "@type": "Question", name: "Does it work offline?", acceptedAnswer: { "@type": "Answer", text: "Yes. Logs you make without signal are saved on your device and sync automatically the moment you're back online." } },
+        { "@type": "Question", name: "Will my Environmental Health Officer accept digital records?", acceptedAnswer: { "@type": "Answer", text: "Yes. UK EHOs accept digital food safety records. MiseOS exports an Inspection Pack in PDF and Excel with all the records they look for, laid out clearly so they can find what they need quickly." } },
+        { "@type": "Question", name: "How much do extra users cost?", acceptedAnswer: { "@type": "Answer", text: "Each additional active user is £1 per month. The first user is included in the £4.99/site/month price. You can add or deactivate users as your team changes." } },
+        { "@type": "Question", name: "What does HACCP stand for?", acceptedAnswer: { "@type": "Answer", text: "HACCP stands for Hazard Analysis and Critical Control Points. It is the internationally recognised method for identifying food safety hazards and controlling them at the steps where control matters most. UK food hygiene law requires food businesses to operate procedures based on HACCP principles." } },
+      ],
+    },
+  ],
+};
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -475,6 +506,9 @@ export default function Landing() {
         description="Digital HACCP, temperature logs and cleaning schedules for UK bakeries, cafés and small restaurants. 14-day trial."
         path="/"
       />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(landingLd)}</script>
+      </Helmet>
       <Nav />
       <main>
         <Hero />
