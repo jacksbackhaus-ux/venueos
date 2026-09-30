@@ -263,18 +263,16 @@ serve(async (req) => {
     const trialEligible = isHaccp && !addSiteMode && !trialUsed;
 
     // Attribution for Stripe metadata — best-effort, never blocks checkout.
-    let utmSource = "";
+    const attrMeta: Record<string, string> = {};
     try {
       const { data: attr } = await service.from("organisations")
         .select("signup_source, heard_about_us").eq("id", organisationId).maybeSingle();
-      utmSource = String((attr as any)?.signup_source ?? "").slice(0, 200);
-      var heardAbout = String((attr as any)?.heard_about_us ?? "").slice(0, 100);
-    } catch { /* ignore */ }
-    const attrMeta: Record<string, string> = {
-      ...(utmSource && { utm_source: utmSource }),
-      // deno-lint-ignore no-explicit-any
-      ...((globalThis as any), heardAbout! ? { heard_about_us: heardAbout! } : {}),
-    };
+      const a = (attr ?? {}) as { signup_source?: string | null; heard_about_us?: string | null };
+      const src = String(a.signup_source ?? "").trim().slice(0, 200);
+      const heard = String(a.heard_about_us ?? "").trim().slice(0, 100);
+      if (src) attrMeta.utm_source = src;
+      if (heard) attrMeta.heard_about_us = heard;
+    } catch { /* ignore — attribution must never affect checkout */ }
     const sessionParams = {
       mode: "subscription" as const,
       ui_mode: "embedded_page" as const,
@@ -288,11 +286,12 @@ serve(async (req) => {
       allow_promotion_codes: false,
       payment_method_collection: "always" as const,
       metadata: {
+        ...attrMeta,
         organisation_id: organisationId, plan, cycle,
         add_site_mode: addSiteMode ? "true" : "false",
       },
       subscription_data: {
-        metadata: { organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
+        metadata: { ...attrMeta, organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
         // 14-day free trial ONLY for orgs that have never used one.
         // Card is required at signup (payment_method_collection above),
         // so the subscription auto-activates when the trial ends.

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Loader2, Building2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { heardAboutLabel } from "@/lib/attribution";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb: any = supabase;
@@ -20,6 +21,34 @@ interface AssignedOrg {
   granted_at: string | null;
   expires_at: string | null;
   is_super_admin_view: boolean;
+}
+
+interface OrgAttribution {
+  organisation_id: string;
+  heard_about_us: string | null;
+  signup_source: string | null;
+  signup_medium: string | null;
+  signup_campaign: string | null;
+  signup_referrer: string | null;
+  landing_page: string | null;
+}
+
+function AttributionLine({ a }: { a?: OrgAttribution }) {
+  const items: [string, string | null | undefined][] = [
+    ["Heard", heardAboutLabel(a?.heard_about_us) ?? a?.heard_about_us],
+    ["Source", a?.signup_source],
+    ["Medium", a?.signup_medium],
+    ["Campaign", a?.signup_campaign],
+    ["Referrer", a?.signup_referrer],
+    ["Landing", a?.landing_page],
+  ];
+  const shown = items.filter(([, v]) => v);
+  if (!shown.length) return <p className="text-xs text-muted-foreground mt-1">Source: not recorded</p>;
+  return (
+    <p className="text-xs text-muted-foreground mt-1 break-words">
+      {shown.map(([k, v]) => <span key={k} className="mr-3"><span className="font-medium">{k}:</span> {v}</span>)}
+    </p>
+  );
 }
 
 /**
@@ -36,6 +65,8 @@ export default function StaffOrgs() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
 
+  const [attr, setAttr] = useState<Record<string, OrgAttribution>>({});
+
   useEffect(() => {
     void (async () => {
       setLoading(true);
@@ -47,6 +78,16 @@ export default function StaffOrgs() {
         setOrgs((data ?? []) as AssignedOrg[]);
       }
       setLoading(false);
+    })();
+    // Attribution is optional extra info — failures are ignored.
+    void (async () => {
+      try {
+        const { data, error } = await sb.rpc("staff_list_org_attribution");
+        if (error || !data) return;
+        const map: Record<string, OrgAttribution> = {};
+        for (const r of data as OrgAttribution[]) map[r.organisation_id] = r;
+        setAttr(map);
+      } catch { /* ignore */ }
     })();
   }, []);
 
@@ -119,6 +160,7 @@ export default function StaffOrgs() {
                         </Badge>
                       )}
                     </p>
+                    <AttributionLine a={attr[o.organisation_id]} />
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Link to={`/staff/org/${o.organisation_id}`}>
