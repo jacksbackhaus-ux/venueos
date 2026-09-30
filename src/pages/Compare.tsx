@@ -90,6 +90,18 @@ const COMPARISON: Competitor[] = [
     ],
   },
   {
+    name: "Leafe",
+    price: "No public price list — pricing is provided on request",
+    audience: "Restaurants, hotels and pub groups",
+    difference: "Broader kitchen operations platform that includes food hygiene records, not a food-safety-only tool",
+    context:
+      "Leafe is a Bristol-founded app whose clients include Sofitel Hotels & Resorts and Star Pubs & Bars. Alongside hygiene record-keeping, it covers rota and shift scheduling, time-tracking, inventory and food waste management, so it positions itself as a broader kitchen operations platform rather than a food-safety-only tool. No public pricing is listed; interested businesses need to contact them directly.",
+    sources: [
+      { label: "Leafe App Store listing", url: "https://apps.apple.com/app/id1562506324" },
+      { label: "Leafe company profile (Welcome to the Jungle)", url: "https://app.welcometothejungle.com/companies/Leafe-2" },
+    ],
+  },
+  {
     name: "FSA Safer Food, Better Business (SFBB) pack",
     price: "Free",
     audience: "Small caterers — the framework most UK apps are built around",
