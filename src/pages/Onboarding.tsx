@@ -14,7 +14,7 @@ import { buildOrgLoginUrl } from "@/lib/publicAppUrl";
 import { PREMISES_TYPES, premisesMeta, type PremisesType } from "@/lib/premises";
 import { SEO } from "@/components/SEO";
 import { HEARD_ABOUT_OPTIONS, recordSignupAttribution } from "@/lib/attribution";
-import { attributionTrackingEnabled } from "@/lib/launchFlags";
+import { heardAboutUsQuestionEnabled } from "@/lib/launchFlags";
 
 const PREMISES_ICONS = { Store, Home, Truck, Factory } as const;
 
@@ -112,7 +112,7 @@ export default function Onboarding() {
     }
 
     // Fire-and-forget attribution (never awaited, never throws).
-    if (attributionTrackingEnabled && orgId) recordSignupAttribution(orgId, heardAbout || null);
+    if (heardAboutUsQuestionEnabled && orgId) recordSignupAttribution(orgId, heardAbout || null);
 
     // Refresh appUser in the background so downstream guards work after Continue.
     void refreshAppUser();
@@ -346,7 +346,7 @@ export default function Onboarding() {
                 <Input id="o-addr" value={form.siteAddress}
                   onChange={e => setForm(f => ({ ...f, siteAddress: e.target.value }))} />
               </div>
-              {attributionTrackingEnabled && (
+              {heardAboutUsQuestionEnabled && (
               <div className="space-y-1.5">
                 <Label htmlFor="o-heard">How did you hear about us? (optional)</Label>
                 <select id="o-heard" value={heardAbout} onChange={e => setHeardAbout(e.target.value)}
