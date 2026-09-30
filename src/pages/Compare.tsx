@@ -91,15 +91,14 @@ const COMPARISON: Competitor[] = [
   },
   {
     name: "Leafe",
-    price: "No public price list — pricing is provided on request",
-    audience: "Restaurants, hotels and pub groups",
-    difference: "Broader kitchen operations platform that includes food hygiene records, not a food-safety-only tool",
+    price:
+      "From £28/month (Basic, solo account) up to £119/month (Pro, unlimited team) — billed annually, per venue, plus VAT. Monthly billing without an annual commitment is likely higher; check their site for that rate.",
+    audience: "Solo operators up to larger multi-site teams, with a tier for each",
+    difference:
+      "Three tiers ranging from a solo-account food safety basics plan to a full operations platform (HACCP plan, shift/payroll management, training) at the top tier",
     context:
-      "Leafe is a Bristol-founded app whose clients include Sofitel Hotels & Resorts and Star Pubs & Bars. Alongside hygiene record-keeping, it covers rota and shift scheduling, time-tracking, inventory and food waste management, so it positions itself as a broader kitchen operations platform rather than a food-safety-only tool. No public pricing is listed; interested businesses need to contact them directly.",
-    sources: [
-      { label: "Leafe App Store listing", url: "https://apps.apple.com/app/id1562506324" },
-      { label: "Leafe company profile (Welcome to the Jungle)", url: "https://app.welcometothejungle.com/companies/Leafe-2" },
-    ],
+      "Leafe is a Bristol-founded app whose clients include Sofitel Hotels & Resorts and Star Pubs & Bars. It's priced in three tiers per venue, billed annually: Basic (solo account — opening/closing routines, temperature and delivery records) from £28/month, Standard (up to 5 team members, inventory and allergen tracking) at £68/month, and Pro (unlimited team, bespoke HACCP plan, shift and payroll management, staff training) at £119/month, all plus VAT. Even its entry-level solo tier costs several times more per month than MiseOS.",
+    sources: [{ label: "Leafe pricing page", url: "https://www.leafeapp.com/pricing" }],
   },
   {
     name: "FSA Safer Food, Better Business (SFBB) pack",
