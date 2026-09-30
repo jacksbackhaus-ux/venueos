@@ -82,6 +82,7 @@ import GuidesIndex from "@/pages/guides/GuidesIndex";
 import SoloRecordsGuide from "@/pages/guides/SoloRecordsGuide";
 import NoCottageFoodLawGuide from "@/pages/guides/NoCottageFoodLawGuide";
 import SfbbVsHaccpGuide from "@/pages/guides/SfbbVsHaccpGuide";
+import Compare from "@/pages/Compare";
 import Faq from "@/pages/Faq";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
@@ -312,6 +313,7 @@ function AppRoutes() {
       <Route path="/guides/records-for-solo-food-businesses" element={<SoloRecordsGuide />} />
       <Route path="/guides/no-cottage-food-law-uk" element={<NoCottageFoodLawGuide />} />
       <Route path="/guides/sfbb-vs-haccp" element={<SfbbVsHaccpGuide />} />
+      <Route path="/compare" element={<Compare />} />
       <Route path="/faq" element={<Faq />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
