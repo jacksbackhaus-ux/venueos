@@ -234,8 +234,8 @@ const Settings = () => {
     setBakeryAddress(currentSite.address || "");
 
     const [unitsRes, cleaningRes, sectionsRes, usersRes, membershipsRes, staffCodesRes, ownersRes] = await Promise.all([
-      supabase.from('temp_units').select('*').eq('site_id', currentSite.id).order('sort_order'),
-      supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).order('sort_order'),
+      supabase.from('temp_units').select('*').eq('site_id', currentSite.id).is('deleted_at', null).order('sort_order'),
+      supabase.from('cleaning_tasks').select('*').eq('site_id', currentSite.id).is('deleted_at', null).order('sort_order'),
       supabase.from('day_sheet_sections').select('id, title, day_sheet_items(id, label, active, sort_order)').eq('site_id', currentSite.id).order('sort_order'),
       supabase.from('users').select('id, display_name, email, status, auth_type, anonymised_at').eq('organisation_id', currentSite.organisation_id),
       supabase.from('memberships').select('user_id, site_role, active').eq('site_id', currentSite.id),
@@ -392,12 +392,15 @@ const Settings = () => {
   };
 
   const deactivateUnit = async (id: string) => {
-    if (!confirm("Permanently delete this unit? This cannot be undone. Logged history for this unit will also be removed.")) return;
-    // Delete logs first (no cascade)
-    await supabase.from('temp_logs').delete().eq('unit_id', id);
-    const { error } = await supabase.from('temp_units').delete().eq('id', id);
+    if (!confirm("Remove this unit? It will disappear from your list, but its past temperature records stay in your reports and exports.")) return;
+    // Soft-delete: keep temperature history intact. Confirm a row was actually
+    // updated so a blocked change never shows a fake success.
+    const { data, error } = await supabase.from('temp_units')
+      .update({ deleted_at: new Date().toISOString(), active: false } as any)
+      .eq('id', id).select('id');
     if (error) { toast.error(error.message); return; }
-    toast.success("Unit deleted");
+    if (!data || data.length === 0) { toast.error("You don't have permission to remove this unit."); return; }
+    toast.success("Unit removed");
     setTempUnits((prev) => prev.filter((u) => u.id !== id));
   };
 
@@ -433,11 +436,13 @@ const Settings = () => {
   };
 
   const deactivateCleaning = async (id: string) => {
-    if (!confirm("Permanently delete this cleaning task? This cannot be undone. Logged history will also be removed.")) return;
-    await supabase.from('cleaning_logs').delete().eq('task_id', id);
-    const { error } = await supabase.from('cleaning_tasks').delete().eq('id', id);
+    if (!confirm("Remove this cleaning task? It will disappear from your list, but its past cleaning records stay in your reports and exports.")) return;
+    const { data, error } = await supabase.from('cleaning_tasks')
+      .update({ deleted_at: new Date().toISOString(), active: false } as any)
+      .eq('id', id).select('id');
     if (error) { toast.error(error.message); return; }
-    toast.success("Task deleted");
+    if (!data || data.length === 0) { toast.error("You don't have permission to remove this task."); return; }
+    toast.success("Task removed");
     setCleaningTemplates((prev) => prev.filter((t) => t.id !== id));
   };
 
