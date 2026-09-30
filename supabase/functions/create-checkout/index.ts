@@ -193,11 +193,15 @@ serve(async (req) => {
       }
     }
 
-    const trialUsed = Boolean(
-      existingSub?.has_used_trial ||
-      existingSub?.trial_end ||
-      existingSub?.stripe_subscription_id
-    );
+    // The signup trigger's placeholder trial_end does NOT count as a used trial.
+    const stripeTrialEnd = computeStripeTrialEnd({
+      isHaccp: plan === "haccp",
+      addSiteMode,
+      hasUsedTrial: existingSub?.has_used_trial,
+      stripeSubscriptionId: existingSub?.stripe_subscription_id,
+      placeholderTrialEnd: existingSub?.trial_end,
+      nowMs: Date.now(),
+    });
 
     // Reuse the org's Stripe customer if we have one; otherwise create a
     // single customer and persist it so future checkouts cannot mint a
@@ -259,8 +263,7 @@ serve(async (req) => {
       lineItems.push({ price: legacyPriceId, quantity: siteQuantity });
     }
 
-    const isHaccp = plan === "haccp";
-    const trialEligible = isHaccp && !addSiteMode && !trialUsed;
+    const trialEligible = stripeTrialEnd !== null;
 
     // Attribution for Stripe metadata — best-effort, never blocks checkout.
     const attrMeta: Record<string, string> = {};
@@ -292,10 +295,10 @@ serve(async (req) => {
       },
       subscription_data: {
         metadata: { ...attrMeta, organisation_id: organisationId, plan, cycle, add_site_mode: addSiteMode ? "true" : "false" },
-        // 14-day free trial ONLY for orgs that have never used one.
-        // Card is required at signup (payment_method_collection above),
-        // so the subscription auto-activates when the trial ends.
-        ...(trialEligible && { trial_period_days: 14 }),
+        // Free trial ending on the org's ORIGINAL 14-day in-app trial date.
+        // Card is required (payment_method_collection above); nothing is
+        // charged until trial_end, then the subscription auto-activates.
+        ...(trialEligible && { trial_end: stripeTrialEnd! }),
       },
     };
 
@@ -308,16 +311,16 @@ serve(async (req) => {
       session = await stripe.checkout.sessions.create({ ...sessionParams, customer: stripeCustomerId });
     }
 
-    // Lock the trial flag the moment a trial session is minted, so a
-    // refresh / re-attempt in the same browser cannot produce a second
-    // trial even before Stripe webhooks land.
+    // Store the customer against the org. We deliberately do NOT set
+    // has_used_trial here: an abandoned checkout would otherwise make the
+    // retry charge immediately. Repeat sessions can't extend the trial
+    // because trial_end is anchored to the original in-app trial date.
     if (trialEligible) {
       await service.from("subscriptions").upsert({
         organisation_id: organisationId,
         stripe_customer_id: stripeCustomerId,
         status: existingSub?.status ?? "incomplete",
         environment,
-        has_used_trial: true,
       }, { onConflict: "organisation_id" });
     }
 
