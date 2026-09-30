@@ -17,12 +17,18 @@ export type LaunchMode = "haccp" | "full";
 export const LAUNCH_MODE: LaunchMode = "haccp";
 
 /**
- * Signup attribution (UTM/referrer capture + "How did you hear about us?").
- * OFF until the owner confirms the PECR position with a solicitor. When false:
- * nothing is captured or stored, the onboarding question is hidden, and the
- * Privacy Notice omits the related wording.
+ * "How did you hear about us?" onboarding question — a self-reported answer
+ * saved against the organisation. No browser storage involved. ON.
  */
-export const attributionTrackingEnabled = false;
+export const heardAboutUsQuestionEnabled = true;
+
+/**
+ * UTM/referrer capture held in browser storage on public pages.
+ * OFF until the owner confirms the PECR position with a solicitor. When false,
+ * nothing is read from or written to browser storage and the Privacy Notice
+ * omits the related wording.
+ */
+export const utmReferrerCaptureEnabled = false;
 
 const HACCP = LAUNCH_MODE === "haccp";
 

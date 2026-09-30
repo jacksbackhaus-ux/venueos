@@ -5,6 +5,7 @@
  * Every function here swallows errors — it must never affect sign-up.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { utmReferrerCaptureEnabled } from "@/lib/launchFlags";
 
 const KEY = "miseos_attribution";
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -50,6 +51,7 @@ export function clearAttribution() {
 
 /** Call on public marketing pages only. First touch wins. */
 export function captureAttribution() {
+  if (!utmReferrerCaptureEnabled) return;
   try {
     if (optedOut() || read()) return;
     const params = new URLSearchParams(window.location.search);
@@ -78,7 +80,7 @@ export function captureAttribution() {
 /** Fire-and-forget after onboarding succeeds. Never throws, never awaited by callers. */
 export function recordSignupAttribution(orgId: string, heardAboutUs: string | null) {
   try {
-    const a = optedOut() ? null : read();
+    const a = !utmReferrerCaptureEnabled || optedOut() ? null : read();
     if (!a && !heardAboutUs) return;
     void (supabase.rpc as any)("record_signup_attribution", {
       _org_id: orgId,
@@ -91,7 +93,7 @@ export function recordSignupAttribution(orgId: string, heardAboutUs: string | nu
     })
       .then(({ error }: { error: unknown }) => {
         if (error) console.warn("attribution not recorded", error);
-        else clearAttribution();
+        else if (utmReferrerCaptureEnabled) clearAttribution();
       })
       .catch(() => { /* ignore */ });
   } catch { /* ignore */ }
