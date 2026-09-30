@@ -14,7 +14,7 @@ const PATH = "/compare";
 const URL = `https://mise-os.app${PATH}`;
 const TITLE = "MiseOS vs Other UK Food Safety Apps: An Honest Comparison";
 const DESCRIPTION =
-  "A factual, sourced comparison of UK food safety apps for small food businesses — MiseOS, SFBB+, HACCPapp, FoodDocs, Navitas Safety and the free FSA SFBB pack. Prices checked 30 September 2026.";
+  "A factual, sourced comparison of UK food safety apps for small food businesses — MiseOS, SFBB+, HACCPapp, FoodDocs, Navitas Safety, Leafe and the free FSA SFBB pack. Prices checked 30 September 2026.";
 
 // Date competitor prices and facts were last verified against the sources below.
 const LAST_CHECKED = "30 September 2026";
@@ -87,6 +87,18 @@ const COMPARISON: Competitor[] = [
       "Navitas Safety is built for multi-site hospitality and retail chains. It doesn't publish a price list; pricing is provided on request and is structured for enterprise deployments.",
     sources: [
       { label: "Capterra UK: Navitas Compliance", url: "https://www.capterra.co.uk/software/200496/navitas-compliance" },
+    ],
+  },
+  {
+    name: "Leafe",
+    price: "No public price list — pricing is provided on request",
+    audience: "Restaurants, hotels and pub groups",
+    difference: "Broader kitchen operations platform that includes food hygiene records, not a food-safety-only tool",
+    context:
+      "Leafe is a Bristol-founded app whose clients include Sofitel Hotels & Resorts and Star Pubs & Bars. Alongside hygiene record-keeping, it covers rota and shift scheduling, time-tracking, inventory and food waste management, so it positions itself as a broader kitchen operations platform rather than a food-safety-only tool. No public pricing is listed; interested businesses need to contact them directly.",
+    sources: [
+      { label: "Leafe App Store listing", url: "https://apps.apple.com/app/id1562506324" },
+      { label: "Leafe company profile (Welcome to the Jungle)", url: "https://app.welcometothejungle.com/companies/Leafe-2" },
     ],
   },
   {
