@@ -13,6 +13,7 @@ MiseOS is a mobile-first web app used by independent UK food businesses — bake
 - [What is HACCP? A Complete Guide for UK Food Businesses](/haccp): Reference guide — what HACCP stands for (Hazard Analysis and Critical Control Points), what a critical control point is, the 7 principles of HACCP, how to write a HACCP plan in 7 steps, UK legal requirements, and how HACCP relates to Safer Food, Better Business.
 - [HACCP for Bakeries: UK Compliance Guide](/guides/bakery-haccp-compliance): Bakery-specific HACCP guidance covering allergens, cooling, filling, traceability and inspection prep.
 - [Safer Food Better Business for Caterers: UK Compliance Guide](/guides/sfbb-caterers-compliance): SFBB safe methods, daily diary records, opening and closing checks and inspection prep for caterers.
+- [MiseOS vs other UK food safety apps](/compare): Sourced comparison of MiseOS, SFBB+, HACCPapp, FoodDocs, Navitas Safety, Leafe and the free FSA SFBB pack — price, intended audience and key difference for each, with source links and a last-checked date.
 
 ## Optional
 
