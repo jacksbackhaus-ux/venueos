@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { captureAttribution, isPublicMarketingPath } from "@/lib/attribution";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -268,6 +269,10 @@ function PublicOrApp({ public: publicPage, children }: { public: React.ReactNode
 
 function AppRoutes() {
   const { isLoading } = useAuth();
+  const attrLocation = useLocation();
+  useEffect(() => {
+    if (isPublicMarketingPath(attrLocation.pathname)) captureAttribution();
+  }, [attrLocation.pathname]);
   if (isLoading) return <FullScreenLoader />;
 
   // Module-gated site route.

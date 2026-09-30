@@ -13,6 +13,7 @@ import { BrandingSection } from "@/components/settings/BrandingSection";
 import { buildOrgLoginUrl } from "@/lib/publicAppUrl";
 import { PREMISES_TYPES, premisesMeta, type PremisesType } from "@/lib/premises";
 import { SEO } from "@/components/SEO";
+import { HEARD_ABOUT_OPTIONS, recordSignupAttribution } from "@/lib/attribution";
 
 const PREMISES_ICONS = { Store, Home, Truck, Factory } as const;
 
@@ -29,6 +30,7 @@ export default function Onboarding() {
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [heardAbout, setHeardAbout] = useState("");
   const [form, setForm] = useState({
     displayName: "",
     orgName: "",
@@ -107,6 +109,9 @@ export default function Onboarding() {
         })
         .catch((e) => console.warn("welcome email failed", e));
     }
+
+    // Fire-and-forget attribution (never awaited, never throws).
+    if (orgId) recordSignupAttribution(orgId, heardAbout || null);
 
     // Refresh appUser in the background so downstream guards work after Continue.
     void refreshAppUser();
@@ -339,6 +344,14 @@ export default function Onboarding() {
                 <Label htmlFor="o-addr">Address (optional)</Label>
                 <Input id="o-addr" value={form.siteAddress}
                   onChange={e => setForm(f => ({ ...f, siteAddress: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="o-heard">How did you hear about us? (optional)</Label>
+                <select id="o-heard" value={heardAbout} onChange={e => setHeardAbout(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">Prefer not to say</option>
+                  {HEARD_ABOUT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
