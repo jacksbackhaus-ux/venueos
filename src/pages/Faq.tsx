@@ -162,6 +162,10 @@ export default function Faq() {
           <Link to="/guides" className="underline underline-offset-4 decoration-slate-300 hover:text-slate-900">
             Food Safety Hub guides
           </Link>
+          , or see how MiseOS compares on price and features in our{" "}
+          <Link to="/compare" className="underline underline-offset-4 decoration-slate-300 hover:text-slate-900">
+            honest comparison of UK food safety apps
+          </Link>
           .
         </p>
 

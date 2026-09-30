@@ -40,6 +40,7 @@ const MORE = [
   { to: "/guides/bakery-haccp-compliance", label: "HACCP for bakeries: the UK compliance guide" },
   { to: "/guides/sfbb-caterers-compliance", label: "Safer Food, Better Business for caterers" },
   { to: "/haccp", label: "What is HACCP? A beginner's explainer" },
+  { to: "/compare", label: "MiseOS vs other UK food safety apps: an honest comparison" },
 ];
 
 export default function GuidesIndex() {
