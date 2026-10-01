@@ -1,47 +1,262 @@
-# Database gaps audit — findings only (nothing changed)
+# New customer Inspection Pack PDF — implementation plan
 
-Checked live: columns on 26 food-safety tables, delete rules, change-tracking triggers, links between tables, constraints, and what the audit log actually records. Ordered by how much each gap would hurt at an EHO inspection or a recall.
+## Goal and scope
 
-## Priority 1 — would weaken an inspection or recall
+Replace the current customer PDF format with the supplied fixed-order, 10-section design while preserving site/date-range security, existing export permissions, closed-day and production-day rules, and the disclaimer on every page.
 
-1. **No link from a batch to the ingredients or deliveries that went into it.**
-   Batches link to a recipe and a product, but nothing records which supplier delivery or ingredient lot was used. Deliveries store items as free text. If a supplier recalls a flour lot, you can't answer "which batches used it?" — the core traceability question ("one step back, one step forward").
-   Missing: a batch-ingredient-lot record, and a lot/batch code + use-by on each delivered item.
+This plan covers the PDF and the shared data model. The Excel recommendation is deliberately separated below.
 
-2. **Several compliance records can be permanently deleted by users.**
-   Hard-delete is allowed on probe calibrations, training records, illness (fitness to work) records, recalls, HACCP plan steps, uploaded food safety documents, cleaning tasks and fridge/freezer units. Deleting a fridge or cleaning task leaves its old readings pointing at nothing. Deleted records leave no trace for an inspector.
-   Missing: archive-instead-of-delete (a "deleted at / by" field) on these tables.
+## Confirmed current state
 
-3. **Edits to most records are not tracked.**
-   Only temperature, cleaning and day sheet entries have change tracking (late entries flagged and audited). Incidents, deliveries, probe calibrations, pest logs, maintenance, training, recalls, suppliers and HACCP steps can be edited with no record of who changed what, and most have no "updated at / by" field. An inspector can't tell an original entry from a later correction.
-   Missing: updated-at/by fields plus change history on these tables.
+### How the PDF is generated today
 
-4. **Corrective actions aren't a record in their own right.**
-   They are free-text notes on a temperature reading or incident. There's no follow-up owner, due date, "done/verified by" or link back to the failed check. Being able to show "problem found, fixed, checked" is a key EHO question.
-   Missing: a corrective actions record linked to the failure it resolves.
+- **Entry point:** `src/pages/Reports.tsx` loads one site's records with `fetchReportData(...)`, then calls `generateInspectionPackPdf(...)` in the browser. Managers/owners can export; no server-side PDF job is involved.
+- **Renderer:** `src/lib/reportPdf.ts` uses `jsPDF` plus `jspdf-autotable`. Pages are drawn directly with millimetre coordinates. Text wrapping, vertical position, page breaks, headers and footers are managed manually; AutoTable handles multi-page routine tables.
+- **Current model:** `src/lib/reports.ts` queries the database and returns a large `ReportData` object. `src/lib/inspectionPack.ts` derives text summaries grouped around the three FSA scoring areas.
+- **Current PDF:** cover, inspection-readiness summary, three broad FSA sections, and an audit appendix. Detailed evidence is mostly linear tables. The existing PDF does already add the required estimate disclaimer and page numbering to every page.
+- **Excel:** `src/lib/ReportExcel.ts` independently maps the same `ReportData` into worksheets. It shares summary helpers, but not the PDF's rendering logic.
+- **Tests:** there are currently no PDF/Excel generator tests or representative `ReportData` fixtures.
 
-## Priority 2 — record types with no home at all
+### Can the present renderer support the new design?
 
-5. **Supplier approval history.** Suppliers have a yes/no "approved" flag only — no approval date, who approved, review due date, or certificate (e.g. SALSA/BRC) expiry.
-6. **Allergen change history.** Allergens sit as a list on each ingredient; there's no record of when an ingredient's allergens changed or when a product's allergen information was last checked, which matters for Natasha's Law labels.
-7. **Pest control contractor visits.** Pest logs cover sightings only — no scheduled visit record, contractor, bait-point checks or report file.
-8. **Water / legionella checks and equipment servicing certificates.** No table. Maintenance logs are fault reports, not scheduled checks with certificates. Possibly optional depending on premises type — worth confirming you want these.
+Yes, but not cleanly in its current monolithic form. jsPDF can draw the cards, status shapes, links and right-edge tabs; AutoTable remains useful for long routine logs. The difficulty is the existing single y-cursor implementation, not a hard library limitation.
 
-## Priority 3 — integrity and linking
+**Recommendation: retain jsPDF/AutoTable, but rebuild the PDF renderer around reusable page and section primitives.** This avoids introducing a second browser PDF stack and preserves AutoTable's reliable row splitting. A renderer change to HTML-to-PDF or React PDF would still require custom tables, font handling, page-break rules and browser-download integration, so it would add migration risk without removing the hardest layout work.
 
-9. **Batch codes aren't guaranteed unique** — no uniqueness rule on batch code per site, so two batches could share a code and confuse a recall.
-10. **Probe calibrations aren't linked to a specific probe** — probe name is free text, so you can't reliably show "this probe was last checked on X" or link a reading to the probe used.
-11. **Training isn't linked to a certificate expiry reminder chain** — expiry is stored, but records are removed if the person's user record is removed (cascade delete), and there's no "verified by" field on a certificate.
-12. **Incidents have "verified by" as a name only** — no link to the person, so it can't be proven who signed off.
-13. **Unlinked "who" fields**: pest, maintenance and delivery records store the person's name correctly, but training records store only the person id — anonymising someone erases whose training it was on those records.
-14. **Missing indexes** (from the earlier health audit, still true): around 100 links have no index; the ones that matter most for inspection reports are site + date on temperature, cleaning, delivery and batch records.
+Create primitives for:
 
-## Retention summary
+- fixed A4 content frame, running header/footer and right-edge tab strip;
+- section opener, rule bar, stat row, status mark/badge and latest-record box;
+- exceptions table, routine table and incident chain;
+- calendar grid with month/week chunking;
+- allergen matrix with controlled horizontal splitting;
+- measured text/card pagination, repeated table headers and “continued” labels;
+- a page registry so contents rows and exception links can be back-filled after pagination is known.
 
-- Good: temperature, cleaning and day sheet entries cannot be deleted by users, and late entries are flagged and logged.
-- Weak: everything in point 2 can be deleted outright; deleting a site deletes its batches, training, probe calibrations and recalls with it (cascade). For a compliance product, sites should only ever be archived — which the app already does in practice, but the database doesn't enforce it.
-- The central audit log currently only records temperature, cleaning, day sheet and organisation events (434 entries) — nothing for incidents, batches, deliveries, training or recalls.
+Embed local, licensed sans-serif and monospace font files so weights and data alignment are consistent. Use the existing MiseOS logo asset, the exact supplied palette, and fixed MiseOS styling rather than the current customer-selected PDF colours. Continue using the customer's configured business display name where present.
 
-## Suggested order if you want to fix later
+## Proposed shared pack model
 
-1 and 2 first (traceability and deletion), then 3 and 4 (change history, corrective actions), then 9–12 (small constraint fixes), then the new record types in 5–8 once you confirm which you want. All are additive changes — no existing data would need to be altered.
+Add a typed, renderer-neutral `InspectionPackV2` builder between database loading and output. It should contain cover metadata, status decisions, summaries, latest items, exceptions, routine rows, and stable section keys. PDF code should only lay out this model; it should not decide compliance rules while drawing.
+
+Core concepts:
+
+- `PackStatus = ok | review | problem | missing`, always rendered as shape + colour + word.
+- One central rule registry for thresholds, plain-English rule text and status derivation.
+- Explicit `latest`, `exceptions`, `routine`, `stats`, `notes`, and `emptyState` per section.
+- Page references resolved after all pages are laid out; printed page numbers remain useful in black-and-white, with clickable internal links where jsPDF supports them reliably.
+- A pack reference derived from a stable site identifier plus generation date/time, with collision-safe entropy. It is display-only unless a later requirement asks for persistent export records.
+- Dynamic overall wording. “Safe to trade” must only appear when the agreed status rules support it; missing or unresolved critical evidence must not be presented as safe. The sentence and “To review” list are deterministically assembled from section findings, not generated by AI.
+
+## Data and content mapping by section
+
+### 01 Temperature logs
+
+**Available:** `temp_units` supplies unit name/type/min/max; `temp_logs` supplies reading, pass flag, AM/PM or process type, corrective action, person, timestamp and retrospective markers; probe calibration data is also available.
+
+**Add/query/compute:** load unit thresholds with logs; calculate scheduled opportunities, taken/missed readings, legal-limit breaches, target-only reviews, unresolved actions, newest readings, and the worst reading per unit per day. Calendar pages should chunk by month or bounded date windows and repeat unit labels.
+
+**Gap/risk:** historical schedules are not versioned. Applying today's active units to an old date range can falsely create “missed” readings. The model must only make a missed-reading claim where the expected schedule can be established; otherwise label it “not determinable from current schedule.” Legal limit and business-target wording must be reviewed and encoded separately.
+
+### 02 Cleaning schedule
+
+**Available:** `cleaning_tasks` contains task, area, frequency, due time and assignment; `cleaning_logs` contains completion, person/time, notes and retrospective markers. Existing daily/weekly/monthly expected-occurrence logic and closed/non-production exemptions can be reused after consolidation.
+
+**Add/query/compute:** produce latest completions, expected/done/missed/exempt totals, missed or late exceptions, and a task-by-date schedule grid plus full log. Include archived task names when historical logs reference them.
+
+**Gap/risk:** task schedules are not historically versioned, so old periods cannot always prove what was scheduled then. The current UI query also relies on `active` without explicitly excluding `deleted_at`; this should be made consistent before calculating the new pack.
+
+### 03 Opening & closing checks
+
+**Available:** `day_sheets`, `day_sheet_sections`, `day_sheet_items` and `day_sheet_entries` contain the configured checks, completion person/time, sign-off/lock data, manager/problem notes and retrospective markers.
+
+**Add/query/compute:** the report loader currently does not fetch the entries required for item-level evidence. Add nested/item queries; classify sections as opening, closing or other using the existing operational classification; calculate expected/completed/missing checks, signed-off days, latest sheet, exception notes and per-day detail.
+
+**Gap/risk:** historical checklist versions are not preserved, and “locked” versus “signed off” is treated inconsistently across existing report paths. Define one pack rule and test both scheduled and on-demand premises.
+
+### 04 Batch & lot traceability
+
+**Available:** `batches` has batch code, product, recipe, quantity, dates and status. `batch_ingredient_lots`, `delivery_items`, `ingredients`, `batch_products` and recalls provide the additive traceability chain.
+
+**Add/query/compute:** fetch non-deleted batch-lot links and their delivery item/supplier context; build newest-batch cards, batch-to-input-lot rows, lot-to-batch reverse references, missing-lot exceptions, expired/open batch exceptions, and recall links.
+
+**Gap/risk:** linked lots are optional and current live data has no linked lot rows, so “Missing” must mean “no lot linkage recorded,” not “traceability failed.” Recall batch IDs are not relationally enforced.
+
+### 05 HACCP plan & SFBB diary
+
+**Available:** `haccp_plans`, `haccp_steps`, `safe_methods`, `sfbb_system`, `sfbb_documents` and completed periodic `reviews`.
+
+**Add/query/compute:** fetch non-deleted HACCP steps, summarise published/draft plans, CCP limits/monitoring/corrective-action text, safe-method completion, uploaded SFBB documents, last review and next review. Use latest review as the “latest” item and list incomplete/overdue items first.
+
+**Gap/risk:** current UI and connector code interpret SFBB route values differently (`upload` versus `uploaded`/`both`); verify actual stored values and unify before migration. The app stores plan definitions, not a complete stream of CCP monitoring events, so wording must not imply evidence that is not recorded.
+
+### 06 Allergens
+
+**Available:** the 14-allergen list is established in the app. `ingredients.allergens`, `ingredients.sub_ingredients`, `recipe_ingredients`, recipes, approval and last-reviewed fields can derive “contains” per product.
+
+**Add/query/compute:** fetch recipes with ingredient relations; normalise allergen names; derive the 14-column matrix; show latest reviewed recipes and exceptions for unapproved/unreviewed products. Split long matrices across vertical pages while repeating headers and product names.
+
+**Confirmed gap:** there is no separate “may contain / made in same kitchen” classification. A hollow-circle mark cannot be inferred safely. First release should show only **Contains** and blank/not recorded, with the legend accurately describing those states. Supporting the proposed hollow mark needs an additive data-model/UI project for explicit cross-contact declarations.
+
+### 07 Suppliers & deliveries
+
+**Available:** supplier approval/contact data, delivery outcome, temperature/pass result, packaging, use-by, notes, person/time, plus delivered item lot and use-by details.
+
+**Add/query/compute:** fetch delivery items; calculate approved suppliers, accepted/rejected deliveries, cold-chain/use-by/packaging exceptions, newest delivery and full latest-first log. Cross-reference lot codes used by section 04.
+
+**Gap/risk:** supplier approval is a current boolean with no approval history, reviewer, review date or certificate expiry. The PDF should state only what is evidenced.
+
+### 08 Incidents
+
+**Available:** report details, immediate action, root cause, prevention, status, reporter/time and verified-by/time.
+
+**Add/query/compute:** newest incident first; unresolved and unverified exceptions before the complete incident list; render each incident as a split-safe chain/card with page continuation behavior.
+
+**Confirmed gap:** the requested four-step chain cannot be fully timestamped. The record has reported and verified timestamps, but no separate “resolved/action taken by/at” fields. Render absent stages as `Missing` rather than inventing them. If full four-stage audit evidence is mandatory, plan a later additive incident-event table or action/resolution fields.
+
+### 09 Pest control & maintenance
+
+**Available:** pest sightings/actions/resolution, maintenance issue/priority/status/resolution, and PPM tasks/completions/next-due dates.
+
+**Add/query/compute:** combine these into one section with latest activity, open/high-priority/overdue exceptions first, then pest, reactive maintenance and preventative-maintenance logs.
+
+**Gap/risk:** no dedicated contractor-visit/certificate history exists, and pest verification identity is limited. Avoid implying formal contractor evidence unless a document/record exists.
+
+### 10 Staff training
+
+**Available:** training records and expiry/certificate links; training requirements by role; memberships/users and individual assignments can identify who should hold which training.
+
+**Add/query/compute:** fetch current site team identities and roles, active requirements and individual assignments; deduplicate repeated courses by person/course; calculate current, expiring, expired and genuinely missing required training. Show newest completion first, exceptions before the full matrix/list.
+
+**Gap/risk:** current PDF counts every stored record and does not compare requirements to staff roles. This section needs new aggregation, not just a restyle. Historical staff membership and requirement versions are not preserved, so present-day coverage and period activity should be labelled separately.
+
+## Cover and status mapping
+
+- **Business/address/date/generated:** already available.
+- **Food business operator:** resolve `sites.owner_user_id` to the current user's display name, with a clear “Not recorded in MiseOS” fallback. If legal operator name rather than account owner is required, add an explicit optional registration field rather than guessing.
+- **Registered with:** council exists; registration reference currently exists structurally but no active site has one recorded, so the fallback will be common.
+- **Contents summaries:** generated from the same section stats/status model used inside each section, preventing contradictions.
+- **To review:** rank unresolved problems first, then handled reviews, then critical missing evidence; cap the cover list and link each item to the relevant section page.
+- **About/legend:** fixed reviewed copy; status semantics shared by every renderer component.
+
+## What is reused and what is rebuilt
+
+### Reuse
+
+- Reports screen access checks, date selection, site scoping and download flow.
+- Existing raw record queries where they already provide sufficient detail.
+- Closed-day/on-demand production-day concepts, after moving duplicated calculations into one tested implementation.
+- `jsPDF`, AutoTable, filename/download behavior, customer business-name override, MiseOS logo asset, and the existing disclaimer text.
+- Existing field formatting and soft-delete rules where correct.
+
+### Rebuild
+
+- The current three-pillar PDF structure and monolithic y-cursor renderer.
+- The pack summary model, section taxonomy, status rules, contents/page-reference system, and section-specific layouts.
+- Queries/aggregations for day-sheet entries, allergen derivation, batch-lot genealogy, training coverage and HACCP steps.
+- PDF testability: generation should return bytes/blob plus metadata; the UI performs the download separately.
+
+The on-screen readiness dashboard and MCP connector should not be silently redesigned as part of this work. Shared compliance arithmetic should be extracted only where needed to prevent contradictory pack figures.
+
+## Phased build order
+
+### Phase 0 — specification lock and test foundation (2–3 days)
+
+- Agree exact status rules and legal/target wording for all ten sections.
+- Confirm whether “Food business operator” means the account owner or a separately recorded legal operator.
+- Resolve the fixed-ten-section design against today's overview/full and section-toggle controls. Recommended assumption: the new official PDF always includes all ten numbered sections; date range remains selectable; “full” controls routine-row depth only, not section presence.
+- Create typed fixture builders and deterministic aggregation tests before touching the renderer.
+
+### Phase 1 — renderer proof of concept (4–6 days)
+
+- Build shared page chrome, fonts, status marks, tabs, footer and two-pass page registry.
+- Implement the complete cover plus **01 Temperature logs**, including a long-range calendar grid, latest box, exceptions-first table and overflow.
+- Render and visually compare at A4, colour and greyscale. This is the approval checkpoint for density, font sizes, tab behavior and status language before nine more sections are built.
+
+### Phase 2 — operational records (5–7 days)
+
+- Build sections 02 Cleaning, 03 Opening/closing, and 04 Batch/lot traceability.
+- Consolidate expected-occurrence/day-basis arithmetic and add missing queries.
+- Test scheduled and on-demand premises separately.
+
+### Phase 3 — management and reference-heavy sections (6–9 days)
+
+- Build 05 HACCP/SFBB, 06 Allergens, 07 Suppliers/deliveries, 08 Incidents, 09 Pest/maintenance and 10 Training.
+- Add matrix horizontal/vertical chunking, split-safe incident chains and training requirement coverage.
+- Do not fabricate “may contain” or missing incident-event timestamps; use explicit Missing states.
+
+### Phase 4 — integration and hardening (4–6 days)
+
+- Wire the new PDF into the existing export button behind a temporary internal launch flag until approved.
+- Preserve current access rules and confirmation notification.
+- Run automated unit, pagination, text-presence and smoke tests; then perform mandatory visual PDF QA page by page.
+- Remove/retire the legacy PDF only after output parity and visual sign-off. No customer data is changed.
+
+**Estimated effort:** approximately **3–5 developer weeks** for a production-quality 10-section PDF with robust variable-data pagination. Add **1–2 weeks** if explicit cross-contact allergen data and fully timestamped incident-stage history must be introduced in the same release. The proof-of-concept checkpoint prevents committing the full estimate before the hardest layouts are validated.
+
+## Testing and real-variable-data strategy
+
+### Automated fixtures
+
+Create at least these deterministic cases:
+
+1. representative complete scheduled site;
+2. on-demand/home business with non-production days;
+3. every section empty, including zero allergens and zero incidents;
+4. long 45+ character business/site/address/operator fields;
+5. 100+ incidents with long descriptions/actions, forcing cards across many pages;
+6. 100+ products, long product names and all 14 allergens, forcing matrix splits;
+7. 12-month temperature range with many units/readings and mixed misses/breaches;
+8. cleaning tasks at daily/weekly/monthly frequencies with closures and retrospective logs;
+9. batch records with no lot links, many lot links, one lot used in many batches, and recall links;
+10. duplicated/expired/missing training records across owner/manager/staff roles.
+
+Tests should verify aggregation, status precedence, stable ordering, page count, no blank pages, section start pages, repeated chrome, footer/disclaimer presence, internal page references, and that all rendered text stays inside content bounds.
+
+### Read-only customer-data QA
+
+Use selected existing customer records read-only and generate files locally/in memory; do not seed or alter customer data. Compare summary totals against direct database counts for the same site/date window. Do not retain generated PDFs containing personal/compliance data after review.
+
+The present live dataset is useful for ordinary temperature/batch/day-sheet behavior, but it currently has **zero incidents, zero linked batch-lot rows, and at most one active recipe per site**. Therefore it cannot prove incident overflow, lot genealogy or allergen matrix pagination. Those cases must be covered by synthetic/staging fixtures modeled on real field shapes, not by modifying live businesses.
+
+### Mandatory visual QA
+
+For every fixture: generate PDF, rasterise every page, inspect page images, record defects, fix, and rerender. Specifically check clipped text, broken cards, orphan headings, repeated table headers, side-tab alignment, footer collisions, greyscale distinction, long-word wrapping and multi-page section continuity. Also extract text from the result to verify important content and disclaimer presence.
+
+## Principal risks and mitigations
+
+- **Pagination complexity — high:** cards, matrices and tabs do not fit the current cursor helpers. Mitigate with reusable measured blocks and the temperature proof of concept.
+- **Allergen width — high:** 14 labelled columns plus product names are too dense for straightforward portrait A4. Prefer abbreviated/rotated headers with a key and vertical page chunks; if still illegible, use a controlled landscape continuation page for only this matrix, subject to design approval.
+- **Historical expectation accuracy — high:** current schedules/checklists are not versioned. Never label a historical check “missed” when the expected requirement cannot be reconstructed.
+- **Compliance wording — high:** distinguish law, guidance and the business's own target. Have the final rule-bar copy reviewed; do not infer legal claims from a boolean `pass` value alone.
+- **Overall “Safe to trade” claim — high:** make it dynamic and evidence-based, with Missing/Problem outcomes where appropriate. Keep the existing disclaimer on every page.
+- **Client performance — medium/high:** 12-month dense packs can be very large. Aggregate grids, paginate incrementally, cap only optional “recent” views, and retain complete routine evidence where promised; measure generation time and memory on lower-powered devices.
+- **Sparse data — medium:** empty sections still need a numbered page, a Missing state and a useful explanation, not a blank table.
+- **Current model drift — medium:** UI PDF, Excel and MCP calculations are partly duplicated and currently disagree in places. Centralise the new PDF's computations and add parity tests for any shared figures.
+- **Accessibility/printing — medium:** verify shape + word survives greyscale and never rely on colour alone.
+
+## Excel recommendation
+
+Keep Excel **separate from the visual PDF rebuild**, but base future Excel work on the same new typed pack model.
+
+The spreadsheet should remain an analysis/audit workbook, not imitate page cards, tabs or a calendar designed for print. In this PDF project:
+
+- keep the existing Excel export functional and keep its disclaimer;
+- avoid a visual rewrite of its worksheets;
+- ensure any shared data-query changes do not regress it;
+- document temporary differences clearly in tests and code comments.
+
+After the PDF and its status rules are approved, do a focused Excel follow-up that adopts the 10-section order, shared summaries/statuses and new detailed datasets while retaining spreadsheet-friendly flat sheets. This reduces simultaneous risk and prevents the PDF design review from becoming a second large export redesign.
+
+## Acceptance gates before replacement
+
+- All ten sections appear in the fixed order and contents/page references are accurate.
+- Latest evidence is first and exceptions precede routine logs in every section.
+- Status is always communicated by shape, colour and word.
+- Empty, sparse, long-name and multi-page fixtures render without clipping or overlap.
+- Real read-only totals reconcile with the database for selected sites and periods.
+- The disclaimer and pack reference appear on every page.
+- Full typecheck, tests and production build pass.
+- Visual inspection passes for every generated fixture in colour and greyscale.
+- Existing account, auth, billing and export permissions remain unchanged.
+- The legacy PDF is not removed until the new output receives explicit visual approval.
