@@ -31,11 +31,12 @@ const incidentTypes = [
 
 const rootCauses = ["Equipment failure","Human error","Supplier issue","Cleaning gap","Training gap","Process not followed","Environmental / external","Unknown — under investigation"];
 
-const statusBadge = (status: string) => {
-  switch (status) {
-    case "open": return <Badge className="bg-breach/10 text-breach border-0 text-[10px]"><Clock className="h-3 w-3 mr-1" /> Open</Badge>;
-    case "action-taken": return <Badge className="bg-warning/10 text-warning border-0 text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" /> Fix applied</Badge>;
-    case "verified": return <Badge className="bg-success/10 text-success border-0 text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" /> Closed</Badge>;
+const statusBadge = (incident: any) => {
+  switch (incidentCurrentStage(incident)) {
+    case "reported": return <Badge className="bg-breach/10 text-breach border-0 text-[10px]"><Clock className="h-3 w-3 mr-1" /> Reported</Badge>;
+    case "resolved": return <Badge className="bg-warning/10 text-warning border-0 text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" /> Resolved</Badge>;
+    case "corrective_action": return <Badge className="bg-warning/10 text-warning border-0 text-[10px]"><ShieldCheck className="h-3 w-3 mr-1" /> Corrective action</Badge>;
+    case "verified": return <Badge className="bg-success/10 text-success border-0 text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" /> Verified</Badge>;
     default: return null;
   }
 };
@@ -64,8 +65,9 @@ const Incidents = () => {
 
   const saveIncident = useMutation({
     mutationFn: async () => {
+      if (!siteId || !organisationId) throw new Error("Select a site before reporting an incident.");
       const { error } = await supabase.from("incidents").insert({
-        site_id: siteId!, organisation_id: organisationId!, type: formType, title: formTitle,
+        site_id: siteId, organisation_id: organisationId, type: formType, title: formTitle,
         description: formDesc, immediate_action: formAction, root_cause: formRoot || null,
         prevention: formPrevention || null, reported_by_user_id: appUser?.id || null, reported_by_name: userName,
       });
@@ -149,7 +151,7 @@ const Incidents = () => {
                         {incident.reported_by_name}
                       </p>
                     </div>
-                    <div className="shrink-0">{statusBadge(incident.status)}</div>
+                    <div className="shrink-0">{statusBadge(incident)}</div>
                   </div>
                   <Accordion type="single" collapsible>
                     <AccordionItem value="timeline" className="border-0">

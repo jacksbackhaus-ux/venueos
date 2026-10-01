@@ -43,7 +43,7 @@ export function incidentStageTimeline(incident: IncidentStageRecord): IncidentSt
   const order: IncidentStageKey[] = ["reported", "resolved", "corrective_action", "verified"];
   const completedThrough = order.indexOf(current);
   const details: Record<IncidentStageKey, Omit<IncidentStageView, "key" | "state">> = {
-    reported: { label: "Reported", note: incident.description, at: incident.reported_at, actor: incident.reported_by_name },
+    reported: { label: "Report", note: incident.description, at: incident.reported_at, actor: incident.reported_by_name },
     resolved: { label: "Resolved", note: incident.resolved_summary ?? null, at: incident.resolved_at_stage ?? null, actor: incident.resolved_by_name ?? null },
     corrective_action: { label: "Corrective action", note: incident.corrective_action_summary ?? null, at: incident.corrective_action_at ?? null, actor: incident.corrective_action_by_name ?? null },
     verified: {
