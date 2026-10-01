@@ -129,7 +129,8 @@ export function calculateMissedSchedule(input: MissedScheduleInput): ScheduleOcc
       if (!version && date >= input.cutoverDate) continue;
       const frequency = version?.frequency ?? "daily";
       const start = bucketStart(date, frequency);
-      if (start !== date) continue;
+      const firstDateInRange = date === input.from;
+      if (start !== date && !firstDateInRange) continue;
       const bucketDays = frequency === "daily" ? 1 : frequency === "weekly" ? 7 : daysBetweenISO(start, addDaysISO(monthStart(addDaysISO(date, 32)), 0));
       const end = addDaysISO(start, Math.max(0, bucketDays - 1));
       const done = input.cleaningLogs.some((log) =>
@@ -148,7 +149,7 @@ export function calculateMissedSchedule(input: MissedScheduleInput): ScheduleOcc
             : elapsed(end, dueMinutes(version?.due_time ?? null), input)
               ? "missing"
               : "pending";
-      result.push({ parentId, date: start, kind: frequency, state });
+      result.push({ parentId, date: firstDateInRange ? date : start, kind: frequency, state });
     }
   }
 
