@@ -28,20 +28,33 @@ export interface IncidentStageView {
   actor: string | null;
 }
 
-const LEGACY_NOTE = "Not separately recorded (legacy record)";
+export const LEGACY_NOTE = "Not separately recorded (legacy record)";
 
+const ORDER: IncidentStageKey[] = ["reported", "resolved", "corrective_action", "verified"];
+
+function isVerified(i: IncidentStageRecord) {
+  return !!(i.verification_at_stage || i.verified_at || i.status === "verified" || i.status === "closed");
+}
+
+/** Furthest stage the incident has reached, from evidence or legacy status. Never from the version flag. */
 export function incidentCurrentStage(incident: IncidentStageRecord): IncidentStageKey {
-  if (incident.verification_at_stage || incident.status === "verified" || incident.status === "closed") return "verified";
+  if (isVerified(incident)) return "verified";
   if (incident.corrective_action_at || incident.status === "action-taken") return "corrective_action";
   if (incident.resolved_at_stage) return "resolved";
   return "reported";
 }
 
+function stageEvidenceAt(incident: IncidentStageRecord, key: IncidentStageKey): string | null {
+  switch (key) {
+    case "reported": return incident.reported_at;
+    case "resolved": return incident.resolved_at_stage ?? null;
+    case "corrective_action": return incident.corrective_action_at ?? null;
+    case "verified": return incident.verification_at_stage ?? incident.verified_at ?? null;
+  }
+}
+
 export function incidentStageTimeline(incident: IncidentStageRecord): IncidentStageView[] {
-  const legacy = incident.stage_schema_version !== 1;
-  const current = incidentCurrentStage(incident);
-  const order: IncidentStageKey[] = ["reported", "resolved", "corrective_action", "verified"];
-  const completedThrough = order.indexOf(current);
+  const reachedIdx = ORDER.indexOf(incidentCurrentStage(incident));
   const details: Record<IncidentStageKey, Omit<IncidentStageView, "key" | "state">> = {
     reported: { label: "Report", note: incident.description, at: incident.reported_at, actor: incident.reported_by_name },
     resolved: { label: "Resolved", note: incident.resolved_summary ?? null, at: incident.resolved_at_stage ?? null, actor: incident.resolved_by_name ?? null },
@@ -54,28 +67,21 @@ export function incidentStageTimeline(incident: IncidentStageRecord): IncidentSt
     },
   };
 
-  return order.map((key, index) => {
+  return ORDER.map((key, index) => {
     const detail = details[key];
-    const isLegacyMiddle = legacy && (key === "resolved" || key === "corrective_action");
-    return {
-      key,
-      ...detail,
-      note: isLegacyMiddle ? LEGACY_NOTE : detail.note,
-      state: isLegacyMiddle
-        ? "legacy"
-        : index < completedThrough || (key === "verified" && current === "verified")
-          ? "complete"
-          : index === completedThrough
-            ? "current"
-            : "pending",
-    };
+    const hasEvidence = !!stageEvidenceAt(incident, key) || (key === "verified" && isVerified(incident));
+    if (hasEvidence) return { key, ...detail, state: "complete" as const };
+    // No evidence: legacy only if the incident has already moved past this stage.
+    if (index < reachedIdx || (index === reachedIdx && index > 0)) {
+      return { key, ...detail, note: LEGACY_NOTE, at: null, actor: null, state: "legacy" as const };
+    }
+    return { key, ...detail, state: index === reachedIdx + 1 ? ("current" as const) : ("pending" as const) };
   });
 }
 
 export function nextIncidentAction(incident: IncidentStageRecord): Exclude<IncidentStageKey, "reported"> | null {
-  if (incident.verification_at_stage || incident.status === "verified" || incident.status === "closed") return null;
-  if (incident.stage_schema_version !== 1 && incident.status === "action-taken") return "verified";
-  if (incident.corrective_action_at) return "verified";
+  if (isVerified(incident)) return null;
+  if (incident.corrective_action_at || incident.status === "action-taken") return "verified";
   if (incident.resolved_at_stage) return "corrective_action";
   return "resolved";
 }
