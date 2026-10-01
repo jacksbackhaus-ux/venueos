@@ -70,6 +70,7 @@ const Incidents = () => {
         site_id: siteId, organisation_id: organisationId, type: formType, title: formTitle,
         description: formDesc, immediate_action: formAction, root_cause: formRoot || null,
         prevention: formPrevention || null, reported_by_user_id: appUser?.id || null, reported_by_name: userName,
+        stage_schema_version: 1,
       });
       if (error) throw error;
     },
