@@ -1,0 +1,1 @@
+DROP POLICY "Internal schedule history failures are service-only" ON public.schedule_history_write_failures;
