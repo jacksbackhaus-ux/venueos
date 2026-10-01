@@ -1,0 +1,1 @@
+ALTER TABLE public.incidents ALTER COLUMN stage_schema_version SET DEFAULT 1;

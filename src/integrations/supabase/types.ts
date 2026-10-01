@@ -2130,8 +2130,90 @@ export type Database = {
           },
         ]
       }
+      incident_stage_events: {
+        Row: {
+          actor_name: string
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          incident_id: string
+          note: string
+          occurred_at: string
+          organisation_id: string
+          site_id: string
+          snapshot: Json
+          stage: string
+        }
+        Insert: {
+          actor_name: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          incident_id: string
+          note: string
+          occurred_at?: string
+          organisation_id: string
+          site_id: string
+          snapshot: Json
+          stage: string
+        }
+        Update: {
+          actor_name?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          incident_id?: string
+          note?: string
+          occurred_at?: string
+          organisation_id?: string
+          site_id?: string
+          snapshot?: Json
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_stage_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_stage_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_stage_events_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_stage_events_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_stage_events_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
+          corrective_action_at: string | null
+          corrective_action_by_name: string | null
+          corrective_action_by_user_id: string | null
+          corrective_action_summary: string | null
           created_at: string
           description: string
           id: string
@@ -2142,15 +2224,28 @@ export type Database = {
           reported_at: string
           reported_by_name: string
           reported_by_user_id: string | null
+          resolved_at_stage: string | null
+          resolved_by_name: string | null
+          resolved_by_user_id: string | null
+          resolved_summary: string | null
           root_cause: string | null
           site_id: string
+          stage_schema_version: number | null
           status: string
           title: string
           type: string
+          verification_at_stage: string | null
+          verification_by_name: string | null
+          verification_by_user_id: string | null
+          verification_summary: string | null
           verified_at: string | null
           verified_by_name: string | null
         }
         Insert: {
+          corrective_action_at?: string | null
+          corrective_action_by_name?: string | null
+          corrective_action_by_user_id?: string | null
+          corrective_action_summary?: string | null
           created_at?: string
           description: string
           id?: string
@@ -2161,15 +2256,28 @@ export type Database = {
           reported_at?: string
           reported_by_name?: string
           reported_by_user_id?: string | null
+          resolved_at_stage?: string | null
+          resolved_by_name?: string | null
+          resolved_by_user_id?: string | null
+          resolved_summary?: string | null
           root_cause?: string | null
           site_id: string
+          stage_schema_version?: number | null
           status?: string
           title: string
           type: string
+          verification_at_stage?: string | null
+          verification_by_name?: string | null
+          verification_by_user_id?: string | null
+          verification_summary?: string | null
           verified_at?: string | null
           verified_by_name?: string | null
         }
         Update: {
+          corrective_action_at?: string | null
+          corrective_action_by_name?: string | null
+          corrective_action_by_user_id?: string | null
+          corrective_action_summary?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -2180,15 +2288,38 @@ export type Database = {
           reported_at?: string
           reported_by_name?: string
           reported_by_user_id?: string | null
+          resolved_at_stage?: string | null
+          resolved_by_name?: string | null
+          resolved_by_user_id?: string | null
+          resolved_summary?: string | null
           root_cause?: string | null
           site_id?: string
+          stage_schema_version?: number | null
           status?: string
           title?: string
           type?: string
+          verification_at_stage?: string | null
+          verification_by_name?: string | null
+          verification_by_user_id?: string | null
+          verification_summary?: string | null
           verified_at?: string | null
           verified_by_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "incidents_corrective_action_by_user_id_fkey"
+            columns: ["corrective_action_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_corrective_action_by_user_id_fkey"
+            columns: ["corrective_action_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "incidents_organisation_id_fkey"
             columns: ["organisation_id"]
@@ -2211,10 +2342,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "incidents_resolved_by_user_id_fkey"
+            columns: ["resolved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_resolved_by_user_id_fkey"
+            columns: ["resolved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "incidents_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_verification_by_user_id_fkey"
+            columns: ["verification_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_verification_by_user_id_fkey"
+            columns: ["verification_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -7371,6 +7530,47 @@ export type Database = {
         Returns: undefined
       }
       active_impersonation_org: { Args: never; Returns: string }
+      advance_incident_stage: {
+        Args: { _incident_id: string; _note: string; _stage: string }
+        Returns: {
+          corrective_action_at: string | null
+          corrective_action_by_name: string | null
+          corrective_action_by_user_id: string | null
+          corrective_action_summary: string | null
+          created_at: string
+          description: string
+          id: string
+          immediate_action: string
+          module: string | null
+          organisation_id: string
+          prevention: string | null
+          reported_at: string
+          reported_by_name: string
+          reported_by_user_id: string | null
+          resolved_at_stage: string | null
+          resolved_by_name: string | null
+          resolved_by_user_id: string | null
+          resolved_summary: string | null
+          root_cause: string | null
+          site_id: string
+          stage_schema_version: number | null
+          status: string
+          title: string
+          type: string
+          verification_at_stage: string | null
+          verification_by_name: string | null
+          verification_by_user_id: string | null
+          verification_summary: string | null
+          verified_at: string | null
+          verified_by_name: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "incidents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       anonymise_expired_fitness_to_work: {
         Args: { _as_of?: string }
         Returns: number

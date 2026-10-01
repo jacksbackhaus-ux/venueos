@@ -8,38 +8,39 @@ import { cors, json, loadCaller, canManage } from "../_shared/gdprAuthz.ts";
  */
 
 // [table, column] pairs matched against the person's users.id.
-const LINKS: [string, string, string][] = [
+const LINKS: [string, string, string[]][] = [
   // section, table, column
-  ["roles_and_sites", "memberships", "user_id"],
-  ["roles_and_sites", "org_users", "user_id"],
-  ["rota", "rota_assignments", "user_id"],
-  ["rota", "shift_staff", "user_id"],
-  ["rota", "shift_requests", "requester_id"],
-  ["rota", "shift_compensation_logs", "user_id"],
-  ["availability", "staff_availability", "user_id"],
-  ["holidays", "holiday_requests", "user_id"],
-  ["training", "training_records", "user_id"],
-  ["training", "training_individual_assignments", "user_id"],
-  ["fitness_to_work", "fitness_to_work", "user_id"],
-  ["records_logged", "temp_logs", "logged_by_user_id"],
-  ["records_logged", "cleaning_logs", "completed_by_user_id"],
-  ["records_logged", "day_sheets", "locked_by_user_id"],
-  ["records_logged", "day_sheet_entries", "completed_by_user_id"],
-  ["records_logged", "delivery_logs", "logged_by_user_id"],
-  ["records_logged", "incidents", "reported_by_user_id"],
-  ["records_logged", "pest_logs", "reported_by_user_id"],
-  ["records_logged", "maintenance_logs", "reported_by_user_id"],
-  ["records_logged", "waste_logs", "logged_by"],
-  ["records_logged", "batches", "created_by_user_id"],
-  ["records_logged", "batch_actions", "performed_by_user_id"],
-  ["records_logged", "batch_stage_events", "performed_by_user_id"],
-  ["records_logged", "shift_task_completions", "completed_by_user_id"],
-  ["records_logged", "ppm_completions", "completed_by"],
-  ["records_logged", "production_days", "started_by"],
-  ["records_logged", "site_events", "logged_by"],
-  ["records_logged", "feedback_entries", "logged_by"],
-  ["messages_sent", "messenger_messages", "sender_id"],
-  ["audit_entries", "audit_trail", "actor_user_id"],
+  ["roles_and_sites", "memberships", ["user_id"]],
+  ["roles_and_sites", "org_users", ["user_id"]],
+  ["rota", "rota_assignments", ["user_id"]],
+  ["rota", "shift_staff", ["user_id"]],
+  ["rota", "shift_requests", ["requester_id"]],
+  ["rota", "shift_compensation_logs", ["user_id"]],
+  ["availability", "staff_availability", ["user_id"]],
+  ["holidays", "holiday_requests", ["user_id"]],
+  ["training", "training_records", ["user_id"]],
+  ["training", "training_individual_assignments", ["user_id"]],
+  ["fitness_to_work", "fitness_to_work", ["user_id"]],
+  ["records_logged", "temp_logs", ["logged_by_user_id"]],
+  ["records_logged", "cleaning_logs", ["completed_by_user_id"]],
+  ["records_logged", "day_sheets", ["locked_by_user_id"]],
+  ["records_logged", "day_sheet_entries", ["completed_by_user_id"]],
+  ["records_logged", "delivery_logs", ["logged_by_user_id"]],
+  ["records_logged", "incidents", ["reported_by_user_id", "resolved_by_user_id", "corrective_action_by_user_id", "verification_by_user_id"]],
+  ["records_logged", "incident_stage_events", ["actor_user_id"]],
+  ["records_logged", "pest_logs", ["reported_by_user_id"]],
+  ["records_logged", "maintenance_logs", ["reported_by_user_id"]],
+  ["records_logged", "waste_logs", ["logged_by"]],
+  ["records_logged", "batches", ["created_by_user_id"]],
+  ["records_logged", "batch_actions", ["performed_by_user_id"]],
+  ["records_logged", "batch_stage_events", ["performed_by_user_id"]],
+  ["records_logged", "shift_task_completions", ["completed_by_user_id"]],
+  ["records_logged", "ppm_completions", ["completed_by"]],
+  ["records_logged", "production_days", ["started_by"]],
+  ["records_logged", "site_events", ["logged_by"]],
+  ["records_logged", "feedback_entries", ["logged_by"]],
+  ["messages_sent", "messenger_messages", ["sender_id"]],
+  ["audit_entries", "audit_trail", ["actor_user_id"]],
 ];
 
 Deno.serve(async (req) => {
@@ -67,8 +68,12 @@ Deno.serve(async (req) => {
       },
       profile: target,
     };
-    for (const [section, table, col] of LINKS) {
-      const { data, error } = await svc.from(table).select("*").eq(col, target.id).limit(10000);
+    for (const [section, table, cols] of LINKS) {
+      let query = svc.from(table).select("*");
+      query = cols.length === 1
+        ? query.eq(cols[0], target.id)
+        : query.or(cols.map((col) => `${col}.eq.${target.id}`).join(","));
+      const { data, error } = await query.limit(10000);
       if (error) { console.warn("[gdpr-export]", table, error.message); continue; }
       out[section] ??= {};
       out[section][table] = data ?? [];
