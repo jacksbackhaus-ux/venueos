@@ -894,6 +894,96 @@ export type Database = {
           },
         ]
       }
+      cleaning_task_schedule_versions: {
+        Row: {
+          area: string
+          assigned_to_name: string | null
+          cleaning_task_id: string
+          created_at: string
+          created_by_name: string
+          created_by_user_id: string | null
+          due_time: string | null
+          effective_from: string
+          effective_to: string | null
+          frequency: string
+          id: string
+          organisation_id: string
+          scheduled: boolean
+          site_id: string
+          task: string
+        }
+        Insert: {
+          area: string
+          assigned_to_name?: string | null
+          cleaning_task_id: string
+          created_at?: string
+          created_by_name?: string
+          created_by_user_id?: string | null
+          due_time?: string | null
+          effective_from: string
+          effective_to?: string | null
+          frequency: string
+          id?: string
+          organisation_id: string
+          scheduled?: boolean
+          site_id: string
+          task: string
+        }
+        Update: {
+          area?: string
+          assigned_to_name?: string | null
+          cleaning_task_id?: string
+          created_at?: string
+          created_by_name?: string
+          created_by_user_id?: string | null
+          due_time?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          frequency?: string
+          id?: string
+          organisation_id?: string
+          scheduled?: boolean
+          site_id?: string
+          task?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleaning_task_schedule_versions_cleaning_task_id_fkey"
+            columns: ["cleaning_task_id"]
+            isOneToOne: false
+            referencedRelation: "cleaning_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_task_schedule_versions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_task_schedule_versions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_task_schedule_versions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_task_schedule_versions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cleaning_tasks: {
         Row: {
           active: boolean
@@ -4747,6 +4837,78 @@ export type Database = {
           },
         ]
       }
+      schedule_history_cutovers: {
+        Row: {
+          created_at: string
+          cutover_date: string
+          organisation_id: string
+          site_id: string
+          site_timezone: string
+        }
+        Insert: {
+          created_at?: string
+          cutover_date: string
+          organisation_id: string
+          site_id: string
+          site_timezone: string
+        }
+        Update: {
+          created_at?: string
+          cutover_date?: string
+          organisation_id?: string
+          site_id?: string
+          site_timezone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_history_cutovers_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_history_cutovers_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_history_write_failures: {
+        Row: {
+          error_message: string
+          id: string
+          occurred_at: string
+          operation: string
+          organisation_id: string | null
+          site_id: string | null
+          source_id: string | null
+          source_table: string
+        }
+        Insert: {
+          error_message: string
+          id?: string
+          occurred_at?: string
+          operation: string
+          organisation_id?: string | null
+          site_id?: string | null
+          source_id?: string | null
+          source_table: string
+        }
+        Update: {
+          error_message?: string
+          id?: string
+          occurred_at?: string
+          operation?: string
+          organisation_id?: string | null
+          site_id?: string | null
+          source_id?: string | null
+          source_table?: string
+        }
+        Relationships: []
+      }
       sfbb_documents: {
         Row: {
           created_at: string
@@ -6488,6 +6650,96 @@ export type Database = {
           },
         ]
       }
+      temp_unit_schedule_versions: {
+        Row: {
+          created_at: string
+          created_by_name: string
+          created_by_user_id: string | null
+          effective_from: string
+          effective_to: string | null
+          expected_check_types: string[]
+          id: string
+          max_temp: number
+          min_temp: number
+          name: string
+          organisation_id: string
+          scheduled: boolean
+          site_id: string
+          temp_unit_id: string
+          unit_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_name?: string
+          created_by_user_id?: string | null
+          effective_from: string
+          effective_to?: string | null
+          expected_check_types?: string[]
+          id?: string
+          max_temp: number
+          min_temp: number
+          name: string
+          organisation_id: string
+          scheduled?: boolean
+          site_id: string
+          temp_unit_id: string
+          unit_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by_name?: string
+          created_by_user_id?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          expected_check_types?: string[]
+          id?: string
+          max_temp?: number
+          min_temp?: number
+          name?: string
+          organisation_id?: string
+          scheduled?: boolean
+          site_id?: string
+          temp_unit_id?: string
+          unit_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_unit_schedule_versions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_unit_schedule_versions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_unit_schedule_versions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_unit_schedule_versions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temp_unit_schedule_versions_temp_unit_id_fkey"
+            columns: ["temp_unit_id"]
+            isOneToOne: false
+            referencedRelation: "temp_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       temp_units: {
         Row: {
           active: boolean
@@ -7262,6 +7514,17 @@ export type Database = {
           status: string
         }[]
       }
+      record_schedule_history_failure: {
+        Args: {
+          _error_message: string
+          _operation: string
+          _organisation_id: string
+          _site_id: string
+          _source_id: string
+          _source_table: string
+        }
+        Returns: undefined
+      }
       record_signup_attribution: {
         Args: {
           _campaign: string
@@ -7275,6 +7538,13 @@ export type Database = {
         Returns: undefined
       }
       resync_org_modules: { Args: { _org_id: string }; Returns: Json }
+      schedule_history_actor: {
+        Args: never
+        Returns: {
+          display_name: string
+          user_id: string
+        }[]
+      }
       seed_messenger_channels_for_site: {
         Args: { _site_id: string }
         Returns: undefined
